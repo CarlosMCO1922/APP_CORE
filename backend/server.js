@@ -12,6 +12,10 @@ require('dotenv').config();
 app.use(cors()); 
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('Servidor CORE a funcionar!');
+});
+
 // --- ROTAS ---
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
@@ -56,9 +60,7 @@ db.sequelize.authenticate()
   });
 
 
-app.get('/', (req, res) => {
-  res.send('Servidor CORE a funcionar!');
-});
+
 
 // Futuramente, as tuas rotas virão aqui:
 // const authRoutes = require('./routes/authRoutes');
