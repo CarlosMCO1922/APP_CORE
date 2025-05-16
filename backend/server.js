@@ -18,17 +18,17 @@ app.get('/', (req, res) => {
 
 // --- ROTAS ---
 const authRoutes = require('./routes/authRoutes');
-app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 const userRoutes = require('./routes/userRoutes');
-app.use('/api/users', userRoutes);
+app.use('/users', userRoutes);
 const trainingRoutes = require('./routes/trainingRoutes');
-app.use('/api/trainings', trainingRoutes);
+app.use('/trainings', trainingRoutes);
 const appointmentRoutes = require('./routes/appointmentRoutes');
-app.use('/api/appointments', appointmentRoutes);
+app.use('/appointments', appointmentRoutes);
 const staffRoutes = require('./routes/staffRoutes');
-app.use('/api/staff', staffRoutes);
+app.use('/staff', staffRoutes);
 const paymentRoutes = require('./routes/paymentRoutes'); 
-app.use('/api/payments', paymentRoutes);      
+app.use('/payments', paymentRoutes);      
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
 const { notFound, errorHandler } = require('./middleware/errorHandler');
