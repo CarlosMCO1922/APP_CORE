@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 
 // --- ROTAS ---
 const authRoutes = require('./routes/authRoutes');
-app.use('api/auth', authRoutes);
+app.use('/auth', authRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/users', userRoutes);
 const trainingRoutes = require('./routes/trainingRoutes');
@@ -32,7 +32,7 @@ app.use('/payments', paymentRoutes);
 const exerciseRoutes = require('./routes/exerciseRoutes');
 app.use('/exercises', exerciseRoutes);
 const workoutPlanRoutes = require('./routes/workoutPlanRoutes');
-app.use('/api/workout-plans', workoutPlanRoutes);
+app.use('/workout-plans', workoutPlanRoutes);
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
 const { notFound, errorHandler } = require('./middleware/errorHandler');

@@ -1,5 +1,5 @@
 // src/services/authService.js
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 export const loginAPI = async (email, password, isStaffLogin = false) => {
   const endpoint = isStaffLogin ? '/auth/staff/login' : '/auth/login';

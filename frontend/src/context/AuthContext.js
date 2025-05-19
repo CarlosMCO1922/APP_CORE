@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, isStaffLogin = false) => {
     try {
       const endpoint = isStaffLogin ? '/auth/staff/login' : '/auth/login';
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001/api'}${endpoint}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001/'}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

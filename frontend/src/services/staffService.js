@@ -1,5 +1,5 @@
 // src/services/staffService.js
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 export const getAllStaffForSelection = async (token) => {
   if (!token) throw new Error('Token não fornecido para getAllStaffForSelection.');

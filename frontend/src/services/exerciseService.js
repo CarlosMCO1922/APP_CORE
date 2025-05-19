@@ -1,5 +1,5 @@
 // src/services/exerciseService.js
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 // Função para buscar todos os exercícios (usada no AdminManageWorkoutPlansPage)
 export const getAllExercises = async (token) => {

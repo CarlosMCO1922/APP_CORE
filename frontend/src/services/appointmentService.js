@@ -1,5 +1,5 @@
 // src/services/appointmentService.js
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/';
 
 export const clientRequestNewAppointment = async (requestData, token) => {
   if (!token) throw new Error('Token de cliente não fornecido para clientRequestNewAppointment.');

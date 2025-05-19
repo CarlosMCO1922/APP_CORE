@@ -1,5 +1,5 @@
 // src/services/paymentService.js
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 export const adminCreatePayment = async (paymentData, token) => {
   if (!token) throw new Error('Token de administrador não fornecido para adminCreatePayment.');
