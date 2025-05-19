@@ -375,7 +375,10 @@ const CalendarPage = () => {
                 </ModalPlanLink>
               )}
             </>)}
-            {selectedEvent.type === 'appointment' && (<> <ModalDetail><span>Profissional:</span> {selectedEvent.professional?.firstName} {selectedEvent.professional?.lastName}</ModalDetail> <ModalDetail><span>Cliente:</span> {selectedEvent.client ? `${selectedEvent.client.firstName} ${selected.client.lastName}` : (selectedEvent.status === 'disponível' ? 'Disponível para marcação' : (selectedEvent.status === 'pendente_aprovacao_staff' ? 'Pendente de Aprovação' : 'N/A'))}</ModalDetail> <ModalDetail><span>Status:</span> {selectedEvent.status?.replace(/_/g, ' ')}</ModalDetail> <ModalDetail><span>Notas:</span> {selectedEvent.notes || "N/A"}</ModalDetail> </>)}
+            {selectedEvent.type === 'appointment' && (<> <ModalDetail><span>Profissional:</span> {selectedEvent.professional?.firstName} {selectedEvent.professional?.lastName}</ModalDetail> 
+            <ModalDetail><span>Cliente:</span> {selectedEvent.client ? `${selectedEvent.client.firstName} ${selectedEvent.client.lastName}` : (selectedEvent.status === 'disponível' ? 'Disponível para marcação' : (selectedEvent.status === 'pendente_aprovacao_staff' ? 'Pendente de Aprovação' : 'N/A'))}</ModalDetail> 
+            <ModalDetail><span>Status:</span> {selectedEvent.status?.replace(/_/g, ' ')}</ModalDetail> 
+            <ModalDetail><span>Notas:</span> {selectedEvent.notes || "N/A"}</ModalDetail> </>)}
             <ModalActions>
               <ModalButton onClick={handleCloseEventModal}>Fechar</ModalButton>
               {authState.role === 'user' && selectedEvent.type === 'training' && (myBookedTrainingIds.has(selectedEvent.id) ? <ModalButton onClick={handleCancelTrainingBooking} disabled={actionLoading} danger> {actionLoading ? 'A cancelar...' : 'Cancelar Inscrição'} </ModalButton> : (selectedEvent.capacity - (selectedEvent.participantsCount || selectedEvent.participants?.length || 0)) > 0 && <ModalButton onClick={handleBookSelectedTraining} disabled={actionLoading} primary> {actionLoading ? 'A inscrever...' : 'Inscrever-me'} </ModalButton>)}
