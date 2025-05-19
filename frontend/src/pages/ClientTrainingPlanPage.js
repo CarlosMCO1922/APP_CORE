@@ -8,43 +8,6 @@ import { getAllTrainings } from '../services/trainingService';
 import { FaImage, FaVideo, FaTimes, FaArrowLeft } from 'react-icons/fa'; // Ícones
 import { ThemeProvider } from 'styled-components';
 
-// --- Definições de Cores e Tema (Exemplo) ---
-const theme = {
-  colors: {
-    primary: '#D4AF37', // coreGold
-    background: '#1A1A1A', // coreBlack
-    cardBackground: '#252525',
-    cardBorder: '#383838',
-    textMain: '#E0E0E0',
-    textMuted: '#a0a0a0',
-    textDark: '#1A1A1A',
-    error: '#FF6B6B',
-    errorBg: 'rgba(255,107,107,0.1)',
-    success: '#66BB6A',
-    successBg: 'rgba(102,187,106,0.15)',
-    buttonSecondaryBg: '#4A4A4A',
-    buttonSecondaryHoverBg: '#5A5A5A',
-    mediaButtonBg: '#007bff', // Azul para botões de media
-    mediaButtonHoverBg: '#0056b3',
-  },
-  fonts: {
-    main: "'Inter', sans-serif",
-  },
-  borderRadius: '8px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-};
-
-// Pode ser útil ter estilos globais se não os tiveres já
-const GlobalStyle = createGlobalStyle`
-  body {
-    background-color: ${theme.colors.background};
-    color: ${theme.colors.textMain};
-    font-family: ${theme.fonts.main};
-    margin: 0;
-    padding: 0;
-  }
-`;
-
 // --- Styled Components Melhorados ---
 const PageContainer = styled.div`
   background-color: ${props => props.theme.colors.background};
@@ -415,8 +378,6 @@ function ClientTrainingPlanPage() {
   if (loading) return <PageContainer theme={theme}><LoadingText>A carregar plano de treino...</LoadingText></PageContainer>;
 
   return (
-    <ThemeProvider theme={theme}> {/* Adicionado ThemeProvider */}
-      <GlobalStyle /> {/* Adicionado Estilos Globais */}
       <PageContainer>
         <HeaderContainer>
           <MainTitle>Plano de Treino</MainTitle>
@@ -537,7 +498,6 @@ function ClientTrainingPlanPage() {
           </ModalOverlay>
         )}
       </PageContainer>
-    </ThemeProvider>
   );
 }
 
