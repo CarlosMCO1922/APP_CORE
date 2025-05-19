@@ -12,7 +12,7 @@ import {
     updateExerciseInPlan,
     removeExerciseFromPlan
 } from '../../services/workoutPlanService';
-import { getAllTrainings } // Usado para obter nome do treino
+import { getAllTrainings }
     from '../../services/trainingService';
 import { getAllExercises } from '../../services/exerciseService';
 
@@ -168,11 +168,18 @@ const CloseButton = styled.button`
 `;
 const NoItemsText = styled.p` font-size: 0.95rem; color: #888; text-align: center; padding: 15px 0; font-style: italic; `;
 
-
 const initialWorkoutPlanForm = { name: '', order: 0, notes: '' };
 const initialExercisePlanForm = {
   exerciseId: '', sets: '', reps: '',
   durationSeconds: '', restSeconds: '', order: 0, notes: ''
+};
+
+// Função auxiliar para extrair o ID do vídeo do YouTube
+const getYouTubeVideoId = (url) => {
+  if (!url) return null;
+  const regExp = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
 };
 
 function AdminManageWorkoutPlansPage() {
@@ -404,13 +411,15 @@ function AdminManageWorkoutPlansPage() {
 
   const handleCloseMediaModal = () => {
     setShowMediaModal(false);
-    if (mediaModalContent.type === 'video') {
-      const videoElement = document.getElementById('media-modal-video');
-      if (videoElement) {
-        videoElement.pause();
+    if (mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube') { // Verifica também se é youtube
+      const videoElement = document.getElementById('media-modal-video-iframe') || document.getElementById('media-modal-video');
+      // Para iframes do YouTube, a forma de parar programaticamente é mais complexa (requer API do YouTube Player)
+      // ou recarregar o src do iframe para "" o que pode ser feito aqui ao limpar mediaModalContent.src
+      if (videoElement && videoElement.tagName === 'VIDEO') {
+          videoElement.pause();
       }
     }
-    setMediaModalContent({ type: '', src: '', alt: '' });
+    setMediaModalContent({ type: '', src: '', alt: '' }); // Limpa para parar o vídeo no iframe
   };
 
   if (loading) return <PageContainer><LoadingText>A carregar detalhes do plano de treino...</LoadingText></PageContainer>;
@@ -428,7 +437,7 @@ function AdminManageWorkoutPlansPage() {
 
       <CreateButtonStyled onClick={handleOpenCreatePlanModal}>Adicionar Novo Plano de Treino</CreateButtonStyled>
 
-      {workoutPlans.length > 0 ? workoutPlans.sort((a,b) => a.order - b.order).map(plan => ( // Adicionado sort para planos
+      {workoutPlans.length > 0 ? workoutPlans.sort((a,b) => a.order - b.order).map(plan => (
         <PlanSection key={plan.id}>
           <PlanHeader>
             <h2>{plan.name} (Ordem: {plan.order})</h2>
@@ -442,9 +451,9 @@ function AdminManageWorkoutPlansPage() {
           <ActionButton
             primary
             small
+            noMarginLeft
             onClick={() => handleOpenAddExerciseModal(plan.id)}
             style={{ marginBottom: '15px' }}
-            noMarginLeft // Adicionada prop para remover margem esquerda se necessário
           >
             Adicionar Exercício a Este Plano
           </ActionButton>
@@ -454,7 +463,6 @@ function AdminManageWorkoutPlansPage() {
               <ExerciseItem key={item.id}>
                 <div className="exercise-info">
                   <p><strong>{item.exerciseDetails?.name || 'Exercício Desconhecido'}</strong> (Ordem: {item.order})</p>
-                  {/* Botões de Ver Imagem/Vídeo */}
                   <div className="exercise-media-buttons">
                     {item.exerciseDetails?.imageUrl && (
                       <ActionButton
@@ -469,13 +477,12 @@ function AdminManageWorkoutPlansPage() {
                       <ActionButton
                         small
                         secondary
-                        onClick={() => handleOpenMediaModal('video', item.exerciseDetails.videoUrl, item.exerciseDetails.name)}
+                        onClick={() => handleOpenMediaModal('video', item.exerciseDetails.videoUrl, item.exerciseDetails.name)} // O tipo 'video' será tratado no modal para ver se é YouTube
                       >
                         Ver Vídeo
                       </ActionButton>
                     )}
                   </div>
-                  {/* Fim dos Botões de Média */}
                   {item.sets !== null && item.sets !== undefined && <p><span>Séries:</span> {item.sets}</p>}
                   {item.reps && <p><span>Reps:</span> {item.reps}</p>}
                   {item.durationSeconds !== null && item.durationSeconds !== undefined ? <p><span>Duração:</span> {item.durationSeconds}s</p> : null}
@@ -494,6 +501,7 @@ function AdminManageWorkoutPlansPage() {
         <NoItemsText>Nenhum plano de treino definido para este treino. Crie um!</NoItemsText>
       )}
 
+      {/* Modal para Criar/Editar WorkoutPlan */}
       {showPlanModal && (
         <ModalOverlay onClick={() => setShowPlanModal(false)}>
           <ModalContent onClick={e => e.stopPropagation()}>
@@ -518,6 +526,7 @@ function AdminManageWorkoutPlansPage() {
         </ModalOverlay>
       )}
 
+      {/* Modal para Adicionar/Editar WorkoutPlanExercise */}
       {showExerciseModal && (
         <ModalOverlay onClick={() => setShowExerciseModal(false)}>
           <ModalContent onClick={e => e.stopPropagation()}>
@@ -560,15 +569,16 @@ function AdminManageWorkoutPlansPage() {
         </ModalOverlay>
       )}
 
+      {/* Modal para Visualizar Imagem/Vídeo */}
       {showMediaModal && mediaModalContent.src && (
         <ModalOverlay onClick={handleCloseMediaModal} style={{ zIndex: 1060 }}>
           <ModalContent
             onClick={e => e.stopPropagation()}
             style={{
               maxWidth: mediaModalContent.type === 'image' ? '80vw' : '700px',
-              width: mediaModalContent.type === 'video' ? '80vw' : 'auto',
+              width: mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube_video' ? '80vw' : 'auto', // Ajuste para incluir youtube_video
               maxHeight: '90vh',
-              padding: mediaModalContent.type === 'video' ? '20px' : '5px',
+              padding: (mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube_video') ? '20px' : '5px',
               backgroundColor: '#181818',
               display: 'flex', flexDirection: 'column', justifyContent: 'center'
             }}
@@ -587,25 +597,50 @@ function AdminManageWorkoutPlansPage() {
                 style={{ display: 'block', maxWidth: '100%', maxHeight: 'calc(90vh - 40px)', margin: 'auto', borderRadius: '4px' }}
               />
             )}
-            {mediaModalContent.type === 'video' && (
-              <video
-                id="media-modal-video"
-                src={mediaModalContent.src}
-                controls
-                autoPlay
-                style={{ display: 'block', width: '100%', maxHeight: 'calc(90vh - 70px)', borderRadius: '4px' }}
-                onError={(e) => {
-                  console.error("Erro ao carregar vídeo:", mediaModalContent.src, e);
-                  setMediaModalContent(prev => ({ ...prev, type: 'video_error' }));
-                }}
-              >
-                O teu navegador não suporta o elemento de vídeo. Podes tentar descarregar <a href={mediaModalContent.src} download style={{color: '#D4AF37'}}>aqui</a>.
-              </video>
-            )}
+            
+            {/* Lógica para Vídeo (YouTube ou Direto) */}
+            {(mediaModalContent.type === 'video') && (() => {
+              const youtubeVideoId = getYouTubeVideoId(mediaModalContent.src);
+              if (youtubeVideoId) {
+                // Renderiza iframe para YouTube
+                return (
+                  <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', maxWidth: '100%', background: '#000' }}>
+                    <iframe
+                      id="media-modal-video-iframe" // Adicionado ID para possível referência
+                      src={`https://www.youtube.com/watch?v=tXflBB70v-s${youtubeVideoId}?autoplay=1`}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                    ></iframe>
+                  </div>
+                );
+              } else {
+                // Renderiza elemento <video> para links diretos
+                return (
+                  <video
+                    id="media-modal-video"
+                    src={mediaModalContent.src}
+                    controls
+                    autoPlay
+                    style={{ display: 'block', width: '100%', maxHeight: 'calc(90vh - 70px)', borderRadius: '4px' }}
+                    onError={(e) => {
+                      console.error("Erro ao carregar vídeo direto:", mediaModalContent.src, e);
+                      setMediaModalContent(prev => ({ ...prev, type: 'video_error', originalType: 'video' }));
+                    }}
+                  >
+                    O teu navegador não suporta o elemento de vídeo. Podes tentar descarregar <a href={mediaModalContent.src} download style={{color: '#D4AF37'}}>aqui</a>.
+                  </video>
+                );
+              }
+            })()}
+
             {mediaModalContent.type === 'video_error' && (
               <div style={{ padding: '20px', textAlign: 'center', color: 'white' }}>
                 <p style={{ color: '#FF6B6B' }}>Não foi possível carregar o vídeo.</p>
                 <p>URL: <a href={mediaModalContent.src} target="_blank" rel="noopener noreferrer" style={{ color: '#D4AF37' }}>{mediaModalContent.src}</a></p>
+                {mediaModalContent.originalType === 'video' && <p>(Verifica se o URL é um link direto para um ficheiro de vídeo como .mp4 ou um link válido do YouTube)</p>}
               </div>
             )}
           </ModalContent>
