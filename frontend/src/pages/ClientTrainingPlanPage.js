@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService';
 import { getAllTrainings } from '../services/trainingService';
 import { FaImage, FaVideo, FaTimes, FaArrowLeft } from 'react-icons/fa'; // Ícones
+import { ThemeProvider } from 'styled-components';
 
 // --- Definições de Cores e Tema (Exemplo) ---
 const theme = {
@@ -544,6 +545,6 @@ export default ClientTrainingPlanPage;
 
 // Adiciona isto no topo do ficheiro, fora do componente, se ainda não tiveres `styled-components` a importar `ThemeProvider`
 // ou se não tiveres um ficheiro de tema global.
-import { ThemeProvider } from 'styled-components';
+
 
 // ... (o resto das tuas importações e código)
