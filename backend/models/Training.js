@@ -56,8 +56,16 @@ module.exports = (sequelize) => {
       allowNull: false,
       as: 'instructor',
     });
+
+    Training.hasMany(models.WorkoutPlan, {
+      foreignKey: 'trainingId',
+      as: 'workoutPlans', // training.getWorkoutPlans()
+      onDelete: 'CASCADE', // Se o treino for apagado, os seus planos também
+    });
     // A associação Staff.hasMany(models.Training, ...) já deve estar no Staff.js
   };
+
+  
 
   return Training;
 };

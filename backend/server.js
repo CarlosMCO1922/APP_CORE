@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 
 // --- ROTAS ---
 const authRoutes = require('./routes/authRoutes');
-app.use('/auth', authRoutes);
+app.use('api/auth', authRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/users', userRoutes);
 const trainingRoutes = require('./routes/trainingRoutes');
@@ -28,7 +28,11 @@ app.use('/appointments', appointmentRoutes);
 const staffRoutes = require('./routes/staffRoutes');
 app.use('/staff', staffRoutes);
 const paymentRoutes = require('./routes/paymentRoutes'); 
-app.use('/payments', paymentRoutes);      
+app.use('/payments', paymentRoutes);
+const exerciseRoutes = require('./routes/exerciseRoutes');
+app.use('/exercises', exerciseRoutes);
+const workoutPlanRoutes = require('./routes/workoutPlanRoutes');
+app.use('/api/workout-plans', workoutPlanRoutes);
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
 const { notFound, errorHandler } = require('./middleware/errorHandler');
@@ -41,7 +45,7 @@ app.use(errorHandler);
 
 // Sincronizar a base de dados (cria as tabelas e as associações se não existirem)
 // Usa db.sequelize em vez de apenas sequelize
-db.sequelize.sync({ force: false }) // force: true irá apagar e recriar as tabelas. Cuidado!
+db.sequelize.sync({ force: false}) // force: true irá apagar e recriar as tabelas. Cuidado!
   .then(() => {
     console.log('Base de dados sincronizada com sucesso.');
     // Podes adicionar aqui lógica para criar um utilizador admin inicial se não existir

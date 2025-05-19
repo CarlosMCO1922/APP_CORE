@@ -1,17 +1,17 @@
 // src/pages/admin/AdminManageTrainingsPage.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // useNavigate importado
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { 
-    getAllTrainings, 
-    adminCreateTraining, 
-    adminUpdateTraining, 
-    adminDeleteTraining 
+import {
+    getAllTrainings,
+    adminCreateTraining,
+    adminUpdateTraining,
+    adminDeleteTraining
 } from '../../services/trainingService';
-import { adminGetAllStaff } from '../../services/staffService'; // Para listar instrutores
+import { adminGetAllStaff } from '../../services/staffService';
 
-// --- Reutilizar Styled Components ---
+// --- Styled Components (Reutilizados ou adaptados) ---
 const PageContainer = styled.div`
   background-color: #1A1A1A; color: #E0E0E0; min-height: 100vh;
   padding: 20px 40px; font-family: 'Inter', sans-serif;
@@ -28,9 +28,9 @@ const Table = styled.table`
 const ActionButton = styled.button`
   margin-right: 8px; padding: 6px 10px; font-size: 0.85rem; border-radius: 5px;
   cursor: pointer; border: none; transition: background-color 0.2s ease;
-  background-color: ${props => props.danger ? '#D32F2F' : (props.secondary ? '#555' : '#D4AF37')};
-  color: ${props => props.danger ? 'white' : (props.secondary ? '#E0E0E0' : '#1A1A1A')};
-  &:hover { background-color: ${props => props.danger ? '#C62828' : (props.secondary ? '#666' : '#e6c358')}; }
+  background-color: ${props => props.danger ? '#D32F2F' : (props.secondary ? '#555' : (props.plans ? '#007bff' : '#D4AF37'))}; // Cor diferente para Gerir Planos
+  color: ${props => (props.danger || props.plans) ? 'white' : (props.secondary ? '#E0E0E0' : '#1A1A1A')};
+  &:hover { background-color: ${props => props.danger ? '#C62828' : (props.secondary ? '#666' : (props.plans ? '#0056b3' : '#e6c358'))}; }
   &:disabled { background-color: #404040; color: #777; cursor: not-allowed; }
 `;
 const TopActionsContainer = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; `;
@@ -61,12 +61,12 @@ const ModalButton = styled.button`
   &:hover { background-color: ${props => props.primary ? '#e6c358' : '#666'}; }
   &:disabled { background-color: #404040; color: #777; cursor: not-allowed; }
 `;
-const CloseButton = styled.button` 
-  position: absolute; top: 15px; right: 20px; 
-  background: transparent; border: none; 
+const CloseButton = styled.button`
+  position: absolute; top: 15px; right: 20px;
+  background: transparent; border: none;
   color: #aaa; font-size: 1.8rem; cursor: pointer;
   line-height: 1; padding: 0;
-  &:hover { color: #fff; } 
+  &:hover { color: #fff; }
 `;
 
 const initialTrainingFormState = {
@@ -76,11 +76,12 @@ const initialTrainingFormState = {
   time: '',
   capacity: 10,
   instructorId: '',
-  durationMinutes: 45, // Adicionado o default do modelo
+  durationMinutes: 45,
 };
 
 const AdminManageTrainingsPage = () => {
   const { authState } = useAuth();
+  const navigate = useNavigate(); // Adicionado useNavigate
   const [trainings, setTrainings] = useState([]);
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +133,7 @@ const AdminManageTrainingsPage = () => {
       name: training.name,
       description: training.description || '',
       date: training.date,
-      time: training.time.substring(0,5),
+      time: training.time.substring(0,5), // Assegurar formato HH:MM
       capacity: training.capacity,
       instructorId: training.instructorId || (training.instructor?.id || ''),
       durationMinutes: training.durationMinutes || 45,
@@ -191,7 +192,7 @@ const AdminManageTrainingsPage = () => {
         await adminCreateTraining(dataToSend, authState.token);
         setSuccessMessage('Treino criado com sucesso!');
       }
-      fetchPageData(); 
+      fetchPageData();
       handleCloseModal();
     } catch (err) {
       setModalError(err.message || `Falha ao ${isEditing ? 'atualizar' : 'criar'} treino.`);
@@ -201,7 +202,7 @@ const AdminManageTrainingsPage = () => {
   };
 
   const handleDeleteTraining = async (trainingId) => {
-    if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}? Esta ação não pode ser desfeita.`)) {
+    if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}? Esta ação não pode ser desfeita e eliminará também os planos de treino associados.`)) {
       return;
     }
     setError('');
@@ -214,7 +215,7 @@ const AdminManageTrainingsPage = () => {
       setError(err.message || 'Falha ao eliminar treino.');
     }
   };
-  
+
   if (loading && !showModal) {
     return <PageContainer><LoadingText>A carregar lista de treinos...</LoadingText></PageContainer>;
   }
@@ -241,7 +242,8 @@ const AdminManageTrainingsPage = () => {
             <th>Capacidade</th>
             <th>Inscritos</th>
             <th>Instrutor</th>
-            <th>Ações</th>
+            <th>Ações do Treino</th> {/* Coluna de ações do treino */}
+            <th>Planos de Treino</th> {/* Nova coluna para planos */}
           </tr>
         </thead>
         <tbody>
@@ -250,23 +252,28 @@ const AdminManageTrainingsPage = () => {
               <td>{training.id}</td>
               <td>{training.name}</td>
               <td>{new Date(training.date).toLocaleDateString('pt-PT')}</td>
-              <td>{training.time.substring(0,5)}</td>
+              <td>{training.time ? training.time.substring(0,5) : 'N/A'}</td>
               <td>{training.durationMinutes} min</td>
               <td>{training.capacity}</td>
-              <td>{training.participantsCount || training.participants?.length || 0}</td>
+              <td>{training.participantsCount !== undefined ? training.participantsCount : (training.participants?.length || 0)}</td>
               <td>{training.instructor ? `${training.instructor.firstName} ${training.instructor.lastName}` : 'N/A'}</td>
-              <td>
+              <td> {/* Ações específicas do treino */}
                 <ActionButton secondary onClick={() => handleOpenEditModal(training)}>
-                  Editar
+                  Editar Treino
                 </ActionButton>
                 <ActionButton danger onClick={() => handleDeleteTraining(training.id)}>
-                  Eliminar
+                  Eliminar Treino
+                </ActionButton>
+              </td>
+              <td> {/* Nova célula para o botão de Gerir Planos */}
+                <ActionButton plans onClick={() => navigate(`/admin/trainings/${training.id}/manage-plans`)}>
+                  Gerir Planos
                 </ActionButton>
               </td>
             </tr>
           )) : (
             <tr>
-              <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>Nenhum treino encontrado.</td>
+              <td colSpan="10" style={{ textAlign: 'center', padding: '20px' }}>Nenhum treino encontrado.</td> {/* Ajustado colSpan */}
             </tr>
           )}
         </tbody>
@@ -281,10 +288,10 @@ const AdminManageTrainingsPage = () => {
             <ModalForm onSubmit={handleFormSubmit}>
               <ModalLabel htmlFor="name">Nome do Treino</ModalLabel>
               <ModalInput type="text" name="name" id="name" value={currentTrainingData.name} onChange={handleFormChange} required />
-              
+
               <ModalLabel htmlFor="description">Descrição</ModalLabel>
               <ModalTextarea name="description" id="description" value={currentTrainingData.description} onChange={handleFormChange} />
-              
+
               <ModalLabel htmlFor="date">Data</ModalLabel>
               <ModalInput type="date" name="date" id="date" value={currentTrainingData.date} onChange={handleFormChange} required />
 

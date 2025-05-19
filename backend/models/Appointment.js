@@ -33,7 +33,8 @@ module.exports = (sequelize) => {
         'cancelada_pelo_cliente',
         'cancelada_pelo_staff',
         'não_compareceu',
-        'pendente_aprovacao_staff'
+        'pendente_aprovacao_staff',
+        'rejeitada_pelo_staff',
       ),
       defaultValue: 'disponível',
       allowNull: false,

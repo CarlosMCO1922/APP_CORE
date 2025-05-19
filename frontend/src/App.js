@@ -18,6 +18,7 @@ import AdminManageTrainingsPage from './pages/admin/AdminManageTrainingsPage';
 import AdminManageAppointmentsPage from './pages/admin/AdminManageAppointmentsPage';
 import AdminManagePaymentsPage from './pages/admin/AdminManagePaymentsPage';
 import StaffManageRequestsPage from './pages/admin/StaffManageRequestsPage';
+import AdminManageWorkoutPlansPage from './pages/admin/AdminManageWorkoutPlansPage';
 
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
@@ -84,6 +85,7 @@ function App() {
             <Route path="/admin/manage-users" element={<AdminManageUsersPage />} />
             <Route path="/admin/manage-staff" element={<AdminManageStaffPage />} />
             <Route path="/admin/manage-trainings" element={<AdminManageTrainingsPage />} />
+            <Route path="/admin/trainings/:trainingId/manage-plans" element={<AdminManageWorkoutPlansPage />} />
             <Route path="/admin/manage-appointments" element={<AdminManageAppointmentsPage />} />
             <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
             <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
