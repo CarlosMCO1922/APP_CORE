@@ -237,6 +237,7 @@ function Navbar() {
               <DropdownLink to="/admin/manage-trainings" onClick={() => setManagementDropdownOpen(false)}><FaDumbbell /> Treinos</DropdownLink>
               <DropdownLink to="/admin/manage-appointments" onClick={() => setManagementDropdownOpen(false)}><FaCalendarCheck /> Consultas</DropdownLink>
               <DropdownLink to="/admin/manage-payments" onClick={() => setManagementDropdownOpen(false)}><FaMoneyBillWave /> Pagamentos</DropdownLink>
+              <DropdownLink to="/admin/manage-exercises" onClick={() => setManagementDropdownOpen(false)}><FaDumbbell /> Exercícios Base</DropdownLink>
             </DropdownContent>
           </DropdownContainer>
         )}

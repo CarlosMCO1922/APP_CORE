@@ -19,6 +19,7 @@ import AdminManageAppointmentsPage from './pages/admin/AdminManageAppointmentsPa
 import AdminManagePaymentsPage from './pages/admin/AdminManagePaymentsPage';
 import StaffManageRequestsPage from './pages/admin/StaffManageRequestsPage';
 import AdminManageWorkoutPlansPage from './pages/admin/AdminManageWorkoutPlansPage';
+import AdminManageExercisesPage from './pages/admin/AdminManageExercisesPage'; 
 
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
@@ -89,6 +90,7 @@ function App() {
             <Route path="/admin/manage-appointments" element={<AdminManageAppointmentsPage />} />
             <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
             <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
+            <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
              {/* Adicionar aqui outras rotas específicas de staff se necessário */}
           </Route>
 

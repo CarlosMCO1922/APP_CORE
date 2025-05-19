@@ -108,7 +108,10 @@ const AdminDashboardPage = () => {
           <h2>Gerir Pagamentos</h2>
           <p>Registar e acompanhar pagamentos dos clientes.</p>
         </AdminNavLinkCard>
-
+        <AdminNavLinkCard to="/admin/manage-exercises"> {/* <-- ADICIONAR ESTE CARD */}
+          <h2>Gerir Exercícios Base</h2>
+          <p>Criar e editar os exercícios disponíveis para os planos.</p>
+        </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/appointment-requests">
           <h2>Pedidos de Consulta</h2>
           <p>Ver e responder a pedidos de consulta pendentes.</p>
