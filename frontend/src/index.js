@@ -1,14 +1,13 @@
 // src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css'; // Teu CSS global base
+import './index.css';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { ThemeProvider, createGlobalStyle } from 'styled-components'; // Importar ThemeProvider e createGlobalStyle
-import { theme } from './theme'; // Importar o teu tema
+import { ThemeProvider, createGlobalStyle } from 'styled-components'; // Importar
+import { theme } from './theme'; // O teu ficheiro theme.js
 
-// Opcional: Mover GlobalStyle para theme.js ou mantê-lo aqui
 const GlobalStyle = createGlobalStyle`
   body {
     background-color: ${props => props.theme.colors.background};
@@ -26,8 +25,8 @@ const GlobalStyle = createGlobalStyle`
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}> {/* Envolver AuthProvider e App */}
-      <GlobalStyle /> {/* Aplicar estilos globais que dependem do tema */}
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
       <AuthProvider>
         <App />
       </AuthProvider>

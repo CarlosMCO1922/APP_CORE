@@ -1,8 +1,8 @@
 // src/theme.js
 export const theme = {
   colors: {
-    primary: '#D4AF37', // coreGold
-    background: '#1A1A1A', // coreBlack
+    primary: '#D4AF37',
+    background: '#1A1A1A',
     cardBackground: '#252525',
     cardBorder: '#383838',
     textMain: '#E0E0E0',

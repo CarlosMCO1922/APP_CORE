@@ -1,19 +1,18 @@
 // src/pages/ClientTrainingPlanPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import styled, { keyframes, createGlobalStyle } from 'styled-components';
+import styled, { keyframes, createGlobalStyle } from 'styled-components'; // createGlobalStyle pode ser útil para estilos de body específicos da página, se não estiver no global
 import { useAuth } from '../context/AuthContext';
 import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService';
 import { getAllTrainings } from '../services/trainingService';
-import { FaImage, FaVideo, FaTimes, FaArrowLeft } from 'react-icons/fa'; // Ícones
-import { ThemeProvider } from 'styled-components';
+import { FaImage, FaVideo, FaTimes, FaArrowLeft } from 'react-icons/fa';
 
-// --- Styled Components Melhorados ---
+// --- Styled Components Melhorados (usam props.theme que virá do ThemeProvider global) ---
 const PageContainer = styled.div`
   background-color: ${props => props.theme.colors.background};
   color: ${props => props.theme.colors.textMain};
   min-height: 100vh;
-  padding: 30px clamp(20px, 5vw, 60px); // Padding responsivo
+  padding: 30px clamp(20px, 5vw, 60px);
   font-family: ${props => props.theme.fonts.main};
 `;
 
@@ -25,7 +24,7 @@ const HeaderContainer = styled.div`
 `;
 
 const MainTitle = styled.h1`
-  font-size: clamp(1.8rem, 4vw, 2.5rem); // Fonte responsiva
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
   color: ${props => props.theme.colors.primary};
   margin-bottom: 8px;
   font-weight: 700;
@@ -49,10 +48,10 @@ const BackLink = styled(Link)`
   padding: 8px 15px;
   border-radius: ${props => props.theme.borderRadius};
   transition: background-color 0.2s, color 0.2s;
-  
+
   &:hover {
     background-color: ${props => props.theme.colors.cardBackground};
-    color: #fff;
+    color: #fff; // Ajustar se necessário
   }
   svg {
     margin-right: 5px;
@@ -74,10 +73,11 @@ const LoadingText = styled(MessageBase)` color: ${props => props.theme.colors.pr
 const ErrorText = styled(MessageBase)` color: ${props => props.theme.colors.error}; background-color: ${props => props.theme.colors.errorBg}; border-color: ${props => props.theme.colors.error};`;
 const NoItemsText = styled(MessageBase)` color: ${props => props.theme.colors.textMuted}; font-style: italic; border-color: transparent;`;
 
+
 const PlanSection = styled.section`
   background-color: ${props => props.theme.colors.cardBackground};
-  padding: clamp(20px, 4vw, 30px); // Padding responsivo
-  border-radius: 12px; // Um pouco mais arredondado
+  padding: clamp(20px, 4vw, 30px);
+  border-radius: 12px;
   margin-bottom: 40px;
   box-shadow: ${props => props.theme.boxShadow};
   border: 1px solid ${props => props.theme.colors.cardBorder};
@@ -122,7 +122,7 @@ const ExerciseList = styled.ul`
 `;
 
 const ExerciseItem = styled.li`
-  background-color: #1F1F1F; // Cor de fundo ligeiramente diferente para o item
+  background-color: #1F1F1F;
   padding: 20px;
   border-radius: ${props => props.theme.borderRadius};
   margin-bottom: 20px;
@@ -156,7 +156,7 @@ const ExerciseItem = styled.li`
     border-radius: 15px;
     font-weight: 500;
   }
-  
+
   .exercise-details p {
     margin: 5px 0 10px;
     font-size: 0.95rem;
@@ -217,7 +217,7 @@ const fadeIn = keyframes`
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0, 0, 0, 0.9); /* Mais opaco */
+  background-color: rgba(0, 0, 0, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -226,43 +226,46 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: #1F1F1F; /* Fundo escuro para o conteúdo do modal */
+  background-color: #1F1F1F;
   padding: 0;
   border-radius: 10px;
   width: auto;
   max-width: 90vw;
-  max-height: 90vh; /* Altura máxima do modal */
+  max-height: 90vh;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   position: relative;
   animation: ${fadeIn} 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
   display: flex;
-  flex-direction: column; /* Para organizar título e conteúdo */
-  
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
   img, video, iframe {
     display: block;
     max-width: 100%;
-    max-height: calc(85vh - 50px); /* Ajustar para caber com padding e possível título */
+    max-height: calc(85vh - 50px);
     border-radius: 6px;
-    margin: auto; /* Centralizar se não preencher todo o espaço */
+    margin: auto;
   }
 
   iframe {
     aspect-ratio: 16 / 9;
     width: 100%;
-    min-width: 300px; /* Ajuste para telas menores */
+    min-width: 300px;
     max-width: 800px;
-    border: none; /* Remover borda do iframe */
+    border: none;
   }
 
   .video-link-container {
     padding: 10px 20px;
     text-align: center;
     font-size: 0.85rem;
-    color: ${props => props.theme.colors.textMuted};
+    color: ${props => props.theme.colors.textMuted}; // Corrigido para usar props.theme
     background-color: #2a2a2a;
-    border-top: 1px solid ${props => props.theme.colors.cardBorder};
+    border-top: 1px solid ${props => props.theme.colors.cardBorder}; // Corrigido para usar props.theme
+    width: 100%;
     a {
-      color: ${props => props.theme.colors.primary};
+      color: ${props => props.theme.colors.primary}; // Corrigido para usar props.theme
       text-decoration: underline;
       &:hover {
         color: #fff;
@@ -273,11 +276,11 @@ const ModalContent = styled.div`
 
 const CloseButton = styled.button`
   position: absolute;
-  top: -15px; /* Posicionar um pouco para fora */
+  top: -15px;
   right: -15px;
-  background: ${props => props.theme.colors.primary};
-  border: 2px solid ${props => props.theme.colors.background};
-  color: ${props => props.theme.colors.textDark};
+  background: ${props => props.theme.colors.primary}; // Corrigido para usar props.theme
+  border: 2px solid ${props => props.theme.colors.background}; // Corrigido para usar props.theme
+  color: ${props => props.theme.colors.textDark}; // Corrigido para usar props.theme
   font-size: 1.2rem;
   cursor: pointer;
   border-radius: 50%;
@@ -363,9 +366,7 @@ function ClientTrainingPlanPage() {
     if (mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube_video') {
       const iframe = document.getElementById('media-modal-video-iframe');
       if (iframe && iframe.contentWindow) {
-        // Tenta pausar o vídeo do YouTube (pode não funcionar sempre devido a restrições de cross-origin)
-        // A melhor forma é recarregar o src para parar o vídeo
-        iframe.src = iframe.src.replace("&autoplay=1", ""); // Remove autoplay ou define src para ''
+        iframe.src = iframe.src.replace("&autoplay=1", "");
       }
       const videoElement = document.getElementById('media-modal-video');
       if (videoElement && videoElement.tagName === 'VIDEO') {
@@ -375,9 +376,17 @@ function ClientTrainingPlanPage() {
     setMediaModalContent({ type: '', src: '', alt: '' });
   };
 
-  if (loading) return <PageContainer theme={theme}><LoadingText>A carregar plano de treino...</LoadingText></PageContainer>;
+  // Não é necessário o ThemeProvider aqui se estiver globalmente no index.js ou App.js
+  // Apenas o GlobalStyle se quiseres estilos específicos para esta página que usem o tema
+  // if (loading) return <PageContainer><LoadingText>A carregar plano de treino...</LoadingText></PageContainer>;
 
+  // Se o ThemeProvider estiver global, o return principal não precisa de o envolver.
+  // Apenas se NÃO estiver global, aí sim, esta página precisaria do seu próprio ThemeProvider.
+
+  // Assumindo que o ThemeProvider está global no src/index.js
   return (
+    <>
+      {/* <GlobalStyle /> Se quiseres estilos de body específicos SÓ para esta página */}
       <PageContainer>
         <HeaderContainer>
           <MainTitle>Plano de Treino</MainTitle>
@@ -387,9 +396,11 @@ function ClientTrainingPlanPage() {
           <FaArrowLeft /> Voltar ao Painel
         </BackLink>
 
+        {loading && <LoadingText>A carregar plano de treino...</LoadingText>}
         {error && <ErrorText>{error}</ErrorText>}
+        {!loading && !error && workoutPlans.length === 0 && <NoItemsText>Este treino ainda não tem um plano definido ou não tens acesso.</NoItemsText>}
 
-        {workoutPlans.length > 0 ? workoutPlans.sort((a,b) => a.order - b.order).map(plan => (
+        {!loading && !error && workoutPlans.length > 0 && workoutPlans.sort((a,b) => a.order - b.order).map(plan => (
           <PlanSection key={plan.id}>
             <PlanHeader>
               <h2>{plan.name}</h2>
@@ -434,13 +445,11 @@ function ClientTrainingPlanPage() {
               )) : <NoItemsText>Nenhum exercício neste plano.</NoItemsText>}
             </ExerciseList>
           </PlanSection>
-        )) : (
-          !error && <NoItemsText>Este treino ainda não tem um plano definido ou não tens acesso.</NoItemsText>
-        )}
+        ))}
 
         {showMediaModal && mediaModalContent.src && (
           <ModalOverlay onClick={handleCloseMediaModal}>
-              <ModalContent onClick={e => e.stopPropagation()}>
+              <ModalContent onClick={e => e.stopPropagation()} >
                   <CloseButton onClick={handleCloseMediaModal}><FaTimes /></CloseButton>
                   {mediaModalContent.type === 'image' && (
                   <img
@@ -489,8 +498,9 @@ function ClientTrainingPlanPage() {
                   })()}
                   {mediaModalContent.type === 'video_error' && (
                   <div style={{ padding: '20px', textAlign: 'center', color: 'white' }}>
-                      <p style={{ color: theme.colors.error, fontSize: '1.1rem' }}>Não foi possível carregar o vídeo.</p>
-                      <p style={{fontSize: '0.9rem'}}>URL: <a href={mediaModalContent.src} target="_blank" rel="noopener noreferrer" style={{ color: theme.colors.primary }}>{mediaModalContent.src}</a></p>
+                      {/* Aceder ao tema através de props.theme se o styled component pai tiver acesso, ou hardcode se for uma emergência */}
+                      <p style={{ color: (props) => props.theme ? props.theme.colors.error : '#FF6B6B', fontSize: '1.1rem' }}>Não foi possível carregar o vídeo.</p>
+                      <p style={{fontSize: '0.9rem'}}>URL: <a href={mediaModalContent.src} target="_blank" rel="noopener noreferrer" style={{ color: (props) => props.theme ? props.theme.colors.primary : '#D4AF37' }}>{mediaModalContent.src}</a></p>
                       {mediaModalContent.originalType === 'video' && <p style={{fontSize: '0.9rem'}}>(Verifica se o URL é um link direto para um ficheiro de vídeo como .mp4 ou um link válido do YouTube)</p>}
                   </div>
                   )}
@@ -498,13 +508,8 @@ function ClientTrainingPlanPage() {
           </ModalOverlay>
         )}
       </PageContainer>
+    </>
   );
 }
 
 export default ClientTrainingPlanPage;
-
-// Adiciona isto no topo do ficheiro, fora do componente, se ainda não tiveres `styled-components` a importar `ThemeProvider`
-// ou se não tiveres um ficheiro de tema global.
-
-
-// ... (o resto das tuas importações e código)
