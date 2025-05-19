@@ -134,9 +134,15 @@ const AdminManageAppointmentsPage = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setCurrentAppointmentData(prev => ({ ...prev, [name]: value }));
-  };
-
+    setCurrentAppointmentData(prev => {
+        const newState = { ...prev, [name]: value };
+        // Se o cliente é removido (selecionado "Nenhum"), limpa o custo total
+        if (name === 'userId' && value === '') {
+            newState.totalCost = '';
+        }
+        return newState;
+    });
+};
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true);
@@ -267,12 +273,13 @@ const AdminManageAppointmentsPage = () => {
             <ModalTitle>{isEditing ? 'Editar Consulta' : 'Criar Nova Consulta'}</ModalTitle>
             {modalError && <ErrorText style={{marginBottom: '15px'}}>{modalError}</ErrorText>}
             <ModalForm onSubmit={handleFormSubmit}>
+              {/* ... campos Data, Hora, Duração, Profissional ... */}
               <ModalLabel htmlFor="date">Data*</ModalLabel>
               <ModalInput type="date" name="date" id="date" value={currentAppointmentData.date} onChange={handleFormChange} required />
 
               <ModalLabel htmlFor="time">Hora (HH:MM)*</ModalLabel>
               <ModalInput type="time" name="time" id="time" value={currentAppointmentData.time} onChange={handleFormChange} required />
-
+              
               <ModalLabel htmlFor="durationMinutes">Duração (minutos)*</ModalLabel>
               <ModalInput type="number" name="durationMinutes" id="durationMinutes" value={currentAppointmentData.durationMinutes} onChange={handleFormChange} required min="1" />
 
@@ -293,9 +300,10 @@ const AdminManageAppointmentsPage = () => {
               </ModalSelect>
 
               {/* Campo Custo Total - aparece se um cliente for selecionado */}
-              {currentAppointmentData.userId && (
+              {/* CORREÇÃO DA CONDIÇÃO: currentAppointmentData.userId deve ser "truthy" (não apenas existir) */}
+              {currentAppointmentData.userId && currentAppointmentData.userId !== '' && (
                 <>
-                  <ModalLabel htmlFor="totalCost">Custo Total da Consulta (EUR)*</ModalLabel>
+                  <ModalLabel htmlFor="totalCost">Custo Total da Consulta (EUR){currentAppointmentData.userId ? '*' : ''}</ModalLabel>
                   <ModalInput
                     type="number"
                     name="totalCost"
@@ -304,15 +312,16 @@ const AdminManageAppointmentsPage = () => {
                     onChange={handleFormChange}
                     placeholder="Ex: 50.00"
                     step="0.01"
-                    min="0.01"
-                    required={!!currentAppointmentData.userId}
+                    min="0.01" // Permitir custo zero se for o caso, ou ajustar para 0.01 se for o mínimo
+                    // O 'required' no backend é mais importante aqui se userId estiver presente.
+                    // A validação no handleSubmit já trata disto.
                   />
                 </>
               )}
-
+              
               <ModalLabel htmlFor="status">Status*</ModalLabel>
               <ModalSelect name="status" id="status" value={currentAppointmentData.status} onChange={handleFormChange} required>
-                {appointmentStatuses.map(statusValue => ( // Alterado 'status' para 'statusValue' para evitar conflito de nome
+                {appointmentStatuses.map(statusValue => (
                   <option key={statusValue} value={statusValue}>{statusValue.charAt(0).toUpperCase() + statusValue.slice(1).replace(/_/g, ' ')}</option>
                 ))}
               </ModalSelect>
