@@ -7,10 +7,10 @@ import { getMyBookings } from '../services/userService';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
-  background-color: #1A1A1A; 
-  color: #E0E0E0; 
+  background-color: #1A1A1A;
+  color: #E0E0E0;
   min-height: 100vh;
-  padding: 20px 40px; /* Aumentado padding lateral */
+  padding: 20px 40px;
   font-family: 'Inter', sans-serif;
 `;
 
@@ -22,7 +22,7 @@ const Header = styled.header`
 
 const Title = styled.h1`
   font-size: 2.5rem;
-  color: #D4AF37; 
+  color: #D4AF37;
   margin-bottom: 0.5rem;
 `;
 
@@ -32,13 +32,13 @@ const WelcomeMessage = styled.p`
 `;
 
 const Section = styled.section`
-  margin-bottom: 40px; /* Aumentado espaço entre secções */
+  margin-bottom: 40px;
 `;
 
 const SectionTitle = styled.h2`
   font-size: 1.8rem;
-  color: #D4AF37; 
-  margin-bottom: 20px; /* Aumentado espaço abaixo do título da secção */
+  color: #D4AF37;
+  margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid #333;
 `;
@@ -46,38 +46,38 @@ const SectionTitle = styled.h2`
 const BookingList = styled.ul`
   list-style: none;
   padding: 0;
-  display: grid; /* Usar grid para melhor layout dos itens */
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Layout responsivo */
-  gap: 20px; /* Espaço entre os cards */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
 `;
 
 const BookingItem = styled.li`
   background-color: #252525;
-  padding: 20px; /* Aumentado padding interno */
-  border-radius: 10px; /* Aumentado border-radius */
-  border-left: 5px solid #D4AF37; 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4); /* Sombra mais pronunciada */
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 5px solid #D4AF37;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   transition: transform 0.2s ease-in-out;
 
   &:hover {
-    transform: translateY(-3px); /* Efeito subtil ao pairar */
+    transform: translateY(-3px);
   }
 
   h3 {
     margin-top: 0;
-    margin-bottom: 10px; /* Mais espaço */
+    margin-bottom: 10px;
     color: #E0E0E0;
-    font-size: 1.25rem; /* Ligeiramente maior */
+    font-size: 1.25rem;
   }
   p {
-    margin: 8px 0; /* Mais espaço vertical */
+    margin: 8px 0;
     font-size: 0.95rem;
     color: #a0a0a0;
-    line-height: 1.5; /* Melhorar legibilidade */
+    line-height: 1.5;
   }
   span {
-    font-weight: 600; /* Ligeiramente mais bold */
-    color: #c8c8c8; /* Cor um pouco mais clara para o label */
+    font-weight: 600;
+    color: #c8c8c8;
   }
 `;
 
@@ -92,26 +92,26 @@ const ErrorText = styled.p`
   font-size: 1.1rem;
   text-align: center;
   padding: 20px;
-  color: #FF6B6B; 
-  background-color: rgba(94, 46, 46, 0.3); /* Fundo mais subtil para o erro */
+  color: #FF6B6B;
+  background-color: rgba(94, 46, 46, 0.3);
   border: 1px solid #FF6B6B;
   border-radius: 8px;
 `;
 
 const StyledLinkButton = styled(Link)`
   display: inline-block;
-  background-color: #D4AF37; 
-  color: #1A1A1A; 
-  padding: 12px 22px; /* Padding ligeiramente aumentado */
+  background-color: #D4AF37;
+  color: #1A1A1A;
+  padding: 12px 22px;
   border-radius: 8px;
   text-decoration: none;
   font-weight: bold;
-  font-size: 0.95rem; /* Ajustado */
+  font-size: 0.95rem;
   margin: 10px 10px 10px 0;
   transition: background-color 0.2s ease-in-out, transform 0.15s ease;
 
   &:hover {
-    background-color: #e6c358; 
+    background-color: #e6c358;
     transform: translateY(-2px);
   }
 `;
@@ -123,9 +123,22 @@ const NoBookingsText = styled.p`
   margin-top: 20px;
 `;
 
+// Novo estilo para o link do plano de treino
+const PlanLink = styled(Link)`
+  color: #D4AF37;
+  text-decoration: underline;
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  &:hover {
+    color: #e6c358;
+  }
+`;
+
 
 const DashboardPage = () => {
-  const { authState } = useAuth(); // Removido logout, pois está na Navbar
+  const { authState } = useAuth();
   const [bookings, setBookings] = useState({ trainings: [], appointments: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -137,8 +150,8 @@ const DashboardPage = () => {
         setError('');
         const data = await getMyBookings(authState.token);
         setBookings({
-            trainings: data.trainings || [],
-            appointments: data.appointments || []
+          trainings: data.trainings || [],
+          appointments: data.appointments || []
         });
       } catch (err) {
         setError(err.message || 'Não foi possível carregar as suas marcações.');
@@ -161,7 +174,6 @@ const DashboardPage = () => {
       <Header>
         <Title>Meu Painel CORE</Title>
         <WelcomeMessage>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</WelcomeMessage>
-        {/* O botão de logout está na Navbar, não é necessário aqui */}
       </Header>
 
       <Section>
@@ -179,9 +191,13 @@ const DashboardPage = () => {
             {bookings.trainings.map(training => (
               <BookingItem key={`train-${training.id}`}>
                 <h3>{training.name}</h3>
-                <p><span>Data:</span> {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time.substring(0,5)}</p>
+                <p><span>Data:</span> {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time.substring(0, 5)}</p>
                 <p><span>Instrutor:</span> {training.instructor?.firstName} {training.instructor?.lastName}</p>
                 <p><span>Descrição:</span> {training.description || 'Sem descrição.'}</p>
+                {/* Adicionado link para ver plano de treino */}
+                <PlanLink to={`/treinos/${training.id}/plano`}>
+                  Ver Plano de Treino
+                </PlanLink>
               </BookingItem>
             ))}
           </BookingList>
@@ -197,7 +213,7 @@ const DashboardPage = () => {
             {bookings.appointments.map(appointment => (
               <BookingItem key={`appt-${appointment.id}`}>
                 <h3>Consulta de {appointment.professional?.role === 'physiotherapist' ? 'Fisioterapia' : 'Acompanhamento'}</h3>
-                <p><span>Data:</span> {new Date(appointment.date).toLocaleDateString('pt-PT')} às {appointment.time.substring(0,5)}</p>
+                <p><span>Data:</span> {new Date(appointment.date).toLocaleDateString('pt-PT')} às {appointment.time.substring(0, 5)}</p>
                 <p><span>Profissional:</span> {appointment.professional?.firstName} {appointment.professional?.lastName}</p>
                 <p><span>Status:</span> {appointment.status?.replace(/_/g, ' ')}</p>
                 <p><span>Notas:</span> {appointment.notes || 'Sem notas adicionais.'}</p>

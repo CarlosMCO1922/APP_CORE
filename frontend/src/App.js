@@ -20,6 +20,7 @@ import AdminManagePaymentsPage from './pages/admin/AdminManagePaymentsPage';
 import StaffManageRequestsPage from './pages/admin/StaffManageRequestsPage';
 import AdminManageWorkoutPlansPage from './pages/admin/AdminManageWorkoutPlansPage';
 import AdminManageExercisesPage from './pages/admin/AdminManageExercisesPage'; 
+import ClientTrainingPlanPage from './pages/ClientTrainingPlanPage';
 
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
@@ -77,6 +78,7 @@ function App() {
             <Route path="/calendario" element={<CalendarPage />} />
             <Route path="/definicoes" element={<SettingsPage />} />
             <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
+            <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
           </Route>
 
           {/* Rotas de Staff/Admin */}
