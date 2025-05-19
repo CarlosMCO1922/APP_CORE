@@ -3,43 +3,37 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { 
-    getAllAppointments, 
-    adminCreateAppointment, 
-    adminUpdateAppointment, 
-    adminDeleteAppointment 
+import {
+    getAllAppointments,
+    adminCreateAppointment,
+    adminUpdateAppointment,
+    adminDeleteAppointment
 } from '../../services/appointmentService';
 import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
 
-// --- Reutilizar Styled Components ---
-const PageContainer = styled.div` background-color: #1A1A1A; color: #E0E0E0; min-height: 100vh; padding: 20px 40px; font-family: 'Inter', sans-serif; `;
-const Title = styled.h1` font-size: 2.2rem; color: #D4AF37; margin-bottom: 25px; `;
-const Table = styled.table` width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #252525; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5); th, td { border-bottom: 1px solid #383838; padding: 10px 12px; text-align: left; font-size: 0.9rem; } th { background-color: #303030; color: #D4AF37; font-weight: 600; } tr:last-child td { border-bottom: none; } tr:hover { background-color: #2c2c2c; } `;
-const ActionButton = styled.button` margin-right: 8px; padding: 6px 10px; font-size: 0.85rem; border-radius: 5px; cursor: pointer; border: none; transition: background-color 0.2s ease; background-color: ${props => props.danger ? '#D32F2F' : (props.secondary ? '#555' : '#D4AF37')}; color: ${props => props.danger ? 'white' : (props.secondary ? '#E0E0E0' : '#1A1A1A')}; &:hover { background-color: ${props => props.danger ? '#C62828' : (props.secondary ? '#666' : '#e6c358')}; } &:disabled { background-color: #404040; color: #777; cursor: not-allowed; } `;
-const TopActionsContainer = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; `;
-const CreateButtonStyled = styled.button` background-color: #D4AF37; color: #1A1A1A; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; transition: background-color 0.2s ease; &:hover { background-color: #e6c358; } `;
-const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: #D4AF37;`;
-const ErrorText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #FF6B6B; background-color: rgba(255,107,107,0.15); border: 1px solid #FF6B6B; border-radius: 8px; margin: 15px 0;`;
-const MessageText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #66BB6A; background-color: rgba(102,187,106,0.15); border: 1px solid #66BB6A; border-radius: 8px; margin: 15px 0;`;
-
-const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.75); display: flex; justify-content: center; align-items: center; z-index: 1000; `;
-const ModalContent = styled.div` background-color: #2C2C2C; padding: 30px 40px; border-radius: 10px; width: 100%; max-width: 550px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); position: relative; max-height: 90vh; overflow-y: auto; `;
-const ModalTitle = styled.h2` color: #D4AF37; margin-top: 0; margin-bottom: 25px; font-size: 1.6rem; `;
-const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
-const ModalLabel = styled.label` font-size: 0.9rem; color: #b0b0b0; margin-bottom: 5px; display: block; `;
-const ModalInput = styled.input` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: #D4AF37; } `;
-const ModalTextarea = styled.textarea` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; min-height: 80px; &:focus { outline: none; border-color: #D4AF37; } `;
-const ModalSelect = styled.select` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: #D4AF37; } `;
-const ModalActions = styled.div` display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; `;
-const ModalButton = styled.button` padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease; background-color: ${props => props.primary ? '#D4AF37' : '#555'}; color: ${props => props.primary ? '#1A1A1A' : '#E0E0E0'}; &:hover { background-color: ${props => props.primary ? '#e6c358' : '#666'}; } &:disabled { background-color: #404040; color: #777; cursor: not-allowed; } `;
-const CloseButton = styled.button` 
-  position: absolute; top: 15px; right: 20px; 
-  background: transparent; border: none; 
-  color: #aaa; font-size: 1.8rem; cursor: pointer;
-  line-height: 1; padding: 0;
-  &:hover { color: #fff; } 
-`;
+// --- Styled Components (Mantidos os mesmos) ---
+const PageContainer = styled.div` /* ... */ `;
+const Title = styled.h1` /* ... */ `;
+const Table = styled.table` /* ... */ `;
+const ActionButton = styled.button` /* ... */ `;
+const TopActionsContainer = styled.div` /* ... */ `;
+const CreateButtonStyled = styled.button` /* ... */ `;
+const LoadingText = styled.p` /* ... */ `;
+const ErrorText = styled.p` /* ... */ `;
+const MessageText = styled.p` /* ... */ `;
+const ModalOverlay = styled.div` /* ... */ `;
+const ModalContent = styled.div` /* ... */ `;
+const ModalTitle = styled.h2` /* ... */ `;
+const ModalForm = styled.form` /* ... */ `;
+const ModalLabel = styled.label` /* ... */ `;
+const ModalInput = styled.input` /* ... */ `;
+const ModalTextarea = styled.textarea` /* ... */ `;
+const ModalSelect = styled.select` /* ... */ `;
+const ModalActions = styled.div` /* ... */ `;
+const ModalButton = styled.button` /* ... */ `;
+const CloseButton = styled.button` /* ... */ `;
+// COPIAR OS STYLED COMPONENTS DE UMA DAS VERSÕES ANTERIORES COMPLETAS DESTA PÁGINA
 
 const initialAppointmentFormState = {
   date: '',
@@ -48,10 +42,16 @@ const initialAppointmentFormState = {
   userId: '',
   notes: '',
   status: 'disponível',
-  durationMinutes: 60, // Adicionado durationMinutes
+  durationMinutes: 60,
+  totalCost: '', // Adicionado totalCost, inicializado como string vazia
 };
 
-const appointmentStatuses = ['disponível', 'agendada', 'concluída', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'não_compareceu', 'pendente_aprovacao_staff'];
+// Os status válidos para o dropdown, incluindo o novo 'confirmada'
+const appointmentStatuses = [
+    'disponível', 'agendada', 'confirmada', 'concluída',
+    'cancelada_pelo_cliente', 'cancelada_pelo_staff',
+    'não_compareceu', 'pendente_aprovacao_staff', 'rejeitada_pelo_staff'
+];
 
 
 const AdminManageAppointmentsPage = () => {
@@ -77,7 +77,7 @@ const AdminManageAppointmentsPage = () => {
         setError('');
         setSuccessMessage('');
         const [appointmentsData, staffData, usersData] = await Promise.all([
-          getAllAppointments(authState.token, {}),
+          getAllAppointments(authState.token, {}), // Passar filtros vazios ou os que já usavas
           adminGetAllStaff(authState.token),
           adminGetAllUsers(authState.token)
         ]);
@@ -114,6 +114,7 @@ const AdminManageAppointmentsPage = () => {
       notes: appointment.notes || '',
       status: appointment.status || 'disponível',
       durationMinutes: appointment.durationMinutes || 60,
+      totalCost: appointment.totalCost === null || appointment.totalCost === undefined ? '' : String(appointment.totalCost), // Converter para string para o input
     });
     setCurrentAppointmentId(appointment.id);
     setModalError('');
@@ -143,6 +144,7 @@ const AdminManageAppointmentsPage = () => {
       userId: currentAppointmentData.userId ? parseInt(currentAppointmentData.userId, 10) : null,
       durationMinutes: parseInt(currentAppointmentData.durationMinutes, 10),
       time: currentAppointmentData.time.length === 5 ? `${currentAppointmentData.time}:00` : currentAppointmentData.time,
+      totalCost: currentAppointmentData.userId && currentAppointmentData.totalCost !== '' ? parseFloat(currentAppointmentData.totalCost) : null,
     };
 
     if (isNaN(dataToSend.staffId) || !dataToSend.staffId) {
@@ -150,8 +152,8 @@ const AdminManageAppointmentsPage = () => {
         setFormLoading(false);
         return;
     }
-    if (dataToSend.userId && isNaN(dataToSend.userId)) {
-        setModalError("ID do Cliente inválido.");
+    if (dataToSend.userId && (dataToSend.totalCost === null || dataToSend.totalCost <= 0)) {
+        setModalError("Custo total (positivo) é obrigatório ao atribuir um cliente para gerar o sinal.");
         setFormLoading(false);
         return;
     }
@@ -167,7 +169,7 @@ const AdminManageAppointmentsPage = () => {
         setSuccessMessage('Consulta atualizada com sucesso!');
       } else {
         await adminCreateAppointment(dataToSend, authState.token);
-        setSuccessMessage('Consulta criada com sucesso!');
+        setSuccessMessage('Consulta criada com sucesso! Pagamento de sinal pendente (se aplicável).');
       }
       fetchPageData();
       handleCloseModal();
@@ -217,6 +219,8 @@ const AdminManageAppointmentsPage = () => {
             <th>Duração</th>
             <th>Profissional</th>
             <th>Cliente</th>
+            <th>Custo Total</th>
+            <th>Sinal Pago?</th>
             <th>Status</th>
             <th>Ações</th>
           </tr>
@@ -230,6 +234,8 @@ const AdminManageAppointmentsPage = () => {
               <td>{appt.durationMinutes} min</td>
               <td>{appt.professional ? `${appt.professional.firstName} ${appt.professional.lastName}` : 'N/A'}</td>
               <td>{appt.client ? `${appt.client.firstName} ${appt.client.lastName}` : '(Vago)'}</td>
+              <td>{appt.totalCost ? `${Number(appt.totalCost).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}` : 'N/A'}</td>
+              <td>{appt.userId ? (appt.signalPaid ? 'Sim' : 'Não') : 'N/A'}</td>
               <td>{appt.status.replace(/_/g, ' ')}</td>
               <td>
                 <ActionButton secondary onClick={() => handleOpenEditModal(appt)}>
@@ -242,7 +248,7 @@ const AdminManageAppointmentsPage = () => {
             </tr>
           )) : (
             <tr>
-              <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>Nenhuma consulta encontrada.</td>
+              <td colSpan="10" style={{ textAlign: 'center', padding: '20px' }}>Nenhuma consulta encontrada.</td> {/* Ajustar colSpan */}
             </tr>
           )}
         </tbody>
@@ -274,11 +280,29 @@ const AdminManageAppointmentsPage = () => {
 
               <ModalLabel htmlFor="userId">Cliente (Opcional)</ModalLabel>
               <ModalSelect name="userId" id="userId" value={currentAppointmentData.userId} onChange={handleFormChange}>
-                <option value="">Nenhum (Horário Vago)</option>
+                <option value="">Nenhum (Horário Vago / Disponível)</option>
                 {userList.map(user => (
                   <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
                 ))}
               </ModalSelect>
+
+              {/* Campo Custo Total - aparece se um cliente for selecionado */}
+              {currentAppointmentData.userId && (
+                <>
+                  <ModalLabel htmlFor="totalCost">Custo Total da Consulta (EUR)</ModalLabel>
+                  <ModalInput 
+                    type="number" 
+                    name="totalCost" 
+                    id="totalCost" 
+                    value={currentAppointmentData.totalCost} 
+                    onChange={handleFormChange} 
+                    placeholder="Ex: 50.00"
+                    step="0.01" 
+                    min="0.01" 
+                    required={!!currentAppointmentData.userId} // Obrigatório se houver cliente
+                  />
+                </>
+              )}
               
               <ModalLabel htmlFor="status">Status</ModalLabel>
               <ModalSelect name="status" id="status" value={currentAppointmentData.status} onChange={handleFormChange} required>

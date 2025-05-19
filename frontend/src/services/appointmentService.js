@@ -139,13 +139,21 @@ export const adminDeleteAppointment = async (appointmentId, token) => {
   }
 };
 
-export const staffRespondToRequest = async (appointmentId, decision, token) => {
+export const staffRespondToRequest = async (appointmentId, decision, token, totalCost = null) => { // Adicionado totalCost como parâmetro opcional
     if (!token) throw new Error('Token não fornecido para staffRespondToRequest.');
     try {
-        const response = await fetch(`${API_URL}/appointments/${appointmentId}/respond`, {
+        const bodyPayload = { decision };
+        if (decision === 'accept' && totalCost !== null) {
+            bodyPayload.totalCost = totalCost;
+        } else if (decision === 'accept' && totalCost === null) {
+            // Lançar erro ou lidar com isso, pois o backend agora espera totalCost ao aceitar
+            throw new Error("Custo total é necessário para aceitar o pedido.");
+        }
+
+        const response = await fetch(`${API_URL}/appointments/${appointmentId}/respond`, { // Confirma o teu API_URL
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-            body: JSON.stringify({ decision }), 
+            body: JSON.stringify(bodyPayload),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erro ao responder ao pedido de consulta.');

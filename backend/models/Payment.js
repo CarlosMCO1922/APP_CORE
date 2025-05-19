@@ -1,5 +1,5 @@
 // backend/models/Payment.js
-const { DataTypes, Sequelize } = require('sequelize');
+const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const Payment = sequelize.define('Payment', {
@@ -9,76 +9,74 @@ module.exports = (sequelize) => {
       autoIncrement: true,
     },
     amount: {
-      type: DataTypes.DECIMAL(10, 2), // Permite valores como 123.45
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       validate: {
         isDecimal: true,
-        min: 0.01, // Pagamento mínimo
+        min: 0.01,
       },
     },
-    paymentDate: { // Data em que o pagamento foi efetivamente realizado ou registado pelo admin
+    paymentDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-    referenceMonth: { // Mês a que o pagamento se refere, ex: "2025-07"
-      type: DataTypes.STRING, // Ou DATEONLY se quiseres guardar o primeiro dia do mês
+    referenceMonth: {
+      type: DataTypes.STRING,
       allowNull: false,
       comment: 'Mês de referência do pagamento, formato YYYY-MM',
     },
     category: {
-      type: DataTypes.ENUM('treino_aula_avulso', 'mensalidade_treino', 'consulta_fisioterapia', 'outro'),
+      type: DataTypes.ENUM(
+        'treino_aula_avulso',
+        'mensalidade_treino',
+        'consulta_fisioterapia', // Pagamento total de uma consulta já realizada
+        'sinal_consulta',       // NOVO: Pagamento do sinal de 20%
+        'outro'
+      ),
       allowNull: false,
       defaultValue: 'outro',
     },
     description: {
       type: DataTypes.TEXT,
-      allowNull: true, // Descrição opcional, ex: "Mensalidade Julho - PT João"
+      allowNull: true,
     },
     status: {
       type: DataTypes.ENUM('pendente', 'pago', 'cancelado', 'rejeitado'),
       allowNull: false,
       defaultValue: 'pendente',
     },
-    // Foreign Keys serão adicionadas através das associações
-    // userId (quem paga)
-    // staffId (quem registou, opcional)
-    // relatedResourceId (opcional, para ligar a um treino/consulta específica)
-    // relatedResourceType (opcional, 'training' ou 'appointment')
+    relatedResourceId: { // ID da consulta, treino, etc.
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    relatedResourceType: { // 'appointment', 'training_booking', etc.
+      type: DataTypes.STRING,
+      allowNull: true,
+    }
+    // userId e staffId são adicionados via associações
   }, {
     tableName: 'payments',
-    timestamps: true, // createdAt e updatedAt
+    timestamps: true,
   });
 
   Payment.associate = (models) => {
-    // Um pagamento pertence a um Utilizador (cliente)
     Payment.belongsTo(models.User, {
       foreignKey: {
         name: 'userId',
-        allowNull: false, // Um pagamento deve estar associado a um cliente
+        allowNull: false,
       },
       as: 'client',
     });
-    models.User.hasMany(Payment, {
-      foreignKey: 'userId',
-      as: 'payments',
-    });
+    // models.User.hasMany(Payment, ...) no User.js
 
-    // Um pagamento pode ter sido registado por um Staff (admin) (opcional)
     Payment.belongsTo(models.Staff, {
       foreignKey: {
-        name: 'staffId', // Quem registou o pagamento
-        allowNull: true, // Pode ser nulo se o sistema gerar automaticamente, ou se o cliente "auto-pagar"
+        name: 'staffId',
+        allowNull: true,
       },
       as: 'registeredBy',
     });
-    models.Staff.hasMany(Payment, { // Um staff pode ter registado vários pagamentos
-        foreignKey: 'staffId',
-        as: 'registeredPayments',
-    });
-
-    // Opcional: Se quiseres ligar um pagamento diretamente a um treino ou consulta específica
-    // Payment.belongsTo(models.Training, { foreignKey: 'trainingId', constraints: false, allowNull: true });
-    // Payment.belongsTo(models.Appointment, { foreignKey: 'appointmentId', constraints: false, allowNull: true });
+    // models.Staff.hasMany(Payment, ...) no Staff.js
   };
 
   return Payment;

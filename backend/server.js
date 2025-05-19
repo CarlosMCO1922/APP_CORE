@@ -45,7 +45,7 @@ app.use(errorHandler);
 
 // Sincronizar a base de dados (cria as tabelas e as associações se não existirem)
 // Usa db.sequelize em vez de apenas sequelize
-db.sequelize.sync({ force: false}) // force: true irá apagar e recriar as tabelas. Cuidado!
+db.sequelize.sync({ alter: true}) // force: true irá apagar e recriar as tabelas. Cuidado!
   .then(() => {
     console.log('Base de dados sincronizada com sucesso.');
     // Podes adicionar aqui lógica para criar um utilizador admin inicial se não existir

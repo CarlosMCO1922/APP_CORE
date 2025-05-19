@@ -16,10 +16,10 @@ module.exports = (sequelize) => {
       type: DataTypes.TIME, // Formato HH:MM:SS
       allowNull: false,
     },
-    durationMinutes: { // Duração da consulta em minutos
+    durationMinutes: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 60, // Duração padrão de 60 minutos para consultas
+      defaultValue: 60,
     },
     notes: {
       type: DataTypes.TEXT,
@@ -28,40 +28,58 @@ module.exports = (sequelize) => {
     status: {
       type: DataTypes.ENUM(
         'disponível',
-        'agendada',
+        'agendada', // Cliente marcou ou admin/staff criou para cliente, aguarda sinal
+        'confirmada', // Sinal pago, consulta confirmada
         'concluída',
         'cancelada_pelo_cliente',
         'cancelada_pelo_staff',
         'não_compareceu',
-        'pendente_aprovacao_staff',
-        'rejeitada_pelo_staff',
+        'pendente_aprovacao_staff', // Cliente solicitou, aguarda aprovação do staff
+        'rejeitada_pelo_staff'
       ),
       defaultValue: 'disponível',
       allowNull: false,
-    }
+    },
+    totalCost: { // Custo total da consulta
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true, // Pode ser null para horários 'disponível' ou se ainda não definido
+    },
+    signalPaid: { // Sinal de 20% foi pago?
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
+    // paymentForSignalId: { // Opcional: se quiseres uma FK direta para o pagamento do sinal
+    //   type: DataTypes.INTEGER,
+    //   allowNull: true,
+    //   references: {
+    //     model: 'payments', // Nome da tabela de pagamentos
+    //     key: 'id'
+    //   },
+    //   onUpdate: 'CASCADE',
+    //   onDelete: 'SET NULL' // Ou 'RESTRICT' se não quiser apagar consulta se tiver pagamento
+    // }
   }, {
     tableName: 'appointments',
     timestamps: true,
   });
 
   Appointment.associate = (models) => {
-    // Uma Consulta pertence a um Utilizador (cliente)
     Appointment.belongsTo(models.User, {
-      foreignKey: 'userId', 
-      as: 'client', // Alias para o cliente da consulta
-      // allowNull: true, // Removido daqui, pois a FK pode ser nula por defeito se não especificado no define()
-                       // e a lógica de ser nula ou não é gerida na criação da consulta.
+      foreignKey: 'userId',
+      as: 'client',
     });
-    // A contraparte User.hasMany(models.Appointment, { as: 'appointments' }) está em User.js
-
-    // Uma Consulta pertence a um Staff (profissional)
     Appointment.belongsTo(models.Staff, {
-      foreignKey: 'staffId', 
-      allowNull: false,    // Uma consulta deve ter um profissional
-      as: 'professional',  // Alias para o profissional da consulta
+      foreignKey: 'staffId',
+      allowNull: false,
+      as: 'professional',
     });
-    // A linha models.Staff.hasMany(models.Appointment, ...) foi REMOVIDA daqui,
-    // pois essa associação é definida em Staff.js
+
+    // Se usares paymentForSignalId:
+    // Appointment.belongsTo(models.Payment, {
+    //   foreignKey: 'paymentForSignalId',
+    //   as: 'signalPaymentInfo' // Nome diferente para evitar conflito com 'payments' em User
+    // });
   };
 
   return Appointment;
