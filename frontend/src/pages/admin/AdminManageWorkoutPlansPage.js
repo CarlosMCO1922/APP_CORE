@@ -1,6 +1,6 @@
 // src/pages/admin/AdminManageWorkoutPlansPage.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom'; // Removido useNavigate se não for usado diretamente aqui
+import { useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -68,15 +68,15 @@ const PlanHeader = styled.div`
 `;
 
 const ActionButton = styled.button`
-  margin-left: ${props => props.small ? '0' : '10px'}; // Ajustar margem para botões pequenos
+  margin-left: ${props => props.small || props.noMarginLeft ? '0' : '10px'};
   padding: ${props => props.small ? '6px 10px' : '8px 12px'};
   font-size: ${props => props.small ? '0.8rem' : '0.85rem'};
   border-radius: 5px;
   cursor: pointer;
   border: none;
   transition: background-color 0.2s ease;
-  background-color: ${props => props.danger ? '#D32F2F' : (props.secondary ? '#555' : (props.primary ? '#D4AF37' : '#007bff' ))}; // Adicionado primary
-  color: ${props => props.danger || props.plans ? 'white' : (props.secondary ? '#E0E0E0' : '#1A1A1A')};
+  background-color: ${props => props.danger ? '#D32F2F' : (props.secondary ? '#555' : (props.primary ? '#D4AF37' : '#007bff' ))};
+  color: ${props => props.danger ? 'white' : (props.secondary ? '#E0E0E0' : '#1A1A1A')};
   font-weight: 500;
   &:hover {
     background-color: ${props => props.danger ? '#C62828' : (props.secondary ? '#666' : (props.primary ? '#e6c358' : '#0056b3'))};
@@ -120,20 +120,20 @@ const ExerciseItem = styled.li`
     em { color: #a0a0a0; font-size: 0.85rem; display: block; margin-top: 3px;}
   }
   .exercise-media-buttons {
-    margin-top: 10px;
+    margin-top: 8px;
     display: flex;
     gap: 10px;
-    flex-wrap: wrap; /* Para quebrar em mobile se necessário */
+    flex-wrap: wrap;
   }
   .exercise-actions {
     display: flex;
     flex-direction: column;
     gap: 8px;
     align-items: flex-end;
-    flex-shrink: 0; /* Para não encolher */
+    flex-shrink: 0;
     button { margin-left: 0; width: 100%; }
   }
-  @media (min-width: 768px) { /* Ajustar breakpoint se necessário */
+  @media (min-width: 768px) {
     .exercise-actions {
         flex-direction: row;
         align-items: center;
@@ -207,7 +207,7 @@ function AdminManageWorkoutPlansPage() {
   const fetchTrainingDetails = useCallback(async () => {
     if (authState.token && trainingId) {
       try {
-        const allTrainingsData = await getAllTrainings(authState.token); // Assumes this returns array with full details
+        const allTrainingsData = await getAllTrainings(authState.token);
         const currentTraining = allTrainingsData.find(t => t.id === parseInt(trainingId));
         if (currentTraining) {
           setTrainingName(currentTraining.name);
@@ -237,7 +237,7 @@ function AdminManageWorkoutPlansPage() {
     }
   }, [authState.token, trainingId]);
 
-  const fetchAllExercisesList = useCallback(async () => { // Renomeado para evitar conflito
+  const fetchAllExercisesList = useCallback(async () => {
     if (authState.token) {
       try {
         const exercisesData = await getAllExercises(authState.token);
@@ -255,7 +255,6 @@ function AdminManageWorkoutPlansPage() {
     fetchWorkoutPlans();
     fetchAllExercisesList();
   }, [fetchTrainingDetails, fetchWorkoutPlans, fetchAllExercisesList]);
-
 
   const handleOpenCreatePlanModal = () => {
     setIsEditingPlan(false);
@@ -341,7 +340,7 @@ function AdminManageWorkoutPlansPage() {
   const handleExerciseFormChange = (e) => {
     const { name, value } = e.target;
     const isNumericField = ['sets', 'durationSeconds', 'restSeconds', 'order', 'exerciseId'].includes(name);
-    const processedValue = (isNumericField && value !== '' && !isNaN(value)) ? parseInt(value, 10) : (isNumericField && value === '' ? '' : value) ;
+    const processedValue = (isNumericField && value !== '' && !isNaN(value)) ? parseInt(value, 10) : (isNumericField && value === '' ? '' : value);
     setCurrentExerciseData(prev => ({ ...prev, [name]: processedValue }));
   };
 
@@ -364,10 +363,9 @@ function AdminManageWorkoutPlansPage() {
     if (dataToSend.order === '' || dataToSend.order === null || isNaN(dataToSend.order)) {
       dataToSend.order = 0;
     } else {
-        dataToSend.order = parseInt(dataToSend.order, 10);
+      dataToSend.order = parseInt(dataToSend.order, 10);
     }
     if (dataToSend.exerciseId === '') dataToSend.exerciseId = null;
-
 
     try {
       if (isEditingExercise) {
@@ -415,7 +413,6 @@ function AdminManageWorkoutPlansPage() {
     setMediaModalContent({ type: '', src: '', alt: '' });
   };
 
-
   if (loading) return <PageContainer><LoadingText>A carregar detalhes do plano de treino...</LoadingText></PageContainer>;
 
   return (
@@ -431,7 +428,7 @@ function AdminManageWorkoutPlansPage() {
 
       <CreateButtonStyled onClick={handleOpenCreatePlanModal}>Adicionar Novo Plano de Treino</CreateButtonStyled>
 
-      {workoutPlans.length > 0 ? workoutPlans.map(plan => (
+      {workoutPlans.length > 0 ? workoutPlans.sort((a,b) => a.order - b.order).map(plan => ( // Adicionado sort para planos
         <PlanSection key={plan.id}>
           <PlanHeader>
             <h2>{plan.name} (Ordem: {plan.order})</h2>
@@ -446,7 +443,8 @@ function AdminManageWorkoutPlansPage() {
             primary
             small
             onClick={() => handleOpenAddExerciseModal(plan.id)}
-            style={{ marginBottom: '15px' }} // Ajustado para ficar mais consistente
+            style={{ marginBottom: '15px' }}
+            noMarginLeft // Adicionada prop para remover margem esquerda se necessário
           >
             Adicionar Exercício a Este Plano
           </ActionButton>
@@ -456,31 +454,31 @@ function AdminManageWorkoutPlansPage() {
               <ExerciseItem key={item.id}>
                 <div className="exercise-info">
                   <p><strong>{item.exerciseDetails?.name || 'Exercício Desconhecido'}</strong> (Ordem: {item.order})</p>
-                  {item.exerciseDetails?.imageUrl &&
-                    <div className="exercise-media-buttons">
-                        <ActionButton
-                            small
-                            secondary
-                            onClick={() => handleOpenMediaModal('image', item.exerciseDetails.imageUrl, item.exerciseDetails.name)}
-                        >
-                            Ver Imagem
-                        </ActionButton>
-                    </div>
-                  }
-                  {item.exerciseDetails?.videoUrl &&
-                    <div className="exercise-media-buttons" style={{marginTop: item.exerciseDetails?.imageUrl ? '5px': '10px'}}>
-                        <ActionButton
-                            small
-                            secondary
-                            onClick={() => handleOpenMediaModal('video', item.exerciseDetails.videoUrl, item.exerciseDetails.name)}
-                        >
-                            Ver Vídeo
-                        </ActionButton>
-                    </div>
-                  }
-                  {item.sets && <p><span>Séries:</span> {item.sets}</p>}
+                  {/* Botões de Ver Imagem/Vídeo */}
+                  <div className="exercise-media-buttons">
+                    {item.exerciseDetails?.imageUrl && (
+                      <ActionButton
+                        small
+                        secondary
+                        onClick={() => handleOpenMediaModal('image', item.exerciseDetails.imageUrl, item.exerciseDetails.name)}
+                      >
+                        Ver Imagem
+                      </ActionButton>
+                    )}
+                    {item.exerciseDetails?.videoUrl && (
+                      <ActionButton
+                        small
+                        secondary
+                        onClick={() => handleOpenMediaModal('video', item.exerciseDetails.videoUrl, item.exerciseDetails.name)}
+                      >
+                        Ver Vídeo
+                      </ActionButton>
+                    )}
+                  </div>
+                  {/* Fim dos Botões de Média */}
+                  {item.sets !== null && item.sets !== undefined && <p><span>Séries:</span> {item.sets}</p>}
                   {item.reps && <p><span>Reps:</span> {item.reps}</p>}
-                  {item.durationSeconds ? <p><span>Duração:</span> {item.durationSeconds}s</p> : null}
+                  {item.durationSeconds !== null && item.durationSeconds !== undefined ? <p><span>Duração:</span> {item.durationSeconds}s</p> : null}
                   {item.restSeconds !== null && item.restSeconds >= 0 ? <p><span>Descanso:</span> {item.restSeconds}s</p> : null}
                   {item.notes && <p><em>Notas: {item.notes}</em></p>}
                 </div>
@@ -562,7 +560,6 @@ function AdminManageWorkoutPlansPage() {
         </ModalOverlay>
       )}
 
-      {/* Modal para Visualizar Imagem/Vídeo */}
       {showMediaModal && mediaModalContent.src && (
         <ModalOverlay onClick={handleCloseMediaModal} style={{ zIndex: 1060 }}>
           <ModalContent
