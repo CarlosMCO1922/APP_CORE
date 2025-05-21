@@ -5,7 +5,6 @@ import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { clientGetMyPayments, clientAcceptPayment } from '../services/paymentService';
 import { createStripePaymentIntentForSignal } from '../services/paymentService'; // Precisamos desta nova função no service
-import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 
 // Importações do Stripe
 import { loadStripe } from '@stripe/stripe-js'; // ADICIONAR IMPORT
