@@ -5,9 +5,14 @@ import './index.css';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { ThemeProvider, createGlobalStyle } from 'styled-components'; // Importar
+import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { theme } from './theme'; // O teu ficheiro theme.js
 
+// Importações do Stripe
+import { loadStripe } from '@stripe/stripe-js'; // ADICIONAR IMPORT
+import { Elements } from '@stripe/react-stripe-js'; // ADICIONAR IMPORT
+
+// Carrega o Stripe com a tua chave publicável
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
 const GlobalStyle = createGlobalStyle`
