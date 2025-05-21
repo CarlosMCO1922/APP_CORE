@@ -8,6 +8,8 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ThemeProvider, createGlobalStyle } from 'styled-components'; // Importar
 import { theme } from './theme'; // O teu ficheiro theme.js
 
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+
 const GlobalStyle = createGlobalStyle`
   body {
     background-color: ${props => props.theme.colors.background};
@@ -28,7 +30,9 @@ root.render(
     <ThemeProvider theme={theme}>
       <GlobalStyle />
       <AuthProvider>
-        <App />
+        <Elements stripe={stripePromise}> {/* Envolver o App com Elements */}
+          <App />
+        </Elements>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>

@@ -30,6 +30,29 @@ export const adminGetAllPayments = async (filters = {}, token) => {
   } catch (error) { console.error("Erro em adminGetAllPayments:", error); throw error; }
 };
 
+export const createStripePaymentIntentForSignal = async (internalPaymentId, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!internalPaymentId) throw new Error('ID do Pagamento interno não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/payments/${internalPaymentId}/create-stripe-intent`, { // Confirma o teu API_URL
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      // Não precisa de body se o ID já vai na URL
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao criar intenção de pagamento Stripe.');
+    }
+    return data; // Espera-se { clientSecret, paymentId, amount }
+  } catch (error) {
+    console.error("Erro em createStripePaymentIntentForSignal:", error);
+    throw error;
+  }
+};
+
 export const adminGetTotalPaid = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido para adminGetTotalPaid.');
   try {
