@@ -1,29 +1,25 @@
 // src/pages/MyPaymentsPage.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { clientGetMyPayments, clientAcceptPayment } from '../services/paymentService';
-import { createStripePaymentIntentForSignal } from '../services/paymentService'; // Precisamos desta nova função no service
+import { clientGetMyPayments, createStripePaymentIntentForSignal } from '../services/paymentService';
 
-// Importações do Stripe
-import { loadStripe } from '@stripe/stripe-js'; // ADICIONAR IMPORT
-import { Elements } from '@stripe/react-stripe-js'; // ADICIONAR IMPORT
+import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 
-// --- Styled Components ---
+// --- Styled Components (Certifica-te que estão definidos como na tua versão) ---
 const PageContainer = styled.div`
-  background-color: #1A1A1A;
-  color: #E0E0E0;
+  background-color: ${props => props.theme.colors.background};
+  color: ${props => props.theme.colors.textMain};
   min-height: 100vh;
   padding: 20px 40px;
-  font-family: 'Inter', sans-serif;
+  font-family: ${props => props.theme.fonts.main};
 `;
 
 const Title = styled.h1`
   font-size: 2.2rem;
-  color: #D4AF37;
+  color: ${props => props.theme.colors.primary};
   margin-bottom: 25px;
   text-align: center;
 `;
@@ -33,20 +29,20 @@ const Table = styled.table`
   max-width: 900px; 
   margin: 20px auto;
   border-collapse: collapse;
-  background-color: #252525;
-  border-radius: 8px;
+  background-color: ${props => props.theme.colors.cardBackground};
+  border-radius: ${props => props.theme.borderRadius};
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  box-shadow: ${props => props.theme.boxShadow};
 
   th, td {
-    border-bottom: 1px solid #383838;
+    border-bottom: 1px solid ${props => props.theme.colors.cardBorder};
     padding: 12px 15px;
     text-align: left;
     font-size: 0.95rem;
   }
   th {
     background-color: #303030;
-    color: #D4AF37;
+    color: ${props => props.theme.colors.primary};
     font-weight: 600;
   }
   tr:last-child td {
@@ -60,20 +56,20 @@ const Table = styled.table`
 const ActionButton = styled.button`
   padding: 8px 15px;
   font-size: 0.9rem;
-  border-radius: 5px;
+  border-radius: ${props => props.theme.borderRadius};
   cursor: pointer;
   border: none;
   transition: background-color 0.2s ease;
-  background-color: #D4AF37;
-  color: #1A1A1A;
+  background-color: ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.textDark};
   font-weight: 500;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: #e6c358;
   }
   &:disabled {
-    background-color: #555;
-    color: #888;
+    background-color: ${props => props.theme.colors.buttonSecondaryBg};
+    color: ${props => props.theme.colors.textMuted};
     cursor: not-allowed;
   }
 `;
@@ -85,35 +81,87 @@ const StatusBadge = styled.span`
   font-weight: bold;
   text-transform: capitalize;
   color: white;
-  min-width: 80px; /* Largura mínima para consistência */
-  display: inline-block; /* Para que padding e text-align funcionem bem */
+  min-width: 80px;
+  display: inline-block;
   text-align: center;
 
   &.pendente { background-color: #FFA000; }
-  &.pago { background-color: #4CAF50; }
-  &.cancelado, &.rejeitado { background-color: #D32F2F; }
+  &.pago { background-color: ${props => props.theme.colors.success}; }
+  &.confirmada { background-color: ${props => props.theme.colors.success}; }
+  &.cancelado, &.rejeitado { background-color: ${props => props.theme.colors.error}; }
 `;
 
-const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: #D4AF37;`;
-const ErrorText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #FF6B6B; background-color: rgba(255,107,107,0.15); border: 1px solid #FF6B6B; border-radius: 8px; margin: 15px auto; max-width: 600px;`;
-const MessageText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #66BB6A; background-color: rgba(102,187,106,0.15); border: 1px solid #66BB6A; border-radius: 8px; margin: 15px auto; max-width: 600px;`;
-const NoItemsText = styled.p` font-size: 1rem; color: #a0a0a0; text-align: center; padding: 20px 0; `;
+const LoadingText = styled.p`
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 20px;
+  color: ${props => props.theme.colors.primary};
+`;
+const ErrorText = styled.p`
+  font-size: 1rem;
+  text-align: center;
+  padding: 12px;
+  color: ${props => props.theme.colors.error};
+  background-color: ${props => props.theme.colors.errorBg};
+  border: 1px solid ${props => props.theme.colors.error};
+  border-radius: ${props => props.theme.borderRadius};
+  margin: 15px auto;
+  max-width: 600px;
+`;
+const MessageText = styled.p`
+  font-size: 1rem;
+  text-align: center;
+  padding: 12px;
+  color: ${props => props.theme.colors.success};
+  background-color: ${props => props.theme.colors.successBg};
+  border: 1px solid ${props => props.theme.colors.success};
+  border-radius: ${props => props.theme.borderRadius};
+  margin: 15px auto;
+  max-width: 600px;
+`;
+const NoItemsText = styled.p`
+  font-size: 1rem;
+  color: ${props => props.theme.colors.textMuted};
+  text-align: center;
+  padding: 20px 0;
+`;
 
 const StyledLink = styled(Link)`
-  color: #D4AF37;
+  color: ${props => props.theme.colors.primary};
   font-size: 1.1rem;
   text-decoration: none;
   &:hover {
     text-decoration: underline;
+    color: #fff;
   }
 `;
 
-const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1050; padding: 20px;`;
-const ModalContent = styled.div` background-color: #252525; /* Um pouco mais claro para o modal */ padding: 25px 30px; border-radius: 10px; width: 100%; max-width: 500px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative;`;
-const ModalTitle = styled.h2` color: #D4AF37; margin-top: 0; margin-bottom: 20px; font-size: 1.5rem; text-align: center;`;
-const CloseButton = styled.button` position: absolute; top: 10px; right: 15px; background: transparent; border: none; color: #aaa; font-size: 1.8rem; cursor: pointer; &:hover { color: #fff; } `;
+const ModalOverlay = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.85);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1050; padding: 20px;
+`;
+const ModalContent = styled.div`
+  background-color: #1F1F1F;
+  padding: 25px 30px;
+  border-radius: 10px; width: 100%; max-width: 500px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6); position: relative;
+`;
+const ModalTitle = styled.h2`
+  color: ${props => props.theme.colors.primary};
+  margin-top: 0; margin-bottom: 20px;
+  font-size: 1.5rem; text-align: center;
+`;
+const CloseButton = styled.button`
+  position: absolute; top: 10px; right: 15px;
+  background: transparent; border: none;
+  color: #aaa; font-size: 1.8rem; cursor: pointer;
+  &:hover { color: #fff; }
+`;
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+// stripePromise é herdado do Elements provider no index.js
+// Se o `Elements` provider estiver no index.js, não precisa ser importado nem definido aqui.
 
 const MyPaymentsPage = () => {
   const { authState } = useAuth();
@@ -121,7 +169,7 @@ const MyPaymentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState('');
   const [pageSuccessMessage, setPageSuccessMessage] = useState('');
-  const [actionLoading, setActionLoading] = useState(null); // ID do pagamento sendo processado
+  const [actionLoading, setActionLoading] = useState(null);
 
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState(null);
@@ -136,7 +184,6 @@ const MyPaymentsPage = () => {
       try {
         setLoading(true);
         setPageError('');
-        // Não limpa successMessage para que o feedback do redirect persista
         const data = await clientGetMyPayments(authState.token);
         setPayments(data);
       } catch (err) {
@@ -155,17 +202,14 @@ const MyPaymentsPage = () => {
     const queryParams = new URLSearchParams(location.search);
     if (queryParams.get('payment_attempted') === 'true') {
         const paymentId = queryParams.get('payment_id');
-        setPageSuccessMessage(`Tentativa de pagamento para ID ${paymentId} registada. O status será atualizado assim que o processamento for concluído pelo nosso sistema.`);
-        fetchMyPayments(); // Re-busca para refletir status potencialmente atualizado pelo webhook
-        navigate(location.pathname, { replace: true }); // Limpa os query params
+        setPageSuccessMessage(`Tentativa de pagamento para ID ${paymentId} registada. O status será atualizado assim que o processamento for concluído.`);
+        fetchMyPayments();
+        navigate(location.pathname, { replace: true });
     }
   }, [location, navigate, fetchMyPayments]);
 
-
   const handleInitiateStripePayment = async (payment) => {
-    // Define quais categorias podem ser pagas com Stripe
-    const pagableOnlineCategories = ['sinal_consulta', 'consulta_fisioterapia', 'mensalidade_treino']; // Ajusta conforme necessário
-
+    const pagableOnlineCategories = ['sinal_consulta', 'consulta_fisioterapia', 'mensalidade_treino'];
     if (payment.status !== 'pendente' || !pagableOnlineCategories.includes(payment.category)) {
         setPageError("Este tipo de pagamento não está configurado para pagamento online ou não está pendente.");
         return;
@@ -178,7 +222,7 @@ const MyPaymentsPage = () => {
 
     try {
       const intentResponse = await createStripePaymentIntentForSignal(payment.id, authState.token);
-      console.log('Resposta do createStripePaymentIntentForSignal:', intentResponse); // Para depuração
+      console.log('Resposta do createStripePaymentIntentForSignal (MyPaymentsPage):', intentResponse);
       if (intentResponse && intentResponse.clientSecret) {
         setStripeClientSecret(intentResponse.clientSecret);
         setCurrentPaymentDetails({
@@ -201,25 +245,16 @@ const MyPaymentsPage = () => {
   const handleStripePaymentSuccess = (paymentIntent) => {
     setShowStripeModal(false);
     setStripeClientSecret(null);
-    // A mensagem de sucesso principal virá do useEffect que trata do redirect e do webhook.
-    // Mas podemos dar um feedback imediato aqui também.
     setPageSuccessMessage(`Pagamento para "${currentPaymentDetails?.description}" enviado para processamento! O status final será confirmado em breve.`);
     setCurrentPaymentDetails(null);
-    // O fetchMyPayments no useEffect do redirect (ou um futuro sistema de notificação) atualizará a lista.
-    // Para feedback mais rápido, podes chamar fetchMyPayments aqui também, mas o webhook é a fonte de verdade.
-    setTimeout(() => fetchMyPayments(), 2000); // Pequeno delay para dar tempo ao webhook
+    setTimeout(() => fetchMyPayments(), 2000);
   };
 
   const handleStripePaymentError = (errorMessage) => {
-    setStripeError(errorMessage); // Mostra o erro dentro do modal Stripe
-    // Opcional: fechar o modal ou não
-    // setShowStripeModal(false);
+    setStripeError(errorMessage);
   };
 
-  // REMOVER a função handleAcceptPayment antiga se ela ainda existir neste ficheiro
-  // para evitar confusão e garantir que ela não está a ser chamada.
-  // const handleAcceptPayment = async (paymentId) => { /* ... lógica antiga ... */ };
-
+  // Se existir uma função handleAcceptPayment antiga, REMOVA-A ou certifique-se que não é chamada.
 
   if (loading && !showStripeModal) {
     return <PageContainer><LoadingText>A carregar os seus pagamentos...</LoadingText></PageContainer>;
@@ -262,9 +297,8 @@ const MyPaymentsPage = () => {
                 <td>{Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</td>
                 <td><StatusBadge className={payment.status ? payment.status.toLowerCase() : ''}>{payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}</StatusBadge></td>
                 <td>
-                  {/* O botão agora chama handleInitiateStripePayment */}
                   {payment.status === 'pendente' &&
-                   (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia' || payment.category === 'mensalidade_treino') && ( // Ajusta categorias
+                   (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia' || payment.category === 'mensalidade_treino') && (
                     <ActionButton
                         onClick={() => handleInitiateStripePayment(payment)}
                         disabled={actionLoading === payment.id}
@@ -281,18 +315,15 @@ const MyPaymentsPage = () => {
         !loading && !pageError && <NoItemsText>Ainda não tens pagamentos registados.</NoItemsText>
       )}
 
-      {/* Modal para Pagamento com Stripe */}
       {showStripeModal && stripeClientSecret && currentPaymentDetails && (
         <ModalOverlay onClick={() => { setShowStripeModal(false); setStripeError('');} }>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={() => { setShowStripeModal(false); setStripeError('');} }>&times;</CloseButton>
             <ModalTitle>Pagamento Seguro: {currentPaymentDetails.description}</ModalTitle>
             {stripeError && <ErrorText style={{textAlign: 'left', margin: '0 0 15px 0', fontSize: '0.85rem'}}>{stripeError}</ErrorText>}
-            {/* O Elements provider aqui NÃO precisa da prop 'stripe' se já estiver global no index.js */}
-            {/* Ele apenas recebe as 'options' com o clientSecret */}
             <Elements options={{ clientSecret: stripeClientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
               <StripeCheckoutForm
-                clientSecret={stripeClientSecret} // Passado para referência, mas o form usa o das options do Elements
+                clientSecret={stripeClientSecret}
                 paymentDetails={currentPaymentDetails}
                 onSuccess={handleStripePaymentSuccess}
                 onError={handleStripePaymentError}
