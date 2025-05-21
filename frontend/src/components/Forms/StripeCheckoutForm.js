@@ -46,61 +46,80 @@ const StripeCheckoutForm = ({ clientSecret, paymentDetails, onSuccess, onError }
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Adicionado para verificar se o clientSecret mudou, o que pode indicar um problema
+  // ou a necessidade de re-renderizar o PaymentElement.
+  // No entanto, o PaymentElement deve lidar com isso internamente se o Elements provider for atualizado.
+  useEffect(() => {
+    if (!clientSecret) {
+      setMessage("Detalhes de pagamento em falta. Tente novamente.");
+    } else {
+        setMessage(null); // Limpa mensagens antigas se o clientSecret for válido
+    }
+  }, [clientSecret]);
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!stripe || !elements) {
-      setMessage("Stripe.js ainda não carregou.");
+      setMessage("Stripe.js ainda não carregou. Aguarde um momento.");
       return;
     }
+    if (!clientSecret) {
+        setMessage("Não foi possível iniciar o pagamento: detalhes em falta. Por favor, feche e tente novamente.");
+        setIsLoading(false);
+        return;
+    }
+
     setIsLoading(true);
     setMessage(null);
+
+    // Verifica o clientSecret antes de usá-lo no return_url para evitar erros.
+    const paymentIntentIdPart = clientSecret ? clientSecret.substring(0, clientSecret.indexOf('_secret_')) : 'unknown_intent';
 
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        // URL para onde o utilizador será redirecionado após o pagamento (ou após autenticação 3D Secure)
-        // Esta URL deve ser uma página na tua app que pode mostrar uma mensagem de sucesso/erro
-        // ou verificar o status do PaymentIntent.
-        // Para pagamentos de sinal, podes redirecionar de volta para MyPaymentsPage ou uma página de confirmação.
-        return_url: `${window.location.origin}/meus-pagamentos?payment_confirmed=true&payment_intent_id=${clientSecret.substring(0, clientSecret.indexOf('_secret_'))}`, // Simplificado
+        return_url: `${window.location.origin}/meus-pagamentos?payment_attempted=true&payment_id=${paymentDetails.id}&payment_intent_id=${paymentIntentIdPart}`,
       },
-      redirect: 'if_required', // Só redireciona se for necessário para autenticação (ex: 3D Secure)
+      redirect: 'if_required',
     });
 
     if (error) {
-      setMessage(error.message || "Ocorreu um erro inesperado.");
-      if (onError) onError(error.message);
+      const errorMessage = error.type === "validation_error" ? error.message : "Ocorreu um erro inesperado durante o pagamento.";
+      setMessage(errorMessage);
+      if (onError) onError(errorMessage);
       setIsLoading(false);
       return;
     }
 
-    // Se redirect: 'if_required' e não houve redirecionamento, o pagamento foi bem-sucedido aqui
-    // (ou falhou e foi tratado acima).
-    // O status final é melhor confirmado via webhooks no backend.
-    if (paymentIntent && paymentIntent.status === 'succeeded') {
-      setMessage(`Pagamento de ${Number(paymentDetails.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })} realizado com sucesso!`);
-      if (onSuccess) onSuccess(paymentIntent);
-    } else if (paymentIntent && paymentIntent.status === 'processing') {
-      setMessage("O seu pagamento está a ser processado.");
-    } else if (paymentIntent) {
-       // Ex: 'requires_payment_method', 'requires_confirmation', 'requires_action'
-      setMessage(`Status do pagamento: ${paymentIntent.status}. Siga as instruções, se houver.`);
+    if (paymentIntent) {
+      if (paymentIntent.status === 'succeeded') {
+        setMessage(`Pagamento de ${Number(paymentDetails.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })} realizado com sucesso! O status será atualizado em breve.`);
+        if (onSuccess) onSuccess(paymentIntent);
+      } else if (paymentIntent.status === 'processing') {
+        setMessage("O seu pagamento está a ser processado.");
+      } else {
+        setMessage(`Status do pagamento: ${paymentIntent.status}. Tente novamente ou contacte o suporte se o problema persistir.`);
+      }
     }
-    // Não precisamos fazer nada mais aqui se foi redirecionado, pois o return_url tratará disso.
-
+    // Se for redirecionado, o useEffect no MyPaymentsPage tratará da mensagem.
     setIsLoading(false);
   };
 
   const paymentElementOptions = {
-    layout: "tabs" // ou "accordion" ou "auto"
-  }
+    layout: "tabs",
+    // Podes adicionar outros campos aqui se necessário, ex: defaultValues para billingDetails
+  };
 
   return (
     <FormContainer onSubmit={handleSubmit}>
-      <PaymentElement id="payment-element" options={paymentElementOptions} />
-      <SubmitButton disabled={isLoading || !stripe || !elements} id="submit">
+      {/* O PaymentElement só deve ser renderizado se stripe e elements estiverem disponíveis */}
+      {stripe && elements && clientSecret && (
+        <PaymentElement id="payment-element" options={paymentElementOptions} />
+      )}
+      <SubmitButton disabled={isLoading || !stripe || !elements || !clientSecret} id="submit">
         <span id="button-text">
-          {isLoading ? "A processar..." : `Pagar ${Number(paymentDetails.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}`}
+          {isLoading ? "A processar..." : `Pagar ${Number(paymentDetails?.amount || 0).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}`}
         </span>
       </SubmitButton>
       {message && <ErrorMessage id="payment-message">{message}</ErrorMessage>}

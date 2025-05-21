@@ -320,23 +320,25 @@ const MyPaymentsPage = () => {
       )}
 
       {showStripeModal && stripeClientSecret && currentPaymentDetails && (
-        <ModalOverlay onClick={() => { setShowStripeModal(false); setStripeError('');} }>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={() => { setShowStripeModal(false); setStripeError('');} }>&times;</CloseButton>
-            <ModalTitle>Pagamento Seguro: {currentPaymentDetails.description}</ModalTitle>
-            {stripeError && <ErrorText style={{textAlign: 'left', margin: '0 0 15px 0', fontSize: '0.85rem'}}>{stripeError}</ErrorText>}
-            {/* Passa o stripePromise local para este Elements provider específico do modal */}
-            <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
-              <StripeCheckoutForm
-                clientSecret={stripeClientSecret}
-                paymentDetails={currentPaymentDetails}
-                onSuccess={handleStripePaymentSuccess}
-                onError={handleStripePaymentError}
-              />
-            </Elements>
-          </ModalContent>
-        </ModalOverlay>
-      )}
+    <ModalOverlay onClick={() => { setShowStripeModal(false); setStripeError('');} }>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <CloseButton onClick={() => { setShowStripeModal(false); setStripeError('');} }>&times;</CloseButton>
+        <ModalTitle>Pagamento Seguro: {currentPaymentDetails.description}</ModalTitle>
+        {stripeError && <ErrorText style={{textAlign: 'left', margin: '0 0 15px 0', fontSize: '0.85rem'}}>{stripeError}</ErrorText>}
+        
+        {/* Aqui é crucial: stripePromise e clientSecret corretos */}
+        <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
+          <StripeCheckoutForm
+            // clientSecret já está nas options do Elements, mas pode ser passado como prop se o form o usar diretamente.
+            // O importante é que o Elements provider esteja configurado com ele.
+            paymentDetails={currentPaymentDetails}
+            onSuccess={handleStripePaymentSuccess}
+            onError={handleStripePaymentError}
+          />
+        </Elements>
+      </ModalContent>
+    </ModalOverlay>
+  )}
     </PageContainer>
   );
 };
