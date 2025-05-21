@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { clientGetMyPayments, clientAcceptPayment } from '../services/paymentService';
 import { createStripePaymentIntentForSignal } from '../services/paymentService'; // Precisamos desta nova função no service
 
