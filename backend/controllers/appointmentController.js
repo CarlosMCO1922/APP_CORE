@@ -171,8 +171,8 @@ const getAllAppointments = async (req, res) => {
       [Op.or]: [
         { userId: clientId },
         { status: 'disponível', userId: null }, // Cliente também vê disponíveis
-        { userId: clientId, status: 'pendente_aprovacao_staff' },
-        { userId: clientId, status: 'confirmada'} // Incluir consultas confirmadas
+        //{ userId: clientId, status: 'pendente_aprovacao_staff' },
+        //{ userId: clientId, status: 'confirmada'} // Incluir consultas confirmadas
       ]
     };
     if (queryStaffId) {
@@ -203,8 +203,8 @@ const getAllAppointments = async (req, res) => {
             [Op.or]: [
                 { staffId: req.staff.id },
                 { status: 'disponível', userId: null }, // Todos os disponíveis
-                { staffId: req.staff.id, status: 'pendente_aprovacao_staff' },
-                { staffId: req.staff.id, status: 'confirmada'} // Incluir confirmadas do staff
+                //{ staffId: req.staff.id, status: 'pendente_aprovacao_staff' },
+                //{ staffId: req.staff.id, status: 'confirmada'} // Incluir confirmadas do staff
             ]
         };
         if (queryUserIdFromAdmin) { // Se staff não admin filtra por cliente

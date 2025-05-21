@@ -107,14 +107,14 @@ const MyPaymentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [actionLoading, setActionLoading] = useState(null); 
+  const [actionLoading, setActionLoading] = useState(null); // Para desabilitar o botão específico
 
   const fetchMyPayments = useCallback(async () => {
     if (authState.token) {
       try {
         setLoading(true);
         setError('');
-        setSuccessMessage('');
+        setSuccessMessage(''); // Limpa mensagens anteriores
         const data = await clientGetMyPayments(authState.token);
         setPayments(data);
       } catch (err) {
@@ -130,20 +130,34 @@ const MyPaymentsPage = () => {
   }, [fetchMyPayments]);
 
   const handleAcceptPayment = async (paymentId) => {
-    if (!window.confirm('Confirmas que este pagamento foi realizado e queres aceitá-lo?')) {
+    // Adicionar uma confirmação mais explícita para pagamentos de sinal
+    const paymentToAccept = payments.find(p => p.id === paymentId);
+    let confirmMessage = 'Confirmas que este pagamento foi realizado e queres marcá-lo como pago?';
+    if (paymentToAccept && paymentToAccept.category === 'sinal_consulta') {
+      confirmMessage = `Confirmas o pagamento do sinal de ${Number(paymentToAccept.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })} para esta consulta? Após a confirmação, a consulta será marcada como confirmada.`;
+    }
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
-    setActionLoading(paymentId);
+    setActionLoading(paymentId); // Desabilita o botão específico
     setError('');
     setSuccessMessage('');
     try {
-      await clientAcceptPayment(paymentId, authState.token);
-      setSuccessMessage('Pagamento aceite com sucesso!');
-      fetchMyPayments(); 
+      const response = await clientAcceptPayment(paymentId, authState.token);
+      setSuccessMessage(response.message || 'Pagamento aceite com sucesso!');
+      // Atualizar a lista de pagamentos para refletir a mudança de status
+      setPayments(prevPayments => 
+        prevPayments.map(p => 
+          p.id === paymentId ? { ...p, status: 'pago' } : p
+        )
+      );
+      // Opcional: forçar um re-fetch completo se houver mais dados que possam mudar
+      // fetchMyPayments();
     } catch (err) {
       setError(err.message || 'Falha ao aceitar o pagamento.');
     } finally {
-      setActionLoading(null);
+      setActionLoading(null); // Re-habilita o botão (ou remove-o se já não for uma ação válida)
     }
   };
 
@@ -170,6 +184,7 @@ const MyPaymentsPage = () => {
               <th>ID</th>
               <th>Data Registo</th>
               <th>Mês Ref.</th>
+              <th>Descrição</th> {/* Adicionado para mais detalhes */}
               <th>Categoria</th>
               <th>Valor</th>
               <th>Status</th>
@@ -182,16 +197,17 @@ const MyPaymentsPage = () => {
                 <td>{payment.id}</td>
                 <td>{new Date(payment.paymentDate).toLocaleDateString('pt-PT')}</td>
                 <td>{payment.referenceMonth}</td>
+                <td>{payment.description || 'N/A'}</td> {/* Mostrar descrição */}
                 <td>{payment.category.replace(/_/g, ' ')}</td>
                 <td>{Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</td>
                 <td><StatusBadge className={payment.status.toLowerCase()}>{payment.status.replace(/_/g, ' ')}</StatusBadge></td>
                 <td>
                   {payment.status === 'pendente' && (
-                    <ActionButton 
+                    <ActionButton
                         onClick={() => handleAcceptPayment(payment.id)}
                         disabled={actionLoading === payment.id}
                     >
-                      {actionLoading === payment.id ? 'A processar...' : 'Aceitar Pagamento'}
+                      {actionLoading === payment.id ? 'A processar...' : (payment.category === 'sinal_consulta' ? 'Pagar Sinal' : 'Aceitar Pagamento')}
                     </ActionButton>
                   )}
                 </td>
