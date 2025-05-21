@@ -161,6 +161,7 @@ const CloseButton = styled.button`
   &:hover { color: #fff; }
 `;
 
+console.log('Stripe Key from MyPaymentsPage.js:', process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 // Inicializa stripePromise aqui para passar ao Elements provider no modal
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY); //
 
