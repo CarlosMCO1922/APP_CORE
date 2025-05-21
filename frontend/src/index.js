@@ -12,7 +12,9 @@ import { theme } from './theme'; // O teu ficheiro theme.js
 import { loadStripe } from '@stripe/stripe-js'; // ADICIONAR IMPORT
 import { Elements } from '@stripe/react-stripe-js'; // ADICIONAR IMPORT
 // Carrega o Stripe com a tua chave publicável
+console.log('CHAVE STRIPE A SER USADA NO INDEX.JS:', process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+console.log('Resultado do loadStripe (index.js):', stripePromise); // DEBUG
 
 const GlobalStyle = createGlobalStyle`
   body {

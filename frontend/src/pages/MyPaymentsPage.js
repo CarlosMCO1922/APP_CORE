@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { clientGetMyPayments, createStripePaymentIntentForSignal } from '../services/paymentService'; //
 
-import { loadStripe } from '@stripe/stripe-js'; //
+//import { loadStripe } from '@stripe/stripe-js'; //
 import { Elements } from '@stripe/react-stripe-js'; //
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm'; //
 
@@ -161,9 +161,9 @@ const CloseButton = styled.button`
   &:hover { color: #fff; }
 `;
 
-console.log('Stripe Key from MyPaymentsPage.js:', process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+//console.log('Stripe Key from MyPaymentsPage.js:', process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 // Inicializa stripePromise aqui para passar ao Elements provider no modal
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY); //
+//const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY); //
 
 const MyPaymentsPage = () => {
   const { authState } = useAuth();
