@@ -48,11 +48,14 @@ router.get(
 );
 
 // Cliente "aceita" um pagamento pendente
-router.patch(
-    '/:paymentId/accept', 
-    protect, 
-    isClientUser, 
-    paymentController.clientAcceptPayment
+router.patch('/:paymentId/accept', protect, isClientUser, paymentController.clientAcceptPayment);
+
+router.post('/:paymentId/create-stripe-intent', protect, isClientUser, paymentController.createStripePaymentIntent);
+
+router.post(
+  '/stripe-webhook',
+  express.raw({type: 'application/json'}), // Middleware para obter o raw body para este endpoint
+  paymentController.stripeWebhookHandler
 );
 
 module.exports = router;
