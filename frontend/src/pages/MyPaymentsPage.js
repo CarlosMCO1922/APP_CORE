@@ -152,21 +152,19 @@ const MyPaymentsPage = () => {
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
-    if (queryParams.get('payment_confirmed') === 'true') {
-        const paymentIntentId = queryParams.get('payment_intent_id');
-        setPageSuccessMessage(`Processamento do pagamento ${paymentIntentId ? `(ID: ${paymentIntentId})` : ''} iniciado. O status será atualizado em breve.`);
+    if (queryParams.get('payment_attempted') === 'true') {
+        const paymentId = queryParams.get('payment_id');
+        setPageSuccessMessage(`Tentativa de pagamento para ID ${paymentId} registada. O status será atualizado assim que o processamento for concluído.`);
         fetchMyPayments();
-        navigate(location.pathname, { replace: true });
-    } else if (queryParams.get('payment_error')) {
-        setPageError(`Ocorreu um erro com o pagamento: ${queryParams.get('payment_error_message') || 'Tente novamente.'}`);
         navigate(location.pathname, { replace: true });
     }
   }, [location, navigate, fetchMyPayments]);
 
 
   const handleInitiateStripePayment = async (payment) => {
-    if (payment.status !== 'pendente' || (payment.category !== 'sinal_consulta' && payment.category !== 'consulta_fisioterapia' && payment.category !== 'mensalidade_treino' /* Adapta categorias pagáveis */)) {
-        setPageError("Este tipo de pagamento não pode ser processado online ou já não está pendente.");
+    const pagableCategories = ['sinal_consulta', 'consulta_fisioterapia', 'mensalidade_treino'];
+    if (payment.status !== 'pendente' || !pagableCategories.includes(payment.category)) {
+        setPageError("Este pagamento não pode ser processado online ou não está pendente.");
         return;
     }
 
@@ -177,13 +175,18 @@ const MyPaymentsPage = () => {
 
     try {
       const intentResponse = await createStripePaymentIntentForSignal(payment.id, authState.token);
-      setStripeClientSecret(intentResponse.clientSecret);
-      setCurrentPaymentDetails({
-        id: payment.id,
-        amount: payment.amount,
-        description: payment.description || `Pagamento ID ${payment.id}` // Melhorar descrição se possível
-      });
-      setShowStripeModal(true);
+      console.log('Stripe Intent Response (MyPaymentsPage):', intentResponse); // DEBUG
+      if (intentResponse && intentResponse.clientSecret) {
+        setStripeClientSecret(intentResponse.clientSecret);
+        setCurrentPaymentDetails({
+          id: payment.id,
+          amount: payment.amount,
+          description: payment.description || `Pagamento ID ${payment.id}`
+        });
+        setShowStripeModal(true);
+      } else {
+        setPageError('Não foi possível obter os detalhes para o pagamento. Tente novamente mais tarde.');
+      }
     } catch (err) {
       setPageError(err.message || 'Falha ao iniciar o processo de pagamento. Tente novamente.');
     } finally {
@@ -194,15 +197,13 @@ const MyPaymentsPage = () => {
   const handleStripePaymentSuccess = (paymentIntent) => {
     setShowStripeModal(false);
     setStripeClientSecret(null);
-    setPageSuccessMessage(`Pagamento para "${currentPaymentDetails?.description}" processado! O status será atualizado em breve.`);
+    setPageSuccessMessage(`Pagamento para "${currentPaymentDetails?.description}" processado com sucesso! O status será atualizado em breve.`);
     setCurrentPaymentDetails(null);
     fetchMyPayments();
   };
 
   const handleStripePaymentError = (errorMessage) => {
     setStripeError(errorMessage);
-    // Opcional: não fechar o modal para que o utilizador possa ver o erro no formulário
-    // setShowStripeModal(false);
   };
 
   if (loading && !showStripeModal) {
@@ -223,6 +224,7 @@ const MyPaymentsPage = () => {
 
       {payments.length > 0 ? (
         <Table>
+          {/* ... (cabeçalho da tabela como antes) ... */}
           <thead>
             <tr>
               <th>ID</th>
@@ -244,10 +246,10 @@ const MyPaymentsPage = () => {
                 <td>{payment.description || 'N/A'}</td>
                 <td>{payment.category ? payment.category.replace(/_/g, ' ') : 'N/A'}</td>
                 <td>{Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</td>
-                <td><StatusBadge className={payment.status.toLowerCase()}>{payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}</StatusBadge></td>
+                <td><StatusBadge className={payment.status ? payment.status.toLowerCase() : ''}>{payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}</StatusBadge></td>
                 <td>
-                  {payment.status === 'pendente' && 
-                   (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia' || payment.category === 'mensalidade_treino' /* Adapta categorias */) && (
+                  {payment.status === 'pendente' &&
+                   (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia' || payment.category === 'mensalidade_treino') && (
                     <ActionButton
                         onClick={() => handleInitiateStripePayment(payment)}
                         disabled={actionLoading === payment.id}
@@ -255,28 +257,25 @@ const MyPaymentsPage = () => {
                       {actionLoading === payment.id ? 'Aguarde...' : `Pagar ${payment.category === 'sinal_consulta' ? 'Sinal' : 'Online'}`}
                     </ActionButton>
                   )}
-                  {/* Considerar outros status/categorias se necessário */}
                 </td>
               </tr>
             ))}
           </tbody>
         </Table>
       ) : (
-        !pageError && <NoItemsText>Ainda não tens pagamentos registados.</NoItemsText>
+        !loading && !pageError && <NoItemsText>Ainda não tens pagamentos registados.</NoItemsText>
       )}
 
-      {/* Modal para Pagamento com Stripe */}
       {showStripeModal && stripeClientSecret && currentPaymentDetails && (
         <ModalOverlay onClick={() => { setShowStripeModal(false); setStripeError('');} }>
-          <ModalContent onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={() => { setShowStripeModal(false); setStripeError('');} }>&times;</CloseButton>
             <ModalTitle>Pagar: {currentPaymentDetails.description}</ModalTitle>
             {stripeError && <ErrorText style={{textAlign: 'left', margin: '0 0 15px 0'}}>{stripeError}</ErrorText>}
-            {/* O Elements provider agora deve vir do index.js ou App.js */}
-            {/* Garante que stripePromise está acessível ou é recriado aqui se Elements estiver aqui */}
+            {/* O <Elements> provider aqui USA o stripePromise local e passa o clientSecret nas options */}
             <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
               <StripeCheckoutForm
-                clientSecret={stripeClientSecret}
+                clientSecret={stripeClientSecret} // Embora o Elements options o defina, pode ser útil ter aqui para debug ou outros usos
                 paymentDetails={currentPaymentDetails}
                 onSuccess={handleStripePaymentSuccess}
                 onError={handleStripePaymentError}
