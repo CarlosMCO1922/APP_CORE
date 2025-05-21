@@ -30,29 +30,6 @@ export const adminGetAllPayments = async (filters = {}, token) => {
   } catch (error) { console.error("Erro em adminGetAllPayments:", error); throw error; }
 };
 
-export const createStripePaymentIntentForSignal = async (internalPaymentId, token) => {
-  if (!token) throw new Error('Token não fornecido.');
-  if (!internalPaymentId) throw new Error('ID do Pagamento interno não fornecido.');
-  try {
-    const response = await fetch(`${API_URL}/payments/${internalPaymentId}/create-stripe-intent`, { // Confirma o teu API_URL
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      // Não precisa de body se o ID já vai na URL
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao criar intenção de pagamento Stripe.');
-    }
-    return data; // Espera-se { clientSecret, paymentId, amount }
-  } catch (error) {
-    console.error("Erro em createStripePaymentIntentForSignal:", error);
-    throw error;
-  }
-};
-
 export const adminGetTotalPaid = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido para adminGetTotalPaid.');
   try {
@@ -105,10 +82,11 @@ export const adminDeletePayment = async (paymentId, token) => {
     }
 };
 
+// --- Funções de serviço para o Cliente ---
 export const clientGetMyPayments = async (token) => {
   if (!token) throw new Error('Token de cliente não fornecido para clientGetMyPayments.');
   try {
-    const response = await fetch(`${API_URL}/payments/my-payments`, {
+    const response = await fetch(`${API_URL}/payments/my-payments`, { // Ajusta o endpoint se necessário
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
@@ -117,10 +95,14 @@ export const clientGetMyPayments = async (token) => {
   } catch (error) { console.error("Erro em clientGetMyPayments:", error); throw error; }
 };
 
+// Função para o cliente "aceitar" pagamentos (simulação, para pagamentos não-Stripe se necessário)
+// Se todos os pagamentos online forem via Stripe, esta função pode não ser mais necessária ou
+// só ser chamada internamente pelo admin.
 export const clientAcceptPayment = async (paymentId, token) => {
   if (!token) throw new Error('Token de cliente não fornecido para clientAcceptPayment.');
   try {
-    const response = await fetch(`${API_URL}/payments/${paymentId}/accept`, {
+    // Esta rota no backend agora é clientAcceptNonStripePayment
+    const response = await fetch(`${API_URL}/payments/${paymentId}/accept`, { // Ajusta o endpoint se necessário
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     });
@@ -128,4 +110,28 @@ export const clientAcceptPayment = async (paymentId, token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao aceitar pagamento.');
     return data;
   } catch (error) { console.error("Erro em clientAcceptPayment:", error); throw error; }
+};
+
+// NOVA FUNÇÃO para criar a intenção de pagamento Stripe
+export const createStripePaymentIntentForSignal = async (internalPaymentId, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!internalPaymentId) throw new Error('ID do Pagamento interno não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/payments/${internalPaymentId}/create-stripe-intent`, { // Confirma este endpoint
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      // O corpo pode ser vazio se o backend obtiver o paymentId da URL
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao criar intenção de pagamento Stripe.');
+    }
+    return data; // Espera-se { clientSecret, paymentId, amount }
+  } catch (error) {
+    console.error("Erro em createStripePaymentIntentForSignal:", error);
+    throw error;
+  }
 };

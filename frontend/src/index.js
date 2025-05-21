@@ -11,7 +11,7 @@ import { theme } from './theme'; // O teu ficheiro theme.js
 // Importações do Stripe
 import { loadStripe } from '@stripe/stripe-js'; // ADICIONAR IMPORT
 import { Elements } from '@stripe/react-stripe-js'; // ADICIONAR IMPORT
-
+import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 // Carrega o Stripe com a tua chave publicável
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
