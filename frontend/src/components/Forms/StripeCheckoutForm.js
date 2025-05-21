@@ -1,5 +1,5 @@
 // src/components/Forms/StripeCheckoutForm.js
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import styled from 'styled-components'; // Se quiseres estilizar
 
