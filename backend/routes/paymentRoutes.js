@@ -4,83 +4,41 @@ const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddleware');
 
+// ... (outras rotas GET, POST para /payments, /my-payments, etc. mantêm-se como estavam) ...
 // --- Rotas do Administrador (Staff com role 'admin') ---
-// Criar um novo pagamento para um utilizador
-router.post(
-    '/', 
-    protect,
-    isAdminStaff,
-    paymentController.adminCreatePayment
-);
-
-// Listar todos os pagamentos (com filtros)
-router.get(
-    '/', 
-    protect, 
-    isAdminStaff, 
-    paymentController.adminGetAllPayments
-);
-
-// Obter o total de pagamentos com status 'pago'
-router.get(
-    '/total-paid', 
-    protect, 
-    isAdminStaff, 
-    paymentController.adminGetTotalPaid
-);
-
-// Admin atualiza o status de um pagamento
-router.patch(
-    '/:paymentId/status',
-    protect,
-    isAdminStaff,
-    paymentController.adminUpdatePaymentStatus
-);
-
-// Admin elimina um pagamento (NOVA ROTA ADICIONADA SE FALTAR)
-router.delete(
-    '/:paymentId', // Assumindo que a rota para eliminar é DELETE /payments/:paymentId
-    protect,
-    isAdminStaff,
-    paymentController.adminDeletePayment // Garante que esta função existe no controller
-);
-
+router.post('/', protect, isAdminStaff, paymentController.adminCreatePayment);
+router.get('/', protect, isAdminStaff, paymentController.adminGetAllPayments);
+router.get('/total-paid', protect, isAdminStaff, paymentController.adminGetTotalPaid);
+router.patch('/:paymentId/status', protect, isAdminStaff, paymentController.adminUpdatePaymentStatus);
+router.delete('/:paymentId', protect, isAdminStaff, paymentController.adminDeletePayment);
 
 // --- Rotas do Cliente (User autenticado) ---
-// Cliente lista os seus próprios pagamentos
-router.get(
-    '/my-payments', 
-    protect,
-    isClientUser,
-    paymentController.clientGetMyPayments
-);
+router.get('/my-payments', protect, isClientUser, paymentController.clientGetMyPayments);
+router.patch('/:paymentId/accept', protect, isClientUser, paymentController.clientAcceptPayment);
+router.post('/:paymentId/create-stripe-intent', protect, isClientUser, paymentController.createStripePaymentIntent);
 
-// Cliente "aceita" um pagamento pendente (LEGADO - para pagamentos não-Stripe)
-router.patch(
-    '/:paymentId/accept', // Endpoint para aceitar pagamento não-Stripe
-    protect,
-    isClientUser,
-    paymentController.clientAcceptPayment // Deve ser clientAcceptNonStripePayment no controller
-);
 
-// Cliente cria uma intenção de pagamento Stripe
-router.post(
-    '/:paymentId/create-stripe-intent',
-    protect,
-    isClientUser,
-    paymentController.createStripePaymentIntent
-);
-
-// Webhook do Stripe
+// ***** INÍCIO DA ALTERAÇÃO DE DIAGNÓSTICO *****
+// Webhook do Stripe - VERSÃO DE TESTE SIMPLIFICADA
 router.post(
   '/stripe-webhook',
-  (req, res, next) => { // ***** INÍCIO DA ALTERAÇÃO *****
-    console.log('!!! ROTA /stripe-webhook ACIONADA !!!'); // Log para ver se a rota é chamada
-    console.log('Headers do Webhook:', JSON.stringify(req.headers, null, 2));
-    next(); // Passa para o próximo middleware ou handler
-  }, // ***** FIM DA ALTERAÇÃO *****
-  express.raw({type: 'application/json'}), // Middleware para obter o raw body para este endpoint
-  paymentController.stripeWebhookHandler
+  (req, res, next) => {
+    console.log(`---------- ${new Date().toISOString()} ----------`);
+    console.log('!!! ROTA /stripe-webhook ACIONADA (VERSÃO SIMPLIFICADA) !!!');
+    console.log('Headers Recebidos:', JSON.stringify(req.headers, null, 2));
+    // Tenta ler o corpo se disponível, mas não faças nada que possa dar erro ainda
+    let rawBodyForLog = '';
+    req.on('data', chunk => {
+      rawBodyForLog += chunk.toString();
+    });
+    req.on('end', () => {
+      console.log('Corpo Recebido (Raw - primeira tentativa):', rawBodyForLog);
+    });
+    
+    res.status(200).send('Webhook recebido pela rota simplificada.'); // Envia resposta imediata
+    // NÃO CHAMA paymentController.stripeWebhookHandler nem express.raw por agora
+  }
 );
+// ***** FIM DA ALTERAÇÃO DE DIAGNÓSTICO *****
 
 module.exports = router;
