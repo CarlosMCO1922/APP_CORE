@@ -8,8 +8,8 @@ const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddl
 // Criar um novo pagamento para um utilizador
 router.post(
     '/', 
-    protect,         // Garante que quem faz o pedido está autenticado (seja user ou staff)
-    isAdminStaff,    // Garante que é um staff com role 'admin'
+    protect,
+    isAdminStaff,
     paymentController.adminCreatePayment
 );
 
@@ -37,23 +37,48 @@ router.patch(
     paymentController.adminUpdatePaymentStatus
 );
 
+// Admin elimina um pagamento (NOVA ROTA ADICIONADA SE FALTAR)
+router.delete(
+    '/:paymentId', // Assumindo que a rota para eliminar é DELETE /payments/:paymentId
+    protect,
+    isAdminStaff,
+    paymentController.adminDeletePayment // Garante que esta função existe no controller
+);
+
 
 // --- Rotas do Cliente (User autenticado) ---
 // Cliente lista os seus próprios pagamentos
 router.get(
     '/my-payments', 
-    protect,       // Garante que o utilizador está autenticado
-    isClientUser,  // Garante que é um cliente (role 'user')
+    protect,
+    isClientUser,
     paymentController.clientGetMyPayments
 );
 
-// Cliente "aceita" um pagamento pendente
-router.patch('/:paymentId/accept', protect, isClientUser, paymentController.clientAcceptPayment);
+// Cliente "aceita" um pagamento pendente (LEGADO - para pagamentos não-Stripe)
+router.patch(
+    '/:paymentId/accept', // Endpoint para aceitar pagamento não-Stripe
+    protect,
+    isClientUser,
+    paymentController.clientAcceptPayment // Deve ser clientAcceptNonStripePayment no controller
+);
 
-router.post('/:paymentId/create-stripe-intent', protect, isClientUser, paymentController.createStripePaymentIntent);
+// Cliente cria uma intenção de pagamento Stripe
+router.post(
+    '/:paymentId/create-stripe-intent',
+    protect,
+    isClientUser,
+    paymentController.createStripePaymentIntent
+);
 
+// Webhook do Stripe
 router.post(
   '/stripe-webhook',
+  (req, res, next) => { // ***** INÍCIO DA ALTERAÇÃO *****
+    console.log('!!! ROTA /stripe-webhook ACIONADA !!!'); // Log para ver se a rota é chamada
+    console.log('Headers do Webhook:', JSON.stringify(req.headers, null, 2));
+    next(); // Passa para o próximo middleware ou handler
+  }, // ***** FIM DA ALTERAÇÃO *****
   express.raw({type: 'application/json'}), // Middleware para obter o raw body para este endpoint
   paymentController.stripeWebhookHandler
 );
