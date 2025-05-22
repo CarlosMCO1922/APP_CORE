@@ -255,11 +255,7 @@ const clientAcceptNonStripePayment = async (req, res) => {
 };
 
 
-// @desc    Lida com webhooks do Stripe
-// @route   POST /payments/stripe-webhook
-// @access  Público (mas verificado com assinatura do Stripe)
 const stripeWebhookHandler = async (req, res) => {
-  // ***** INÍCIO DOS LOGS DETALHADOS *****
   console.log(`---------- ${new Date().toISOString()} --- [STRIPE WEBHOOK CONTROLLER INICIO] ---`);
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -280,18 +276,15 @@ const stripeWebhookHandler = async (req, res) => {
 
   try {
     console.log('[WEBHOOK CTRL] A tentar construir evento Stripe a partir do corpo RAW...');
-    // req.body aqui deve ser o corpo RAW, graças ao middleware express.raw na rota.
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     console.log('[WEBHOOK CTRL] Evento Stripe construído com SUCESSO. Tipo:', event.type, 'ID:', event.id);
   } catch (err) {
     console.error(`[WEBHOOK CTRL] ⚠️ FALHA na verificação da assinatura do webhook: ${err.message}`);
-    console.error('[WEBHOOK CTRL] Detalhes do erro de assinatura:', err); // Log completo do erro de assinatura
+    console.error('[WEBHOOK CTRL] Detalhes do erro de assinatura:', err);
     return res.status(400).send(`Webhook Error (Signature Verification Failed): ${err.message}`);
   }
-  // ***** FIM DOS LOGS DETALHADOS INICIAIS *****
 
-  // Lida com o evento
-  console.log(`[WEBHOOK CTRL] A processar evento: ID=${event.id}, Tipo=${event.type}`);
+  console.log(`[WEBHOOK CTRL] A processar evento: ID=<span class="math-inline">\{event\.id\}, Tipo\=</span>{event.type}`);
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntentSucceeded = event.data.object;
@@ -301,7 +294,7 @@ const stripeWebhookHandler = async (req, res) => {
       if (paymentIntentSucceeded.metadata && paymentIntentSucceeded.metadata.internalPaymentId) {
         const internalPaymentId = parseInt(paymentIntentSucceeded.metadata.internalPaymentId);
         console.log(`[WEBHOOK CTRL] ID de Pagamento Interno (da metadata): ${internalPaymentId}`);
-        
+
         try {
           const payment = await db.Payment.findByPk(internalPaymentId);
 
@@ -337,10 +330,6 @@ const stripeWebhookHandler = async (req, res) => {
           }
         } catch (dbError) {
           console.error(`[WEBHOOK CTRL] ERRO DE BASE DE DADOS ao processar payment_intent.succeeded para internalPaymentId ${internalPaymentId}:`, dbError);
-          // Considerar retornar 500 aqui para que o Stripe retente, ou logar e retornar 200 para evitar retentativas de um erro de lógica/DB.
-          // Por agora, vamos logar e deixar o Stripe considerar como recebido para não causar loops de webhook em caso de erro persistente de BD.
-          // Se for um erro transitório, o Stripe pode retentar se não enviarmos 200. Mas se for um bug, pode encher os logs.
-          // Uma estratégia mais robusta poderia envolver uma fila de "dead letter" ou um mecanismo de alerta.
         }
       } else {
         console.warn('[WEBHOOK CTRL] AVISO: Webhook payment_intent.succeeded recebido SEM internalPaymentId nos metadata.');

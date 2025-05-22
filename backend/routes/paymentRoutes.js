@@ -74,13 +74,8 @@ router.post(
 // Webhook do Stripe
 router.post(
   '/stripe-webhook',
-  (req, res, next) => { // ***** INÍCIO DA ALTERAÇÃO *****
-    console.log('!!! ROTA /stripe-webhook ACIONADA !!!'); // Log para ver se a rota é chamada
-    console.log('Headers do Webhook:', JSON.stringify(req.headers, null, 2));
-    next(); // Passa para o próximo middleware ou handler
-  }, // ***** FIM DA ALTERAÇÃO *****
-  express.raw({type: 'application/json'}), // Middleware para obter o raw body para este endpoint
-  paymentController.stripeWebhookHandler
+  express.raw({type: 'application/json'}), // Essencial para o corpo raw
+  paymentController.stripeWebhookHandler   // Controller com logs detalhados
 );
 
 module.exports = router;
