@@ -1,18 +1,13 @@
 // backend/controllers/paymentController.js
 const db = require('../models');
 const { Op } = require('sequelize');
-const { format } = require('date-fns');
+// const { format } = require('date-fns'); // Removido se não for usado diretamente aqui. Se for, mantenha.
 require('dotenv').config(); // Garante que as variáveis de ambiente são carregadas
 
 // Inicializa o Stripe com a tua chave secreta
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // --- Funções do Administrador (EXISTENTES - MANTÊM-SE) ---
-// adminCreatePayment, adminGetAllPayments, adminGetTotalPaid, adminUpdatePaymentStatus, adminDeletePayment
-// (O teu código existente para estas funções permanece aqui)
-// @desc    Admin cria um novo pagamento para um utilizador
-// @route   POST /payments (ou /api/payments)
-// @access  Privado (Admin Staff)
 const adminCreatePayment = async (req, res) => {
   const { userId, amount, paymentDate, referenceMonth, category, description, status, relatedResourceId, relatedResourceType } = req.body;
   const staffId = req.staff.id;
@@ -165,7 +160,6 @@ const adminDeletePayment = async (req, res) => {
 
 // --- Funções do Cliente (EXISTENTES - `clientGetMyPayments` MANTÉM-SE) ---
 const clientGetMyPayments = async (req, res) => {
-  // ... (o teu código existente para esta função) ...
   const userId = req.user.id;
   try {
     const payments = await db.Payment.findAll({
@@ -182,99 +176,6 @@ const clientGetMyPayments = async (req, res) => {
   }
 };
 
-// @desc    Lida com webhooks do Stripe
-// @route   POST /payments/stripe-webhook
-// @access  Público (mas verificado com assinatura do Stripe)
-const stripeWebhookHandler = async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET; // Precisarás de configurar isto
-
-  if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET não está configurado.');
-    return res.status(400).send('Webhook secret não configurado no servidor.');
-  }
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-  } catch (err) {
-    console.error(`⚠️ Erro na verificação da assinatura do webhook: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  // Lida com o evento
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntentSucceeded = event.data.object;
-      console.log('✅ PaymentIntent bem-sucedido:', paymentIntentSucceeded.id);
-      // Lógica para atualizar o teu sistema:
-      // paymentIntentSucceeded.metadata.internalPaymentId contém o ID do teu pagamento interno
-      if (paymentIntentSucceeded.metadata.internalPaymentId) {
-        const internalPaymentId = parseInt(paymentIntentSucceeded.metadata.internalPaymentId);
-        const payment = await db.Payment.findByPk(internalPaymentId);
-
-        if (payment && payment.status === 'pendente') {
-          payment.status = 'pago';
-          // Opcional: podes querer guardar o ID do PaymentIntent do Stripe no teu registo de Payment
-          // payment.stripePaymentIntentId = paymentIntentSucceeded.id;
-          await payment.save();
-          console.log(`Pagamento interno ID ${internalPaymentId} atualizado para 'pago'.`);
-
-          // Atualizar a consulta associada, se for um sinal
-          if (payment.relatedResourceType === 'appointment' &&
-              payment.category === 'sinal_consulta' &&
-              payment.relatedResourceId) {
-            const appointment = await db.Appointment.findByPk(payment.relatedResourceId);
-            if (appointment) {
-              appointment.signalPaid = true;
-              if (appointment.status === 'agendada') {
-                appointment.status = 'confirmada';
-              }
-              await appointment.save();
-              console.log(`Consulta ID ${appointment.id} atualizada: signalPaid = true, status = ${appointment.status}.`);
-            }
-          }
-        } else if (payment && payment.status === 'pago') {
-            console.log(`Pagamento interno ID ${internalPaymentId} já estava 'pago'. Nenhuma ação tomada.`);
-        } else {
-            console.warn(`Pagamento interno ID ${internalPaymentId} não encontrado ou não estava pendente.`);
-        }
-      } else {
-        console.warn('Webhook payment_intent.succeeded recebido sem internalPaymentId nos metadata.');
-      }
-      break;
-    case 'payment_intent.payment_failed':
-      const paymentIntentFailed = event.data.object;
-      console.log('❌ PaymentIntent falhou:', paymentIntentFailed.id, paymentIntentFailed.last_payment_error?.message);
-      // Opcional: Atualizar o teu Payment interno para 'rejeitado' ou 'falhou'
-      // e notificar o utilizador.
-      if (paymentIntentFailed.metadata.internalPaymentId) {
-        const internalPaymentId = parseInt(paymentIntentFailed.metadata.internalPaymentId);
-        const payment = await db.Payment.findByPk(internalPaymentId);
-        if (payment && payment.status === 'pendente') {
-            payment.status = 'rejeitado'; // ou um novo status 'falhou'
-            payment.description = (payment.description || '') + ` Falha Stripe: ${paymentIntentFailed.last_payment_error?.message || 'desconhecido'}`;
-            await payment.save();
-            console.log(`Pagamento interno ID ${internalPaymentId} atualizado para 'rejeitado' devido a falha no Stripe.`);
-        }
-      }
-      break;
-    // ... lida com outros tipos de eventos que te interessem
-    default:
-      console.log(`Evento Stripe não tratado: ${event.type}`);
-  }
-
-  // Retorna uma resposta 200 para o Stripe para confirmar o recebimento do evento
-  res.status(200).json({ received: true });
-};
-
-// `clientAcceptPayment` será substituído pela lógica de pagamento com Stripe.
-// Vamos criar um novo endpoint para iniciar o pagamento com Stripe.
-
-// @desc    Cliente cria uma intenção de pagamento Stripe para um pagamento pendente
-// @route   POST /payments/:paymentId/create-stripe-intent
-// @access  Privado (Cliente)
 const createStripePaymentIntent = async (req, res) => {
   const { paymentId } = req.params;
   const userId = req.user.id;
@@ -295,26 +196,23 @@ const createStripePaymentIntent = async (req, res) => {
         return res.status(400).json({ message: `Esta categoria de pagamento (${payment.category}) não pode ser processada online no momento.` });
     }
 
-    const amountInCents = Math.round(parseFloat(payment.amount) * 100); // Stripe espera o valor em cêntimos
+    const amountInCents = Math.round(parseFloat(payment.amount) * 100);
 
-    // Crio uma PaymentIntent no Stripe
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
-      currency: 'eur', // Define a tua moeda
+      currency: 'eur',
       metadata: {
-        internalPaymentId: payment.id, // Guarda o ID do teu pagamento interno
+        internalPaymentId: payment.id,
         userId: userId,
         relatedResourceId: payment.relatedResourceId,
         relatedResourceType: payment.relatedResourceType,
         category: payment.category,
       },
-      // Podes adicionar outros parâmetros conforme a documentação do Stripe
-      // por exemplo, `payment_method_types: ['card', 'multibanco']` se configurado
     });
 
     res.send({
-      clientSecret: paymentIntent.client_secret, // O frontend usará isto
-      paymentId: payment.id, // Envia o ID do pagamento de volta para referência
+      clientSecret: paymentIntent.client_secret,
+      paymentId: payment.id,
       amount: payment.amount,
     });
 
@@ -324,13 +222,6 @@ const createStripePaymentIntent = async (req, res) => {
   }
 };
 
-// A função clientAcceptPayment original (que apenas mudava o status) já não será chamada diretamente pelo cliente para pagamentos Stripe.
-// O status do pagamento será atualizado pelo webhook do Stripe.
-// No entanto, podemos manter uma versão dela para o admin poder marcar como pago manualmente, se necessário,
-// ou para outros tipos de pagamento que não usem Stripe.
-// A versão que forneci anteriormente para adminUpdatePaymentStatus já cobre um pouco disso.
-
-// Se ainda precisares da antiga clientAcceptPayment para algo específico não-Stripe:
 const clientAcceptNonStripePayment = async (req, res) => {
   const { paymentId } = req.params;
   const userId = req.user.id;
@@ -339,14 +230,15 @@ const clientAcceptNonStripePayment = async (req, res) => {
     if (!payment) return res.status(404).json({ message: 'Pagamento não encontrado.' });
     if (payment.userId !== userId) return res.status(403).json({ message: 'Não tem permissão.' });
     if (payment.status !== 'pendente') return res.status(400).json({ message: `Pagamento não pendente.` });
-    // Adicionar verificação para garantir que esta rota só é usada para pagamentos não-Stripe
-    if (payment.category === 'sinal_consulta' /*ou outras categorias pagáveis via Stripe*/) {
-        // return res.status(400).json({ message: 'Este tipo de pagamento deve ser processado via gateway.'});
-    }
+    
+    // Esta verificação pode ser ajustada ou removida se esta rota for apenas para casos não-Stripe
+    // if (payment.category === 'sinal_consulta' /*ou outras categorias pagáveis via Stripe*/) {
+    //     // return res.status(400).json({ message: 'Este tipo de pagamento deve ser processado via gateway.'});
+    // }
 
     payment.status = 'pago';
     await payment.save();
-    // Lógica de atualizar consulta se for sinal (como tínhamos antes)
+    
     if (payment.relatedResourceType === 'appointment' && payment.category === 'sinal_consulta' && payment.relatedResourceId) {
       const appointment = await db.Appointment.findByPk(payment.relatedResourceId);
       if (appointment) {
@@ -363,6 +255,131 @@ const clientAcceptNonStripePayment = async (req, res) => {
 };
 
 
+// @desc    Lida com webhooks do Stripe
+// @route   POST /payments/stripe-webhook
+// @access  Público (mas verificado com assinatura do Stripe)
+const stripeWebhookHandler = async (req, res) => {
+  // ***** INÍCIO DOS LOGS DETALHADOS *****
+  console.log(`---------- ${new Date().toISOString()} --- [STRIPE WEBHOOK CONTROLLER INICIO] ---`);
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  console.log('[WEBHOOK CTRL] Secret do Ambiente (primeiros 5):', webhookSecret ? webhookSecret.substring(0, 5) + '...' : 'NÃO DEFINIDO');
+  console.log('[WEBHOOK CTRL] Assinatura Recebida (primeiros 10):', sig ? sig.substring(0, 10) + '...' : 'NÃO RECEBIDA');
+
+  if (!webhookSecret) {
+    console.error('[WEBHOOK CTRL] ERRO CRÍTICO: STRIPE_WEBHOOK_SECRET não está configurado no ambiente do servidor.');
+    return res.status(400).send('Webhook secret não configurado no servidor.');
+  }
+  if (!sig) {
+    console.error('[WEBHOOK CTRL] Erro: Cabeçalho stripe-signature em falta no pedido do Stripe.');
+    return res.status(400).send('Cabeçalho stripe-signature em falta.');
+  }
+
+  let event;
+
+  try {
+    console.log('[WEBHOOK CTRL] A tentar construir evento Stripe a partir do corpo RAW...');
+    // req.body aqui deve ser o corpo RAW, graças ao middleware express.raw na rota.
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    console.log('[WEBHOOK CTRL] Evento Stripe construído com SUCESSO. Tipo:', event.type, 'ID:', event.id);
+  } catch (err) {
+    console.error(`[WEBHOOK CTRL] ⚠️ FALHA na verificação da assinatura do webhook: ${err.message}`);
+    console.error('[WEBHOOK CTRL] Detalhes do erro de assinatura:', err); // Log completo do erro de assinatura
+    return res.status(400).send(`Webhook Error (Signature Verification Failed): ${err.message}`);
+  }
+  // ***** FIM DOS LOGS DETALHADOS INICIAIS *****
+
+  // Lida com o evento
+  console.log(`[WEBHOOK CTRL] A processar evento: ID=${event.id}, Tipo=${event.type}`);
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntentSucceeded = event.data.object;
+      console.log('[WEBHOOK CTRL] ✅ Payment_intent.succeeded DETECTADO para PI_ID:', paymentIntentSucceeded.id);
+      console.log('[WEBHOOK CTRL] Metadata do PaymentIntent:', paymentIntentSucceeded.metadata);
+
+      if (paymentIntentSucceeded.metadata && paymentIntentSucceeded.metadata.internalPaymentId) {
+        const internalPaymentId = parseInt(paymentIntentSucceeded.metadata.internalPaymentId);
+        console.log(`[WEBHOOK CTRL] ID de Pagamento Interno (da metadata): ${internalPaymentId}`);
+        
+        try {
+          const payment = await db.Payment.findByPk(internalPaymentId);
+
+          if (payment) {
+            console.log(`[WEBHOOK CTRL] Pagamento interno ID ${internalPaymentId} encontrado. Status atual: ${payment.status}`);
+            if (payment.status === 'pendente' || payment.status !== 'pago') {
+              payment.status = 'pago';
+              await payment.save();
+              console.log(`[WEBHOOK CTRL] Pagamento interno ID ${internalPaymentId} atualizado para 'pago' na BD.`);
+
+              if (payment.relatedResourceType === 'appointment' &&
+                  payment.category === 'sinal_consulta' &&
+                  payment.relatedResourceId) {
+                console.log(`[WEBHOOK CTRL] É um sinal para consulta ID: ${payment.relatedResourceId}. A atualizar consulta...`);
+                const appointment = await db.Appointment.findByPk(payment.relatedResourceId);
+                if (appointment) {
+                  console.log(`[WEBHOOK CTRL] Consulta ID ${appointment.id} encontrada. Status atual: ${appointment.status}`);
+                  appointment.signalPaid = true;
+                  if (appointment.status === 'agendada') {
+                    appointment.status = 'confirmada';
+                  }
+                  await appointment.save();
+                  console.log(`[WEBHOOK CTRL] Consulta ID ${appointment.id} ATUALIZADA na BD: signalPaid = true, status = ${appointment.status}.`);
+                } else {
+                  console.warn(`[WEBHOOK CTRL] AVISO: Consulta ID ${payment.relatedResourceId} (associada ao pag. de sinal ID ${payment.id}) não encontrada na BD.`);
+                }
+              }
+            } else if (payment.status === 'pago') {
+                console.log(`[WEBHOOK CTRL] Pagamento interno ID ${internalPaymentId} já estava 'pago'. Nenhuma ação de atualização de status tomada.`);
+            }
+          } else {
+              console.warn(`[WEBHOOK CTRL] AVISO: Pagamento interno ID ${internalPaymentId} (da metadata) não encontrado na base de dados.`);
+          }
+        } catch (dbError) {
+          console.error(`[WEBHOOK CTRL] ERRO DE BASE DE DADOS ao processar payment_intent.succeeded para internalPaymentId ${internalPaymentId}:`, dbError);
+          // Considerar retornar 500 aqui para que o Stripe retente, ou logar e retornar 200 para evitar retentativas de um erro de lógica/DB.
+          // Por agora, vamos logar e deixar o Stripe considerar como recebido para não causar loops de webhook em caso de erro persistente de BD.
+          // Se for um erro transitório, o Stripe pode retentar se não enviarmos 200. Mas se for um bug, pode encher os logs.
+          // Uma estratégia mais robusta poderia envolver uma fila de "dead letter" ou um mecanismo de alerta.
+        }
+      } else {
+        console.warn('[WEBHOOK CTRL] AVISO: Webhook payment_intent.succeeded recebido SEM internalPaymentId nos metadata.');
+      }
+      break;
+    case 'payment_intent.payment_failed':
+      const paymentIntentFailed = event.data.object;
+      console.log('[WEBHOOK CTRL] ❌ Payment_intent.payment_failed DETECTADO para PI_ID:', paymentIntentFailed.id);
+      console.log('[WEBHOOK CTRL] Erro do PaymentIntent:', paymentIntentFailed.last_payment_error?.message);
+      if (paymentIntentFailed.metadata && paymentIntentFailed.metadata.internalPaymentId) {
+        const internalPaymentIdFailed = parseInt(paymentIntentFailed.metadata.internalPaymentId);
+        console.log(`[WEBHOOK CTRL] Falha para ID de Pagamento Interno (da metadata): ${internalPaymentIdFailed}`);
+        try {
+            const paymentToFail = await db.Payment.findByPk(internalPaymentIdFailed);
+            if (paymentToFail && paymentToFail.status === 'pendente') {
+                paymentToFail.status = 'rejeitado'; 
+                paymentToFail.description = (paymentToFail.description || '') + ` Falha Stripe: ${paymentIntentFailed.last_payment_error?.message || 'desconhecido'}`;
+                await paymentToFail.save();
+                console.log(`[WEBHOOK CTRL] Pagamento interno ID ${internalPaymentIdFailed} atualizado para 'rejeitado' na BD.`);
+            } else if (paymentToFail) {
+                console.log(`[WEBHOOK CTRL] Pagamento interno ID ${internalPaymentIdFailed} não estava pendente (status: ${paymentToFail.status}). Nenhuma ação de status de falha tomada.`);
+            } else {
+                console.warn(`[WEBHOOK CTRL] AVISO: Pagamento interno ID ${internalPaymentIdFailed} (para falha) não encontrado na BD.`);
+            }
+        } catch (dbErrorFailed) {
+            console.error(`[WEBHOOK CTRL] ERRO DE BASE DE DADOS ao processar payment_intent.payment_failed para internalPaymentId ${internalPaymentIdFailed}:`, dbErrorFailed);
+        }
+      } else {
+          console.warn('[WEBHOOK CTRL] AVISO: Webhook payment_intent.payment_failed recebido SEM internalPaymentId nos metadata.');
+      }
+      break;
+    default:
+      console.log(`[WEBHOOK CTRL] Evento Stripe não tratado explicitamente: ${event.type}`);
+  }
+
+  console.log(`--- ${new Date().toISOString()} --- [STRIPE WEBHOOK CONTROLLER FIM] ---`);
+  res.status(200).json({ received: true });
+};
+
 module.exports = {
   adminCreatePayment,
   adminGetAllPayments,
@@ -370,7 +387,7 @@ module.exports = {
   adminUpdatePaymentStatus,
   adminDeletePayment,
   clientGetMyPayments,
-  createStripePaymentIntent, // NOVA FUNÇÃO
-  clientAcceptPayment: clientAcceptNonStripePayment, // Renomeada para clareza, se mantiveres a funcionalidade
+  createStripePaymentIntent,
+  clientAcceptPayment: clientAcceptNonStripePayment, 
   stripeWebhookHandler,
 };
