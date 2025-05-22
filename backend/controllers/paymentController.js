@@ -192,15 +192,17 @@ const createStripePaymentIntent = async (req, res) => {
     if (payment.status !== 'pendente') {
       return res.status(400).json({ message: `Este pagamento não está pendente (status atual: ${payment.status}).` });
     }
-    if (payment.category !== 'sinal_consulta' && payment.category !== 'consulta_fisioterapia' /* Adicionar outras categorias pagáveis online */) {
+    if (payment.category !== 'sinal_consulta' && payment.category !== 'consulta_fisioterapia' && payment.category !== 'mensalidade_treino') {
         return res.status(400).json({ message: `Esta categoria de pagamento (${payment.category}) não pode ser processada online no momento.` });
     }
 
     const amountInCents = Math.round(parseFloat(payment.amount) * 100);
 
+    // ***** INÍCIO DA ALTERAÇÃO PARA MULTIBANCO *****
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: 'eur',
+      payment_method_types: ['card', 'multibanco'], // ALTERADO/ADICIONADO 'multibanco' AQUI
       metadata: {
         internalPaymentId: payment.id,
         userId: userId,
@@ -209,6 +211,9 @@ const createStripePaymentIntent = async (req, res) => {
         category: payment.category,
       },
     });
+    // ***** FIM DA ALTERAÇÃO PARA MULTIBANCO *****
+
+    console.log(`[CREATE INTENT] PaymentIntent criado para Pag.ID ${payment.id}: PI_ID=${paymentIntent.id}, ClientSecret=${paymentIntent.client_secret.substring(0,20)}... Métodos: ${paymentIntent.payment_method_types.join(', ')}`);
 
     res.send({
       clientSecret: paymentIntent.client_secret,
@@ -221,6 +226,7 @@ const createStripePaymentIntent = async (req, res) => {
     res.status(500).json({ message: 'Erro ao iniciar processo de pagamento.', error: error.message });
   }
 };
+
 
 const clientAcceptNonStripePayment = async (req, res) => {
   const { paymentId } = req.params;

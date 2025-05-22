@@ -296,6 +296,15 @@ const MyPaymentsPage = () => {
     fetchMyPayments().finally(() => setPageInfoMessage(''));
   };
 
+  const handleStripeRequiresAction = (paymentIntent) => {
+    console.log("Stripe - Ação Requerida (ex: Multibanco):", paymentIntent);
+    // O StripeCheckoutForm já está a mostrar os detalhes do Multibanco.
+    // Podes querer mudar o título do modal ou adicionar uma mensagem informativa na página principal.
+    setPageInfoMessage("Foram geradas referências Multibanco. Por favor, utiliza os dados apresentados no formulário para completar o pagamento.");
+    // Normalmente, não fechas o modal aqui, pois o utilizador precisa de ver as referências.
+    // O fetchMyPayments() não vai mostrar o pagamento como "pago" imediatamente, só após o webhook.
+};
+
 
   if (loading && !showStripeModal) {
     return <PageContainer><LoadingText>A carregar os seus pagamentos...</LoadingText></PageContainer>;
@@ -380,6 +389,7 @@ const MyPaymentsPage = () => {
                 paymentDetails={currentPaymentDetails}
                 onSuccess={handleStripePaymentSuccess}
                 onError={handleStripePaymentError}
+                onRequiresAction={handleStripeRequiresAction} // <-- Adiciona esta prop
               />
             </Elements>
           </ModalContent>
