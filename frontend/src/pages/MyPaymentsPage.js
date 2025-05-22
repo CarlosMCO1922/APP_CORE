@@ -203,8 +203,8 @@ const MyPaymentsPage = () => {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search); //
     if (queryParams.get('payment_attempted') === 'true') { //
-        const paymentId = queryParams.get('payment_id'); //
-        setPageSuccessMessage(`Tentativa de pagamento para ID ${paymentId} registada. O status será atualizado assim que o processamento for concluído.`); //
+        const internalPaymentId = queryParams.get('internal_payment_id'); //
+        setPageSuccessMessage(`Tentativa de pagamento para ID ${internalPaymentId} registada. O status será atualizado assim que o processamento for concluído.`); //
         fetchMyPayments(); //
         navigate(location.pathname, { replace: true }); //
     }
