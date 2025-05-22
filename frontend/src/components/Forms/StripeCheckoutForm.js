@@ -5,8 +5,8 @@ import styled from 'styled-components';
 
 const FormContainer = styled.form`
   padding: 20px;
-  border-radius: 8px;
   background-color: #2C2C2C;
+  border-radius: 8px;
 `;
 
 const ErrorMessage = styled.p`
@@ -15,6 +15,7 @@ const ErrorMessage = styled.p`
   margin-top: 15px;
   margin-bottom: 0;
   text-align: center;
+  white-space: pre-wrap;
 `;
 
 const SubmitButton = styled.button`
@@ -47,8 +48,12 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!stripe || !elements) {
-      setMessage('Stripe não está pronto. Aguarde um momento.');
+    if (!stripe) {
+      setMessage('Stripe.js não carregou.');
+      console.error("StripeCheckoutForm: Instância Stripe não disponível.");
+    } else if (!elements) {
+      setMessage('Elementos do Stripe não carregaram.');
+      console.error("StripeCheckoutForm: Instância Elements não disponível.");
     } else {
       setMessage(null);
     }
@@ -57,18 +62,16 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!stripe || !elements) {
-      setMessage("Stripe.js ainda não carregou. Tente novamente em instantes.");
+      setMessage("Formulário de pagamento não está pronto. Tente novamente em instantes.");
       setIsLoading(false);
       return;
     }
     setIsLoading(true);
     setMessage(null);
 
-    // CORREÇÃO DA RETURN_URL:
-    // Usar o ID do seu pagamento interno para referência no retorno.
+    // CORREÇÃO E SIMPLIFICAÇÃO DA RETURN_URL:
     const returnUrl = `${window.location.origin}/meus-pagamentos?payment_attempted=true&internal_payment_id=${paymentDetails?.id || 'unknown'}`;
-    console.log("Return URL para Stripe (StripeCheckoutForm):", returnUrl);
-
+    console.log("A tentar confirmar pagamento com return_url:", returnUrl); // DEBUG
 
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
@@ -79,9 +82,8 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError }) => {
     });
 
     if (error) {
-      // Erros como "payment_intent_unexpected_state" podem acontecer se o PaymentIntent já foi processado.
       const errorMessage = error.message || "Ocorreu um erro inesperado durante o pagamento.";
-      console.error("Erro no confirmPayment:", error);
+      console.error("Erro no stripe.confirmPayment:", error);
       setMessage(errorMessage);
       if (onError) onError(errorMessage);
       setIsLoading(false);
@@ -89,21 +91,22 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError }) => {
     }
 
     if (paymentIntent) {
+      console.log("Resultado da PaymentIntent (StripeCheckoutForm):", paymentIntent);
       if (paymentIntent.status === 'succeeded') {
         setMessage(`Pagamento de ${Number(paymentDetails.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })} realizado com sucesso!`);
         if (onSuccess) onSuccess(paymentIntent);
       } else if (paymentIntent.status === 'processing') {
         setMessage("O seu pagamento está a ser processado.");
       } else {
-        setMessage(`Status do pagamento: ${paymentIntent.status}. Tente novamente ou contacte o suporte se o problema persistir.`);
-        if (onError) onError(`Status do pagamento: ${paymentIntent.status}`);
+        setMessage(`Status do pagamento: ${paymentIntent.status}. ${paymentIntent.last_payment_error?.message || 'Por favor, siga as instruções ou tente novamente.'}`);
+        if (onError) onError(`Status do pagamento: ${paymentIntent.status}. ${paymentIntent.last_payment_error?.message || ''}`);
       }
     }
     setIsLoading(false);
   };
 
   if (!stripe || !elements) {
-    return <ErrorMessage>{message || "A carregar formulário de pagamento..."}</ErrorMessage>;
+    return <ErrorMessage>{message || "A inicializar formulário de pagamento..."}</ErrorMessage>;
   }
 
   return (
@@ -118,5 +121,4 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError }) => {
     </FormContainer>
   );
 };
-
 export default StripeCheckoutForm;
