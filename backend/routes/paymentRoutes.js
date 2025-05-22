@@ -74,8 +74,8 @@ router.post(
 // Webhook do Stripe
 router.post(
   '/stripe-webhook',
-  express.raw({type: 'application/json'}), // Essencial para o corpo raw
-  paymentController.stripeWebhookHandler   // Controller com logs detalhados
+  express.raw({type: 'application/json'}), // Middleware para obter o raw body para este endpoint
+  paymentController.stripeWebhookHandler
 );
 
 module.exports = router;
