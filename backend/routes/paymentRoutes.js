@@ -5,6 +5,7 @@ const paymentController = require('../controllers/paymentController');
 const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddleware');
 
 // --- Rotas do Administrador (Staff com role 'admin') ---
+// Criar um novo pagamento para um utilizador
 router.post(
     '/', 
     protect,
@@ -12,6 +13,7 @@ router.post(
     paymentController.adminCreatePayment
 );
 
+// Listar todos os pagamentos (com filtros)
 router.get(
     '/', 
     protect, 
@@ -19,6 +21,7 @@ router.get(
     paymentController.adminGetAllPayments
 );
 
+// Obter o total de pagamentos com status 'pago'
 router.get(
     '/total-paid', 
     protect, 
@@ -26,6 +29,7 @@ router.get(
     paymentController.adminGetTotalPaid
 );
 
+// Admin atualiza o status de um pagamento
 router.patch(
     '/:paymentId/status',
     protect,
@@ -33,15 +37,17 @@ router.patch(
     paymentController.adminUpdatePaymentStatus
 );
 
+// Admin elimina um pagamento (NOVA ROTA ADICIONADA SE FALTAR)
 router.delete(
-    '/:paymentId',
+    '/:paymentId', // Assumindo que a rota para eliminar é DELETE /payments/:paymentId
     protect,
     isAdminStaff,
-    paymentController.adminDeletePayment
+    paymentController.adminDeletePayment // Garante que esta função existe no controller
 );
 
 
 // --- Rotas do Cliente (User autenticado) ---
+// Cliente lista os seus próprios pagamentos
 router.get(
     '/my-payments', 
     protect,
@@ -49,13 +55,15 @@ router.get(
     paymentController.clientGetMyPayments
 );
 
+// Cliente "aceita" um pagamento pendente (LEGADO - para pagamentos não-Stripe)
 router.patch(
-    '/:paymentId/accept',
+    '/:paymentId/accept', // Endpoint para aceitar pagamento não-Stripe
     protect,
     isClientUser,
-    paymentController.clientAcceptPayment // Nota: no controller isto é clientAcceptNonStripePayment
+    paymentController.clientAcceptPayment // Deve ser clientAcceptNonStripePayment no controller
 );
 
+// Cliente cria uma intenção de pagamento Stripe
 router.post(
     '/:paymentId/create-stripe-intent',
     protect,
@@ -66,8 +74,13 @@ router.post(
 // Webhook do Stripe
 router.post(
   '/stripe-webhook',
+  (req, res, next) => { // ***** INÍCIO DA ALTERAÇÃO *****
+    console.log('!!! ROTA /stripe-webhook ACIONADA !!!'); // Log para ver se a rota é chamada
+    console.log('Headers do Webhook:', JSON.stringify(req.headers, null, 2));
+    next(); // Passa para o próximo middleware ou handler
+  }, // ***** FIM DA ALTERAÇÃO *****
   express.raw({type: 'application/json'}), // Middleware para obter o raw body para este endpoint
-  paymentController.stripeWebhookHandler   // Chama o controller com os logs detalhados
+  paymentController.stripeWebhookHandler
 );
 
 module.exports = router;
