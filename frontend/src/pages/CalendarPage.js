@@ -81,9 +81,9 @@ const EventComponent = ({ event }) => (
     <strong>{event.title.split('(')[0].trim()}</strong>
     <div style={{ fontSize: '0.8em', opacity: 0.9, lineHeight: '1.2' }}>
       {event.resource.type === 'training' &&
-        `(${event.resource.participantsCount !== undefined ? event.resource.participantsCount : event.resource.participants?.length || 0}/${event.resource.capacity}) ${event.resource.instructor?.firstName ? 'Instr: ' + event.resource.instructor.firstName.substring(0, 1) + '.' : ''}`
+        `(<span class="math-inline">\{event\.resource\.participantsCount \!\=\= undefined ? event\.resource\.participantsCount \: event\.resource\.participants?\.length \|\| 0\}/</span>{event.resource.capacity}) ${event.resource.instructor?.firstName ? 'Instr: ' + event.resource.instructor.firstName.substring(0, 1) + '.' : ''}`
       }
-      {event.resource.type === 'appointment' && event.resource.status !== 'disponível' && event.resource.professional?.firstName &&
+      {event.resource.type === 'appointment' && event.resource.status !== 'disponível' && event.resource.status !== 'pendente_aprovacao_staff' && event.resource.status !== 'confirmada' && event.resource.professional?.firstName && // MODIFICADO
         `Prof: ${event.resource.professional.firstName.substring(0, 1)}.`
       }
       {event.resource.type === 'appointment' && event.resource.status === 'disponível' &&
@@ -92,6 +92,11 @@ const EventComponent = ({ event }) => (
       {event.resource.type === 'appointment' && event.resource.status === 'pendente_aprovacao_staff' &&
         `(Pendente)`
       }
+      {/* ***** INÍCIO DA ADIÇÃO ***** */}
+      {event.resource.type === 'appointment' && event.resource.status === 'confirmada' &&
+        `(Confirmada)`
+      }
+      {/* ***** FIM DA ADIÇÃO ***** */}
     </div>
   </div>
 );
