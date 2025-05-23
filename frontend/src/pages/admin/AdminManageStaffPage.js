@@ -167,81 +167,53 @@ const ActionButton = styled.button`
   }
 `;
 
-const MessageBase = styled.p`
-  text-align: center; padding: 12px 18px; margin: 20px auto;
+const MessageBaseStyles = css` // Usar css helper para estilos partilhados se necessário, ou definir individualmente
+  text-align: center;
+  padding: 12px 18px;
+  margin: 20px auto;
   border-radius: ${({ theme }) => theme.borderRadius};
-  border-width: 1px; border-style: solid; max-width: 600px;
-  font-size: 0.9rem; font-weight: 500;
+  border-width: 1px;
+  border-style: solid;
+  max-width: 600px;
+  font-size: 0.9rem;
+  font-weight: 500;
 `;
-const LoadingText = styled.MessageBase` color: ${({ theme }) => theme.colors.primary}; border-color: transparent; background: transparent`;
-const ErrorText = styled.MessageBase` color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border-color: ${({ theme }) => theme.colors.error};`;
-const MessageText = styled.MessageBase` color: ${({ theme }) => theme.colors.success}; background-color: ${({ theme }) => theme.colors.successBg}; border-color: ${({ theme }) => theme.colors.success};`;
 
-// Modal Styled Components
-const ModalOverlay = styled.div`
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.85); display: flex;
-  justify-content: center; align-items: center;
-  z-index: 1050; padding: 20px;
-`;
-const ModalContent = styled.div`
-  background-color: #2A2A2A;
-  padding: clamp(25px, 4vw, 35px);
-  border-radius: 10px; width: 100%;
-  max-width: 500px; box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-  position: relative; max-height: 90vh; overflow-y: auto;
-`;
-const ModalTitle = styled.h2`
+const LoadingText = styled.p`
+  ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.primary};
-  margin-top: 0; margin-bottom: 20px;
-  font-size: clamp(1.4rem, 3.5vw, 1.7rem);
-  font-weight: 600; text-align: center;
-  padding-bottom: 15px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-color: transparent;
+  background: transparent;
 `;
-const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
-const ModalInput = styled.input`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
-  width: 100%;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+
+const ErrorText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
 `;
-const ModalSelect = styled.select`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
-  width: 100%;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+
+const MessageText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.success};
+  background-color: ${({ theme }) => theme.colors.successBg};
+  border-color: ${({ theme }) => theme.colors.success};
 `;
-const ModalLabel = styled.label`
-  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: 4px; display: block; font-weight: 500;
+
+// O ModalErrorText já estava a usar ErrorText como base, o que é bom.
+// Se ErrorText foi corrigido, ModalErrorText deve funcionar.
+// const ModalErrorText = styled(ErrorText)\`margin: -5px 0 10px 0; text-align:left; font-size: 0.8rem; padding: 8px 12px;\`;
+// No entanto, para garantir, vamos redefinir explicitamente se ainda der problemas:
+const ModalErrorText = styled.p`
+  ${MessageBaseStyles} // Herda os estilos base
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
+  margin: -5px 0 10px 0; // Sobrescreve margem
+  text-align: left;      // Sobrescreve alinhamento
+  font-size: 0.8rem;     // Sobrescreve tamanho da fonte
+  padding: 8px 12px;     // Sobrescreve padding
 `;
-const ModalActions = styled.div`
-  display: flex; flex-direction: column; gap: 10px;
-  margin-top: 25px; padding-top: 15px;
-  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
-`;
-const ModalButton = styled(ActionButton)` 
-  font-size: 0.9rem; 
-  padding: 10px 18px;
-  gap: 6px;
-  width: 100%;
-  @media (min-width: 480px) { width: auto; }
-`;
-const CloseButton = styled.button`
-  position: absolute; top: 10px; right: 10px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
-  transition: color 0.2s, transform 0.2s; border-radius: 50%;
-  &:hover { color: #fff; transform: scale(1.1); }
-`;
-const ModalErrorText = styled(ErrorText)`margin: -5px 0 10px 0; text-align:left; font-size: 0.8rem; padding: 8px 12px;`;
 
 const initialStaffFormState = {
   firstName: '', lastName: '', email: '', password: '', role: 'employee',
