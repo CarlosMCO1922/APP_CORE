@@ -31,16 +31,15 @@ const Title = styled.h1`
   }
 `;
 
-// NOVO: TableWrapper para scroll horizontal
 const TableWrapper = styled.div`
   width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-top: 20px; // Adiciona alguma margem acima da tabela se necessário
+  overflow-x: auto; /* Permite scroll horizontal se a tabela for mais larga que o contentor */
+  -webkit-overflow-scrolling: touch; /* Melhora a experiência de scroll em iOS */
+  margin-top: 20px;
 
   &::-webkit-scrollbar {
     height: 8px;
-    background-color: #252525; // Fundo da track da scrollbar
+    background-color: #252525; /* Fundo da track da scrollbar */
   }
   &::-webkit-scrollbar-track {
     background: #2c2c2c;
@@ -57,20 +56,19 @@ const TableWrapper = styled.div`
 
 const Table = styled.table`
   width: 100%;
-  /* max-width: 900px; // Removido max-width para permitir que a tabela use o espaço ou scrolle */
-  /* margin: 20px auto; // Removido margin auto pois TableWrapper vai controlar o layout */
+  /* max-width: 900px; // Removido para permitir que TableWrapper controle o scroll */
   border-collapse: collapse;
   background-color: ${props => props.theme.colors.cardBackground};
   border-radius: ${props => props.theme.borderRadius};
-  /* overflow: hidden; // Removido overflow:hidden daqui se for causar problemas com sticky header, mas o border-radius pode precisar de TableWrapper */
+  /* overflow: hidden; // Removido se causar problemas com sticky, TableWrapper pode ter border-radius */
   box-shadow: ${props => props.theme.boxShadow};
 
   th, td {
     border-bottom: 1px solid ${props => props.theme.colors.cardBorder};
-    padding: 10px 12px; // Reduzir padding para mobile
+    padding: 10px 12px;
     text-align: left;
-    font-size: 0.9rem; // Reduzir fonte para mobile
-    white-space: nowrap; // Evita que o texto quebre linha e force a largura da coluna
+    font-size: 0.9rem;
+    white-space: nowrap; // Impede que o texto quebre e force as colunas a serem largas
   }
 
   th {
@@ -78,12 +76,12 @@ const Table = styled.table`
     color: ${props => props.theme.colors.primary};
     font-weight: 600;
     position: sticky;
-    top: 60px; /* AJUSTA ESTA ALTURA! (Altura da tua Navbar) */
-    z-index: 10;
+    top: 60px; /* ALTURA DA TUA NAVBAR FIXA. AJUSTA ESTE VALOR SE NECESSÁRIO! */
+    z-index: 10; // Para ficar acima do tbody mas abaixo da navbar principal (que deve ter z-index maior)
   }
-
-  thead th { // Para garantir que o fundo é opaco
-      background-color: #303030;
+  
+  thead th { // Garante que o fundo do cabeçalho é opaco ao fazer scroll
+      background-color: #303030; // Deve ser a mesma cor de fundo do th
   }
 
   tr:last-child td {
@@ -92,7 +90,7 @@ const Table = styled.table`
   
   td:last-child { 
     text-align: center;
-    white-space: normal; // Permite que botões quebrem se necessário
+    white-space: normal; // Permite que os botões nesta coluna quebrem linha se necessário
   }
 
   @media (min-width: 768px) { // Estilos para ecrãs maiores
@@ -104,8 +102,8 @@ const Table = styled.table`
 `;
 
 const ActionButton = styled.button`
-  padding: 8px 12px; // Ajustar padding
-  font-size: 0.85rem; // Ajustar fonte
+  padding: 8px 12px;
+  font-size: 0.85rem;
   border-radius: ${props => props.theme.borderRadius};
   cursor: pointer;
   border: none;
@@ -113,8 +111,8 @@ const ActionButton = styled.button`
   background-color: ${props => props.theme.colors.primary};
   color: ${props => props.theme.colors.textDark};
   font-weight: 500;
-  min-width: 80px; // Ajustar min-width
-  margin: 2px; // Adicionar pequena margem para botões que quebram linha
+  min-width: 80px;
+  margin: 2px;
 
   &:hover:not(:disabled) {
     background-color: #e6c358;
@@ -123,6 +121,15 @@ const ActionButton = styled.button`
     background-color: ${props => props.theme.colors.buttonSecondaryBg};
     color: ${props => props.theme.colors.textMuted};
     cursor: not-allowed;
+  }
+`;
+
+const RefreshButton = styled(ActionButton)`
+  background-color: ${props => props.theme.colors.buttonSecondaryBg};
+  color: ${props => props.theme.colors.textMain};
+  margin-top: 10px;
+  &:hover:not(:disabled) {
+    background-color: ${props => props.theme.colors.buttonSecondaryHoverBg};
   }
 `;
 
@@ -142,7 +149,6 @@ const StatusBadge = styled.span`
   &.cancelado, &.rejeitado { background-color: ${props => props.theme.colors.error || '#FF6B6B'}; }
   &.processando { background-color: #2196F3; }
 `;
-
 
 const LoadingText = styled.p`
   font-size: 1.1rem;
@@ -172,20 +178,17 @@ const MessageText = styled.p`
   margin: 15px auto;
   max-width: 600px;
 `;
-
-const InfoText = styled(MessageText)` // NOVO
+const InfoText = styled(MessageText)`
   color: ${props => props.theme.colors.textMuted};
   background-color: #2a2a2a;
   border-color: #444;
 `;
-
 const NoItemsText = styled.p`
   font-size: 1rem;
   color: ${props => props.theme.colors.textMuted};
   text-align: center;
   padding: 20px 0;
 `;
-
 const StyledLink = styled(Link)`
   color: ${props => props.theme.colors.primary};
   font-size: 1.1rem;
@@ -264,7 +267,7 @@ const MyPaymentsPage = () => {
         );
         navigate(location.pathname, { replace: true }); 
         const timer = setTimeout(() => {
-            setPageInfoMessage(msg => msg + " A verificar novamente...");
+            setPageInfoMessage(msg => msg ? (msg + " A verificar novamente...") : "A verificar estado do pagamento...");
             fetchMyPayments(false);
         }, 5000);
         return () => clearTimeout(timer);
@@ -273,7 +276,6 @@ const MyPaymentsPage = () => {
 
 
   const handleInitiateStripePayment = async (payment) => {
-    // ... (lógica como antes)
     const pagableOnlineCategories = ['sinal_consulta', 'consulta_fisioterapia', 'mensalidade_treino'];
     if (payment.status !== 'pendente' || !pagableOnlineCategories.includes(payment.category)) {
         setPageError("Este tipo de pagamento não está configurado para pagamento online ou já não está pendente.");
@@ -300,7 +302,6 @@ const MyPaymentsPage = () => {
   };
 
   const handleStripePaymentSuccess = (paymentIntent) => {
-    // ... (lógica como antes)
     setShowStripeModal(false);
     setStripeClientSecret(null);
     setPageSuccessMessage(`O pagamento para "${currentPaymentDetails?.description}" foi processado pelo Stripe! O estado na lista deverá atualizar em breve.`);
@@ -311,13 +312,23 @@ const MyPaymentsPage = () => {
     }, 3000);
   };
 
-  const handleStripePaymentError = (errorMessage) => { /* ... como antes ... */ };
-  const handleStripeRequiresAction = (paymentIntent) => { /* ... como na última versão para Multibanco ... */ 
-    console.log("Stripe - Ação Requerida (ex: Multibanco):", paymentIntent);
-    setPageInfoMessage("Foram geradas referências Multibanco. Por favor, utiliza os dados apresentados no formulário para completar o pagamento.");
+  const handleStripePaymentError = (errorMessage) => { 
+    console.error("Stripe Payment Error (MyPaymentsPage):", errorMessage);
+    // O erro já é mostrado no StripeCheckoutForm.
   };
 
-  const handleRefreshPayments = () => { /* ... como antes ... */ };
+  const handleStripeRequiresAction = (paymentIntent) => { 
+    console.log("Stripe - Ação Requerida (ex: Multibanco):", paymentIntent);
+    setPageInfoMessage("Foram geradas referências para o método de pagamento escolhido. Por favor, utiliza os dados apresentados no formulário para completar o pagamento.");
+    // O modal permanece aberto para mostrar os detalhes do Multibanco
+  };
+
+  const handleRefreshPayments = () => {
+    setPageInfoMessage('A atualizar lista de pagamentos...');
+    setPageError('');
+    setPageSuccessMessage('');
+    fetchMyPayments().finally(() => setTimeout(() => setPageInfoMessage(''), 3000)); // Limpa a mensagem de info após um tempo
+  };
 
   if (loading && !showStripeModal) {
     return <PageContainer><LoadingText>A carregar os seus pagamentos...</LoadingText></PageContainer>;
@@ -333,7 +344,7 @@ const MyPaymentsPage = () => {
       </div>
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <RefreshButton onClick={handleRefreshPayments} disabled={loading}>
-          {loading ? 'A atualizar...' : 'Atualizar Lista de Pagamentos'}
+          {loading && actionLoading !== 'refresh' ? 'A atualizar...' : 'Atualizar Lista'}
         </RefreshButton>
       </div>
 
@@ -342,7 +353,7 @@ const MyPaymentsPage = () => {
       {pageInfoMessage && !showStripeModal && <InfoText>{pageInfoMessage}</InfoText>}
 
       {payments.length > 0 ? (
-        <TableWrapper> {/* ENVOLVER A TABELA */}
+        <TableWrapper>
           <Table>
             <thead>
               <tr>
@@ -391,9 +402,9 @@ const MyPaymentsPage = () => {
       )}
 
       {showStripeModal && stripeClientSecret && currentPaymentDetails && (
-        <ModalOverlay onClick={() => { setShowStripeModal(false); /*setStripeError('');*/ } }>
+        <ModalOverlay onClick={() => { setShowStripeModal(false); } }>
           <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={() => { setShowStripeModal(false); /*setStripeError('');*/ } }>&times;</CloseButton>
+            <CloseButton onClick={() => { setShowStripeModal(false); } }>&times;</CloseButton>
             <ModalTitle>Pagamento Seguro: {currentPaymentDetails.description}</ModalTitle>
             <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
               <StripeCheckoutForm
