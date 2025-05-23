@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { useAuth } from '../../context/AuthContext'; // Ajusta o caminho se necessário
+import { useAuth } from '../context/AuthContext'; // Ajusta o caminho se necessário
 
 // --- Styled Components ---
 const PageContainer = styled.div`
