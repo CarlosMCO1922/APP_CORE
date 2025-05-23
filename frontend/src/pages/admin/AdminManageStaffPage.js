@@ -1,12 +1,12 @@
 // src/pages/admin/AdminManageStaffPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components'; // Adicionado css aqui
 import { useAuth } from '../../context/AuthContext';
 import { adminGetAllStaff, adminDeleteStaff, adminCreateStaff, adminUpdateStaff } from '../../services/staffService';
 import { FaUserTie, FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
 
-// --- Styled Components (reutilizados e adaptados de AdminManageUsersPage) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -167,7 +167,8 @@ const ActionButton = styled.button`
   }
 `;
 
-const MessageBaseStyles = css` // Usar css helper para estilos partilhados se necessário, ou definir individualmente
+// Definição base para mensagens, se quiser usar o helper css
+const MessageBaseStyles = css` 
   text-align: center;
   padding: 12px 18px;
   margin: 20px auto;
@@ -200,19 +201,80 @@ const MessageText = styled.p`
   border-color: ${({ theme }) => theme.colors.success};
 `;
 
-// O ModalErrorText já estava a usar ErrorText como base, o que é bom.
-// Se ErrorText foi corrigido, ModalErrorText deve funcionar.
-// const ModalErrorText = styled(ErrorText)\`margin: -5px 0 10px 0; text-align:left; font-size: 0.8rem; padding: 8px 12px;\`;
-// No entanto, para garantir, vamos redefinir explicitamente se ainda der problemas:
-const ModalErrorText = styled.p`
-  ${MessageBaseStyles} // Herda os estilos base
+// Modal Styled Components (agora definidos aqui)
+const ModalOverlay = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.85); display: flex;
+  justify-content: center; align-items: center;
+  z-index: 1050; padding: 20px;
+`;
+const ModalContent = styled.div`
+  background-color: #2A2A2A;
+  padding: clamp(25px, 4vw, 35px);
+  border-radius: 10px; width: 100%;
+  max-width: 500px; box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  position: relative; max-height: 90vh; overflow-y: auto;
+`;
+const ModalTitle = styled.h2`
+  color: ${({ theme }) => theme.colors.primary};
+  margin-top: 0; margin-bottom: 20px;
+  font-size: clamp(1.4rem, 3.5vw, 1.7rem);
+  font-weight: 600; text-align: center;
+  padding-bottom: 15px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
+const ModalInput = styled.input`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+const ModalSelect = styled.select`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+const ModalLabel = styled.label`
+  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 4px; display: block; font-weight: 500;
+`;
+const ModalActions = styled.div`
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 25px; padding-top: 15px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
+`;
+// Reutilizando ActionButton para ModalButton, mas pode ser definido separadamente se precisar de mais distinção
+const ModalButton = styled(ActionButton)` 
+  font-size: 0.9rem; 
+  padding: 10px 18px;
+  gap: 6px;
+  width: 100%;
+  @media (min-width: 480px) { width: auto; }
+`;
+const CloseButton = styled.button`
+  position: absolute; top: 10px; right: 10px; background: transparent; border: none;
+  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
+  transition: color 0.2s, transform 0.2s; border-radius: 50%;
+  &:hover { color: #fff; transform: scale(1.1); }
+`;
+const ModalErrorText = styled.p` // Baseado em ErrorText, mas com ajustes
+  ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error};
   background-color: ${({ theme }) => theme.colors.errorBg};
   border-color: ${({ theme }) => theme.colors.error};
-  margin: -5px 0 10px 0; // Sobrescreve margem
-  text-align: left;      // Sobrescreve alinhamento
-  font-size: 0.8rem;     // Sobrescreve tamanho da fonte
-  padding: 8px 12px;     // Sobrescreve padding
+  margin: -5px 0 10px 0; 
+  text-align: left;      
+  font-size: 0.8rem;    
+  padding: 8px 12px;     
 `;
 
 const initialStaffFormState = {
@@ -224,15 +286,15 @@ const AdminManageStaffPage = () => {
   const { authState } = useAuth();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState(''); // Erro da página
+  const [successMessage, setSuccessMessage] = useState(''); // Mensagem de sucesso da página
 
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentStaffData, setCurrentStaffData] = useState(initialStaffFormState);
   const [currentStaffId, setCurrentStaffId] = useState(null);
-  const [formLoading, setFormLoading] = useState(false);
-  const [modalError, setModalError] = useState('');
+  const [formLoading, setFormLoading] = useState(false); // Loading do formulário do modal
+  const [modalError, setModalError] = useState(''); // Erro específico do modal
 
   const fetchStaff = useCallback(async () => {
     if (authState.token) {
@@ -278,12 +340,14 @@ const AdminManageStaffPage = () => {
     e.preventDefault();
     setFormLoading(true); setModalError(''); setError(''); setSuccessMessage('');
     const dataToSend = { ...currentStaffData };
-    if (isEditing && !dataToSend.password) {
+
+    if (isEditing && !dataToSend.password) { // Se está a editar e não forneceu password, remove do payload
       delete dataToSend.password;
     } else if (!isEditing && (!dataToSend.password || dataToSend.password.length < 6)) {
       setModalError("Password é obrigatória (mínimo 6 caracteres) para criar novo membro.");
       setFormLoading(false); return;
     } else if (isEditing && dataToSend.password && dataToSend.password.length < 6) {
+      // Se está a editar e forneceu password, ela tem de ter o tamanho mínimo
       setModalError("A nova password deve ter pelo menos 6 caracteres.");
       setFormLoading(false); return;
     }
@@ -324,7 +388,7 @@ const AdminManageStaffPage = () => {
     }
   };
   
-  if (loading && !showModal) {
+  if (loading && !showModal) { // Não mostrar loading da página se modal estiver aberto
     return <PageContainer><LoadingText>A carregar equipa...</LoadingText></PageContainer>;
   }
 
