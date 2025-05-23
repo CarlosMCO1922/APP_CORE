@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetAllUsers, adminDeleteUser, adminCreateUser, adminUpdateUser } from '../../services/userService';
-import { FaEdit, FaTrashAlt, FaPlus, FaArrowLeft } from 'react-icons/fa';
+import { FaEdit, FaTrashAlt, FaPlus, FaArrowLeft, FaTimes} from 'react-icons/fa';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -239,7 +239,8 @@ const CloseButton = styled.button`
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
   &:hover { color: #fff; transform: scale(1.1); }
 `;
-//const ModalErrorText = styled(ErrorText)\`margin: -5px 0 10px 0; text-align:left; font-size: 0.8rem; padding: 8px 12px;\`;
+const ModalErrorText = styled.ErrorText
+  'margin: -5px 0 10px 0; text-align:left; font-size: 0.8rem; padding: 8px 12px';
 
 
 const initialFormState = {
