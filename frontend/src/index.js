@@ -6,15 +6,16 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
-import { theme } from './theme'; // O teu ficheiro theme.js
+import { theme } from './theme'; 
+import * as serviceWorkerRegistration from './serviceWorkerRegistration'; // Importa
+// import reportWebVitals from './reportWebVitals'; // Se estiveres a usar e quiseres manter
 
-// Importações do Stripe
-import { loadStripe } from '@stripe/stripe-js'; // ADICIONAR IMPORT
-import { Elements } from '@stripe/react-stripe-js'; // ADICIONAR IMPORT
-// Carrega o Stripe com a tua chave publicável
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
 console.log('CHAVE STRIPE A SER USADA NO INDEX.JS:', process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
-console.log('Resultado do loadStripe (index.js):', stripePromise); // DEBUG
+console.log('Resultado do loadStripe (index.js):', stripePromise); 
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -36,10 +37,16 @@ root.render(
     <ThemeProvider theme={theme}>
       <GlobalStyle />
       <AuthProvider>
-        <Elements stripe={stripePromise}> {/* Envolver o App com Elements */}
+        <Elements stripe={stripePromise}>
           <App />
         </Elements>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>
 );
+
+// Para registar o Service Worker e tornar a app offline e mais rápida:
+serviceWorkerRegistration.register(); // ALTERA DE .unregister() PARA .register()
+
+// Se quiseres medir performance, podes manter ou adicionar reportWebVitals
+// reportWebVitals(console.log);
