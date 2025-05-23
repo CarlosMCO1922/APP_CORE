@@ -4,33 +4,249 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { getAllAppointments, staffRespondToRequest } from '../../services/appointmentService';
+import { FaUserCircle, FaClock, FaCalendarDay, FaStickyNote, FaCheckCircle, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
 
-// --- Styled Components (Mantidos os mesmos) ---
-const PageContainer = styled.div` /* ... */ `;
-const Title = styled.h1` /* ... */ `;
-const LoadingText = styled.p` /* ... */ `;
-const ErrorText = styled.p` /* ... */ `; // Geral para a página
-const MessageText = styled.p` /* ... */ `;
-const NoItemsText = styled.p` /* ... */ `;
-const RequestList = styled.ul` /* ... */ `;
-const RequestItem = styled.li` /* ... */ `;
-const ActionButtonGroup = styled.div` /* ... */ `;
-const RespondButton = styled.button` /* ... */ `;
+// --- Styled Components ---
+const PageContainer = styled.div`
+  background-color: ${props => props.theme.colors.background};
+  color: ${props => props.theme.colors.textMain};
+  min-height: 100vh;
+  padding: 20px 40px;
+  font-family: ${props => props.theme.fonts.main};
 
-// Modal para definir o custo ao aceitar
-const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.75); display: flex; justify-content: center; align-items: center; z-index: 1000; `;
+  @media (max-width: 768px) {
+    padding: 20px 15px;
+  }
+`;
+
+const HeaderSection = styled.div`
+  text-align: center;
+  margin-bottom: 30px;
+`;
+
+const Title = styled.h1`
+  font-size: 2.5rem;
+  color: ${props => props.theme.colors.primary};
+  margin-bottom: 10px;
+  font-weight: 700;
+`;
+
+const Subtitle = styled.p`
+  font-size: 1.1rem;
+  color: ${props => props.theme.colors.textMuted};
+  margin-bottom: 20px;
+`;
+
+const BackLink = styled(Link)`
+  color: ${props => props.theme.colors.primary};
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 25px;
+  padding: 8px 15px;
+  border-radius: ${props => props.theme.borderRadius};
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    background-color: ${props => props.theme.colors.cardBackground};
+    color: #fff;
+  }
+`;
+
+
+const LoadingText = styled.p`
+  font-size: 1.2rem;
+  text-align: center;
+  padding: 30px;
+  color: ${props => props.theme.colors.primary};
+  font-weight: 500;
+`;
+
+const MessageBase = styled.p`
+  text-align: center;
+  padding: 15px 20px;
+  margin: 20px auto;
+  border-radius: ${props => props.theme.borderRadius};
+  border-width: 1px;
+  border-style: solid;
+  max-width: 700px;
+  font-size: 0.95rem;
+`;
+
+const ErrorText = styled(MessageBase)`
+  color: ${props => props.theme.colors.error};
+  background-color: ${props => props.theme.colors.errorBg};
+  border-color: ${props => props.theme.colors.error};
+`;
+
+const MessageText = styled(MessageBase)`
+  color: ${props => props.theme.colors.success};
+  background-color: ${props => props.theme.colors.successBg};
+  border-color: ${props => props.theme.colors.success};
+`;
+
+const NoItemsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background-color: ${props => props.theme.colors.cardBackground};
+  border-radius: ${props => props.theme.borderRadius};
+  box-shadow: ${props => props.theme.boxShadow};
+  text-align: center;
+  color: ${props => props.theme.colors.textMuted};
+  margin-top: 30px;
+
+  svg {
+    font-size: 3rem;
+    color: ${props => props.theme.colors.primary};
+    margin-bottom: 15px;
+  }
+
+  p {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+`;
+
+const RequestGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr; // Uma coluna em ecrãs muito pequenos
+  }
+`;
+
+const RequestCard = styled.div`
+  background-color: ${props => props.theme.colors.cardBackground};
+  border-radius: 10px;
+  box-shadow: ${props => props.theme.boxShadow};
+  border: 1px solid ${props => props.theme.colors.cardBorder};
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  }
+`;
+
+const CardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid ${props => props.theme.colors.cardBorder};
+
+  svg {
+    font-size: 1.8rem;
+    color: ${props => props.theme.colors.primary};
+    flex-shrink: 0;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: ${props => props.theme.colors.textMain};
+    font-weight: 600;
+  }
+`;
+
+const DetailItem = styled.p`
+  margin: 5px 0;
+  font-size: 0.95rem;
+  color: ${props => props.theme.colors.textMuted};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  svg {
+    color: ${props => props.theme.colors.primary};
+    font-size: 1.1em;
+    flex-shrink: 0;
+  }
+
+  strong {
+    font-weight: 500;
+    color: ${props => props.theme.colors.textMain};
+  }
+`;
+
+const NotesArea = styled.div`
+  background-color: rgba(0,0,0,0.1);
+  padding: 10px 15px;
+  border-radius: 6px;
+  border-left: 3px solid ${props => props.theme.colors.primary};
+  font-size: 0.9rem;
+  color: ${props => props.theme.colors.textMuted};
+  line-height: 1.5;
+  margin-top: 5px;
+
+  p { margin: 0; }
+`;
+
+const ActionButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: auto; /* Empurra para o final do card */
+  padding-top: 15px;
+  border-top: 1px solid ${props => props.theme.colors.cardBorder};
+`;
+
+const RespondButton = styled.button`
+  flex-grow: 1;
+  padding: 10px 15px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  
+  background-color: ${props => props.accept ? props.theme.colors.success : props.theme.colors.error};
+  color: white;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    opacity: 0.9;
+  }
+  &:disabled {
+    background-color: ${props => props.theme.colors.buttonSecondaryBg};
+    color: ${props => props.theme.colors.textMuted};
+    cursor: not-allowed;
+  }
+  svg {
+    margin-right: 8px;
+  }
+`;
+
+// Modal components (mantidos, mas com pequenos ajustes se necessário)
+const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1050; padding:20px;`;
 const ModalContent = styled.div` background-color: #2C2C2C; padding: 30px 40px; border-radius: 10px; width: 100%; max-width: 450px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); position: relative; max-height: 90vh; overflow-y: auto; `;
-const ModalTitle = styled.h2` color: #D4AF37; margin-top: 0; margin-bottom: 25px; font-size: 1.6rem; `;
+const ModalTitle = styled.h2` color: #D4AF37; margin-top: 0; margin-bottom: 25px; font-size: 1.6rem; text-align: center; `;
 const ModalLabel = styled.label` font-size: 0.9rem; color: #b0b0b0; margin-bottom: 5px; display: block; `;
 const ModalInput = styled.input` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; margin-bottom:15px; &:focus { outline: none; border-color: #D4AF37; } `;
 const ModalActions = styled.div` display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; `;
 const ModalButton = styled.button`
   padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer;
   font-weight: 500; transition: background-color 0.2s ease;
-  background-color: ${props => props.primary ? '#D4AF37' : '#555'};
-  color: ${props => props.primary ? '#1A1A1A' : '#E0E0E0'};
-  &:hover { background-color: ${props => props.primary ? '#e6c358' : '#666'}; }
-  &:disabled { background-color: #404040; color: #777; cursor: not-allowed; }
+  background-color: ${props => props.primary ? props.theme.colors.primary : props.theme.colors.buttonSecondaryBg};
+  color: ${props => props.primary ? props.theme.colors.textDark : props.theme.colors.textMain};
+  &:hover:not(:disabled) { 
+    background-color: ${props => props.primary ? '#e6c358' : props.theme.colors.buttonSecondaryHoverBg}; 
+  }
+  &:disabled { 
+    background-color: #404040; 
+    color: #777; cursor: not-allowed; 
+  }
 `;
 const CloseButton = styled.button` 
   position: absolute; top: 15px; right: 20px; 
@@ -39,34 +255,30 @@ const CloseButton = styled.button`
   line-height: 1; padding: 0;
   &:hover { color: #fff; } 
 `;
-const ModalErrorText = styled(ErrorText)`margin: 0 0 15px 0;`; // Erro específico para o modal
-
-// COPIAR OS STYLED COMPONENTS DE UMA DAS VERSÕES ANTERIORES COMPLETAS DESTA PÁGINA
+const ModalErrorText = styled(ErrorText)`margin: 0 0 15px 0; text-align:left; font-size: 0.85rem;`
 
 
 const StaffManageRequestsPage = () => {
   const { authState } = useAuth();
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [actionLoading, setActionLoading] = useState(null); // ID da consulta sendo processada
+  const [pageError, setPageError] = useState('');
+  const [pageSuccessMessage, setPageSuccessMessage] = useState('');
+  const [actionLoading, setActionLoading] = useState(null);
 
   const [showCostModal, setShowCostModal] = useState(false);
   const [costModalData, setCostModalData] = useState({ appointmentId: null, totalCost: '' });
   const [costModalError, setCostModalError] = useState('');
   const [costFormLoading, setCostFormLoading] = useState(false);
 
-
   const fetchPendingRequests = useCallback(async () => {
     if (authState.token && authState.user) {
       try {
         setLoading(true);
-        setError('');
-        setSuccessMessage('');
+        setPageError('');
+        setPageSuccessMessage('');
         
         let filters = { status: 'pendente_aprovacao_staff' };
-        // Se não for admin, filtra apenas pelos pedidos associados ao ID do staff logado
         if (authState.role !== 'admin') {
           filters.staffId = authState.user.id;
         }
@@ -74,7 +286,7 @@ const StaffManageRequestsPage = () => {
         const data = await getAllAppointments(authState.token, filters);
         setPendingRequests(data);
       } catch (err) {
-        setError(err.message || 'Não foi possível carregar os pedidos pendentes.');
+        setPageError(err.message || 'Não foi possível carregar os pedidos pendentes.');
       } finally {
         setLoading(false);
       }
@@ -94,6 +306,7 @@ const StaffManageRequestsPage = () => {
   const handleCloseCostModal = () => {
     setShowCostModal(false);
     setCostModalError('');
+    setActionLoading(null); // Reset action loading state if modal is closed
   };
 
   const handleCostChange = (e) => {
@@ -106,92 +319,105 @@ const StaffManageRequestsPage = () => {
       return;
     }
     setCostFormLoading(true);
-    setError(''); setSuccessMessage(''); setCostModalError('');
+    setPageError(''); setPageSuccessMessage(''); setCostModalError('');
     
     try {
       await staffRespondToRequest(costModalData.appointmentId, 'accept', authState.token, parseFloat(costModalData.totalCost));
-      setSuccessMessage('Pedido aceite e agendado! Sinal de pagamento pendente para o cliente.');
+      setPageSuccessMessage('Pedido aceite e agendado! Sinal de pagamento pendente para o cliente.');
       fetchPendingRequests();
       handleCloseCostModal();
     } catch (err) {
-      // Se o erro vier da API e tiver um campo 'message', ele será usado.
-      // Caso contrário, uma mensagem genérica.
       setCostModalError(err.message || 'Falha ao aceitar o pedido. Verifique se há conflitos de horário.');
     } finally {
       setCostFormLoading(false);
-      setActionLoading(null); // Limpa o loading geral de ação
+      // ActionLoading é resetado no handleCloseCostModal ou no finally do handleRespondToRequest
     }
   };
 
-
   const handleRespondToRequest = async (appointmentId, decision) => {
+    setActionLoading(appointmentId); // Indica que uma ação está em processamento para este pedido
     if (decision === 'accept') {
-      // Abre o modal para o staff inserir o custo
       handleOpenCostModal(appointmentId);
+      // setActionLoading(null) será chamado ao fechar ou submeter o modal de custo
     } else { // Para 'reject'
       if (!window.confirm('Tens a certeza que queres REJEITAR este pedido de consulta?')) {
+        setActionLoading(null);
         return;
       }
-      setActionLoading(appointmentId); // Usar para feedback no botão específico se desejar
-      setError(''); setSuccessMessage('');
+      setPageError(''); setPageSuccessMessage('');
       try {
-        await staffRespondToRequest(appointmentId, 'reject', authState.token); // Não precisa de totalCost para rejeitar
-        setSuccessMessage('Pedido rejeitado com sucesso.');
+        await staffRespondToRequest(appointmentId, 'reject', authState.token);
+        setPageSuccessMessage('Pedido rejeitado com sucesso.');
         fetchPendingRequests();
       } catch (err) {
-        setError(err.message || 'Falha ao rejeitar o pedido.');
+        setPageError(err.message || 'Falha ao rejeitar o pedido.');
       } finally {
         setActionLoading(null);
       }
     }
   };
 
-  if (loading && !showCostModal) { // Não mostrar loading da página se o modal estiver aberto
+  if (loading && !showCostModal) {
     return <PageContainer><LoadingText>A carregar pedidos pendentes...</LoadingText></PageContainer>;
   }
 
   return (
     <PageContainer>
-      <Title>Gerir Pedidos de Consulta Pendentes</Title>
-      <Link to="/admin/dashboard" style={{color: '#D4AF37', marginBottom: '20px', display: 'inline-block', textDecoration:'none'}}>
+      <HeaderSection>
+        <Title>Gerir Pedidos de Consulta</Title>
+        <Subtitle>Analise e responda aos pedidos pendentes dos clientes.</Subtitle>
+      </HeaderSection>
+      <BackLink to="/admin/dashboard">
         ‹ Voltar ao Painel Staff
-      </Link>
+      </BackLink>
 
-      {error && <ErrorText>{error}</ErrorText>}
-      {successMessage && <MessageText>{successMessage}</MessageText>}
+      {pageError && <ErrorText>{pageError}</ErrorText>}
+      {pageSuccessMessage && <MessageText>{pageSuccessMessage}</MessageText>}
 
       {pendingRequests.length > 0 ? (
-        <RequestList>
+        <RequestGrid>
           {pendingRequests.map(request => (
-            <RequestItem key={request.id}>
-              <div>
-                <h3>Pedido de: {request.client?.firstName} {request.client?.lastName}</h3>
-                <p><span>Email Cliente:</span> {request.client?.email}</p>
-                <p><span>Profissional Solicitado:</span> {request.professional?.firstName} {request.professional?.lastName}</p>
-                <p><span>Data:</span> {new Date(request.date).toLocaleDateString('pt-PT')} às {request.time.substring(0,5)}</p>
-                <p><span>Duração:</span> {request.durationMinutes} min</p>
-                <p><span>Notas do Cliente:</span> {request.notes || 'Nenhuma'}</p>
-              </div>
+            <RequestCard key={request.id}>
+              <CardHeader>
+                <FaUserCircle />
+                <h3>{request.client?.firstName} {request.client?.lastName}</h3>
+              </CardHeader>
+              <DetailItem><FaUserCircle /> <strong>Profissional:</strong> {request.professional?.firstName} {request.professional?.lastName}</DetailItem>
+              <DetailItem><FaCalendarDay /> <strong>Data:</strong> {new Date(request.date).toLocaleDateString('pt-PT')} às {request.time.substring(0,5)}</DetailItem>
+              <DetailItem><FaClock /> <strong>Duração:</strong> {request.durationMinutes} min</DetailItem>
+              {request.notes && (
+                <NotesArea>
+                  <DetailItem style={{alignItems: 'flex-start'}}>
+                    <FaStickyNote style={{marginTop: '3px'}}/> 
+                    <div><strong>Notas do Cliente:</strong><br/>{request.notes}</div>
+                  </DetailItem>
+                </NotesArea>
+              )}
               <ActionButtonGroup>
                 <RespondButton
                   accept
                   onClick={() => handleRespondToRequest(request.id, 'accept')}
-                  disabled={actionLoading === request.id}
+                  disabled={actionLoading === request.id || costFormLoading}
                 >
-                  {actionLoading === request.id && costFormLoading ? 'A processar...' : 'Aceitar'}
+                  <FaCheckCircle /> {actionLoading === request.id && costFormLoading ? 'A processar...' : 'Aceitar'}
                 </RespondButton>
                 <RespondButton
                   onClick={() => handleRespondToRequest(request.id, 'reject')}
                   disabled={actionLoading === request.id}
                 >
-                  {actionLoading === request.id && !costFormLoading ? 'A processar...' : 'Rejeitar'}
+                  <FaTimesCircle /> {actionLoading === request.id && !costFormLoading ? 'A processar...' : 'Rejeitar'}
                 </RespondButton>
               </ActionButtonGroup>
-            </RequestItem>
+            </RequestCard>
           ))}
-        </RequestList>
+        </RequestGrid>
       ) : (
-        <NoItemsText>Não há pedidos de consulta pendentes de momento.</NoItemsText>
+        !loading && !pageError && (
+          <NoItemsContainer>
+            <FaExclamationTriangle />
+            <p>Não há pedidos de consulta pendentes de momento.</p>
+          </NoItemsContainer>
+        )
       )}
 
       {showCostModal && (
@@ -210,11 +436,12 @@ const StaffManageRequestsPage = () => {
               step="0.01"
               min="0.01"
               required
+              autoFocus
             />
             <ModalActions>
               <ModalButton type="button" onClick={handleCloseCostModal} disabled={costFormLoading}>Cancelar</ModalButton>
               <ModalButton primary onClick={handleConfirmAcceptRequest} disabled={costFormLoading}>
-                {costFormLoading ? 'A Confirmar...' : 'Confirmar e Aceitar'}
+                {costFormLoading ? 'Confirmando...' : 'Confirmar e Aceitar'}
               </ModalButton>
             </ModalActions>
           </ModalContent>
