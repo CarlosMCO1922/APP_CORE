@@ -1,17 +1,17 @@
 // src/pages/LoginPage.js
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext'; // Certifica-te que o caminho está correto
 import { useNavigate, Link } from 'react-router-dom';
 
-// --- Definição das Cores ---
+// --- Definição das Cores (mantidas como definiste) ---
 const coreGold = '#D4AF37';
 const coreBlack = '#1A1A1A';
 const lightTextColor = '#E0E0E0';
 const inputBackground = '#2C2C2C';
 const inputBorderColor = '#4A4A4A';
 const errorColor = '#FF6B6B';
-const errorBackground = 'rgba(94, 46, 46, 0.8)'; // Mais opaco para melhor contraste do texto de erro
+const errorBackground = 'rgba(94, 46, 46, 0.8)';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -21,28 +21,44 @@ const PageContainer = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 20px; /* Padding base */
   font-family: 'Inter', sans-serif;
+
+  @media (max-width: 480px) {
+    padding: 15px; // Padding ligeiramente menor em ecrãs muito pequenos
+  }
 `;
 
 const LoginBox = styled.div`
   background-color: #252525;
-  padding: 35px 45px; /* Aumentar padding */
+  padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); /* Sombra mais pronunciada */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   width: 100%;
   max-width: 450px;
+
+  @media (max-width: 480px) {
+    padding: 25px 20px; // Padding reduzido para ecrãs pequenos
+  }
 `;
 
 const LogoContainer = styled.div`
   display: flex;
   justify-content: center;
   margin-bottom: 2rem;
+
+  @media (max-width: 480px) {
+    margin-bottom: 1.5rem;
+  }
 `;
 
 const LogoImage = styled.img`
-  height: 80px;
+  height: 80px; // Altura base para desktop
   width: auto;
+
+  @media (max-width: 480px) {
+    height: 60px; // Altura reduzida para mobile
+  }
 `;
 
 const Title = styled.h2`
@@ -51,19 +67,27 @@ const Title = styled.h2`
   text-align: center;
   color: ${coreGold};
   margin-bottom: 2rem;
+
+  @media (max-width: 480px) {
+    font-size: 1.75rem; // Tamanho do título ligeiramente menor
+    margin-bottom: 1.5rem;
+  }
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.5rem; // Bom espaçamento
+  @media (max-width: 480px) {
+    gap: 1.2rem; // Espaçamento ligeiramente menor
+  }
 `;
 
 const FormGroup = styled.div``;
 
 const Label = styled.label`
   display: block;
-  font-size: 0.9rem; /* Ligeiramente maior */
+  font-size: 0.9rem;
   font-weight: 500;
   color: ${lightTextColor};
   margin-bottom: 0.5rem; 
@@ -84,30 +108,31 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${coreGold};
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25); /* Sombra de foco mais visível */
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
   }
 `;
 
 const ErrorMessage = styled.p`
-  font-size: 0.9rem; /* Aumentar um pouco */
-  color: white; /* Texto branco para contraste com fundo escuro */
+  font-size: 0.9rem;
+  color: white;
   background-color: ${errorBackground};
-  padding: 0.85rem 1rem; /* Aumentar padding */
+  padding: 0.85rem 1rem;
   border-radius: 8px;
   text-align: center;
   border: 1px solid ${errorColor};
-  margin-top: 0; /* Remover margem superior se for o único elemento de erro */
+  margin-top: 0;
+  margin-bottom: 1rem; // Adicionado para espaçar do botão se o erro estiver acima
 `;
 
 const SubmitButton = styled.button`
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: center; /* Alinhar texto e possível ícone */
+  align-items: center;
   padding: 0.9rem 1rem; 
-  border: none; /* Remover borda padrão */
+  border: none;
   border-radius: 8px;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1); /* Sombra subtil */
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
   font-size: 1rem; 
   font-weight: 600; 
   color: ${coreBlack};
@@ -127,7 +152,7 @@ const SubmitButton = styled.button`
     box-shadow: 0 0 0 3px ${coreGold}55;
   }
   &:disabled {
-    background-color: #5d5d5d; /* Cor de desabilitado mais escura */
+    background-color: #5d5d5d;
     color: #9e9e9e;
     cursor: not-allowed;
     transform: translateY(0px);
@@ -140,13 +165,22 @@ const ToggleContainer = styled.div`
   align-items: center;
   justify-content: center;
   color: ${lightTextColor};
-  font-size: 0.9rem; /* Aumentar */
+  font-size: 0.9rem;
+
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+    flex-direction: column; // Empilha em ecrãs muito pequenos
+    gap: 0.5rem;
+  }
 `;
 
 const CheckboxLabel = styled.label`
   margin-right: 0.5rem;
   cursor: pointer;
-  user-select: none; /* Impedir seleção de texto */
+  user-select: none;
+  @media (max-width: 480px) {
+    margin-right: 0; // Remove margem quando empilhado
+  }
 `;
 
 const Checkbox = styled.input`
@@ -154,22 +188,29 @@ const Checkbox = styled.input`
   margin-left: 0.5rem; 
   accent-color: ${coreGold}; 
   cursor: pointer;
-  transform: scale(1.2); /* Aumentar um pouco */
+  transform: scale(1.2);
   &:focus {
-    outline: 2px solid ${coreGold}80; /* Foco visível */
+    outline: 2px solid ${coreGold}80;
     outline-offset: 2px;
+  }
+  @media (max-width: 480px) {
+    margin-left: 0.3rem; // Ajusta margem
   }
 `;
 
 const RegisterLinkText = styled.p`
   margin-top: 2rem;
   text-align: center;
-  font-size: 0.9rem; /* Aumentar */
+  font-size: 0.9rem;
   color: #a1a1aa;
+  @media (max-width: 480px) {
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+  }
 `;
 
 const StyledLink = styled(Link)`
-  font-weight: 600; /* Mais bold */
+  font-weight: 600;
   color: ${coreGold};
   text-decoration: none;
   &:hover {
@@ -183,8 +224,12 @@ const FooterText = styled.footer`
   color: #71717a;
   margin-top: 3rem;
   padding-bottom: 1rem;
+  @media (max-width: 480px) {
+    margin-top: 2rem;
+  }
 `;
 
+// A lógica da função LoginPage (useState, handleSubmit, etc.) permanece a mesma
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -201,9 +246,7 @@ function LoginPage() {
     setLoading(true);
     try {
       await login(email, password, isStaffLogin); 
-      // O redirecionamento agora é tratado pelo useEffect no App.js ou ProtectedRoute
-      // por isso, não precisamos de navegar explicitamente aqui após o login com sucesso.
-      // A atualização do authState irá despoletar o redirecionamento automático.
+      // Redirecionamento é tratado pelo App.js ou ProtectedRoute
     } catch (err) {
       setError(err.message || 'Falha no login. Verifica as tuas credenciais.');
     } finally {
@@ -261,7 +304,7 @@ function LoginPage() {
             </ErrorMessage>
           )}
 
-          <FormGroup>
+          <FormGroup> {/* Este FormGroup é redundante se SubmitButton for o único filho */}
             <SubmitButton
               type="submit"
               disabled={loading}
