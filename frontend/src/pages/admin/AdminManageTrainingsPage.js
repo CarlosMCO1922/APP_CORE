@@ -1,7 +1,7 @@
 // src/pages/admin/AdminManageTrainingsPage.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // useNavigate importado
-import styled from 'styled-components';
+import { Link, useNavigate } from 'react-router-dom';
+import styled, { css } from 'styled-components'; // Importar css helper
 import { useAuth } from '../../context/AuthContext';
 import {
     getAllTrainings,
@@ -10,78 +10,304 @@ import {
     adminDeleteTraining
 } from '../../services/trainingService';
 import { adminGetAllStaff } from '../../services/staffService';
+import { FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
 
-// --- Styled Components (Reutilizados ou adaptados) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
-  background-color: #1A1A1A; color: #E0E0E0; min-height: 100vh;
-  padding: 20px 40px; font-family: 'Inter', sans-serif;
+  background-color: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.textMain};
+  min-height: 100vh;
+  padding: 20px clamp(15px, 4vw, 40px);
+  font-family: ${({ theme }) => theme.fonts.main};
 `;
-const Title = styled.h1` font-size: 2.2rem; color: #D4AF37; margin-bottom: 25px; `;
+
+const HeaderContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap; 
+  gap: 15px;
+`;
+
+const Title = styled.h1`
+  font-size: clamp(1.8rem, 4vw, 2.4rem); 
+  color: ${({ theme }) => theme.colors.primary};
+  margin: 0;
+`;
+
+const CreateButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textDark};
+  padding: 10px 18px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  text-decoration: none;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: #e6c358;
+    transform: translateY(-2px);
+  }
+  @media (max-width: 480px) {
+    width: 100%; 
+    justify-content: center;
+    font-size: 1rem;
+    padding: 12px;
+  }
+`;
+
+const BackLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.primary};
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 8px 12px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.cardBackground};
+    color: #fff;
+  }
+  svg {
+    margin-right: 4px;
+  }
+`;
+
+const TableWrapper = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; 
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  
+  &::-webkit-scrollbar {
+    height: 8px;
+    background-color: #252525;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+  }
+`;
+
 const Table = styled.table`
-  width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #252525;
-  border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  th, td { border-bottom: 1px solid #383838; padding: 10px 12px; text-align: left; font-size: 0.9rem; }
-  th { background-color: #303030; color: #D4AF37; font-weight: 600; }
+  width: 100%;
+  min-width: 800px; /* Garante que a tabela tenha uma largura mínima para o scroll fazer sentido */
+  border-collapse: collapse;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  
+  th, td {
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.85rem; /* Ligeiramente menor para mais info na tabela */
+    white-space: nowrap;
+  }
+  th {
+    background-color: #303030;
+    color: ${({ theme }) => theme.colors.primary};
+    font-weight: 600;
+    position: sticky; 
+    top: 0; /* Para cabeçalho fixo ao fazer scroll vertical dentro do TableWrapper (se a altura do wrapper for limitada) */
+    z-index: 1;
+  }
   tr:last-child td { border-bottom: none; }
   tr:hover { background-color: #2c2c2c; }
-`;
-const ActionButton = styled.button`
-  margin-right: 8px; padding: 6px 10px; font-size: 0.85rem; border-radius: 5px;
-  cursor: pointer; border: none; transition: background-color 0.2s ease;
-  background-color: ${props => props.danger ? '#D32F2F' : (props.secondary ? '#555' : (props.plans ? '#007bff' : '#D4AF37'))}; // Cor diferente para Gerir Planos
-  color: ${props => (props.danger || props.plans) ? 'white' : (props.secondary ? '#E0E0E0' : '#1A1A1A')};
-  &:hover { background-color: ${props => props.danger ? '#C62828' : (props.secondary ? '#666' : (props.plans ? '#0056b3' : '#e6c358'))}; }
-  &:disabled { background-color: #404040; color: #777; cursor: not-allowed; }
-`;
-const TopActionsContainer = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; `;
-const CreateButtonStyled = styled.button`
-  background-color: #D4AF37; color: #1A1A1A; padding: 10px 20px; border-radius: 8px;
-  text-decoration: none; font-weight: bold; border: none; cursor: pointer;
-  transition: background-color 0.2s ease;
-  &:hover { background-color: #e6c358; }
-`;
-const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: #D4AF37;`;
-const ErrorText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #FF6B6B; background-color: rgba(255,107,107,0.15); border: 1px solid #FF6B6B; border-radius: 8px; margin: 15px 0;`;
-const MessageText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #66BB6A; background-color: rgba(102,187,106,0.15); border: 1px solid #66BB6A; border-radius: 8px; margin: 15px 0;`;
 
-const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.75); display: flex; justify-content: center; align-items: center; z-index: 1000; `;
-const ModalContent = styled.div` background-color: #2C2C2C; padding: 30px 40px; border-radius: 10px; width: 100%; max-width: 550px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); position: relative; max-height: 90vh; overflow-y: auto; `;
-const ModalTitle = styled.h2` color: #D4AF37; margin-top: 0; margin-bottom: 25px; font-size: 1.6rem; `;
+  td.actions-cell { 
+    white-space: nowrap; /* Para que os botões não quebrem linha entre si, mas o container pode quebrar */
+    text-align: right;
+    min-width: 280px; /* Espaço para os botões */
+  }
+  @media (max-width: 768px) {
+    th, td { padding: 8px 10px; font-size: 0.8rem; }
+    td.actions-cell { min-width: 240px; }
+  }
+`;
+
+const ActionButtonContainer = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: nowrap; /* Evita que os botões quebrem linha entre si */
+`;
+
+const ActionButton = styled.button`
+  padding: 6px 10px;
+  font-size: 0.75rem; /* Um pouco menor para caber mais */
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap; /* Evita que o texto do botão quebre */
+  
+  background-color: ${props => {
+    if (props.danger) return props.theme.colors.error;
+    if (props.secondary) return props.theme.colors.buttonSecondaryBg;
+    if (props.plans) return props.theme.colors.mediaButtonBg; // Usando cor de media button para planos
+    return props.theme.colors.primary;
+  }};
+  color: ${props => (props.danger || props.plans) ? 'white' : (props.secondary ? props.theme.colors.textMain : props.theme.colors.textDark)};
+
+  &:hover:not(:disabled) {
+    opacity: 0.85;
+    transform: translateY(-1px);
+    background-color: ${props => { /* Ajusta cores de hover se necessário */
+        if (props.danger) return '#C62828';
+        if (props.secondary) return props.theme.colors.buttonSecondaryHoverBg;
+        if (props.plans) return props.theme.colors.mediaButtonHoverBg;
+        return '#e6c358';
+    }};
+  }
+  &:disabled {
+    background-color: #404040;
+    color: #777;
+    cursor: not-allowed;
+  }
+`;
+
+// Estilos base para mensagens
+const MessageBaseStyles = css` 
+  text-align: center;
+  padding: 12px 18px;
+  margin: 20px auto;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border-width: 1px;
+  border-style: solid;
+  max-width: 600px;
+  font-size: 0.9rem;
+  font-weight: 500;
+`;
+
+const LoadingText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.primary};
+  border-color: transparent;
+  background: transparent;
+`;
+
+const ErrorText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
+`;
+
+const MessageText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.success};
+  background-color: ${({ theme }) => theme.colors.successBg};
+  border-color: ${({ theme }) => theme.colors.success};
+`;
+
+// Modal Styled Components
+const ModalOverlay = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.85); display: flex;
+  justify-content: center; align-items: center;
+  z-index: 1050; padding: 20px;
+`;
+const ModalContent = styled.div`
+  background-color: #2A2A2A;
+  padding: clamp(25px, 4vw, 35px);
+  border-radius: 10px; width: 100%;
+  max-width: 550px; box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  position: relative; max-height: 90vh; overflow-y: auto;
+`;
+const ModalTitle = styled.h2`
+  color: ${({ theme }) => theme.colors.primary};
+  margin-top: 0; margin-bottom: 20px;
+  font-size: clamp(1.4rem, 3.5vw, 1.7rem);
+  font-weight: 600; text-align: center;
+  padding-bottom: 15px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
 const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
-const ModalLabel = styled.label` font-size: 0.9rem; color: #b0b0b0; margin-bottom: 5px; display: block; `;
-const ModalInput = styled.input` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: #D4AF37; } `;
-const ModalTextarea = styled.textarea` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; min-height: 80px; &:focus { outline: none; border-color: #D4AF37; } `;
-const ModalSelect = styled.select` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: #D4AF37; } `;
-const ModalActions = styled.div` display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; `;
-const ModalButton = styled.button`
-  padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer;
-  font-weight: 500; transition: background-color 0.2s ease;
-  background-color: ${props => props.primary ? '#D4AF37' : '#555'};
-  color: ${props => props.primary ? '#1A1A1A' : '#E0E0E0'};
-  &:hover { background-color: ${props => props.primary ? '#e6c358' : '#666'}; }
-  &:disabled { background-color: #404040; color: #777; cursor: not-allowed; }
+const ModalLabel = styled.label`
+  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 4px; display: block; font-weight: 500;
+`;
+const ModalInput = styled.input`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+const ModalTextarea = styled.textarea`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  width: 100%; min-height: 80px; resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+const ModalSelect = styled.select`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+const ModalActions = styled.div`
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 25px; padding-top: 15px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
+`;
+const ModalButton = styled(ActionButton)`
+  font-size: 0.9rem; 
+  padding: 10px 18px;
+  gap: 6px;
+  width: 100%;
+  @media (min-width: 480px) { width: auto; }
 `;
 const CloseButton = styled.button`
-  position: absolute; top: 15px; right: 20px;
-  background: transparent; border: none;
-  color: #aaa; font-size: 1.8rem; cursor: pointer;
-  line-height: 1; padding: 0;
-  &:hover { color: #fff; }
+  position: absolute; top: 10px; right: 10px; background: transparent; border: none;
+  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
+  transition: color 0.2s, transform 0.2s; border-radius: 50%;
+  &:hover { color: #fff; transform: scale(1.1); }
+`;
+const ModalErrorText = styled.p` // Usando ErrorText como base com ajustes
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
+  margin: -5px 0 10px 0; 
+  text-align: left;      
+  font-size: 0.8rem;    
+  padding: 8px 12px;     
 `;
 
 const initialTrainingFormState = {
-  name: '',
-  description: '',
-  date: '',
-  time: '',
-  capacity: 10,
-  instructorId: '',
-  durationMinutes: 45,
+  name: '', description: '', date: '', time: '',
+  capacity: 10, instructorId: '', durationMinutes: 45,
 };
 
 const AdminManageTrainingsPage = () => {
   const { authState } = useAuth();
-  const navigate = useNavigate(); // Adicionado useNavigate
+  const navigate = useNavigate();
   const [trainings, setTrainings] = useState([]);
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,9 +324,7 @@ const AdminManageTrainingsPage = () => {
   const fetchPageData = useCallback(async () => {
     if (authState.token) {
       try {
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
+        setLoading(true); setError(''); setSuccessMessage('');
         const [trainingsData, staffData] = await Promise.all([
           getAllTrainings(authState.token),
           adminGetAllStaff(authState.token)
@@ -115,37 +339,27 @@ const AdminManageTrainingsPage = () => {
     }
   }, [authState.token]);
 
-  useEffect(() => {
-    fetchPageData();
-  }, [fetchPageData]);
+  useEffect(() => { fetchPageData(); }, [fetchPageData]);
 
   const handleOpenCreateModal = () => {
-    setIsEditing(false);
-    setCurrentTrainingData(initialTrainingFormState);
-    setCurrentTrainingId(null);
-    setModalError('');
-    setShowModal(true);
+    setIsEditing(false); setCurrentTrainingData(initialTrainingFormState);
+    setCurrentTrainingId(null); setModalError(''); setShowModal(true);
   };
 
   const handleOpenEditModal = (training) => {
     setIsEditing(true);
     setCurrentTrainingData({
-      name: training.name,
-      description: training.description || '',
-      date: training.date,
-      time: training.time.substring(0,5), // Assegurar formato HH:MM
-      capacity: training.capacity,
+      name: training.name, description: training.description || '', date: training.date,
+      time: training.time.substring(0,5), capacity: training.capacity,
       instructorId: training.instructorId || (training.instructor?.id || ''),
       durationMinutes: training.durationMinutes || 45,
     });
-    setCurrentTrainingId(training.id);
-    setModalError('');
-    setShowModal(true);
+    setCurrentTrainingId(training.id); setModalError(''); setShowModal(true);
   };
 
   const handleCloseModal = () => {
-    setShowModal(false);
-    setModalError('');
+    setShowModal(false); setCurrentTrainingData(initialTrainingFormState);
+    setCurrentTrainingId(null); setModalError('');
   };
 
   const handleFormChange = (e) => {
@@ -155,11 +369,7 @@ const AdminManageTrainingsPage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormLoading(true);
-    setModalError('');
-    setError('');
-    setSuccessMessage('');
-
+    setFormLoading(true); setModalError(''); setError(''); setSuccessMessage('');
     const dataToSend = {
       ...currentTrainingData,
       capacity: parseInt(currentTrainingData.capacity, 10),
@@ -170,18 +380,15 @@ const AdminManageTrainingsPage = () => {
 
     if (isNaN(dataToSend.capacity) || dataToSend.capacity <= 0) {
         setModalError("Capacidade deve ser um número positivo.");
-        setFormLoading(false);
-        return;
+        setFormLoading(false); return;
     }
     if (isNaN(dataToSend.instructorId) || !dataToSend.instructorId) {
         setModalError("Por favor, selecione um instrutor.");
-        setFormLoading(false);
-        return;
+        setFormLoading(false); return;
     }
      if (isNaN(dataToSend.durationMinutes) || dataToSend.durationMinutes <= 0) {
         setModalError("Duração deve ser um número positivo.");
-        setFormLoading(false);
-        return;
+        setFormLoading(false); return;
     }
 
     try {
@@ -192,8 +399,7 @@ const AdminManageTrainingsPage = () => {
         await adminCreateTraining(dataToSend, authState.token);
         setSuccessMessage('Treino criado com sucesso!');
       }
-      fetchPageData();
-      handleCloseModal();
+      fetchPageData(); handleCloseModal();
     } catch (err) {
       setModalError(err.message || `Falha ao ${isEditing ? 'atualizar' : 'criar'} treino.`);
     } finally {
@@ -202,11 +408,8 @@ const AdminManageTrainingsPage = () => {
   };
 
   const handleDeleteTraining = async (trainingId) => {
-    if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}? Esta ação não pode ser desfeita e eliminará também os planos de treino associados.`)) {
-      return;
-    }
-    setError('');
-    setSuccessMessage('');
+    if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}? Esta ação não pode ser desfeita e eliminará também os planos de treino associados.`)) return;
+    setError(''); setSuccessMessage('');
     try {
       await adminDeleteTraining(trainingId, authState.token);
       setSuccessMessage('Treino eliminado com sucesso.');
@@ -217,95 +420,94 @@ const AdminManageTrainingsPage = () => {
   };
 
   if (loading && !showModal) {
-    return <PageContainer><LoadingText>A carregar lista de treinos...</LoadingText></PageContainer>;
+    return <PageContainer><LoadingText>A carregar treinos...</LoadingText></PageContainer>;
   }
 
   return (
     <PageContainer>
-      <TopActionsContainer>
+      <HeaderContainer>
         <Title>Gerir Treinos</Title>
-        <CreateButtonStyled onClick={handleOpenCreateModal}>Criar Novo Treino</CreateButtonStyled>
-      </TopActionsContainer>
-      <Link to="/admin/dashboard" style={{color: '#D4AF37', marginBottom: '20px', display: 'inline-block', textDecoration:'none'}}>‹ Voltar ao Painel Admin</Link>
+        <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Novo Treino</CreateButton>
+      </HeaderContainer>
+      <BackLink to="/admin/dashboard"><FaArrowLeft /> Voltar ao Painel Admin</BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}
 
-      <Table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Data</th>
-            <th>Hora</th>
-            <th>Duração</th>
-            <th>Capacidade</th>
-            <th>Inscritos</th>
-            <th>Instrutor</th>
-            <th>Ações do Treino</th> {/* Coluna de ações do treino */}
-            <th>Planos de Treino</th> {/* Nova coluna para planos */}
-          </tr>
-        </thead>
-        <tbody>
-          {trainings.length > 0 ? trainings.map(training => (
-            <tr key={training.id}>
-              <td>{training.id}</td>
-              <td>{training.name}</td>
-              <td>{new Date(training.date).toLocaleDateString('pt-PT')}</td>
-              <td>{training.time ? training.time.substring(0,5) : 'N/A'}</td>
-              <td>{training.durationMinutes} min</td>
-              <td>{training.capacity}</td>
-              <td>{training.participantsCount !== undefined ? training.participantsCount : (training.participants?.length || 0)}</td>
-              <td>{training.instructor ? `${training.instructor.firstName} ${training.instructor.lastName}` : 'N/A'}</td>
-              <td> {/* Ações específicas do treino */}
-                <ActionButton secondary onClick={() => handleOpenEditModal(training)}>
-                  Editar Treino
-                </ActionButton>
-                <ActionButton danger onClick={() => handleDeleteTraining(training.id)}>
-                  Eliminar Treino
-                </ActionButton>
-              </td>
-              <td> {/* Nova célula para o botão de Gerir Planos */}
-                <ActionButton plans onClick={() => navigate(`/admin/trainings/${training.id}/manage-plans`)}>
-                  Gerir Planos
-                </ActionButton>
-              </td>
-            </tr>
-          )) : (
+      <TableWrapper>
+        <Table>
+          <thead>
             <tr>
-              <td colSpan="10" style={{ textAlign: 'center', padding: '20px' }}>Nenhum treino encontrado.</td> {/* Ajustado colSpan */}
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Data</th>
+              <th>Hora</th>
+              <th>Duração</th>
+              <th>Capacidade</th>
+              <th>Inscritos</th>
+              <th>Instrutor</th>
+              <th className="actions-cell">Ações</th>
             </tr>
-          )}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {trainings.length > 0 ? trainings.map(training => (
+              <tr key={training.id}>
+                <td>{training.id}</td>
+                <td>{training.name}</td>
+                <td>{new Date(training.date).toLocaleDateString('pt-PT')}</td>
+                <td>{training.time ? training.time.substring(0,5) : 'N/A'}</td>
+                <td>{training.durationMinutes} min</td>
+                <td>{training.capacity}</td>
+                <td>{training.participantsCount ?? (training.participants?.length || 0)}</td>
+                <td>{training.instructor ? `${training.instructor.firstName} ${training.instructor.lastName}` : 'N/A'}</td>
+                <td className="actions-cell">
+                  <ActionButtonContainer>
+                    <ActionButton plans onClick={() => navigate(`/admin/trainings/${training.id}/manage-plans`)}>
+                      <FaListAlt /> Planos
+                    </ActionButton>
+                    <ActionButton secondary onClick={() => handleOpenEditModal(training)}>
+                      <FaEdit /> Editar
+                    </ActionButton>
+                    <ActionButton danger onClick={() => handleDeleteTraining(training.id)}>
+                      <FaTrashAlt /> Eliminar
+                    </ActionButton>
+                  </ActionButtonContainer>
+                </td>
+              </tr>
+            )) : (
+              <tr><td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>Nenhum treino encontrado.</td></tr>
+            )}
+          </tbody>
+        </Table>
+      </TableWrapper>
 
       {showModal && (
         <ModalOverlay onClick={handleCloseModal}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={handleCloseModal}>&times;</CloseButton>
+            <CloseButton onClick={handleCloseModal}><FaTimes /></CloseButton>
             <ModalTitle>{isEditing ? 'Editar Treino' : 'Criar Novo Treino'}</ModalTitle>
-            {modalError && <ErrorText style={{marginBottom: '15px'}}>{modalError}</ErrorText>}
+            {modalError && <ModalErrorText>{modalError}</ModalErrorText>}
             <ModalForm onSubmit={handleFormSubmit}>
-              <ModalLabel htmlFor="name">Nome do Treino</ModalLabel>
-              <ModalInput type="text" name="name" id="name" value={currentTrainingData.name} onChange={handleFormChange} required />
+              <ModalLabel htmlFor="nameTrain">Nome do Treino*</ModalLabel>
+              <ModalInput type="text" name="name" id="nameTrain" value={currentTrainingData.name} onChange={handleFormChange} required />
 
-              <ModalLabel htmlFor="description">Descrição</ModalLabel>
-              <ModalTextarea name="description" id="description" value={currentTrainingData.description} onChange={handleFormChange} />
+              <ModalLabel htmlFor="descriptionTrain">Descrição</ModalLabel>
+              <ModalTextarea name="description" id="descriptionTrain" value={currentTrainingData.description} onChange={handleFormChange} />
 
-              <ModalLabel htmlFor="date">Data</ModalLabel>
-              <ModalInput type="date" name="date" id="date" value={currentTrainingData.date} onChange={handleFormChange} required />
+              <ModalLabel htmlFor="dateTrain">Data*</ModalLabel>
+              <ModalInput type="date" name="date" id="dateTrain" value={currentTrainingData.date} onChange={handleFormChange} required />
 
-              <ModalLabel htmlFor="time">Hora (HH:MM)</ModalLabel>
-              <ModalInput type="time" name="time" id="time" value={currentTrainingData.time} onChange={handleFormChange} required />
+              <ModalLabel htmlFor="timeTrain">Hora (HH:MM)*</ModalLabel>
+              <ModalInput type="time" name="time" id="timeTrain" value={currentTrainingData.time} onChange={handleFormChange} required />
 
-              <ModalLabel htmlFor="durationMinutes">Duração (minutos)</ModalLabel>
-              <ModalInput type="number" name="durationMinutes" id="durationMinutes" value={currentTrainingData.durationMinutes} onChange={handleFormChange} required min="1" />
+              <ModalLabel htmlFor="durationMinutesTrain">Duração (minutos)*</ModalLabel>
+              <ModalInput type="number" name="durationMinutes" id="durationMinutesTrain" value={currentTrainingData.durationMinutes} onChange={handleFormChange} required min="1" />
 
-              <ModalLabel htmlFor="capacity">Capacidade</ModalLabel>
-              <ModalInput type="number" name="capacity" id="capacity" value={currentTrainingData.capacity} onChange={handleFormChange} required min="1" />
+              <ModalLabel htmlFor="capacityTrain">Capacidade*</ModalLabel>
+              <ModalInput type="number" name="capacity" id="capacityTrain" value={currentTrainingData.capacity} onChange={handleFormChange} required min="1" />
 
-              <ModalLabel htmlFor="instructorId">Instrutor</ModalLabel>
-              <ModalSelect name="instructorId" id="instructorId" value={currentTrainingData.instructorId} onChange={handleFormChange} required>
+              <ModalLabel htmlFor="instructorIdTrain">Instrutor*</ModalLabel>
+              <ModalSelect name="instructorId" id="instructorIdTrain" value={currentTrainingData.instructorId} onChange={handleFormChange} required>
                 <option value="">Selecione um instrutor</option>
                 {instructors.map(instr => (
                   <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName} ({instr.role})</option>
@@ -313,9 +515,9 @@ const AdminManageTrainingsPage = () => {
               </ModalSelect>
 
               <ModalActions>
-                <ModalButton type="button" onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
+                <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
                 <ModalButton type="submit" primary disabled={formLoading}>
-                  {formLoading ? 'A guardar...' : (isEditing ? 'Guardar Alterações' : 'Criar Treino')}
+                  <FaDumbbell style={{marginRight: '8px'}} /> {formLoading ? 'A guardar...' : (isEditing ? 'Guardar Alterações' : 'Criar Treino')}
                 </ModalButton>
               </ModalActions>
             </ModalForm>
