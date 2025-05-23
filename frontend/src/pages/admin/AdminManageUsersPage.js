@@ -239,8 +239,7 @@ const CloseButton = styled.button`
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
   &:hover { color: #fff; transform: scale(1.1); }
 `;
-const ModalErrorText = styled.ErrorText
-  'margin: -5px 0 10px 0; text-align:left; font-size: 0.8rem; padding: 8px 12px';
+//const ModalErrorText = styled.ErrorText'margin: -5px 0 10px 0; text-align:left; font-size: 0.8rem; padding: 8px 12px';
 
 
 const initialFormState = {
@@ -401,7 +400,6 @@ const AdminManageUsersPage = () => {
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={handleCloseModal}><FaTimes /></CloseButton>
             <ModalTitle>{isEditing ? 'Editar Cliente' : 'Criar Novo Cliente'}</ModalTitle>
-            {modalError && <ModalErrorText>{modalError}</ModalErrorText>}
             <ModalForm onSubmit={handleFormSubmit}>
               <ModalLabel htmlFor="firstName">Nome*</ModalLabel>
               <ModalInput type="text" name="firstName" id="firstName" value={currentUserData.firstName} onChange={handleFormChange} required />
