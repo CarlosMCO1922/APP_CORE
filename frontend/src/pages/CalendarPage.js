@@ -1,7 +1,7 @@
 // src/pages/CalendarPage.js
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled, { css } from 'styled-components'; // Garantir que 'css' está importado se usado
+import styled, { css } from 'styled-components';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
@@ -40,7 +40,7 @@ const localizer = dateFnsLocalizer({
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
 
-// --- Styled Components Corrigidos ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -341,12 +341,13 @@ const CloseButton = styled.button`
   &:hover { color: #fff; transform: scale(1.1) rotate(90deg); }
 `;
 
+// Corrigido para usar nomes consistentes
 const RequestModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
 const RequestModalLabel = styled.label` font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 3px; display: block; font-weight: 500;`;
 const RequestModalInput = styled.input` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
 const RequestModalSelect = styled.select` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
 const RequestModalTextarea = styled.textarea` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; min-height: 80px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
-const ModalErrorText = styled.p`
+const ModalErrorText = styled.p` // Este ModalErrorText é para o modal de solicitação
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error};
   background-color: ${({ theme }) => theme.colors.errorBg};
@@ -433,7 +434,7 @@ const CalendarPage = () => {
   const [showEventModal, setShowEventModal] = useState(false);
 
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [requestFormData, setRequestFormData] = useState(initialRequestFormState); // Corrigido aqui
+  const [requestFormData, setRequestFormData] = useState(initialRequestFormState);
   const [requestFormError, setRequestFormError] = useState('');
   const [requestFormLoading, setRequestFormLoading] = useState(false);
 
@@ -441,6 +442,9 @@ const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState(Views.MONTH);
 
+  // ... (toda a lógica de fetchPageData, handlers de eventos, etc., permanece a mesma da última versão que te enviei)
+  // COLE AQUI A LÓGICA DO COMPONENTE DA VERSÃO ANTERIOR, DESDE fetchPageData ATÉ AO FIM DO COMPONENTE
+  // (Não a vou repetir aqui para não tornar a resposta excessivamente longa, mas ela deve ser igual à última vez)
   const fetchPageData = useCallback(async () => {
     if (!authState.token) {
       setLoading(false); setPageError("Autenticação necessária para ver o calendário."); return;
@@ -518,11 +522,11 @@ const CalendarPage = () => {
     if (authState.role !== 'user') return;
     const selectedDate = format(slotInfo.start, 'yyyy-MM-dd');
     const selectedTime = format(slotInfo.start, 'HH:mm');
-    setRequestFormData({ ...initialRequestFormState, date: selectedDate, time: selectedTime }); // Corrigido aqui
+    setRequestFormData({ ...initialRequestFormState, date: selectedDate, time: selectedTime });
     setRequestFormError(''); setPageSuccessMessage(''); setShowRequestModal(true);
   }, [authState.role]);
 
-  const handleCloseRequestModal = () => { setShowRequestModal(false); setRequestFormData(initialRequestFormState); setRequestFormError(''); }; // Corrigido aqui
+  const handleCloseRequestModal = () => { setShowRequestModal(false); setRequestFormData(initialRequestFormState); setRequestFormError(''); };
   const handleRequestFormChange = (e) => { setRequestFormData({ ...requestFormData, [e.target.name]: e.target.value }); };
 
   const handleRequestSubmit = async (e) => {
@@ -688,6 +692,7 @@ const CalendarPage = () => {
         </ModalOverlay>
       )}
 
+      {/* Modal de Solicitar Nova Consulta */}
       {showRequestModal && isClient && (
         <ModalOverlay onClick={handleCloseRequestModal}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -695,16 +700,17 @@ const CalendarPage = () => {
             <ModalTitle>Solicitar Nova Consulta</ModalTitle>
             {requestFormError && <ModalErrorText>{requestFormError}</ModalErrorText>}
             <RequestModalForm onSubmit={handleRequestSubmit}>
-              <ModalLabel htmlFor="reqStaffIdModal">Profissional*</ModalLabel>
+              {/* Utilizar RequestModalLabel, RequestModalInput, etc. aqui */}
+              <RequestModalLabel htmlFor="reqStaffIdModal">Profissional*</RequestModalLabel>
               <RequestModalSelect name="staffId" id="reqStaffIdModal" value={requestFormData.staffId} onChange={handleRequestFormChange} required>
                 <option value="">Selecione um profissional...</option>
                 {professionals.map(prof => ( <option key={prof.id} value={prof.id}> {prof.firstName} {prof.lastName} ({prof.role}) </option> ))}
               </RequestModalSelect>
-              <ModalLabel htmlFor="reqDateModal">Data*</ModalLabel>
+              <RequestModalLabel htmlFor="reqDateModal">Data*</RequestModalLabel>
               <RequestModalInput type="date" name="date" id="reqDateModal" value={requestFormData.date} onChange={handleRequestFormChange} required />
-              <ModalLabel htmlFor="reqTimeModal">Hora (HH:MM)*</ModalLabel>
+              <RequestModalLabel htmlFor="reqTimeModal">Hora (HH:MM)*</RequestModalLabel>
               <RequestModalInput type="time" name="time" id="reqTimeModal" value={requestFormData.time} onChange={handleRequestFormChange} required step="1800" />
-              <ModalLabel htmlFor="reqNotesModal">Notas (Opcional)</ModalLabel>
+              <RequestModalLabel htmlFor="reqNotesModal">Notas (Opcional)</RequestModalLabel>
               <RequestModalTextarea name="notes" id="reqNotesModal" value={requestFormData.notes} onChange={handleRequestFormChange} rows="3" />
               <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseRequestModal} disabled={requestFormLoading}>Cancelar</ModalButton>
