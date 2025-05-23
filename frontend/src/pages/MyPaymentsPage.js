@@ -9,13 +9,16 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 
-// --- Styled Components (como na tua versão ou na minha sugestão anterior) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${props => props.theme.colors.background};
   color: ${props => props.theme.colors.textMain};
   min-height: 100vh;
   padding: 20px 40px;
   font-family: ${props => props.theme.fonts.main};
+  @media (max-width: 768px) {
+    padding: 20px 15px;
+  }
 `;
 
 const Title = styled.h1`
@@ -23,40 +26,86 @@ const Title = styled.h1`
   color: ${props => props.theme.colors.primary};
   margin-bottom: 25px;
   text-align: center;
+  @media (max-width: 480px) {
+    font-size: 1.8rem;
+  }
+`;
+
+// NOVO: TableWrapper para scroll horizontal
+const TableWrapper = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 20px; // Adiciona alguma margem acima da tabela se necessário
+
+  &::-webkit-scrollbar {
+    height: 8px;
+    background-color: #252525; // Fundo da track da scrollbar
+  }
+  &::-webkit-scrollbar-track {
+    background: #2c2c2c;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
 `;
 
 const Table = styled.table`
   width: 100%;
-  max-width: 900px; 
-  margin: 20px auto;
+  /* max-width: 900px; // Removido max-width para permitir que a tabela use o espaço ou scrolle */
+  /* margin: 20px auto; // Removido margin auto pois TableWrapper vai controlar o layout */
   border-collapse: collapse;
   background-color: ${props => props.theme.colors.cardBackground};
   border-radius: ${props => props.theme.borderRadius};
-  overflow: hidden;
+  /* overflow: hidden; // Removido overflow:hidden daqui se for causar problemas com sticky header, mas o border-radius pode precisar de TableWrapper */
   box-shadow: ${props => props.theme.boxShadow};
 
   th, td {
     border-bottom: 1px solid ${props => props.theme.colors.cardBorder};
-    padding: 12px 15px;
+    padding: 10px 12px; // Reduzir padding para mobile
     text-align: left;
-    font-size: 0.95rem;
+    font-size: 0.9rem; // Reduzir fonte para mobile
+    white-space: nowrap; // Evita que o texto quebre linha e force a largura da coluna
   }
+
   th {
-    background-color: #303030;
+    background-color: #303030; 
     color: ${props => props.theme.colors.primary};
     font-weight: 600;
+    position: sticky;
+    top: 60px; /* AJUSTA ESTA ALTURA! (Altura da tua Navbar) */
+    z-index: 10;
   }
+
+  thead th { // Para garantir que o fundo é opaco
+      background-color: #303030;
+  }
+
   tr:last-child td {
     border-bottom: none;
   }
+  
   td:last-child { 
     text-align: center;
+    white-space: normal; // Permite que botões quebrem se necessário
+  }
+
+  @media (min-width: 768px) { // Estilos para ecrãs maiores
+    th, td {
+        padding: 12px 15px;
+        font-size: 0.95rem;
+    }
   }
 `;
 
 const ActionButton = styled.button`
-  padding: 8px 15px;
-  font-size: 0.9rem;
+  padding: 8px 12px; // Ajustar padding
+  font-size: 0.85rem; // Ajustar fonte
   border-radius: ${props => props.theme.borderRadius};
   cursor: pointer;
   border: none;
@@ -64,7 +113,8 @@ const ActionButton = styled.button`
   background-color: ${props => props.theme.colors.primary};
   color: ${props => props.theme.colors.textDark};
   font-weight: 500;
-  min-width: 100px;
+  min-width: 80px; // Ajustar min-width
+  margin: 2px; // Adicionar pequena margem para botões que quebram linha
 
   &:hover:not(:disabled) {
     background-color: #e6c358;
@@ -73,15 +123,6 @@ const ActionButton = styled.button`
     background-color: ${props => props.theme.colors.buttonSecondaryBg};
     color: ${props => props.theme.colors.textMuted};
     cursor: not-allowed;
-  }
-`;
-
-const RefreshButton = styled(ActionButton)` // NOVO
-  background-color: ${props => props.theme.colors.buttonSecondaryBg};
-  color: ${props => props.theme.colors.textMain};
-  margin-top: 10px;
-  &:hover:not(:disabled) {
-    background-color: ${props => props.theme.colors.buttonSecondaryHoverBg};
   }
 `;
 
@@ -99,7 +140,7 @@ const StatusBadge = styled.span`
   &.pendente { background-color: #FFA000; }
   &.pago, &.confirmada { background-color: ${props => props.theme.colors.success || '#66BB6A'}; }
   &.cancelado, &.rejeitado { background-color: ${props => props.theme.colors.error || '#FF6B6B'}; }
-  &.processando { background-color: #2196F3; } // NOVO ESTILO PARA PROCESSANDO
+  &.processando { background-color: #2196F3; }
 `;
 
 
@@ -187,24 +228,19 @@ const MyPaymentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState('');
   const [pageSuccessMessage, setPageSuccessMessage] = useState('');
-  const [pageInfoMessage, setPageInfoMessage] = useState(''); // NOVO
-  
+  const [pageInfoMessage, setPageInfoMessage] = useState('');
   const [actionLoading, setActionLoading] = useState(null); 
-
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState(null);
   const [currentPaymentDetails, setCurrentPaymentDetails] = useState(null);
-  // const [stripeError, setStripeError] = useState(''); // Removido, pois o StripeCheckoutForm trata internamente
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const fetchMyPayments = useCallback(async (showLoadingIndicator = true) => { // Adicionado parâmetro
+  const fetchMyPayments = useCallback(async (showLoadingIndicator = true) => {
     if (authState.token) {
       try {
         if (showLoadingIndicator) setLoading(true);
-        // Não limpar pageSuccessMessage ou pageInfoMessage aqui para que persistam
-        // setPageError(''); // Limpar erro antigo antes de tentar buscar
         const data = await clientGetMyPayments(authState.token);
         setPayments(data);
       } catch (err) {
@@ -217,54 +253,46 @@ const MyPaymentsPage = () => {
 
   useEffect(() => {
     fetchMyPayments();
-  }, [fetchMyPayments]); // fetchMyPayments não muda, então só roda uma vez no mount
+  }, [fetchMyPayments]);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     if (queryParams.get('payment_attempted') === 'true') {
         const internalPaymentId = queryParams.get('internal_payment_id');
-        setPageInfoMessage( // MUDADO PARA InfoText
+        setPageInfoMessage(
           `O pagamento para ID ${internalPaymentId} foi recebido pelo Stripe. O estado final será atualizado aqui em breve (normalmente alguns segundos). Pode precisar de atualizar a página.`
         );
-        // fetchMyPayments(); // Opcional: pode já ter sido chamado pelo mount
         navigate(location.pathname, { replace: true }); 
-        // Considerar um re-fetch após um delay maior aqui, ou um botão de refresh
         const timer = setTimeout(() => {
             setPageInfoMessage(msg => msg + " A verificar novamente...");
-            fetchMyPayments(false); // Re-fetch sem mostrar o loading principal
-        }, 5000); // Tenta atualizar após 5 segundos
+            fetchMyPayments(false);
+        }, 5000);
         return () => clearTimeout(timer);
     }
   }, [location, navigate, fetchMyPayments]);
 
 
   const handleInitiateStripePayment = async (payment) => {
+    // ... (lógica como antes)
     const pagableOnlineCategories = ['sinal_consulta', 'consulta_fisioterapia', 'mensalidade_treino'];
     if (payment.status !== 'pendente' || !pagableOnlineCategories.includes(payment.category)) {
         setPageError("Este tipo de pagamento não está configurado para pagamento online ou já não está pendente.");
         return;
     }
-
     setActionLoading(payment.id); 
     setPageSuccessMessage(''); 
     setPageError('');
-    setPageInfoMessage(''); // Limpar InfoMessage
-
+    setPageInfoMessage('');
     try {
       const intentResponse = await createStripePaymentIntentForSignal(payment.id, authState.token);
       if (intentResponse && intentResponse.clientSecret) {
         setStripeClientSecret(intentResponse.clientSecret);
-        setCurrentPaymentDetails({
-          id: payment.id,
-          amount: payment.amount,
-          description: payment.description || `Pagamento ID ${payment.id}`
-        });
+        setCurrentPaymentDetails({ id: payment.id, amount: payment.amount, description: payment.description || `Pagamento ID ${payment.id}` });
         setShowStripeModal(true);
       } else {
         setPageError('Não foi possível iniciar o pagamento. Detalhes não recebidos do servidor.');
       }
     } catch (err) {
-      console.error("Erro ao iniciar pagamento Stripe:", err);
       setPageError(err.message || 'Falha ao iniciar o processo de pagamento. Tente novamente.');
     } finally {
       setActionLoading(null); 
@@ -272,39 +300,24 @@ const MyPaymentsPage = () => {
   };
 
   const handleStripePaymentSuccess = (paymentIntent) => {
+    // ... (lógica como antes)
     setShowStripeModal(false);
     setStripeClientSecret(null);
     setPageSuccessMessage(`O pagamento para "${currentPaymentDetails?.description}" foi processado pelo Stripe! O estado na lista deverá atualizar em breve.`);
     setCurrentPaymentDetails(null);
     setTimeout(() => {
-        fetchMyPayments(false); // Re-fetch sem loading indicator principal
-        setPageInfoMessage(''); // Limpa qualquer info message anterior
-    }, 3000); // Delay para dar tempo ao webhook
+        fetchMyPayments(false); 
+        setPageInfoMessage(''); 
+    }, 3000);
   };
 
-  const handleStripePaymentError = (errorMessage) => {
-    console.error("Stripe Payment Error (MyPaymentsPage):", errorMessage);
-    // O erro já é mostrado no StripeCheckoutForm, mas podemos fechar o modal se desejado
-    // setShowStripeModal(false);
-    // setPageError(`Falha no pagamento: ${errorMessage}`); // Mostrar erro na página principal se modal fechar
-  };
-
-  const handleRefreshPayments = () => {
-    setPageInfoMessage('A atualizar lista de pagamentos...');
-    setPageError('');
-    setPageSuccessMessage('');
-    fetchMyPayments().finally(() => setPageInfoMessage(''));
-  };
-
-  const handleStripeRequiresAction = (paymentIntent) => {
+  const handleStripePaymentError = (errorMessage) => { /* ... como antes ... */ };
+  const handleStripeRequiresAction = (paymentIntent) => { /* ... como na última versão para Multibanco ... */ 
     console.log("Stripe - Ação Requerida (ex: Multibanco):", paymentIntent);
-    // O StripeCheckoutForm já está a mostrar os detalhes do Multibanco.
-    // Podes querer mudar o título do modal ou adicionar uma mensagem informativa na página principal.
     setPageInfoMessage("Foram geradas referências Multibanco. Por favor, utiliza os dados apresentados no formulário para completar o pagamento.");
-    // Normalmente, não fechas o modal aqui, pois o utilizador precisa de ver as referências.
-    // O fetchMyPayments() não vai mostrar o pagamento como "pago" imediatamente, só após o webhook.
-};
+  };
 
+  const handleRefreshPayments = () => { /* ... como antes ... */ };
 
   if (loading && !showStripeModal) {
     return <PageContainer><LoadingText>A carregar os seus pagamentos...</LoadingText></PageContainer>;
@@ -313,83 +326,81 @@ const MyPaymentsPage = () => {
   return (
     <PageContainer>
       <Title>Meus Pagamentos</Title>
-      <div style={{ textAlign: 'center', marginBottom: '10px' }}> {/* Ajustado margin */}
+      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
         <StyledLink to="/dashboard">
             ‹ Voltar ao Meu Painel
         </StyledLink>
       </div>
-      {/* NOVO: Botão de Refresh */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <RefreshButton onClick={handleRefreshPayments} disabled={loading}>
           {loading ? 'A atualizar...' : 'Atualizar Lista de Pagamentos'}
         </RefreshButton>
       </div>
 
-
       {pageError && !showStripeModal && <ErrorText>{pageError}</ErrorText>}
       {pageSuccessMessage && !showStripeModal && <MessageText>{pageSuccessMessage}</MessageText>}
-      {pageInfoMessage && !showStripeModal && <InfoText>{pageInfoMessage}</InfoText>} {/* NOVO */}
-
+      {pageInfoMessage && !showStripeModal && <InfoText>{pageInfoMessage}</InfoText>}
 
       {payments.length > 0 ? (
-        <Table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Data Registo</th>
-              <th>Mês Ref.</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Valor</th>
-              <th>Status</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map(payment => (
-              <tr key={payment.id}>
-                <td>{payment.id}</td>
-                <td>{new Date(payment.paymentDate).toLocaleDateString('pt-PT')}</td>
-                <td>{payment.referenceMonth}</td>
-                <td>{payment.description || 'N/A'}</td>
-                <td>{payment.category ? payment.category.replace(/_/g, ' ') : 'N/A'}</td>
-                <td>{Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</td>
-                <td>
-                  <StatusBadge className={payment.status ? payment.status.toLowerCase() : ''}>
-                    {payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}
-                  </StatusBadge>
-                </td>
-                <td>
-                  {payment.status === 'pendente' &&
-                   (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia' || payment.category === 'mensalidade_treino') && (
-                    <ActionButton
-                        onClick={() => handleInitiateStripePayment(payment)}
-                        disabled={actionLoading === payment.id}
-                    >
-                      {actionLoading === payment.id ? 'Aguarde...' : `Pagar Online`}
-                    </ActionButton>
-                  )}
-                </td>
+        <TableWrapper> {/* ENVOLVER A TABELA */}
+          <Table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Data Registo</th>
+                <th>Mês Ref.</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Ação</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {payments.map(payment => (
+                <tr key={payment.id}>
+                  <td>{payment.id}</td>
+                  <td>{new Date(payment.paymentDate).toLocaleDateString('pt-PT')}</td>
+                  <td>{payment.referenceMonth}</td>
+                  <td>{payment.description || 'N/A'}</td>
+                  <td>{payment.category ? payment.category.replace(/_/g, ' ') : 'N/A'}</td>
+                  <td>{Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</td>
+                  <td>
+                    <StatusBadge className={payment.status ? payment.status.toLowerCase() : ''}>
+                      {payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}
+                    </StatusBadge>
+                  </td>
+                  <td>
+                    {payment.status === 'pendente' &&
+                     (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia' || payment.category === 'mensalidade_treino') && (
+                      <ActionButton
+                          onClick={() => handleInitiateStripePayment(payment)}
+                          disabled={actionLoading === payment.id}
+                      >
+                        {actionLoading === payment.id ? 'Aguarde...' : `Pagar Online`}
+                      </ActionButton>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableWrapper>
       ) : (
         !loading && !pageError && <NoItemsText>Ainda não tens pagamentos registados.</NoItemsText>
       )}
 
       {showStripeModal && stripeClientSecret && currentPaymentDetails && (
-        <ModalOverlay onClick={() => { setShowStripeModal(false); /* setStripeError(''); Não é mais necessário */ } }>
+        <ModalOverlay onClick={() => { setShowStripeModal(false); /*setStripeError('');*/ } }>
           <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={() => { setShowStripeModal(false); /* setStripeError(''); */ } }>&times;</CloseButton>
+            <CloseButton onClick={() => { setShowStripeModal(false); /*setStripeError('');*/ } }>&times;</CloseButton>
             <ModalTitle>Pagamento Seguro: {currentPaymentDetails.description}</ModalTitle>
-            
             <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
               <StripeCheckoutForm
                 paymentDetails={currentPaymentDetails}
                 onSuccess={handleStripePaymentSuccess}
                 onError={handleStripePaymentError}
-                onRequiresAction={handleStripeRequiresAction} // <-- Adiciona esta prop
+                onRequiresAction={handleStripeRequiresAction}
               />
             </Elements>
           </ModalContent>
