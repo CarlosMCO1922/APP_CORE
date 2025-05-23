@@ -1,432 +1,631 @@
-// src/pages/CalendarPage.js
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import ptBR from 'date-fns/locale/pt-BR';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-
-import { useAuth } from '../context/AuthContext';
+// src/pages/admin/AdminManagePaymentsPage.js
+import React, { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import styled, { css } from 'styled-components';
+import { useAuth } from '../../context/AuthContext';
 import {
-    getAllTrainings,
-    bookTraining as bookTrainingService,
-    cancelTrainingBooking as cancelTrainingBookingService
-} from '../services/trainingService';
-import {
-    getAllAppointments,
-    bookAppointment as bookAppointmentService,
-    cancelAppointmentBooking as cancelAppointmentBookingService,
-    clientRequestNewAppointment
-} from '../services/appointmentService';
-import { getAllStaffForSelection } from '../services/staffService';
+    adminGetAllPayments,
+    adminCreatePayment,
+    adminUpdatePaymentStatus,
+    adminDeletePayment,
+    adminGetTotalPaid
+} from '../../services/paymentService';
+import { adminGetAllUsers } from '../../services/userService';
+import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
 
-const locales = { 'pt-BR': ptBR };
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
-  getDay,
-  locales,
-});
-
-// --- Styled Components (Mantidos os mesmos da tua versão anterior) ---
-const PageContainer = styled.div` background-color: #1A1A1A; color: #E0E0E0; min-height: 100vh; padding: 20px 30px; font-family: 'Inter', sans-serif; `;
-const Title = styled.h1` font-size: 2.3rem; color: #D4AF37; margin-bottom: 25px; text-align: center; `;
-const CalendarWrapper = styled.div`
-  background-color: #252525;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-  height: 80vh;
-
-  .rbc-toolbar { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-  .rbc-btn-group button { color: #D4AF37; background-color: #333; border: 1px solid #D4AF37; padding: 6px 12px; border-radius: 5px; margin: 0 2px; transition: background-color 0.2s, color 0.2s; cursor: pointer; &:hover, &:focus { background-color: #D4AF37; color: #1A1A1A; } }
-  .rbc-toolbar button.rbc-active { background-color: #D4AF37; color: #1A1A1A; }
-  .rbc-toolbar-label { color: #D4AF37; font-size: 1.6em; font-weight: bold; text-align: center; flex-grow: 1; }
-  .rbc-header { border-bottom: 1px solid #4A4A4A; color: #D4AF37; padding: 10px 0; text-align: center; font-weight: 500; }
-  .rbc-event, .rbc-day-slot .rbc-event { background-color: #D4AF37; color: #1A1A1A; border: none; border-radius: 4px; padding: 4px 6px; font-size: 0.85em; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-  .rbc-event.rbc-selected { background-color: #b89b2e; }
-  .rbc-agenda-event-cell, .rbc-time-slot, .rbc-day-slot .rbc-time-slot { border-top: 1px solid #383838; }
-  .rbc-time-gutter .rbc-timeslot-group { border-bottom: none; }
-  .rbc-time-header-gutter, .rbc-time-gutter { background: #2a2a2a; }
-  .rbc-day-bg + .rbc-day-bg { border-left: 1px solid #383838; }
-  .rbc-month-row + .rbc-month-row { border-top: 1px solid #383838; }
-  .rbc-today { background-color: #3a3a3aAA; }
+// --- Styled Components ---
+const PageContainer = styled.div`
+  background-color: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.textMain};
+  min-height: 100vh;
+  padding: 20px clamp(15px, 4vw, 40px);
+  font-family: ${({ theme }) => theme.fonts.main};
 `;
-const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.75); display: flex; justify-content: center; align-items: center; z-index: 1050; `;
-const ModalContent = styled.div` background-color: #2C2C2C; padding: 30px 40px; border-radius: 10px; width: 100%; max-width: 550px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); position: relative; color: #E0E0E0; max-height: 90vh; overflow-y: auto;`;
-const ModalTitle = styled.h2` color: #D4AF37; margin-top: 0; margin-bottom: 20px; font-size: 1.6rem; `;
-const ModalDetail = styled.p` margin: 10px 0; font-size: 1rem; span { font-weight: bold; color: #D4AF37; }`;
-const ModalActions = styled.div` display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; `;
-const ModalButton = styled.button` background-color: ${props => props.danger ? '#D32F2F' : (props.primary ? '#D4AF37' : '#555')}; color: ${props => props.danger ? 'white' : (props.primary ? '#1A1A1A' : '#E0E0E0')}; padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease; &:hover { background-color: ${props => props.danger ? '#C62828' : (props.primary ? '#e6c358' : '#666')}; } &:disabled { background-color: #404040; color: #777; cursor: not-allowed; } `;
-const CloseButton = styled.button` position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #aaa; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 0; &:hover { color: #fff; } `;
-const LoadingText = styled.p` font-size: 1.2rem; text-align: center; padding: 30px; color: #D4AF37;`;
-const ErrorText = styled.p` font-size: 1.1rem; text-align: center; padding: 10px; margin-bottom:10px; color: #FF6B6B; background-color: rgba(94, 46, 46, 0.3); border: 1px solid #FF6B6B; border-radius: 8px;`;
-const MessageText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #66BB6A; background-color: rgba(102,187,106,0.15); border: 1px solid #66BB6A; border-radius: 8px; margin: 15px auto; max-width: 600px;`;
 
-const RequestModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
-const RequestModalLabel = styled.label` font-size: 0.9rem; color: #b0b0b0; margin-bottom: 5px; display: block; `;
-const RequestModalInput = styled.input` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: #D4AF37; } `;
-const RequestModalSelect = styled.select` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: #D4AF37; } `;
-const RequestModalTextarea = styled.textarea` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; min-height: 70px; &:focus { outline: none; border-color: #D4AF37; } `;
+const HeaderContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 15px;
+`;
 
-const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
+const TitleContainer = styled.div``;
 
-const EventComponent = ({ event }) => (
-  <div>
-    <strong>{event.title.split('(')[0].trim()}</strong>
-    <div style={{ fontSize: '0.8em', opacity: 0.9, lineHeight: '1.2' }}>
-      {event.resource.type === 'training' &&
-        `(<span class="math-inline">\{event\.resource\.participantsCount \!\=\= undefined ? event\.resource\.participantsCount \: event\.resource\.participants?\.length \|\| 0\}/</span>{event.resource.capacity}) ${event.resource.instructor?.firstName ? 'Instr: ' + event.resource.instructor.firstName.substring(0, 1) + '.' : ''}`
-      }
-      {event.resource.type === 'appointment' && event.resource.status !== 'disponível' && event.resource.status !== 'pendente_aprovacao_staff' && event.resource.status !== 'confirmada' && event.resource.professional?.firstName && // MODIFICADO
-        `Prof: ${event.resource.professional.firstName.substring(0, 1)}.`
-      }
-      {event.resource.type === 'appointment' && event.resource.status === 'disponível' &&
-        `(Disponível)`
-      }
-      {event.resource.type === 'appointment' && event.resource.status === 'pendente_aprovacao_staff' &&
-        `(Pendente)`
-      }
-      {/* ***** INÍCIO DA ADIÇÃO ***** */}
-      {event.resource.type === 'appointment' && event.resource.status === 'confirmada' &&
-        `(Confirmada)`
-      }
-      {/* ***** FIM DA ADIÇÃO ***** */}
-    </div>
-  </div>
-);
+const Title = styled.h1`
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  color: ${({ theme }) => theme.colors.primary};
+  margin: 0 0 5px 0;
+`;
 
-// Estilo para o link do plano de treino dentro do modal
-const ModalPlanLink = styled(Link)`
-  display: block; /* Para ocupar a largura e permitir margin */
-  background-color: #D4AF37;
-  color: #1A1A1A;
-  padding: 10px 15px;
-  border-radius: 6px;
+const Subtitle = styled.p`
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin: 0;
+  font-weight: 300;
+`;
+
+const CreateButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textDark};
+  padding: 10px 18px;
+  border-radius: ${({ theme }) => theme.borderRadius};
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.9rem;
-  text-align: center;
-  margin-top: 15px; /* Espaço acima do link */
-  transition: background-color 0.2s ease-in-out;
+  align-self: center;
 
   &:hover {
     background-color: #e6c358;
+    transform: translateY(-2px);
+  }
+  @media (max-width: 550px) {
+    width: 100%;
+    justify-content: center;
+    font-size: 1rem;
+    padding: 12px;
   }
 `;
 
+const BackLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.primary};
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 8px 12px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-size: 0.9rem;
 
-const CalendarPage = () => {
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.cardBackground};
+    color: #fff;
+  }
+  svg {
+    margin-right: 4px;
+  }
+`;
+
+const TotalPaidContainer = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: 18px 25px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  margin-bottom: 25px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: ${({ theme }) => theme.colors.textMain};
+  font-weight: 500;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  border-left: 4px solid ${({ theme }) => theme.colors.primary};
+  span {
+    color: ${({ theme }) => theme.colors.success};
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-left: 10px;
+  }
+`;
+
+const FiltersContainer = styled.div`
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding: 20px;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  flex-wrap: wrap;
+  align-items: flex-end;
+
+  select, input[type="month"], input[type="text"] {
+    padding: 9px 12px;
+    background-color: #333;
+    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    border-radius: ${({ theme }) => theme.borderRadius};
+    color: ${({ theme }) => theme.colors.textMain};
+    font-size: 0.9rem;
+    min-width: 160px;
+    flex-grow: 1;
+    @media (min-width: 768px) {
+        flex-grow: 0;
+    }
+  }
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 180px;
+`;
+
+const FilterButton = styled.button`
+  padding: 9px 18px;
+  background-color: ${({ theme, clear }) => clear ? theme.colors.buttonSecondaryBg : theme.colors.primary};
+  color: ${({ theme, clear }) => clear ? theme.colors.textMain : theme.colors.textDark};
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+  height: 38px;
+
+  &:hover {
+    background-color: ${({ theme, clear }) => clear ? theme.colors.buttonSecondaryHoverBg : '#e6c358'};
+  }
+`;
+
+const TableWrapper = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+
+  &::-webkit-scrollbar { height: 8px; background-color: #252525; }
+  &::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+`;
+
+const Table = styled.table`
+  width: 100%;
+  min-width: 900px; 
+  border-collapse: collapse;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  
+  th, td {
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  th {
+    background-color: #303030;
+    color: ${({ theme }) => theme.colors.primary};
+    font-weight: 600;
+    position: sticky; 
+    top: 0; 
+    z-index: 1;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background-color: #2c2c2c; }
+  td.actions-cell { text-align: right; }
+  td.status-cell select {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    background-color: #333;
+    color: ${({ theme }) => theme.colors.textMain};
+    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    border-radius: 4px;
+    min-width: 100px;
+  }
+   @media (max-width: 768px) {
+    th, td { padding: 8px 10px; font-size: 0.8rem; }
+  }
+`;
+
+const ActionButtonContainer = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+`;
+
+const ActionButton = styled.button`
+  padding: 6px 10px; font-size: 0.8rem; border-radius: 5px;
+  cursor: pointer; border: none; transition: background-color 0.2s ease, transform 0.15s ease;
+  display: inline-flex; align-items: center; gap: 5px;
+  background-color: ${props => (props.danger ? props.theme.colors.error : props.theme.colors.buttonSecondaryBg)};
+  color: white;
+  &:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+  &:disabled { background-color: #404040; color: #777; cursor: not-allowed; }
+`;
+
+const MessageBaseStyles = css`
+  text-align: center; padding: 12px 18px; margin: 20px auto;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border-width: 1px; border-style: solid; max-width: 600px;
+  font-size: 0.9rem; font-weight: 500;
+`;
+const LoadingText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.primary};
+  border-color: transparent;
+  background: transparent;
+`;
+const ErrorText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
+`;
+const MessageText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.success};
+  background-color: ${({ theme }) => theme.colors.successBg};
+  border-color: ${({ theme }) => theme.colors.success};
+`;
+
+// Modal Styled Components
+const ModalOverlay = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.85); display: flex;
+  justify-content: center; align-items: center;
+  z-index: 1050; padding: 20px;
+`;
+const ModalContent = styled.div`
+  background-color: #2A2A2A; padding: clamp(25px, 4vw, 35px);
+  border-radius: 10px; width: 100%; max-width: 550px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6); position: relative;
+  max-height: 90vh; overflow-y: auto;
+`;
+const ModalTitle = styled.h2`
+  color: ${({ theme }) => theme.colors.primary}; margin-top: 0; margin-bottom: 20px;
+  font-size: clamp(1.4rem, 3.5vw, 1.7rem); font-weight: 600; text-align: center;
+  padding-bottom: 15px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
+const ModalLabel = styled.label`
+  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 4px; display: block; font-weight: 500;
+`;
+const ModalInput = styled.input`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+const ModalTextarea = styled.textarea`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%;
+  min-height: 80px; resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+const ModalSelect = styled.select`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+const ModalActions = styled.div`
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 25px; padding-top: 15px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
+`;
+
+const ModalButton = styled(ActionButton)`
+  background-color: ${props => props.primary ? props.theme.colors.primary : props.theme.colors.buttonSecondaryBg};
+  color: ${props => props.primary ? props.theme.colors.textDark : props.theme.colors.textMain};
+  font-size: 0.9rem; 
+  padding: 10px 18px;
+  gap: 6px;
+  width: 100%;
+  @media (min-width: 480px) { width: auto; }
+
+  &:hover:not(:disabled) {
+    background-color: ${props => props.primary ? '#e6c358' : props.theme.colors.buttonSecondaryHoverBg};
+  }
+`;
+
+const CloseButton = styled.button`
+  position: absolute; top: 10px; right: 10px; background: transparent; border: none;
+  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
+  transition: color 0.2s, transform 0.2s; border-radius: 50%;
+  &:hover { color: #fff; transform: scale(1.1); }
+`;
+const ModalErrorText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
+  margin: -5px 0 10px 0; 
+  text-align: left;      
+  font-size: 0.8rem;    
+  padding: 8px 12px;     
+`;
+
+
+const initialPaymentFormState = {
+  userId: '', amount: '',
+  paymentDate: new Date().toISOString().split('T')[0],
+  referenceMonth: `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
+  category: 'mensalidade_treino', description: '', status: 'pendente',
+};
+const paymentCategories = ['treino_aula_avulso', 'mensalidade_treino', 'consulta_fisioterapia', 'sinal_consulta', 'outro'];
+const paymentStatusesForFilter = ['', 'pendente', 'pago', 'cancelado', 'rejeitado'];
+const paymentStatusesForAdminSet = ['pendente', 'pago', 'cancelado', 'rejeitado'];
+const paymentStatusesForCreate = ['pendente', 'pago'];
+
+
+const AdminManagePaymentsPage = () => {
   const { authState } = useAuth();
-  const navigate = useNavigate();
-  const [events, setEvents] = useState([]);
-  const [myBookedTrainingIds, setMyBookedTrainingIds] = useState(new Set());
-  const [myBookedAppointmentIds, setMyBookedAppointmentIds] = useState(new Set());
-  const [professionals, setProfessionals] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [userList, setUserList] = useState([]);
+  const [totalPaid, setTotalPaid] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [pageError, setPageError] = useState('');
+  const [pageSuccessMessage, setPageSuccessMessage] = useState('');
 
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [showEventModal, setShowEventModal] = useState(false);
+  const [filters, setFilters] = useState({ userId: '', status: '', category: '', year: '', month: '' });
 
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [requestFormData, setRequestFormData] = useState(initialRequestFormState);
-  const [requestFormError, setRequestFormError] = useState('');
-  const [requestFormLoading, setRequestFormLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [currentPaymentData, setCurrentPaymentData] = useState(initialPaymentFormState);
+  const [formLoading, setFormLoading] = useState(false);
+  const [modalError, setModalError] = useState('');
 
-  const [actionLoading, setActionLoading] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState(Views.MONTH);
+  const fetchPageData = useCallback(async (currentFilters) => {
+    if (authState.token) {
+      try {
+        setLoading(true); setPageError(''); setPageSuccessMessage('');
+        const apiFilters = { ...currentFilters };
+        if (currentFilters.year && currentFilters.month) {
+            apiFilters.referenceMonth = `${currentFilters.year}-${currentFilters.month.padStart(2, '0')}`;
+        } else if (currentFilters.year && !currentFilters.month) { 
+            apiFilters.referenceMonth = `${currentFilters.year}-%`;
+        } else if (!currentFilters.year && currentFilters.month) { 
+            apiFilters.referenceMonth = `${new Date().getFullYear()}-${currentFilters.month.padStart(2, '0')}`;
+        }
+        delete apiFilters.year; delete apiFilters.month;
 
-  const fetchPageData = useCallback(async () => {
-    if (!authState.token) {
-      setLoading(false); setError("Autenticação necessária para ver o calendário."); return;
+        const [paymentsData, usersData, totalPaidData] = await Promise.all([
+          adminGetAllPayments(apiFilters, authState.token),
+          adminGetAllUsers(authState.token),
+          adminGetTotalPaid(authState.token)
+        ]);
+        setPayments(paymentsData); setUserList(usersData); setTotalPaid(totalPaidData.totalPaid);
+      } catch (err) {
+        setPageError(err.message || 'Não foi possível carregar os dados da página de pagamentos.');
+      } finally {
+        setLoading(false);
+      }
     }
-    try {
-      setLoading(true); setError(''); setSuccessMessage('');
+  }, [authState.token]);
 
-      const appointmentFilters = {};
+  useEffect(() => { fetchPageData(filters); }, [fetchPageData, filters]);
 
-      let staffPromise = Promise.resolve([]);
-      if (authState.role === 'user') {
-        staffPromise = getAllStaffForSelection(authState.token).catch(err => {
-          console.warn("Aviso: Não foi possível buscar lista de staff para cliente.", err.message);
-          return [];
-        });
-      }
-
-      const [trainingsData, appointmentsData, staffDataResult] = await Promise.all([
-        getAllTrainings(authState.token),
-        getAllAppointments(authState.token, appointmentFilters),
-        staffPromise
-      ]);
-
-      if (authState.role === 'user' && staffDataResult && staffDataResult.length > 0) {
-        setProfessionals(staffDataResult.filter(s => ['physiotherapist', 'trainer', 'admin'].includes(s.role)));
-      } else if (authState.role === 'user') {
-        setProfessionals([]);
-      }
-
-      const bookedTrainings = new Set();
-      const bookedAppointments = new Set();
-      if (authState.role === 'user' && authState.user?.id) {
-        trainingsData.forEach(t => t.participants?.some(p => p.id === authState.user.id) && bookedTrainings.add(t.id));
-        appointmentsData.forEach(a => {
-          if (a.client?.id === authState.user.id) {
-            bookedAppointments.add(a.id);
-          }
-        });
-      }
-      setMyBookedTrainingIds(bookedTrainings);
-      setMyBookedAppointmentIds(bookedAppointments);
-
-      const formattedEvents = [];
-      trainingsData.forEach(training => {
-        const [hours, minutes] = String(training.time).split(':');
-        const start = parse(`${training.date} ${hours}:${minutes}`, 'yyyy-MM-dd HH:mm', new Date());
-        const end = new Date(start.getTime() + (training.durationMinutes || 45) * 60 * 1000);
-        formattedEvents.push({
-          id: `training-${training.id}`,
-          title: `${training.name} (${training.participantsCount !== undefined ? training.participantsCount : training.participants?.length || 0}/${training.capacity})`,
-          start, end, resource: { type: 'training', ...training }
-        });
-      });
-      appointmentsData.forEach(appointment => {
-        const [hours, minutes] = String(appointment.time).split(':');
-        const start = parse(`${appointment.date} ${hours}:${minutes}`, 'yyyy-MM-dd HH:mm', new Date());
-        const end = new Date(start.getTime() + (appointment.durationMinutes || 60) * 60 * 1000);
-        let title = `Consulta: ${appointment.professional?.firstName || 'N/A'}`;
-        if (appointment.client) title += ` c/ ${appointment.client.firstName}`;
-        else if (appointment.status === 'disponível') title += ` (Disponível)`;
-        else if (appointment.status === 'pendente_aprovacao_staff') title += ` (Pendente Prof.)`;
-
-        formattedEvents.push({
-          id: `appointment-${appointment.id}`, title, start, end,
-          resource: { type: 'appointment', ...appointment }
-        });
-      });
-      setEvents(formattedEvents);
-    } catch (err) {
-      setError(err.message || 'Não foi possível carregar os dados do calendário.');
-      console.error("CalendarPage fetchData error:", err);
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleMonthYearFilterChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "referenceMonthInput") {
+        if (value) { const [year, month] = value.split('-'); setFilters(prev => ({ ...prev, year, month })); }
+        else { setFilters(prev => ({ ...prev, year: '', month: ''})); }
+    } else {
+       setFilters(prev => ({ ...prev, [name]: value }));
     }
-    finally { setLoading(false); }
-  }, [authState.token, authState.role, authState.user?.id]);
+  };
 
-  useEffect(() => {
-    fetchPageData();
-  }, [fetchPageData]);
+  const applyFilters = () => { fetchPageData(filters); };
+  const clearFilters = () => { setFilters({ userId: '', status: '', category: '', year: '', month: '' }); };
 
-  const handleSelectEvent = (event) => { setSelectedEvent(event.resource); setShowEventModal(true); setSuccessMessage(''); setError(''); };
-  const handleCloseEventModal = () => { setShowEventModal(false); setSelectedEvent(null); };
 
-  const handleSelectSlot = useCallback((slotInfo) => {
-    if (authState.role !== 'user') return;
-    const selectedDate = format(slotInfo.start, 'yyyy-MM-dd');
-    const selectedTime = format(slotInfo.start, 'HH:mm');
-    setRequestFormData({ ...initialRequestFormState, date: selectedDate, time: selectedTime });
-    setRequestFormError(''); setSuccessMessage(''); setShowRequestModal(true);
-  }, [authState.role]);
+  const handleOpenCreateModal = () => { setCurrentPaymentData(initialPaymentFormState); setModalError(''); setShowModal(true); };
+  const handleCloseModal = () => { setShowModal(false); setModalError(''); };
 
-  const handleCloseRequestModal = () => { setShowRequestModal(false); setRequestFormData(initialRequestFormState); setRequestFormError(''); };
-  const handleRequestFormChange = (e) => { setRequestFormData({ ...requestFormData, [e.target.name]: e.target.value }); };
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentPaymentData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const handleRequestSubmit = async (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!requestFormData.staffId) { setRequestFormError("Por favor, selecione um profissional."); return; }
-    setRequestFormLoading(true); setRequestFormError(''); setSuccessMessage('');
+    setFormLoading(true); setModalError(''); setPageError(''); setPageSuccessMessage('');
+    const dataToSend = { ...currentPaymentData, amount: parseFloat(currentPaymentData.amount) };
+    if (!dataToSend.userId || isNaN(dataToSend.amount) || dataToSend.amount <= 0 || !dataToSend.paymentDate || !dataToSend.referenceMonth || !dataToSend.category) {
+        setModalError("Campos obrigatórios: Cliente, Valor (>0), Data do Pagamento, Mês de Referência, Categoria.");
+        setFormLoading(false); return;
+    }
     try {
-      const dataToSend = { ...requestFormData, time: requestFormData.time.length === 5 ? `${requestFormData.time}:00` : requestFormData.time };
-      const response = await clientRequestNewAppointment(dataToSend, authState.token);
-      setSuccessMessage(response.message || 'Pedido de consulta enviado com sucesso!');
-      await fetchPageData();
-      handleCloseRequestModal();
+      await adminCreatePayment(dataToSend, authState.token);
+      setPageSuccessMessage('Pagamento criado com sucesso!');
+      fetchPageData(filters); handleCloseModal();
     } catch (err) {
-      setRequestFormError(err.message || 'Falha ao enviar pedido de consulta.');
-    } finally { setRequestFormLoading(false); }
+      setModalError(err.message || 'Falha ao criar pagamento.');
+    } finally {
+      setFormLoading(false);
+    }
   };
 
-  const handleBookSelectedTraining = async () => {
-    if (!selectedEvent || selectedEvent.type !== 'training') return;
-    if (!window.confirm('Confirmas a inscrição neste treino?')) return;
-    setActionLoading(true); setError(''); setSuccessMessage('');
+  const handleChangePaymentStatus = async (paymentId, newStatus) => {
+    if (!window.confirm(`Tens a certeza que queres alterar o status do pagamento ID ${paymentId} para "${newStatus}"?`)) return;
+    setPageError(''); setPageSuccessMessage('');
     try {
-      await bookTrainingService(selectedEvent.id, authState.token);
-      setSuccessMessage('Inscrição no treino realizada com sucesso!');
-      await fetchPageData(); handleCloseEventModal();
+        await adminUpdatePaymentStatus(paymentId, newStatus, authState.token);
+        setPageSuccessMessage(`Status do pagamento ID ${paymentId} atualizado para "${newStatus}".`);
+        fetchPageData(filters); 
     } catch (err) {
-      setError(err.message || 'Falha ao inscrever no treino.');
-    } finally { setActionLoading(false); }
+        setPageError(err.message || 'Falha ao atualizar status do pagamento.');
+    }
   };
 
-  const handleCancelTrainingBooking = async () => {
-    if (!selectedEvent || selectedEvent.type !== 'training') return;
-    if (!window.confirm('Confirmas o cancelamento da inscrição neste treino?')) return;
-    setActionLoading(true); setError(''); setSuccessMessage('');
+  const handleDeletePayment = async (paymentId) => { 
+    if (!window.confirm(`Tens a certeza que queres eliminar o pagamento ID ${paymentId}?`)) return;
+    setPageError(''); setPageSuccessMessage('');
     try {
-      await cancelTrainingBookingService(selectedEvent.id, authState.token);
-      setSuccessMessage('Inscrição no treino cancelada com sucesso!');
-      await fetchPageData(); handleCloseEventModal();
+        await adminDeletePayment(paymentId, authState.token);
+        setPageSuccessMessage('Pagamento eliminado com sucesso.');
+        fetchPageData(filters);
     } catch (err) {
-      setError(err.message || 'Falha ao cancelar inscrição.');
-    } finally { setActionLoading(false); }
+        setPageError(err.message || 'Falha ao eliminar pagamento.');
+    }
   };
 
-  const handleBookSelectedAppointment = async () => {
-    if (!selectedEvent || selectedEvent.type !== 'appointment') return;
-    if (!window.confirm('Confirmas a marcação desta consulta?')) return;
-    setActionLoading(true); setError(''); setSuccessMessage('');
-    try {
-      await bookAppointmentService(selectedEvent.id, authState.token);
-      setSuccessMessage('Consulta marcada com sucesso!');
-      await fetchPageData(); handleCloseEventModal();
-    } catch (err) {
-      setError(err.message || 'Falha ao marcar consulta.');
-    } finally { setActionLoading(false); }
-  };
-
-  const handleCancelAppointmentBooking = async () => {
-    if (!selectedEvent || selectedEvent.type !== 'appointment') return;
-    if (!window.confirm('Confirmas o cancelamento desta consulta?')) return;
-    setActionLoading(true); setError(''); setSuccessMessage('');
-    try {
-      await cancelAppointmentBookingService(selectedEvent.id, authState.token);
-      setSuccessMessage('Consulta cancelada com sucesso!');
-      await fetchPageData(); handleCloseEventModal();
-    } catch (err) {
-      setError(err.message || 'Falha ao cancelar consulta.');
-    } finally { setActionLoading(false); }
-  };
-
-  const handleAdminManageEvent = () => {
-    if (!selectedEvent) return;
-    if (selectedEvent.type === 'training') navigate(`/admin/manage-trainings?edit=${selectedEvent.id}`);
-    else if (selectedEvent.type === 'appointment') navigate(`/admin/manage-appointments?edit=${selectedEvent.id}`);
-    handleCloseEventModal();
-  };
-
-  const handleNavigate = useCallback((newDate) => { setCurrentDate(newDate); }, []);
-  const handleViewChange = useCallback((newView) => { setCurrentView(newView); }, []);
-
-  const messages = useMemo(() => ({
-    allDay: 'Dia Inteiro', previous: '‹ Anterior', next: 'Próximo ›', today: 'Hoje',
-    month: 'Mês', week: 'Semana', day: 'Dia', agenda: 'Agenda',
-    date: 'Data', time: 'Hora', event: 'Evento',
-    noEventsInRange: 'Não há eventos neste período.',
-    showMore: total => `+ Ver mais (${total})`
-  }), []);
-
-  const isAdminOrStaff = authState.role && authState.role !== 'user';
-  const isClient = authState.role === 'user';
-
-  if (loading) return <PageContainer><LoadingText>A carregar calendário...</LoadingText></PageContainer>;
+  if (loading && !showModal) {
+    return <PageContainer><LoadingText>A carregar pagamentos...</LoadingText></PageContainer>;
+  }
 
   return (
     <PageContainer>
-      <Title>Calendário e Marcações CORE</Title>
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <Link to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"} style={{ color: '#D4AF37', fontSize: '1.1rem', textDecoration: 'none' }}>
-          ‹ Voltar ao Painel
-        </Link>
-      </div>
+      <HeaderContainer>
+        <TitleContainer>
+            <Title>Gestão de Pagamentos</Title>
+            <Subtitle>Registar e acompanhar pagamentos dos clientes.</Subtitle>
+        </TitleContainer>
+        <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Registar Pagamento</CreateButton>
+      </HeaderContainer>
+      <BackLink to="/admin/dashboard"><FaArrowLeft /> Voltar ao Painel Admin</BackLink>
 
-      {error && <ErrorText>{error}</ErrorText>}
-      {successMessage && !showRequestModal && !showEventModal && <MessageText>{successMessage}</MessageText>}
+      {pageError && <ErrorText>{pageError}</ErrorText>}
+      {pageSuccessMessage && <MessageText>{pageSuccessMessage}</MessageText>}
 
-      <CalendarWrapper>
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: '100%' }}
-          views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-          view={currentView}
-          date={currentDate}
-          onNavigate={handleNavigate}
-          onView={handleViewChange}
-          messages={messages}
-          culture='pt-BR'
-          onSelectEvent={handleSelectEvent}
-          onSelectSlot={authState.role === 'user' ? handleSelectSlot : undefined}
-          selectable={authState.role === 'user'}
-          components={{ event: EventComponent }}
-          popup
-          timeslots={1} step={60}
-          min={new Date(0, 0, 0, 7, 0, 0)}
-          max={new Date(0, 0, 0, 22, 0, 0)}
-        />
-      </CalendarWrapper>
+      <TotalPaidContainer>
+        Total Recebido (Status "Pago"): <span>{Number(totalPaid).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</span>
+      </TotalPaidContainer>
 
-      {showEventModal && selectedEvent && (
-        <ModalOverlay onClick={handleCloseEventModal}>
+      <FiltersContainer>
+        <FilterGroup>
+          <ModalLabel htmlFor="filterUserIdPay">Cliente:</ModalLabel>
+          <ModalSelect name="userId" id="filterUserIdPay" value={filters.userId} onChange={handleFilterChange}>
+              <option value="">Todos</option>
+              {userList.map(user => <option key={user.id} value={user.id}>{user.firstName} {user.lastName}</option>)}
+          </ModalSelect>
+        </FilterGroup>
+        <FilterGroup>
+          <ModalLabel htmlFor="filterStatusPay">Status:</ModalLabel>
+          <ModalSelect name="status" id="filterStatusPay" value={filters.status} onChange={handleFilterChange}>
+              {paymentStatusesForFilter.map(s => <option key={s} value={s}>{s ? (s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')) : 'Todos'}</option>)}
+          </ModalSelect>
+        </FilterGroup>
+        <FilterGroup>
+          <ModalLabel htmlFor="filterCategoryPay">Categoria:</ModalLabel>
+          <ModalSelect name="category" id="filterCategoryPay" value={filters.category} onChange={handleFilterChange}>
+              <option value="">Todas</option>
+              {paymentCategories.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1).replace(/_/g, ' ')}</option>)}
+          </ModalSelect>
+        </FilterGroup>
+        <FilterGroup>
+          <ModalLabel htmlFor="referenceMonthInputPay">Mês/Ano Ref.:</ModalLabel>
+          <ModalInput type="month" name="referenceMonthInput" id="referenceMonthInputPay" value={filters.year && filters.month ? `${filters.year}-${filters.month.padStart(2, '0')}` : ''} onChange={handleMonthYearFilterChange} />
+        </FilterGroup>
+        <FilterButton onClick={applyFilters}><FaFilter /> Filtrar</FilterButton>
+        <FilterButton onClick={clearFilters} clear><FaSyncAlt /> Limpar</FilterButton>
+      </FiltersContainer>
+
+      <TableWrapper>
+        <Table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cliente</th>
+              <th>Valor</th>
+              <th>Data Pag.</th>
+              <th>Mês Ref.</th>
+              <th>Categoria</th>
+              <th style={{minWidth: '150px'}}>Status</th>
+              <th>Registado Por</th>
+              <th className="actions-cell">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.length > 0 ? payments.map(p => (
+              <tr key={p.id}>
+                <td>{p.id}</td>
+                <td>{p.client ? `${p.client.firstName} ${p.client.lastName}` : 'N/A'}</td>
+                <td>{Number(p.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</td>
+                <td>{new Date(p.paymentDate).toLocaleDateString('pt-PT')}</td>
+                <td>{p.referenceMonth}</td>
+                <td>{p.category.replace(/_/g, ' ')}</td>
+                <td className="status-cell">
+                  <ModalSelect 
+                      value={p.status} 
+                      onChange={(e) => handleChangePaymentStatus(p.id, e.target.value)}
+                  >
+                      {paymentStatusesForAdminSet.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')}</option>)}
+                  </ModalSelect>
+                </td>
+                <td>{p.registeredBy ? p.registeredBy.firstName : 'N/A'}</td>
+                <td className="actions-cell">
+                  <ActionButtonContainer>
+                    <ActionButton danger onClick={() => handleDeletePayment(p.id)}>
+                        <FaTrashAlt /> Eliminar
+                    </ActionButton>
+                  </ActionButtonContainer>
+                </td>
+              </tr>
+            )) : (
+              <tr><td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>Nenhum pagamento encontrado com os filtros atuais.</td></tr>
+            )}
+          </tbody>
+        </Table>
+      </TableWrapper>
+
+      {showModal && (
+        <ModalOverlay onClick={handleCloseModal}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={handleCloseEventModal}>×</CloseButton>
-            <ModalTitle>{selectedEvent.type === 'training' ? selectedEvent.name : `Consulta com ${selectedEvent.professional?.firstName}`}</ModalTitle>
-            <ModalDetail><span>Data:</span> {new Date(selectedEvent.date).toLocaleDateString('pt-PT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</ModalDetail>
-            <ModalDetail><span>Hora:</span> {selectedEvent.time.substring(0, 5)}</ModalDetail>
-            <ModalDetail><span>Duração:</span> {selectedEvent.durationMinutes} min</ModalDetail>
-            {selectedEvent.type === 'training' && (<> <ModalDetail><span>Instrutor:</span> {selectedEvent.instructor?.firstName} {selectedEvent.instructor?.lastName}</ModalDetail> <ModalDetail><span>Vagas:</span> {selectedEvent.capacity - (selectedEvent.participantsCount || selectedEvent.participants?.length || 0)} / {selectedEvent.capacity}</ModalDetail> <ModalDetail><span>Descrição:</span> {selectedEvent.description || "N/A"}</ModalDetail>
-              {/* Adicionado Link para Ver Plano de Treino para Cliente */}
-              {isClient && myBookedTrainingIds.has(selectedEvent.id) && (
-                <ModalPlanLink to={`/treinos/${selectedEvent.id}/plano`}>
-                  Ver Plano de Treino
-                </ModalPlanLink>
-              )}
-            </>)}
-            {selectedEvent.type === 'appointment' && (<> <ModalDetail><span>Profissional:</span> {selectedEvent.professional?.firstName} {selectedEvent.professional?.lastName}</ModalDetail> 
-            <ModalDetail><span>Cliente:</span> {selectedEvent.client ? `${selectedEvent.client.firstName} ${selectedEvent.client.lastName}` : (selectedEvent.status === 'disponível' ? 'Disponível para marcação' : (selectedEvent.status === 'pendente_aprovacao_staff' ? 'Pendente de Aprovação' : 'N/A'))}</ModalDetail> 
-            <ModalDetail><span>Status:</span> {selectedEvent.status?.replace(/_/g, ' ')}</ModalDetail> 
-            <ModalDetail><span>Notas:</span> {selectedEvent.notes || "N/A"}</ModalDetail> </>)}
-            <ModalActions>
-              <ModalButton onClick={handleCloseEventModal}>Fechar</ModalButton>
-              {authState.role === 'user' && selectedEvent.type === 'training' && (myBookedTrainingIds.has(selectedEvent.id) ? <ModalButton onClick={handleCancelTrainingBooking} disabled={actionLoading} danger> {actionLoading ? 'A cancelar...' : 'Cancelar Inscrição'} </ModalButton> : (selectedEvent.capacity - (selectedEvent.participantsCount || selectedEvent.participants?.length || 0)) > 0 && <ModalButton onClick={handleBookSelectedTraining} disabled={actionLoading} primary> {actionLoading ? 'A inscrever...' : 'Inscrever-me'} </ModalButton>)}
-              {authState.role === 'user' && selectedEvent.type === 'appointment' && (myBookedAppointmentIds.has(selectedEvent.id) ? <ModalButton onClick={handleCancelAppointmentBooking} disabled={actionLoading} danger> {actionLoading ? 'A cancelar...' : 'Cancelar Consulta'} </ModalButton> : selectedEvent.status === 'disponível' && !selectedEvent.userId && <ModalButton onClick={handleBookSelectedAppointment} disabled={actionLoading} primary> {actionLoading ? 'A marcar...' : 'Marcar Consulta'} </ModalButton>)}
-              {isAdminOrStaff && (<ModalButton onClick={handleAdminManageEvent} primary>Gerir Evento</ModalButton>)}
-            </ModalActions>
-          </ModalContent>
-        </ModalOverlay>
-      )}
-
-      {showRequestModal && authState.role === 'user' && (
-        <ModalOverlay onClick={handleCloseRequestModal}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseButton onClick={handleCloseRequestModal}>×</CloseButton>
-            <ModalTitle>Solicitar Nova Consulta</ModalTitle>
-            {requestFormError && <ErrorText style={{ marginBottom: '15px' }}>{requestFormError}</ErrorText>}
-            <RequestModalForm onSubmit={handleRequestSubmit}>
-              <RequestModalLabel htmlFor="reqStaffId">Profissional*</RequestModalLabel>
-              <RequestModalSelect name="staffId" id="reqStaffId" value={requestFormData.staffId} onChange={handleRequestFormChange} required>
-                <option value="">Selecione um profissional...</option>
-                {professionals.map(prof => (
-                  <option key={prof.id} value={prof.id}>
-                    {prof.firstName} {prof.lastName} ({prof.role})
-                  </option>
+            <CloseButton onClick={handleCloseModal}><FaTimes /></CloseButton>
+            <ModalTitle>Registar Novo Pagamento</ModalTitle>
+            {modalError && <ModalErrorText>{modalError}</ModalErrorText>}
+            <ModalForm onSubmit={handleFormSubmit}>
+              <ModalLabel htmlFor="modalUserIdPayForm">Cliente*</ModalLabel>
+              <ModalSelect name="userId" id="modalUserIdPayForm" value={currentPaymentData.userId} onChange={handleFormChange} required>
+                <option value="">Selecione um cliente</option>
+                {userList.map(user => (
+                  <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
                 ))}
-              </RequestModalSelect>
-              <RequestModalLabel htmlFor="reqDate">Data*</RequestModalLabel>
-              <RequestModalInput type="date" name="date" id="reqDate" value={requestFormData.date} onChange={handleRequestFormChange} required />
-              <RequestModalLabel htmlFor="reqTime">Hora (HH:MM)*</RequestModalLabel>
-              <RequestModalInput type="time" name="time" id="reqTime" value={requestFormData.time} onChange={handleRequestFormChange} required step="1800" /> {/* step 1800 = 30 min */}
-              <RequestModalLabel htmlFor="reqNotes">Notas (Opcional)</RequestModalLabel>
-              <RequestModalTextarea name="notes" id="reqNotes" value={requestFormData.notes} onChange={handleRequestFormChange} rows="3" />
+              </ModalSelect>
+
+              <ModalLabel htmlFor="modalAmountPayForm">Valor (EUR)*</ModalLabel>
+              <ModalInput type="number" name="amount" id="modalAmountPayForm" value={currentPaymentData.amount} onChange={handleFormChange} required step="0.01" min="0.01" />
+              
+              <ModalLabel htmlFor="modalPaymentDatePayForm">Data do Pagamento*</ModalLabel>
+              <ModalInput type="date" name="paymentDate" id="modalPaymentDatePayForm" value={currentPaymentData.paymentDate} onChange={handleFormChange} required />
+
+              <ModalLabel htmlFor="modalReferenceMonthPayForm">Mês de Referência*</ModalLabel>
+              <ModalInput type="month" name="referenceMonth" id="modalReferenceMonthPayForm" value={currentPaymentData.referenceMonth} onChange={handleFormChange} required />
+
+              <ModalLabel htmlFor="modalCategoryPayForm">Categoria*</ModalLabel>
+              <ModalSelect name="category" id="modalCategoryPayForm" value={currentPaymentData.category} onChange={handleFormChange} required>
+                {paymentCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' ')}</option>
+                ))}
+              </ModalSelect>
+
+              <ModalLabel htmlFor="modalStatusPayForm">Status Inicial*</ModalLabel>
+              <ModalSelect name="status" id="modalStatusPayForm" value={currentPaymentData.status} onChange={handleFormChange} required>
+                {paymentStatusesForCreate.map(status => (
+                  <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')}</option>
+                ))}
+              </ModalSelect>
+
+              <ModalLabel htmlFor="modalDescriptionPayForm">Descrição (Opcional)</ModalLabel>
+              <ModalTextarea name="description" id="modalDescriptionPayForm" value={currentPaymentData.description} onChange={handleFormChange} />
+
               <ModalActions>
-                <ModalButton type="button" onClick={handleCloseRequestModal} disabled={requestFormLoading}>Cancelar</ModalButton>
-                <ModalButton type="submit" primary disabled={requestFormLoading}>
-                  {requestFormLoading ? 'A enviar pedido...' : 'Enviar Pedido de Consulta'}
+                <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
+                <ModalButton type="submit" primary disabled={formLoading}>
+                  <FaMoneyBillWave style={{marginRight: '8px'}} /> {formLoading ? 'A Registar...' : 'Registar Pagamento'}
                 </ModalButton>
               </ModalActions>
-            </RequestModalForm>
+            </ModalForm>
           </ModalContent>
         </ModalOverlay>
       )}
     </PageContainer>
   );
 };
-export default CalendarPage;
+
+export default AdminManagePaymentsPage;
