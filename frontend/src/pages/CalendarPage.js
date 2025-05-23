@@ -40,7 +40,7 @@ const localizer = dateFnsLocalizer({
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
 
-// --- Styled Components ---
+// --- Styled Components (mantidos e ajustados) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -91,7 +91,7 @@ const CalendarWrapper = styled.div`
   border-radius: 12px;
   box-shadow: ${({ theme }) => theme.boxShadow};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  height: 80vh;
+  height: 80vh; 
 
   .rbc-toolbar {
     margin-bottom: 25px;
@@ -152,10 +152,10 @@ const CalendarWrapper = styled.div`
     background-color: #282828;
   }
   
+  /* Estilo base do evento será controlado pelo eventPropGetter, mas podemos ter defaults */
   .rbc-event, .rbc-day-slot .rbc-event {
-    background-color: ${({ theme }) => theme.colors.primary}E0;
-    color: ${({ theme }) => theme.colors.textDark};
-    border: 1px solid ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.textDark}; /* Cor de texto padrão para eventos */
+    border: none; 
     border-radius: 5px; 
     padding: 4px 7px;
     font-size: 0.8rem;
@@ -165,7 +165,7 @@ const CalendarWrapper = styled.div`
     cursor: pointer;
     
     &:hover {
-        background-color: ${({ theme }) => theme.colors.primary};
+        opacity: 0.85; /* Ajusta a opacidade no hover em vez da cor de fundo, já que ela é dinâmica */
         transform: translateY(-2px) scale(1.03);
         box-shadow: 0 4px 8px rgba(0,0,0,0.4);
     }
@@ -183,8 +183,9 @@ const CalendarWrapper = styled.div`
   }
 
   .rbc-event.rbc-selected {
-    background-color: #a5852d; 
-    box-shadow: 0 0 0 2px ${({theme}) => theme.colors.background}, 0 0 0 3px #e6c358; 
+    /* A cor de fundo será definida por eventPropGetter, mas podemos adicionar outros estilos de seleção */
+    box-shadow: 0 0 0 2px ${({theme}) => theme.colors.background}, 0 0 0 3px #fff; /* Destaque branco */
+    opacity: 1;
   }
 
   .rbc-agenda-view {
@@ -280,6 +281,7 @@ const NoItemsContainer = styled.div`
   p { font-size: 1rem; margin: 0; }
 `;
 
+// ... (restantes Modal Styled Components mantidos da última versão correta)
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0,0,0,0.88); display: flex;
@@ -341,13 +343,12 @@ const CloseButton = styled.button`
   &:hover { color: #fff; transform: scale(1.1) rotate(90deg); }
 `;
 
-// Corrigido para usar nomes consistentes
 const RequestModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
 const RequestModalLabel = styled.label` font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 3px; display: block; font-weight: 500;`;
 const RequestModalInput = styled.input` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
 const RequestModalSelect = styled.select` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
 const RequestModalTextarea = styled.textarea` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; min-height: 80px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
-const ModalErrorText = styled.p` // Este ModalErrorText é para o modal de solicitação
+const ModalErrorText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error};
   background-color: ${({ theme }) => theme.colors.errorBg};
@@ -358,14 +359,14 @@ const ModalErrorText = styled.p` // Este ModalErrorText é para o modal de solic
   padding: 8px 12px;     
 `;
 
-
 const EventComponentStyled = styled.div`
   display: flex;
   align-items: center;
   gap: 5px; 
   height: 100%;
   padding: 2px 0;
-  font-size: inherit; 
+  font-size: inherit;
+  color: ${({ theme }) => theme.colors.textDark}; /* Cor do texto dentro do evento */
 
   .event-icon {
     font-size: 1em; 
@@ -374,7 +375,7 @@ const EventComponentStyled = styled.div`
     line-height: 1; 
   }
   .event-title-text {
-    font-weight: 500;
+    font-weight: 600; /* Mais bold para o título */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -382,7 +383,7 @@ const EventComponentStyled = styled.div`
   }
   .event-details-text {
     font-size: 0.85em;
-    opacity: 0.75;
+    opacity: 0.8; /* Um pouco mais visível */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -399,7 +400,7 @@ const CustomEventComponent = ({ event }) => (
     <span className="event-title-text">{event.title.split('(')[0].trim().split(':')[0]}</span>
     <span className="event-details-text">
       {event.resource.type === 'training' &&
-        `(${(event.resource.participantsCount ?? event.resource.participants?.length ?? 0)}/${event.resource.capacity})`}
+        `(${event.resource.participantsCount ?? event.resource.participants?.length ?? 0}/${event.resource.capacity})`}
       {event.resource.type === 'appointment' && event.resource.status === 'disponível' && `(Vago)`}
       {event.resource.type === 'appointment' && event.resource.status === 'pendente_aprovacao_staff' && `(Pendente)`}
       {event.resource.type === 'appointment' && event.resource.status === 'confirmada' && `(Confirm.)`}
@@ -418,9 +419,10 @@ const ModalPlanLink = styled(Link)`
   &:hover { background-color: #e6c358; transform: translateY(-2px); }
 `;
 
+
 // --- Componente Principal ---
 const CalendarPage = () => {
-  const { authState } = useAuth();
+  const { authState, theme } = useAuth(); // Assumindo que o tema está no AuthContext ou importado diretamente
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [myBookedTrainingIds, setMyBookedTrainingIds] = useState(new Set());
@@ -442,10 +444,8 @@ const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState(Views.MONTH);
 
-  // ... (toda a lógica de fetchPageData, handlers de eventos, etc., permanece a mesma da última versão que te enviei)
-  // COLE AQUI A LÓGICA DO COMPONENTE DA VERSÃO ANTERIOR, DESDE fetchPageData ATÉ AO FIM DO COMPONENTE
-  // (Não a vou repetir aqui para não tornar a resposta excessivamente longa, mas ela deve ser igual à última vez)
   const fetchPageData = useCallback(async () => {
+    // ... (Lógica de fetchPageData igual à versão anterior)
     if (!authState.token) {
       setLoading(false); setPageError("Autenticação necessária para ver o calendário."); return;
     }
@@ -530,6 +530,7 @@ const CalendarPage = () => {
   const handleRequestFormChange = (e) => { setRequestFormData({ ...requestFormData, [e.target.name]: e.target.value }); };
 
   const handleRequestSubmit = async (e) => {
+    // ... (Lógica igual à versão anterior)
     e.preventDefault();
     if (!requestFormData.staffId) { setRequestFormError("Por favor, selecione um profissional."); return; }
     setRequestFormLoading(true); setRequestFormError(''); setPageSuccessMessage('');
@@ -543,7 +544,7 @@ const CalendarPage = () => {
       setRequestFormError(err.message || 'Falha ao enviar pedido de consulta.');
     } finally { setRequestFormLoading(false); }
   };
-  const handleBookSelectedTraining = async () => {
+  const handleBookSelectedTraining = async () => { /* ... (Lógica igual) ... */ 
     if (!selectedEvent || selectedEvent.type !== 'training') return;
     if (!window.confirm('Confirmas a inscrição neste treino?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
@@ -555,7 +556,7 @@ const CalendarPage = () => {
       setPageError(err.message || 'Falha ao inscrever no treino.');
     } finally { setActionLoading(false); }
   };
-  const handleCancelTrainingBooking = async () => {
+  const handleCancelTrainingBooking = async () => { /* ... (Lógica igual) ... */ 
     if (!selectedEvent || selectedEvent.type !== 'training') return;
     if (!window.confirm('Confirmas o cancelamento da inscrição neste treino?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
@@ -567,7 +568,7 @@ const CalendarPage = () => {
       setPageError(err.message || 'Falha ao cancelar inscrição.');
     } finally { setActionLoading(false); }
   };
-  const handleBookSelectedAppointment = async () => {
+  const handleBookSelectedAppointment = async () => { /* ... (Lógica igual) ... */ 
     if (!selectedEvent || selectedEvent.type !== 'appointment') return;
     if (!window.confirm('Confirmas a marcação desta consulta?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
@@ -579,7 +580,7 @@ const CalendarPage = () => {
       setPageError(err.message || 'Falha ao marcar consulta.');
     } finally { setActionLoading(false); }
   };
-  const handleCancelAppointmentBooking = async () => {
+  const handleCancelAppointmentBooking = async () => { /* ... (Lógica igual) ... */ 
     if (!selectedEvent || selectedEvent.type !== 'appointment') return;
     if (!window.confirm('Confirmas o cancelamento desta consulta?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
@@ -591,7 +592,7 @@ const CalendarPage = () => {
       setPageError(err.message || 'Falha ao cancelar consulta.');
     } finally { setActionLoading(false); }
   };
-  const handleAdminManageEvent = () => {
+  const handleAdminManageEvent = () => { /* ... (Lógica igual) ... */ 
     if (!selectedEvent) return;
     if (selectedEvent.type === 'training') navigate(`/admin/manage-trainings#training-${selectedEvent.id}`);
     else if (selectedEvent.type === 'appointment') navigate(`/admin/manage-appointments#appointment-${selectedEvent.id}`);
@@ -608,6 +609,57 @@ const CalendarPage = () => {
     noEventsInRange: 'Não existem eventos neste período.',
     showMore: total => `+ ${total} mais`
   }), []);
+
+  const eventStyleGetter = useCallback((event, start, end, isSelected) => {
+    let backgroundColor = theme.colors.primary; // Cor padrão ou para treinos
+    let borderColor = theme.colors.primary;
+
+    if (event.resource.type === 'appointment') {
+      backgroundColor = theme.colors.success; // Verde para consultas
+      borderColor = theme.colors.success;
+        if(event.resource.status === 'disponível'){
+            backgroundColor = theme.colors.mediaButtonBg; // Azul para disponíveis (exemplo)
+            borderColor = theme.colors.mediaButtonBg;
+        } else if (event.resource.status === 'pendente_aprovacao_staff'){
+            backgroundColor = '#FFA000'; // Laranja para pendentes
+            borderColor = '#FFA000';
+        }
+    }
+    
+    const style = {
+      backgroundColor: backgroundColor,
+      borderRadius: '5px',
+      opacity: 0.9,
+      color: theme.colors.textDark, // Texto escuro para bom contraste com cores claras
+      border: `1px solid ${borderColor}`,
+      boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      fontSize: '0.78rem', // Consistente com .rbc-event
+      padding: '3px 5px',   // Consistente com .rbc-event
+    };
+    if(isSelected){
+        style.backgroundColor = event.resource.type === 'appointment' ? '#4CAF50' : '#b89b2e'; // Mais escuro quando selecionado
+        style.boxShadow = `0 0 0 2px ${theme.colors.background}, 0 0 0 3px ${borderColor}`;
+        style.opacity = 1;
+    }
+    return { style };
+  }, [theme]);
+
+  const tooltipAccessor = useCallback((event) => {
+    const time = `${format(event.start, 'HH:mm')} - ${format(event.end, 'HH:mm')}`;
+    let details = `${event.title}\n${time}`;
+    if (event.resource.type === 'training') {
+      details += `\nInstrutor: ${event.resource.instructor?.firstName || 'N/A'}`;
+      details += `\nVagas: ${event.resource.capacity - (event.resource.participantsCount ?? event.resource.participants?.length ?? 0)}/${event.resource.capacity}`;
+    } else if (event.resource.type === 'appointment') {
+      details += `\nProfissional: ${event.resource.professional?.firstName || 'N/A'}`;
+      if (event.resource.client) {
+        details += `\nCliente: ${event.resource.client.firstName}`;
+      } else {
+        details += `\nStatus: ${event.resource.status.replace(/_/g, ' ')}`;
+      }
+    }
+    return details;
+  }, []);
 
   const isAdminOrStaff = authState.role && authState.role !== 'user';
   const isClient = authState.role === 'user';
@@ -642,6 +694,8 @@ const CalendarPage = () => {
           selectable={isClient}
           components={{ event: CustomEventComponent }}
           popup
+          eventPropGetter={eventStyleGetter} // <--- Adicionado para cores dinâmicas
+          tooltipAccessor={tooltipAccessor}   // <--- Adicionado para tooltips
           timeslots={1} 
           step={60}    
           min={new Date(1970, 0, 1, 7, 0, 0)} 
@@ -656,6 +710,7 @@ const CalendarPage = () => {
         />
       </CalendarWrapper>
 
+      {/* Modal de Detalhes do Evento */}
       {showEventModal && selectedEvent && (
         <ModalOverlay onClick={handleCloseEventModal}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -700,7 +755,6 @@ const CalendarPage = () => {
             <ModalTitle>Solicitar Nova Consulta</ModalTitle>
             {requestFormError && <ModalErrorText>{requestFormError}</ModalErrorText>}
             <RequestModalForm onSubmit={handleRequestSubmit}>
-              {/* Utilizar RequestModalLabel, RequestModalInput, etc. aqui */}
               <RequestModalLabel htmlFor="reqStaffIdModal">Profissional*</RequestModalLabel>
               <RequestModalSelect name="staffId" id="reqStaffIdModal" value={requestFormData.staffId} onChange={handleRequestFormChange} required>
                 <option value="">Selecione um profissional...</option>
