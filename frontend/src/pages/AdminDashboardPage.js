@@ -2,32 +2,54 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext'; // Ajusta o caminho se necessário
 
 // --- Styled Components ---
 const PageContainer = styled.div`
   background-color: #1A1A1A;
   color: #E0E0E0;
   min-height: 100vh;
-  padding: 20px 40px;
+  padding: 20px 40px; // Padding base
   font-family: 'Inter', sans-serif;
+
+  @media (max-width: 768px) {
+    padding: 20px 20px; // Reduz padding lateral em tablets/mobile
+  }
+  @media (max-width: 480px) {
+    padding: 15px 15px; // Reduz mais em ecrãs muito pequenos
+  }
 `;
 
 const Title = styled.h1`
   font-size: 2.5rem;
   color: #D4AF37;
   margin-bottom: 10px;
+  text-align: center; // Centralizar título para um look mais consistente
+
+  @media (max-width: 768px) {
+    font-size: 2.2rem;
+  }
+  @media (max-width: 480px) {
+    font-size: 1.8rem; // Reduzir tamanho do título em mobile
+    margin-bottom: 15px;
+  }
 `;
 
 const WelcomeMessage = styled.p`
   font-size: 1.1rem;
   color: #b0b0b0;
   margin-bottom: 30px;
+  text-align: center; // Centralizar mensagem de boas-vindas
+
+  @media (max-width: 480px) {
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
 `;
 
 const AdminNavGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); // Já é responsivo!
   gap: 20px;
   margin-top: 20px;
 `;
@@ -42,21 +64,28 @@ const AdminNavLinkCard = styled(Link)`
   transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: center; // Mantém centrado
+  justify-content: center; // Mantém centrado
   text-align: center;
+  min-height: 150px; // Garante uma altura mínima para consistência visual
 
   h2 {
     color: #D4AF37;
     margin-top: 0;
     margin-bottom: 10px;
-    font-size: 1.5rem;
+    font-size: 1.5rem; // Tamanho base
+    @media (max-width: 480px) {
+        font-size: 1.3rem; // Ligeiramente menor no mobile
+    }
   }
 
   p {
     font-size: 0.9rem;
     color: #a0a0a0;
     line-height: 1.4;
+    @media (max-width: 480px) {
+        font-size: 0.85rem; // Ligeiramente menor no mobile
+    }
   }
 
   &:hover {
@@ -65,11 +94,8 @@ const AdminNavLinkCard = styled(Link)`
   }
 `;
 
-// O LogoutButton está na Navbar, não precisa ser repetido aqui
-// a menos que queiras um botão de logout específico nesta página.
-
 const AdminDashboardPage = () => {
-  const { authState } = useAuth(); // Removido o logout daqui, pois está na Navbar
+  const { authState } = useAuth();
 
   return (
     <PageContainer>
@@ -108,7 +134,7 @@ const AdminDashboardPage = () => {
           <h2>Gerir Pagamentos</h2>
           <p>Registar e acompanhar pagamentos dos clientes.</p>
         </AdminNavLinkCard>
-        <AdminNavLinkCard to="/admin/manage-exercises"> {/* <-- ADICIONAR ESTE CARD */}
+        <AdminNavLinkCard to="/admin/manage-exercises">
           <h2>Gerir Exercícios Base</h2>
           <p>Criar e editar os exercícios disponíveis para os planos.</p>
         </AdminNavLinkCard>
@@ -117,7 +143,6 @@ const AdminDashboardPage = () => {
           <p>Ver e responder a pedidos de consulta pendentes.</p>
         </AdminNavLinkCard>
       </AdminNavGrid>
-      {/* O botão de logout principal está na Navbar */}
     </PageContainer>
   );
 };

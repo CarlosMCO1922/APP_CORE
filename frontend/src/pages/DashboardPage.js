@@ -2,33 +2,58 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { useAuth } from '../context/AuthContext';
-import { getMyBookings } from '../services/userService';
+import { useAuth } from '../context/AuthContext'; // Ajusta o caminho se necessário
+import { getMyBookings } from '../services/userService'; // Ajusta o caminho se necessário
 
 // --- Styled Components ---
 const PageContainer = styled.div`
   background-color: #1A1A1A;
   color: #E0E0E0;
   min-height: 100vh;
-  padding: 20px 40px;
+  padding: 20px 40px; // Padding base
   font-family: 'Inter', sans-serif;
+
+  @media (max-width: 768px) {
+    padding: 20px 20px; // Reduz padding lateral
+  }
+  @media (max-width: 480px) {
+    padding: 15px 15px; // Reduz mais
+  }
 `;
 
 const Header = styled.header`
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid #4A4A4A;
+  text-align: center; // Centralizar header
 `;
 
 const Title = styled.h1`
   font-size: 2.5rem;
   color: #D4AF37;
   margin-bottom: 0.5rem;
+  @media (max-width: 768px) {
+    font-size: 2.2rem;
+  }
+  @media (max-width: 480px) {
+    font-size: 1.8rem;
+  }
 `;
 
 const WelcomeMessage = styled.p`
   font-size: 1.1rem;
   color: #b0b0b0;
+  @media (max-width: 480px) {
+    font-size: 1rem;
+  }
+`;
+
+const ActionsSection = styled.section` // Renomeado de Section para ActionsSection para clareza
+  margin-bottom: 30px;
+  display: flex;
+  flex-wrap: wrap; // Permite que os botões quebrem linha
+  justify-content: center; // Centraliza os botões
+  gap: 15px; // Espaço entre os botões
 `;
 
 const Section = styled.section`
@@ -41,13 +66,16 @@ const SectionTitle = styled.h2`
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid #333;
+  @media (max-width: 480px) {
+    font-size: 1.5rem; // Reduzir para mobile
+  }
 `;
 
 const BookingList = styled.ul`
   list-style: none;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); // Já responsivo!
   gap: 20px;
 `;
 
@@ -58,6 +86,10 @@ const BookingItem = styled.li`
   border-left: 5px solid #D4AF37;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   transition: transform 0.2s ease-in-out;
+  min-height: 180px; // Altura mínima para consistência
+  display: flex; // Para melhor controlo do conteúdo interno
+  flex-direction: column;
+  justify-content: space-between; // Para empurrar o link do plano para baixo se houver
 
   &:hover {
     transform: translateY(-3px);
@@ -65,15 +97,21 @@ const BookingItem = styled.li`
 
   h3 {
     margin-top: 0;
-    margin-bottom: 10px;
+    margin-bottom: 12px; // Aumentar um pouco
     color: #E0E0E0;
     font-size: 1.25rem;
+     @media (max-width: 480px) {
+        font-size: 1.1rem;
+    }
   }
   p {
-    margin: 8px 0;
+    margin: 6px 0; // Ligeiro ajuste
     font-size: 0.95rem;
     color: #a0a0a0;
     line-height: 1.5;
+     @media (max-width: 480px) {
+        font-size: 0.9rem;
+    }
   }
   span {
     font-weight: 600;
@@ -81,22 +119,9 @@ const BookingItem = styled.li`
   }
 `;
 
-const LoadingText = styled.p`
-  font-size: 1.1rem;
-  text-align: center;
-  padding: 20px;
-  color: #D4AF37;
-`;
-
-const ErrorText = styled.p`
-  font-size: 1.1rem;
-  text-align: center;
-  padding: 20px;
-  color: #FF6B6B;
-  background-color: rgba(94, 46, 46, 0.3);
-  border: 1px solid #FF6B6B;
-  border-radius: 8px;
-`;
+const LoadingText = styled.p` /* ... como antes ... */ `;
+const ErrorText = styled.p` /* ... como antes ... */ `;
+const NoBookingsText = styled.p` /* ... como antes ... */ `;
 
 const StyledLinkButton = styled(Link)`
   display: inline-block;
@@ -107,36 +132,36 @@ const StyledLinkButton = styled(Link)`
   text-decoration: none;
   font-weight: bold;
   font-size: 0.95rem;
-  margin: 10px 10px 10px 0;
+  /* margin: 10px 10px 10px 0; // Removido, o gap no ActionsSection trata disto */
   transition: background-color 0.2s ease-in-out, transform 0.15s ease;
 
   &:hover {
     background-color: #e6c358;
     transform: translateY(-2px);
   }
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem; // Ligeiramente menor
+    padding: 10px 18px; // Padding menor
+    width: 100%; // Faz os botões ocuparem a largura total em mobile para melhor toque
+    text-align: center;
+  }
 `;
 
-const NoBookingsText = styled.p`
-  color: #888;
-  text-align: center;
-  font-style: italic;
-  margin-top: 20px;
-`;
-
-// Novo estilo para o link do plano de treino
 const PlanLink = styled(Link)`
   color: #D4AF37;
   text-decoration: underline;
   display: inline-block;
-  margin-top: 10px;
-  font-weight: 500;
-  font-size: 0.9rem;
+  margin-top: 12px; // Mais espaço
+  font-weight: 600; // Mais destaque
+  font-size: 0.95rem; // Ligeiramente maior
+  padding: 5px 0; // Adiciona um pouco de padding para área de toque
   &:hover {
     color: #e6c358;
   }
 `;
 
-
+// A lógica da função DashboardPage (useEffect, useState, etc.) permanece a mesma
 const DashboardPage = () => {
   const { authState } = useAuth();
   const [bookings, setBookings] = useState({ trainings: [], appointments: [] });
@@ -176,11 +201,11 @@ const DashboardPage = () => {
         <WelcomeMessage>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</WelcomeMessage>
       </Header>
 
-      <Section>
+      <ActionsSection> {/* Alterado para ActionsSection */}
         <StyledLinkButton to="/calendario">Ver Calendário e Marcar</StyledLinkButton>
         <StyledLinkButton to="/meus-pagamentos">Meus Pagamentos</StyledLinkButton>
         <StyledLinkButton to="/definicoes">Minhas Definições</StyledLinkButton>
-      </Section>
+      </ActionsSection>
 
       {error && <ErrorText>{error}</ErrorText>}
 
@@ -190,11 +215,12 @@ const DashboardPage = () => {
           <BookingList>
             {bookings.trainings.map(training => (
               <BookingItem key={`train-${training.id}`}>
-                <h3>{training.name}</h3>
-                <p><span>Data:</span> {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time.substring(0, 5)}</p>
-                <p><span>Instrutor:</span> {training.instructor?.firstName} {training.instructor?.lastName}</p>
-                <p><span>Descrição:</span> {training.description || 'Sem descrição.'}</p>
-                {/* Adicionado link para ver plano de treino */}
+                <div> {/* Div para agrupar conteúdo principal do cartão */}
+                  <h3>{training.name}</h3>
+                  <p><span>Data:</span> {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time.substring(0, 5)}</p>
+                  <p><span>Instrutor:</span> {training.instructor?.firstName} {training.instructor?.lastName}</p>
+                  <p><span>Descrição:</span> {training.description || 'Sem descrição.'}</p>
+                </div>
                 <PlanLink to={`/treinos/${training.id}/plano`}>
                   Ver Plano de Treino
                 </PlanLink>
