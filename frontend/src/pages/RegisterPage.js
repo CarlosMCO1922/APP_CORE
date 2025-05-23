@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { registerUserAPI } from '../services/authService';
+import { registerUserAPI } from '../services/authService'; // Certifica-te que o caminho está correto
 
+// --- Definição das Cores (mantidas como definiste) ---
 const coreGold = '#D4AF37';
 const coreBlack = '#1A1A1A';
 const lightTextColor = '#E0E0E0';
@@ -22,8 +23,12 @@ const PageContainer = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 20px; /* Padding base */
   font-family: 'Inter', sans-serif;
+
+  @media (max-width: 480px) {
+    padding: 15px; // Padding ligeiramente menor em ecrãs muito pequenos
+  }
 `;
 
 const FormBox = styled.div`
@@ -32,32 +37,49 @@ const FormBox = styled.div`
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   width: 100%;
-  max-width: 500px;
+  max-width: 500px; // Pode ser um pouco maior para o registo se houver mais campos
+
+  @media (max-width: 480px) {
+    padding: 25px 20px; // Padding reduzido para ecrãs pequenos
+  }
 `;
 
 const LogoContainer = styled.div`
   display: flex;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.5rem; // Ajustado para consistência
+
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+  }
 `;
 
 const LogoImage = styled.img`
-  height: 70px;
+  height: 70px; // Altura base para desktop
   width: auto;
+
+  @media (max-width: 480px) {
+    height: 55px; // Altura reduzida para mobile
+  }
 `;
 
 const Title = styled.h2`
-  font-size: 1.8rem;
+  font-size: 1.8rem; // Ligeiramente menor que o login, pode ser questão de preferência
   font-weight: bold;
   text-align: center;
   color: ${coreGold};
   margin-bottom: 1.5rem;
+
+  @media (max-width: 480px) {
+    font-size: 1.6rem; // Tamanho do título ligeiramente menor
+    margin-bottom: 1.2rem;
+  }
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.2rem; 
 `;
 
 const FormGroup = styled.div``;
@@ -90,9 +112,9 @@ const Input = styled.input`
 const MessageText = styled.p`
   font-size: 0.9rem;
   text-align: center;
-  padding: 10px 15px; /* Aumentado padding */
-  margin-top: 0; /* Ajustado para ficar bem com o gap do form */
-  margin-bottom: 1rem; /* Espaço antes do formulário/botão */
+  padding: 10px 15px;
+  margin-top: 0; 
+  margin-bottom: 1rem;
   border-radius: 8px;
   border-width: 1px;
   border-style: solid;
@@ -103,7 +125,7 @@ const MessageText = styled.p`
     border-color: ${successColor};
   }
   &.error {
-    color: white; /* Texto branco para melhor contraste com fundo de erro */
+    color: white;
     background-color: ${errorBackground};
     border-color: ${errorColor};
   }
@@ -139,6 +161,9 @@ const LoginLinkText = styled.p`
   text-align: center;
   font-size: 0.9rem;
   color: #a1a1aa;
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+  }
 `;
 
 const StyledLink = styled(Link)`
@@ -153,9 +178,12 @@ const FooterText = styled.footer`
   color: #71717a;
   margin-top: 3rem;
   padding-bottom: 1rem;
+  @media (max-width: 480px) {
+    margin-top: 2rem;
+  }
 `;
 
-
+// A lógica da função RegisterPage (useState, handleSubmit, etc.) permanece a mesma
 function RegisterPage() {
   const [formData, setFormData] = useState({
     firstName: '',
