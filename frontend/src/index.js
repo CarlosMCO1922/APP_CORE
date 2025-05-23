@@ -46,7 +46,7 @@ root.render(
 );
 
 // Para registar o Service Worker e tornar a app offline e mais rápida:
-//serviceWorkerRegistration.register(); // ALTERA DE .unregister() PARA .register()
+serviceWorkerRegistration.register(); // ALTERA DE .unregister() PARA .register()
 
 // Se quiseres medir performance, podes manter ou adicionar reportWebVitals
 // reportWebVitals(console.log);
