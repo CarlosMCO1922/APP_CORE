@@ -9,8 +9,8 @@ import {
     adminUpdatePaymentStatus,
     adminDeletePayment,
     adminGetTotalPaid
-} from '../../services/paymentService';
-import { adminGetAllUsers } from '../../services/userService';
+} from '../services/paymentService';
+import { adminGetAllUsers } from '../services/userService';
 import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
 
 // --- Styled Components ---
