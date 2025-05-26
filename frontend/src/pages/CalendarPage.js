@@ -9,6 +9,7 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { theme } from '../theme'; 
 
 import { useAuth } from '../context/AuthContext';
 import {
@@ -29,7 +30,7 @@ import {
     FaCalendarDay, FaClock, FaUserCircle, FaStickyNote
 } from 'react-icons/fa';
 
-import { theme } from '../theme'; // <--- IMPORTA O TEU TEMA DIRETAMENTE
+
 
 const locales = { 'pt-BR': ptBR };
 const localizer = dateFnsLocalizer({
