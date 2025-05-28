@@ -2,10 +2,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
-import { useAuth } from '../../context/AuthContext';
-import { adminGetTotalPaid } from '../../services/paymentService';
-import { adminGetCurrentWeekSignups, adminGetTodayTrainingsCount } from '../../services/trainingService'; // Adicionado
-import { adminGetTodayAppointmentsCount } from '../../services/appointmentService'; // Adicionado
+import { useAuth } from '../context/AuthContext';
+import { adminGetTotalPaid } from '../services/paymentService';
+import { adminGetCurrentWeekSignups, adminGetTodayTrainingsCount } from '../services/trainingService'; // Adicionado
+import { adminGetTodayAppointmentsCount } from '../services/appointmentService'; // Adicionado
 import {
     FaDollarSign, FaUsers, FaCalendarDay,
     FaCalendarAlt, FaUserMd, FaDumbbell, FaCreditCard,
