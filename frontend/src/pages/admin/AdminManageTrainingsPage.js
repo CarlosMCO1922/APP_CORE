@@ -10,7 +10,7 @@ import {
     adminDeleteTraining
 } from '../../services/trainingService';
 import { adminGetAllStaff } from '../../services/staffService';
-import { FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
+import { FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft, FaTimes, FaUsers } from 'react-icons/fa';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -26,12 +26,12 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   gap: 15px;
 `;
 
 const Title = styled.h1`
-  font-size: clamp(1.8rem, 4vw, 2.4rem); 
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
   color: ${({ theme }) => theme.colors.primary};
   margin: 0;
 `;
@@ -56,7 +56,7 @@ const CreateButton = styled.button`
     transform: translateY(-2px);
   }
   @media (max-width: 480px) {
-    width: 100%; 
+    width: 100%;
     justify-content: center;
     font-size: 1rem;
     padding: 12px;
@@ -88,11 +88,11 @@ const BackLink = styled(Link)`
 const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; 
+  -webkit-overflow-scrolling: touch;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   box-shadow: ${({ theme }) => theme.boxShadow};
-  
+
   &::-webkit-scrollbar {
     height: 8px;
     background-color: #252525;
@@ -105,36 +105,37 @@ const TableWrapper = styled.div`
 
 const Table = styled.table`
   width: 100%;
-  min-width: 800px; /* Garante que a tabela tenha uma largura mínima para o scroll fazer sentido */
+  min-width: 950px; /* Garante que a tabela tenha uma largura mínima para o scroll e botões */
   border-collapse: collapse;
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  
+
   th, td {
     border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
     padding: 10px 12px;
     text-align: left;
-    font-size: 0.85rem; /* Ligeiramente menor para mais info na tabela */
+    font-size: 0.85rem;
     white-space: nowrap;
+    vertical-align: middle;
   }
   th {
     background-color: #303030;
     color: ${({ theme }) => theme.colors.primary};
     font-weight: 600;
-    position: sticky; 
-    top: 0; /* Para cabeçalho fixo ao fazer scroll vertical dentro do TableWrapper (se a altura do wrapper for limitada) */
+    position: sticky;
+    top: 0;
     z-index: 1;
   }
   tr:last-child td { border-bottom: none; }
   tr:hover { background-color: #2c2c2c; }
 
-  td.actions-cell { 
-    white-space: nowrap; /* Para que os botões não quebrem linha entre si, mas o container pode quebrar */
+  td.actions-cell {
+    white-space: nowrap;
     text-align: right;
-    min-width: 280px; /* Espaço para os botões */
+    min-width: 350px; /* Espaço para os botões */
   }
   @media (max-width: 768px) {
     th, td { padding: 8px 10px; font-size: 0.8rem; }
-    td.actions-cell { min-width: 240px; }
+    td.actions-cell { min-width: 320px; }
   }
 `;
 
@@ -142,12 +143,12 @@ const ActionButtonContainer = styled.div`
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  flex-wrap: nowrap; /* Evita que os botões quebrem linha entre si */
+  flex-wrap: nowrap;
 `;
 
 const ActionButton = styled.button`
   padding: 6px 10px;
-  font-size: 0.75rem; /* Um pouco menor para caber mais */
+  font-size: 0.75rem;
   border-radius: 5px;
   cursor: pointer;
   border: none;
@@ -155,23 +156,25 @@ const ActionButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  white-space: nowrap; /* Evita que o texto do botão quebre */
-  
+  white-space: nowrap;
+
   background-color: ${props => {
     if (props.danger) return props.theme.colors.error;
     if (props.secondary) return props.theme.colors.buttonSecondaryBg;
-    if (props.plans) return props.theme.colors.mediaButtonBg; // Usando cor de media button para planos
+    if (props.plans) return props.theme.colors.mediaButtonBg;
+    if (props.signups) return '#007bff'; // Azul para inscritos
     return props.theme.colors.primary;
   }};
-  color: ${props => (props.danger || props.plans) ? 'white' : (props.secondary ? props.theme.colors.textMain : props.theme.colors.textDark)};
+  color: ${props => (props.danger || props.plans || props.signups) ? 'white' : (props.secondary ? props.theme.colors.textMain : props.theme.colors.textDark)};
 
   &:hover:not(:disabled) {
     opacity: 0.85;
     transform: translateY(-1px);
-    background-color: ${props => { /* Ajusta cores de hover se necessário */
+    background-color: ${props => {
         if (props.danger) return '#C62828';
         if (props.secondary) return props.theme.colors.buttonSecondaryHoverBg;
         if (props.plans) return props.theme.colors.mediaButtonHoverBg;
+        if (props.signups) return '#0056b3';
         return '#e6c358';
     }};
   }
@@ -183,7 +186,7 @@ const ActionButton = styled.button`
 `;
 
 // Estilos base para mensagens
-const MessageBaseStyles = css` 
+const MessageBaseStyles = css`
   text-align: center;
   padding: 12px 18px;
   margin: 20px auto;
@@ -277,7 +280,7 @@ const ModalActions = styled.div`
   @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
 `;
 const ModalButton = styled(ActionButton)`
-  font-size: 0.9rem; 
+  font-size: 0.9rem;
   padding: 10px 18px;
   gap: 6px;
   width: 100%;
@@ -289,15 +292,51 @@ const CloseButton = styled.button`
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
   &:hover { color: #fff; transform: scale(1.1); }
 `;
-const ModalErrorText = styled.p` // Usando ErrorText como base com ajustes
+const ModalErrorText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error};
   background-color: ${({ theme }) => theme.colors.errorBg};
   border-color: ${({ theme }) => theme.colors.error};
-  margin: -5px 0 10px 0; 
-  text-align: left;      
-  font-size: 0.8rem;    
-  padding: 8px 12px;     
+  margin: -5px 0 10px 0;
+  text-align: left;
+  font-size: 0.8rem;
+  padding: 8px 12px;
+`;
+
+// NOVOS Styled Components para Modal de Inscritos
+const SignupsModalContent = styled(ModalContent)`
+  max-width: 600px;
+`;
+const ParticipantList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+`;
+const ParticipantItem = styled.li`
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.95rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:nth-child(even) {
+    background-color: #333;
+  }
+
+  .email {
+    color: ${({ theme }) => theme.colors.textMuted};
+    font-size: 0.85rem;
+  }
 `;
 
 const initialTrainingFormState = {
@@ -320,6 +359,11 @@ const AdminManageTrainingsPage = () => {
   const [currentTrainingId, setCurrentTrainingId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+
+  // Estados para Modal de Inscritos
+  const [showSignupsModal, setShowSignupsModal] = useState(false);
+  const [selectedTrainingParticipants, setSelectedTrainingParticipants] = useState([]);
+  const [selectedTrainingName, setSelectedTrainingName] = useState('');
 
   const fetchPageData = useCallback(async () => {
     if (authState.token) {
@@ -350,7 +394,8 @@ const AdminManageTrainingsPage = () => {
     setIsEditing(true);
     setCurrentTrainingData({
       name: training.name, description: training.description || '', date: training.date,
-      time: training.time.substring(0,5), capacity: training.capacity,
+      time: training.time ? training.time.substring(0,5) : '', // Adicionado verificação para time
+      capacity: training.capacity,
       instructorId: training.instructorId || (training.instructor?.id || ''),
       durationMinutes: training.durationMinutes || 45,
     });
@@ -419,7 +464,20 @@ const AdminManageTrainingsPage = () => {
     }
   };
 
-  if (loading && !showModal) {
+  // Funções para Modal de Inscritos
+  const handleOpenSignupsModal = (training) => {
+    setSelectedTrainingParticipants(training.participants || []);
+    setSelectedTrainingName(training.name);
+    setShowSignupsModal(true);
+  };
+
+  const handleCloseSignupsModal = () => {
+    setShowSignupsModal(false);
+    setSelectedTrainingParticipants([]);
+    setSelectedTrainingName('');
+  };
+
+  if (loading && !showModal && !showSignupsModal) {
     return <PageContainer><LoadingText>A carregar treinos...</LoadingText></PageContainer>;
   }
 
@@ -462,6 +520,9 @@ const AdminManageTrainingsPage = () => {
                 <td>{training.instructor ? `${training.instructor.firstName} ${training.instructor.lastName}` : 'N/A'}</td>
                 <td className="actions-cell">
                   <ActionButtonContainer>
+                    <ActionButton signups onClick={() => handleOpenSignupsModal(training)}>
+                        <FaUsers /> Inscritos ({training.participantsCount ?? (training.participants?.length || 0)})
+                    </ActionButton>
                     <ActionButton plans onClick={() => navigate(`/admin/trainings/${training.id}/manage-plans`)}>
                       <FaListAlt /> Planos
                     </ActionButton>
@@ -522,6 +583,30 @@ const AdminManageTrainingsPage = () => {
               </ModalActions>
             </ModalForm>
           </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {showSignupsModal && (
+        <ModalOverlay onClick={handleCloseSignupsModal}>
+          <SignupsModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={handleCloseSignupsModal}><FaTimes /></CloseButton>
+            <ModalTitle>Inscritos em: {selectedTrainingName}</ModalTitle>
+            {selectedTrainingParticipants.length > 0 ? (
+                <ParticipantList>
+                    {selectedTrainingParticipants.map(participant => (
+                        <ParticipantItem key={participant.id}>
+                            <span>{participant.firstName} {participant.lastName}</span>
+                            <span className="email">{participant.email}</span>
+                        </ParticipantItem>
+                    ))}
+                </ParticipantList>
+            ) : (
+                <p style={{textAlign: 'center', marginTop: '20px', color: '#aaa'}}>Nenhum cliente inscrito neste treino.</p>
+            )}
+             <ModalActions>
+                <ModalButton type="button" secondary onClick={handleCloseSignupsModal}>Fechar</ModalButton>
+             </ModalActions>
+          </SignupsModalContent>
         </ModalOverlay>
       )}
     </PageContainer>
