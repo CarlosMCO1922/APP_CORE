@@ -163,3 +163,15 @@ export const staffRespondToRequest = async (appointmentId, decision, token, tota
         throw error;
     }
 };
+
+export const adminGetTodayAppointmentsCount = async (token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/appointments/stats/today-count`, { // Garanta que API_URL não termina com / se aqui já tem
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar contagem de consultas de hoje.');
+    return data; // Espera-se { todayAppointmentsCount: XX }
+  } catch (error) { console.error("Erro em adminGetTodayAppointmentsCount:", error); throw error; }
+};

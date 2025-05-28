@@ -4,11 +4,14 @@ import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
-import { clientGetMyPendingPaymentsService } from '../services/paymentService'; // Importado
-import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, FaRegClock, FaExclamationTriangle, FaCreditCard } from 'react-icons/fa';
-import { theme } from '../theme'; // Assume que tem um theme.js
+import { clientGetMyPendingPaymentsService } from '../services/paymentService';
+import {
+    FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck,
+    FaRegClock, FaExclamationTriangle, FaCreditCard
+} from 'react-icons/fa';
+import { theme } from '../theme'; // Garanta que tem um ficheiro theme.js configurado
 
-// --- Styled Components ---
+// --- Styled Components (Completos) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -134,6 +137,8 @@ const UpcomingEventItem = styled(BookingItem)`
     font-size: 1.1rem;
     color: #00A9FF;
     margin-bottom: 8px;
+    display: flex; // Para alinhar ícone
+    align-items: center;
   }
   p {
     font-size: 0.9rem;
@@ -141,15 +146,8 @@ const UpcomingEventItem = styled(BookingItem)`
   }
   .event-type-icon {
     margin-right: 8px;
-    color: #00A9FF;
+    color: #00A9FF; // Cor do ícone
   }
-`;
-
-const LoadingText = styled.p`
-  text-align: center;
-  font-size: 1.1rem;
-  color: ${({ theme }) => theme.colors.primary};
-  padding: 20px;
 `;
 
 const MessageBaseStyles = css`
@@ -164,26 +162,32 @@ const MessageBaseStyles = css`
   font-weight: 500;
 `;
 
+const LoadingText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.primary};
+  border-color: transparent;
+  background: transparent;
+  font-style: italic;
+`;
 const ErrorText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error || '#FF6B6B'};
   background-color: ${({ theme }) => theme.colors.errorBg || 'rgba(255, 107, 107, 0.1)'};
   border-color: ${({ theme }) => theme.colors.error || '#FF6B6B'};
 `;
-
 const NoBookingsText = styled.p`
   text-align: center;
   font-size: 1rem;
   color: #888;
   padding: 20px;
-  background-color: #222;
+  background-color: #222; // Cor de fundo para destaque quando não há itens
   border-radius: 8px;
 `;
 
 const StyledLinkButton = styled(Link)`
   display: inline-block;
   background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.textDark};
+  color: ${({ theme }) => theme.colors.textDark}; // Ajustado para textDark para contraste
   padding: 12px 22px;
   border-radius: 8px;
   text-decoration: none;
@@ -192,7 +196,7 @@ const StyledLinkButton = styled(Link)`
   transition: background-color 0.2s ease-in-out, transform 0.15s ease;
 
   &:hover {
-    background-color: #e6c358;
+    background-color: #e6c358; // Cor de hover mais clara
     transform: translateY(-2px);
   }
 
@@ -293,9 +297,9 @@ const DashboardPage = () => {
 
       } catch (err) {
         console.error("Erro ao buscar dados do dashboard:", err);
-        if (err.message.toLowerCase().includes("pagamentos pendentes")) { // Mais robusto
+        if (err.message.toLowerCase().includes("pagamentos pendentes")) {
             setPendingPaymentsError(err.message);
-        } else if (err.message.toLowerCase().includes("marcações")) { // Mais robusto
+        } else if (err.message.toLowerCase().includes("marcações")) {
             setError(err.message);
         } else {
             setError('Não foi possível carregar todos os dados do dashboard.');
@@ -331,7 +335,6 @@ const DashboardPage = () => {
 
     bookings.appointments.forEach(appointment => {
       const eventDate = new Date(`${appointment.date}T${appointment.time}`);
-      // Filtrar para mostrar apenas consultas que não estão em estados "finais" ou "negativos"
       const relevantStatus = !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída', 'não_compareceu'].includes(appointment.status);
       if (eventDate >= now && relevantStatus) {
         allEvents.push({

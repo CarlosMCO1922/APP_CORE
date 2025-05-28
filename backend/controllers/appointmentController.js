@@ -623,6 +623,26 @@ const staffRespondToAppointmentRequest = async (req, res) => {
   }
 };
 
+// @desc    Admin obtém o número de consultas agendadas para hoje
+// @route   GET /api/appointments/stats/today-count
+// @access  Privado (Admin Staff)
+const getTodayAppointmentsCount = async (req, res) => {
+  try {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const count = await db.Appointment.count({
+      where: {
+        date: today,
+        // Considerar apenas status relevantes se necessário, ex: não 'disponível' ou 'cancelada'
+        status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] }
+      },
+    });
+    res.status(200).json({ todayAppointmentsCount: count || 0 });
+  } catch (error) {
+    console.error('Erro ao obter contagem de consultas de hoje:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
 
 module.exports = {
   adminCreateAppointment,
@@ -634,4 +654,5 @@ module.exports = {
   clientCancelAppointmentBooking,
   clientRequestAppointment,
   staffRespondToAppointmentRequest,
+  getTodayAppointmentsCount
 };

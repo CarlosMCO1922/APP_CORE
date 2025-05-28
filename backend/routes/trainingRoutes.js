@@ -14,6 +14,20 @@ router.post('/', protect, isAdminStaff, trainingController.createTraining);
 router.put('/:id', protect, isAdminStaff, trainingController.updateTraining);
 router.delete('/:id', protect, isAdminStaff, trainingController.deleteTraining);
 
+router.get(
+    '/stats/current-week-signups',
+    protect,
+    isAdminStaff,
+    trainingController.getCurrentWeekSignups
+);
+
+router.get(
+    '/stats/today-count',
+    protect,
+    isAdminStaff,
+    trainingController.getTodayTrainingsCount
+);
+
 // --- Rotas para Planos de Treino (WorkoutPlan) aninhadas sob um Treino específico ---
 router.post(
   '/:trainingId/workout-plans',

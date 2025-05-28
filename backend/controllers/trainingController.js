@@ -1,6 +1,7 @@
 // backend/controllers/trainingController.js
 const { Op } = require('sequelize'); // Para operadores como "greater than or equal"
 const db = require('../models');
+const { startOfWeek, endOfWeek, format } = require('date-fns');
 
 // @desc    Criar um novo treino
 // @route   POST /api/trainings
@@ -281,6 +282,67 @@ const cancelTrainingBooking = async (req, res) => {
   }
 };
 
+// @desc    Admin obtém o número de inscrições em treinos na semana atual
+// @route   GET /api/trainings/stats/current-week-signups
+// @access  Privado (Admin Staff)
+const getCurrentWeekSignups = async (req, res) => {
+  try {
+    const today = new Date();
+    // Considera a semana começando na Segunda-feira (weekStartsOn: 1)
+    const startDate = startOfWeek(today, { weekStartsOn: 1 });
+    const endDate = endOfWeek(today, { weekStartsOn: 1 });
+
+    const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+    const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+
+    const trainingsThisWeek = await db.Training.findAll({
+      attributes: ['id'],
+      where: {
+        date: {
+          [Op.gte]: formattedStartDate,
+          [Op.lte]: formattedEndDate,
+        },
+      },
+    });
+
+    if (trainingsThisWeek.length === 0) {
+      return res.status(200).json({ currentWeekSignups: 0 });
+    }
+
+    const trainingIdsThisWeek = trainingsThisWeek.map(t => t.id);
+    const signupCount = await db.sequelize.models.UserTrainings.count({
+      where: {
+        trainingId: {
+          [Op.in]: trainingIdsThisWeek,
+        },
+      },
+    });
+
+    res.status(200).json({ currentWeekSignups: signupCount || 0 });
+  } catch (error) {
+    console.error('Erro ao obter contagem de inscrições da semana:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
+// @desc    Admin obtém o número de treinos agendados para hoje
+// @route   GET /api/trainings/stats/today-count
+// @access  Privado (Admin Staff)
+const getTodayTrainingsCount = async (req, res) => {
+  try {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const count = await db.Training.count({
+      where: {
+        date: today,
+      },
+    });
+    res.status(200).json({ todayTrainingsCount: count || 0 });
+  } catch (error) {
+    console.error('Erro ao obter contagem de treinos de hoje:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
 module.exports = {
   createTraining,
   getAllTrainings,
@@ -289,4 +351,6 @@ module.exports = {
   deleteTraining,
   bookTraining,
   cancelTrainingBooking,
+  getCurrentWeekSignups,
+  getTodayTrainingsCount,
 };

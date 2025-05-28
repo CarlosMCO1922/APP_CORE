@@ -83,3 +83,27 @@ export const adminDeleteTraining = async (trainingId, token) => {
     return data;
   } catch (error) { console.error("Erro em adminDeleteTraining:", error); throw error; }
 };
+
+export const adminGetCurrentWeekSignups = async (token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/stats/current-week-signups`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar inscrições da semana.');
+    return data; // Espera-se { currentWeekSignups: XX }
+  } catch (error) { console.error("Erro em adminGetCurrentWeekSignups:", error); throw error; }
+};
+
+export const adminGetTodayTrainingsCount = async (token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/stats/today-count`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar contagem de treinos de hoje.');
+    return data; // Espera-se { todayTrainingsCount: XX }
+  } catch (error) { console.error("Erro em adminGetTodayTrainingsCount:", error); throw error; }
+};
