@@ -15,30 +15,38 @@ import { useAuth } from '../context/AuthContext';
 import {
     getAllTrainings,
     bookTraining as bookTrainingService,
-    cancelTrainingBooking as cancelTrainingBookingService
+    cancelTrainingBooking as cancelTrainingBookingService,
+    adminCreateTraining
 } from '../services/trainingService';
 import {
     getAllAppointments,
     bookAppointment as bookAppointmentService,
     cancelAppointmentBooking as cancelAppointmentBookingService,
-    clientRequestNewAppointment
+    clientRequestNewAppointment,
+    adminCreateAppointment
 } from '../services/appointmentService';
-import { getAllStaffForSelection } from '../services/staffService';
+import { getAllStaffForSelection, adminGetAllStaff } from '../services/staffService';
+import { adminGetAllUsers } from '../services/userService';
+
 import {
     FaArrowLeft, FaTimes, FaUsers, FaUserMd, FaExternalLinkAlt,
-    FaCalendarPlus, FaInfoCircle, FaCalendarDay, FaClock, FaUserCircle, FaStickyNote
+    FaCalendarPlus, FaInfoCircle, FaCalendarDay, FaClock, FaUserCircle, FaStickyNote,
+    FaDumbbell
 } from 'react-icons/fa';
 
 const locales = { 'pt-BR': ptBR };
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }), // Começar semana na Segunda-feira
+  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
   getDay,
   locales,
 });
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
+const initialAdminTrainingFormState = { name: '', description: '', date: '', time: '', capacity: 10, instructorId: '', durationMinutes: 45 };
+const initialAdminAppointmentFormState = { date: '', time: '', staffId: '', userId: '', notes: '', status: 'disponível', durationMinutes: 60, totalCost: ''};
+const appointmentStatuses = [ 'disponível', 'agendada', 'confirmada', 'concluída', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'não_compareceu', 'pendente_aprovacao_staff', 'rejeitada_pelo_staff' ];
 
 // --- Styled Components (Completos) ---
 const PageContainer = styled.div`
@@ -91,7 +99,7 @@ const CalendarWrapper = styled.div`
   border-radius: 12px;
   box-shadow: ${({ theme }) => theme.boxShadow};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  height: 80vh; // Altura definida para o calendário
+  height: 80vh;
 
   .rbc-toolbar {
     margin-bottom: 25px;
@@ -329,7 +337,7 @@ const EventComponentStyled = styled.div`
   height: 100%;
   padding: 2px 0;
   font-size: inherit;
-  color: ${({ theme }) => theme.colors.textDark};
+  color: ${({ theme }) => theme.colors.textDark}; // Ajustado para melhor contraste
 
   .event-icon { font-size: 1em; opacity: 0.85; flex-shrink: 0; line-height: 1; }
   .event-title-text { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
@@ -388,6 +396,46 @@ const ParticipantListStyled = styled.div`
   }
 `;
 
+const OptionsModalButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textDark};
+  padding: 12px 20px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  text-decoration: none;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1rem;
+  width: 100%;
+  margin-bottom: 10px;
+
+  &:hover {
+    background-color: #e6c358;
+    transform: translateY(-2px);
+  }
+  &:last-child {
+    margin-bottom: 0;
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+    color: ${({ theme }) => theme.colors.textMain};
+     &:hover {
+        background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    }
+  }
+`;
+
+const AdminModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
+const AdminModalLabel = styled.label` font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 4px; display: block; font-weight: 500;`;
+const AdminModalInput = styled.input` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const AdminModalTextarea = styled.textarea` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; min-height: 80px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const AdminModalSelect = styled.select` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const AdminModalButton = styled(ModalButton)``;
+
+
 const CustomEventComponent = ({ event }) => (
   <EventComponentStyled title={event.title + (event.resource.type === 'training' ? ` (${(event.resource.participantsCount ?? event.resource.participants?.length ?? 0)}/${event.resource.capacity})` : '')}>
     {event.resource.type === 'training' && <FaUsers className="event-icon" />}
@@ -410,7 +458,7 @@ const CalendarPage = () => {
   const [events, setEvents] = useState([]);
   const [myBookedTrainingIds, setMyBookedTrainingIds] = useState(new Set());
   const [myBookedAppointmentIds, setMyBookedAppointmentIds] = useState(new Set());
-  const [professionals, setProfessionals] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState('');
   const [pageSuccessMessage, setPageSuccessMessage] = useState('');
@@ -418,15 +466,34 @@ const CalendarPage = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
 
+  const [professionalsForClient, setProfessionalsForClient] = useState([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestFormData, setRequestFormData] = useState(initialRequestFormState);
   const [requestFormError, setRequestFormError] = useState('');
   const [requestFormLoading, setRequestFormLoading] = useState(false);
 
+  const [selectedSlotInfo, setSelectedSlotInfo] = useState(null);
+  const [showAdminCreateOptionsModal, setShowAdminCreateOptionsModal] = useState(false);
+
+  const [showAdminCreateTrainingModal, setShowAdminCreateTrainingModal] = useState(false);
+  const [adminTrainingFormData, setAdminTrainingFormData] = useState(initialAdminTrainingFormState);
+  const [adminTrainingFormLoading, setAdminTrainingFormLoading] = useState(false);
+  const [adminTrainingModalError, setAdminTrainingModalError] = useState('');
+  const [adminInstructors, setAdminInstructors] = useState([]);
+
+  const [showAdminCreateAppointmentModal, setShowAdminCreateAppointmentModal] = useState(false);
+  const [adminAppointmentFormData, setAdminAppointmentFormData] = useState(initialAdminAppointmentFormState);
+  const [adminAppointmentFormLoading, setAdminAppointmentFormLoading] = useState(false);
+  const [adminAppointmentModalError, setAdminAppointmentModalError] = useState('');
+  const [adminStaffListForAppointment, setAdminStaffListForAppointment] = useState([]);
+  const [adminUserListForAppointment, setAdminUserListForAppointment] = useState([]);
+
   const [actionLoading, setActionLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  // == ALTERAÇÃO AQUI: Vista padrão para WEEK ==
   const [currentView, setCurrentView] = useState(Views.WEEK);
+
+  const isAdminOrStaff = authState.role && authState.role !== 'user';
+  const isClient = authState.role === 'user';
 
   const fetchPageData = useCallback(async () => {
     if (!authState.token) {
@@ -435,29 +502,37 @@ const CalendarPage = () => {
     try {
       setLoading(true); setPageError(''); setPageSuccessMessage('');
       const appointmentFilters = {};
-      let staffPromise = Promise.resolve([]);
-      if (authState.role === 'user') {
-        staffPromise = getAllStaffForSelection(authState.token).catch(err => {
-          console.warn("Aviso: Não foi possível buscar lista de staff para cliente.", err.message);
-          return [];
-        });
-      }
-
-      const [trainingsData, appointmentsData, staffDataResult] = await Promise.all([
+      
+      const promisesToFetch = [
         getAllTrainings(authState.token),
         getAllAppointments(authState.token, appointmentFilters),
-        staffPromise
-      ]);
+      ];
 
-      if (authState.role === 'user' && staffDataResult?.length > 0) {
-        setProfessionals(staffDataResult.filter(s => ['physiotherapist', 'trainer', 'admin'].includes(s.role)));
-      } else if (authState.role === 'user') {
-        setProfessionals([]);
+      if (isAdminOrStaff) {
+        promisesToFetch.push(adminGetAllStaff(authState.token).catch(e => { console.error("Falha ao buscar staff (admin)", e); return []; }));
+        promisesToFetch.push(adminGetAllUsers(authState.token).catch(e => { console.error("Falha ao buscar users (admin)", e); return []; }));
+      } else if (isClient) {
+        promisesToFetch.push(getAllStaffForSelection(authState.token).catch(e => { console.warn("Falha ao buscar staff (client)", e.message); return []; }));
+        promisesToFetch.push(Promise.resolve([]));
+      } else {
+        promisesToFetch.push(Promise.resolve([]));
+        promisesToFetch.push(Promise.resolve([]));
+      }
+
+      const [trainingsData, appointmentsData, staffData, usersData] = await Promise.all(promisesToFetch);
+
+      if (isClient && staffData?.length > 0) {
+        setProfessionalsForClient(staffData.filter(s => ['physiotherapist', 'trainer', 'admin'].includes(s.role)));
+      }
+      if (isAdminOrStaff) {
+        setAdminInstructors(staffData.filter(s => ['trainer', 'admin'].includes(s.role)));
+        setAdminStaffListForAppointment(staffData.filter(s => ['physiotherapist', 'trainer', 'admin'].includes(s.role)));
+        setAdminUserListForAppointment(usersData || []);
       }
 
       const bookedTrainings = new Set();
       const bookedAppointments = new Set();
-      if (authState.role === 'user' && authState.user?.id) {
+      if (isClient && authState.user?.id) {
         trainingsData.forEach(t => t.participants?.some(p => p.id === authState.user.id) && bookedTrainings.add(t.id));
         appointmentsData.forEach(a => { if (a.client?.id === authState.user.id) { bookedAppointments.add(a.id); } });
       }
@@ -490,13 +565,13 @@ const CalendarPage = () => {
         });
       });
       setEvents(formattedEvents);
+
     } catch (err) {
       setPageError(err.message || 'Não foi possível carregar os dados do calendário.');
       console.error("CalendarPage fetchData error:", err);
     }
     finally { setLoading(false); }
-  }, [authState.token, authState.role, authState.user?.id]);
-
+  }, [authState.token, authState.role, authState.user?.id, isAdminOrStaff, isClient]);
 
   useEffect(() => { fetchPageData(); }, [fetchPageData]);
 
@@ -504,16 +579,22 @@ const CalendarPage = () => {
   const handleCloseEventModal = () => { setShowEventModal(false); setSelectedEvent(null); };
 
   const handleSelectSlot = useCallback((slotInfo) => {
-    if (authState.role !== 'user') return; // Se for Admin, iremos tratar isto depois
+    setPageError(''); setPageSuccessMessage('');
     const selectedDate = format(slotInfo.start, 'yyyy-MM-dd');
     const selectedTime = format(slotInfo.start, 'HH:mm');
-    setRequestFormData({ ...initialRequestFormState, date: selectedDate, time: selectedTime });
-    setRequestFormError(''); setPageSuccessMessage(''); setShowRequestModal(true);
-  }, [authState.role]);
+
+    if (isAdminOrStaff) {
+      setSelectedSlotInfo({ date: selectedDate, time: selectedTime, start: slotInfo.start, end: slotInfo.end });
+      setShowAdminCreateOptionsModal(true);
+    } else if (isClient) {
+      setRequestFormData({ ...initialRequestFormState, date: selectedDate, time: selectedTime });
+      setRequestFormError('');
+      setShowRequestModal(true);
+    }
+  }, [isAdminOrStaff, isClient]);
 
   const handleCloseRequestModal = () => { setShowRequestModal(false); setRequestFormData(initialRequestFormState); setRequestFormError(''); };
   const handleRequestFormChange = (e) => { setRequestFormData({ ...requestFormData, [e.target.name]: e.target.value }); };
-
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
     if (!requestFormData.staffId) { setRequestFormError("Por favor, selecione um profissional."); return; }
@@ -528,6 +609,7 @@ const CalendarPage = () => {
       setRequestFormError(err.message || 'Falha ao enviar pedido de consulta.');
     } finally { setRequestFormLoading(false); }
   };
+
   const handleBookSelectedTraining = async () => {
     if (!selectedEvent || selectedEvent.type !== 'training') return;
     if (!window.confirm('Confirmas a inscrição neste treino?')) return;
@@ -624,7 +706,7 @@ const CalendarPage = () => {
       padding: '3px 5px',
     };
     return { style };
-  }, []);
+  }, [theme]); // Adicionando theme aqui para que eventStyleGetter não reclame de missing dependency
 
   const tooltipAccessor = useCallback((event) => {
     const time = `${format(event.start, 'HH:mm')} - ${format(event.end, 'HH:mm')}`;
@@ -642,8 +724,82 @@ const CalendarPage = () => {
     return details;
   }, []);
 
-  const isAdminOrStaff = authState.role && authState.role !== 'user';
-  const isClient = authState.role === 'user';
+  const handleCloseAdminCreateOptionsModal = () => setShowAdminCreateOptionsModal(false);
+
+  const handleOpenAdminCreateTrainingModal = () => {
+    setShowAdminCreateOptionsModal(false);
+    setAdminTrainingFormData({
+      ...initialAdminTrainingFormState,
+      date: selectedSlotInfo?.date || '',
+      time: selectedSlotInfo?.time || ''
+    });
+    setAdminTrainingModalError('');
+    setShowAdminCreateTrainingModal(true);
+  };
+  const handleCloseAdminCreateTrainingModal = () => {
+    setShowAdminCreateTrainingModal(false);
+    setAdminTrainingFormData(initialAdminTrainingFormState);
+  };
+  const handleAdminTrainingFormChange = (e) => setAdminTrainingFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleAdminCreateTrainingSubmit = async (e) => {
+    e.preventDefault();
+    setAdminTrainingFormLoading(true); setAdminTrainingModalError(''); setPageSuccessMessage('');
+    const dataToSend = {
+      ...adminTrainingFormData,
+      capacity: parseInt(adminTrainingFormData.capacity, 10),
+      instructorId: parseInt(adminTrainingFormData.instructorId, 10),
+      durationMinutes: parseInt(adminTrainingFormData.durationMinutes, 10),
+      time: adminTrainingFormData.time.length === 5 ? `${adminTrainingFormData.time}:00` : adminTrainingFormData.time,
+    };
+    try {
+      await adminCreateTraining(dataToSend, authState.token);
+      setPageSuccessMessage('Novo treino criado com sucesso a partir do calendário!');
+      fetchPageData();
+      handleCloseAdminCreateTrainingModal();
+    } catch (err) {
+      setAdminTrainingModalError(err.message || 'Falha ao criar treino.');
+    } finally {
+      setAdminTrainingFormLoading(false);
+    }
+  };
+
+  const handleOpenAdminCreateAppointmentModal = () => {
+    setShowAdminCreateOptionsModal(false);
+    setAdminAppointmentFormData({
+      ...initialAdminAppointmentFormState,
+      date: selectedSlotInfo?.date || '',
+      time: selectedSlotInfo?.time || ''
+    });
+    setAdminAppointmentModalError('');
+    setShowAdminCreateAppointmentModal(true);
+  };
+  const handleCloseAdminCreateAppointmentModal = () => {
+    setShowAdminCreateAppointmentModal(false);
+    setAdminAppointmentFormData(initialAdminAppointmentFormState);
+  };
+  const handleAdminAppointmentFormChange = (e) => setAdminAppointmentFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleAdminCreateAppointmentSubmit = async (e) => {
+    e.preventDefault();
+    setAdminAppointmentFormLoading(true); setAdminAppointmentModalError(''); setPageSuccessMessage('');
+     const dataToSend = {
+      ...adminAppointmentFormData,
+      staffId: adminAppointmentFormData.staffId ? parseInt(adminAppointmentFormData.staffId, 10) : null,
+      userId: adminAppointmentFormData.userId ? parseInt(adminAppointmentFormData.userId, 10) : null,
+      durationMinutes: parseInt(adminAppointmentFormData.durationMinutes, 10),
+      time: adminAppointmentFormData.time.length === 5 ? `${adminAppointmentFormData.time}:00` : adminAppointmentFormData.time,
+      totalCost: (adminAppointmentFormData.userId && adminAppointmentFormData.totalCost !== '' && !isNaN(parseFloat(adminAppointmentFormData.totalCost))) ? parseFloat(adminAppointmentFormData.totalCost) : null,
+    };
+    try {
+      await adminCreateAppointment(dataToSend, authState.token);
+      setPageSuccessMessage('Nova consulta criada com sucesso a partir do calendário!');
+      fetchPageData();
+      handleCloseAdminCreateAppointmentModal();
+    } catch (err) {
+      setAdminAppointmentModalError(err.message || 'Falha ao criar consulta.');
+    } finally {
+      setAdminAppointmentFormLoading(false);
+    }
+  };
 
   if (loading) return <PageContainer><LoadingText>A carregar calendário...</LoadingText></PageContainer>;
 
@@ -653,7 +809,7 @@ const CalendarPage = () => {
       <BackLink to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"}> <FaArrowLeft /> Voltar ao Painel </BackLink>
 
       {pageError && <PageErrorText>{pageError}</PageErrorText>}
-      {pageSuccessMessage && !showRequestModal && !showEventModal && <PageSuccessMessage>{pageSuccessMessage}</PageSuccessMessage>}
+      {pageSuccessMessage && !showRequestModal && !showEventModal && !showAdminCreateOptionsModal && !showAdminCreateTrainingModal && !showAdminCreateAppointmentModal && <PageSuccessMessage>{pageSuccessMessage}</PageSuccessMessage>}
 
       <CalendarWrapper>
         <Calendar
@@ -663,7 +819,6 @@ const CalendarPage = () => {
           endAccessor="end"
           style={{ height: '100%' }}
           views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-          // == ALTERAÇÃO AQUI: Vista padrão para WEEK ==
           defaultView={Views.WEEK}
           view={currentView}
           date={currentDate}
@@ -672,9 +827,8 @@ const CalendarPage = () => {
           messages={messages}
           culture='pt-BR'
           onSelectEvent={handleSelectEvent}
-          // == ALTERAÇÃO AQUI: Permite seleção de slots para Admin/Staff também ==
-          onSelectSlot={isClient ? handleSelectSlot : (isAdminOrStaff ? handleSelectSlot : undefined)} // Modificado
-          selectable={true} // Permitir sempre seleção (a lógica de o que fazer fica no handler)
+          onSelectSlot={handleSelectSlot}
+          selectable={true}
           components={{ event: CustomEventComponent }}
           popup
           eventPropGetter={eventStyleGetter}
@@ -755,7 +909,7 @@ const CalendarPage = () => {
               <RequestModalLabel htmlFor="reqStaffIdModal">Profissional*</RequestModalLabel>
               <RequestModalSelect name="staffId" id="reqStaffIdModal" value={requestFormData.staffId} onChange={handleRequestFormChange} required>
                 <option value="">Selecione um profissional...</option>
-                {professionals.map(prof => ( <option key={prof.id} value={prof.id}> {prof.firstName} {prof.lastName} ({prof.role}) </option> ))}
+                {professionalsForClient.map(prof => ( <option key={prof.id} value={prof.id}> {prof.firstName} {prof.lastName} ({prof.role}) </option> ))}
               </RequestModalSelect>
               <RequestModalLabel htmlFor="reqDateModal">Data*</RequestModalLabel>
               <RequestModalInput type="date" name="date" id="reqDateModal" value={requestFormData.date} onChange={handleRequestFormChange} required />
@@ -771,6 +925,139 @@ const CalendarPage = () => {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      {showAdminCreateOptionsModal && isAdminOrStaff && (
+        <ModalOverlay onClick={handleCloseAdminCreateOptionsModal}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={handleCloseAdminCreateOptionsModal}><FaTimes /></CloseButton>
+            <ModalTitle>Criar Novo Evento</ModalTitle>
+            <p style={{textAlign: 'center', marginBottom: '20px', color: theme.colors.textMuted}}>
+              Para: {selectedSlotInfo?.date ? format(parse(selectedSlotInfo.date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy', {locale: ptBR}) : ''} às {selectedSlotInfo?.time || ''}
+            </p>
+            <OptionsModalButton onClick={handleOpenAdminCreateTrainingModal}><FaDumbbell /> Criar Treino</OptionsModalButton>
+            <OptionsModalButton onClick={handleOpenAdminCreateAppointmentModal}><FaCalendarPlus /> Criar Consulta</OptionsModalButton>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {showAdminCreateTrainingModal && isAdminOrStaff && (
+        <ModalOverlay onClick={handleCloseAdminCreateTrainingModal}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={handleCloseAdminCreateTrainingModal}><FaTimes /></CloseButton>
+            <ModalTitle>Criar Novo Treino</ModalTitle>
+            {adminTrainingModalError && <ModalErrorText>{adminTrainingModalError}</ModalErrorText>}
+            <AdminModalForm onSubmit={handleAdminCreateTrainingSubmit}>
+              <AdminModalLabel htmlFor="adminTrainName">Nome do Treino*</AdminModalLabel>
+              <AdminModalInput type="text" name="name" id="adminTrainName" value={adminTrainingFormData.name} onChange={handleAdminTrainingFormChange} required />
+
+              <AdminModalLabel htmlFor="adminTrainDesc">Descrição</AdminModalLabel>
+              <AdminModalTextarea name="description" id="adminTrainDesc" value={adminTrainingFormData.description} onChange={handleAdminTrainingFormChange} />
+
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                <div>
+                    <AdminModalLabel htmlFor="adminTrainDate">Data*</AdminModalLabel>
+                    <AdminModalInput type="date" name="date" id="adminTrainDate" value={adminTrainingFormData.date} onChange={handleAdminTrainingFormChange} required />
+                </div>
+                <div>
+                    <AdminModalLabel htmlFor="adminTrainTime">Hora (HH:MM)*</AdminModalLabel>
+                    <AdminModalInput type="time" name="time" id="adminTrainTime" value={adminTrainingFormData.time} onChange={handleAdminTrainingFormChange} required />
+                </div>
+              </div>
+
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                <div>
+                    <AdminModalLabel htmlFor="adminTrainDuration">Duração (minutos)*</AdminModalLabel>
+                    <AdminModalInput type="number" name="durationMinutes" id="adminTrainDuration" value={adminTrainingFormData.durationMinutes} onChange={handleAdminTrainingFormChange} required min="1" />
+                </div>
+                <div>
+                    <AdminModalLabel htmlFor="adminTrainCapacity">Capacidade*</AdminModalLabel>
+                    <AdminModalInput type="number" name="capacity" id="adminTrainCapacity" value={adminTrainingFormData.capacity} onChange={handleAdminTrainingFormChange} required min="1" />
+                </div>
+              </div>
+
+              <AdminModalLabel htmlFor="adminTrainInstructor">Instrutor*</AdminModalLabel>
+              <AdminModalSelect name="instructorId" id="adminTrainInstructor" value={adminTrainingFormData.instructorId} onChange={handleAdminTrainingFormChange} required>
+                <option value="">Selecione um instrutor</option>
+                {adminInstructors.map(instr => (
+                  <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName} ({instr.role})</option>
+                ))}
+              </AdminModalSelect>
+
+              <ModalActions>
+                <AdminModalButton type="button" secondary onClick={handleCloseAdminCreateTrainingModal} disabled={adminTrainingFormLoading}>Cancelar</AdminModalButton>
+                <AdminModalButton type="submit" primary disabled={adminTrainingFormLoading}>
+                  <FaDumbbell style={{marginRight: '8px'}} /> {adminTrainingFormLoading ? 'A criar...' : 'Criar Treino'}
+                </AdminModalButton>
+              </ModalActions>
+            </AdminModalForm>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+    {showAdminCreateAppointmentModal && isAdminOrStaff && (
+        <ModalOverlay onClick={handleCloseAdminCreateAppointmentModal}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+                <CloseButton onClick={handleCloseAdminCreateAppointmentModal}><FaTimes /></CloseButton>
+                <ModalTitle>Criar Nova Consulta</ModalTitle>
+                {adminAppointmentModalError && <ModalErrorText>{adminAppointmentModalError}</ModalErrorText>}
+                <AdminModalForm onSubmit={handleAdminCreateAppointmentSubmit}>
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                        <div>
+                            <AdminModalLabel htmlFor="adminApptDate">Data*</AdminModalLabel>
+                            <AdminModalInput type="date" name="date" id="adminApptDate" value={adminAppointmentFormData.date} onChange={handleAdminAppointmentFormChange} required />
+                        </div>
+                        <div>
+                            <AdminModalLabel htmlFor="adminApptTime">Hora (HH:MM)*</AdminModalLabel>
+                            <AdminModalInput type="time" name="time" id="adminApptTime" value={adminAppointmentFormData.time} onChange={handleAdminAppointmentFormChange} required />
+                        </div>
+                    </div>
+                    <AdminModalLabel htmlFor="adminApptDuration">Duração (minutos)*</AdminModalLabel>
+                    <AdminModalInput type="number" name="durationMinutes" id="adminApptDuration" value={adminAppointmentFormData.durationMinutes} onChange={handleAdminAppointmentFormChange} required min="1" />
+
+                    <AdminModalLabel htmlFor="adminApptStaff">Profissional*</AdminModalLabel>
+                    <AdminModalSelect name="staffId" id="adminApptStaff" value={adminAppointmentFormData.staffId} onChange={handleAdminAppointmentFormChange} required>
+                        <option value="">Selecione um profissional</option>
+                        {adminStaffListForAppointment.map(staff => (
+                            <option key={staff.id} value={staff.id}>{staff.firstName} {staff.lastName} ({staff.role})</option>
+                        ))}
+                    </AdminModalSelect>
+
+                    <AdminModalLabel htmlFor="adminApptUser">Cliente (Opcional)</AdminModalLabel>
+                    <AdminModalSelect name="userId" id="adminApptUser" value={adminAppointmentFormData.userId} onChange={handleAdminAppointmentFormChange}>
+                        <option value="">Nenhum (Horário Vago)</option>
+                        {adminUserListForAppointment.map(user => (
+                            <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
+                        ))}
+                    </AdminModalSelect>
+
+                    {adminAppointmentFormData.userId && (
+                        <>
+                            <AdminModalLabel htmlFor="adminApptCost">Custo Total (EUR){adminAppointmentFormData.userId ? '*' : ''}</AdminModalLabel>
+                            <AdminModalInput type="number" name="totalCost" id="adminApptCost" value={adminAppointmentFormData.totalCost} onChange={handleAdminAppointmentFormChange} placeholder="Ex: 50.00" step="0.01" min={adminAppointmentFormData.userId ? "0.01" : "0"} />
+                        </>
+                    )}
+
+                    <AdminModalLabel htmlFor="adminApptStatus">Status*</AdminModalLabel>
+                    <AdminModalSelect name="status" id="adminApptStatus" value={adminAppointmentFormData.status} onChange={handleAdminAppointmentFormChange} required>
+                        {appointmentStatuses.map(statusValue => (
+                            <option key={statusValue} value={statusValue}>{statusValue.charAt(0).toUpperCase() + statusValue.slice(1).replace(/_/g, ' ')}</option>
+                        ))}
+                    </AdminModalSelect>
+
+                    <AdminModalLabel htmlFor="adminApptNotes">Notas Adicionais</AdminModalLabel>
+                    <AdminModalTextarea name="notes" id="adminApptNotes" value={adminAppointmentFormData.notes} onChange={handleAdminAppointmentFormChange} />
+
+                    <ModalActions>
+                        <AdminModalButton type="button" secondary onClick={handleCloseAdminCreateAppointmentModal} disabled={adminAppointmentFormLoading}>Cancelar</AdminModalButton>
+                        <AdminModalButton type="submit" primary disabled={adminAppointmentFormLoading}>
+                            <FaCalendarPlus style={{marginRight: '8px'}}/> {adminAppointmentFormLoading ? 'A criar...' : 'Criar Consulta'}
+                        </AdminModalButton>
+                    </ModalActions>
+                </AdminModalForm>
+            </ModalContent>
+        </ModalOverlay>
+    )}
+
     </PageContainer>
   );
 };
