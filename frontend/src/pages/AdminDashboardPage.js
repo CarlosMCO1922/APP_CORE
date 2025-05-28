@@ -5,7 +5,7 @@ import styled, { css } from 'styled-components'; // Certifique-se de ter css aqu
 import { useAuth } from '../context/AuthContext';
 import { adminGetTotalPaid } from '../services/paymentService';
 import {
-    FaDollarSign, FaUsers, FaCalendarDay, FaChartBar,
+    FaEuroSign, FaUsers, FaCalendarDay, FaChartBar,
     FaCalendarAlt, FaUserMd, FaDumbbell, FaCreditCard,
     FaRunning, FaRegCalendarCheck, FaCalendarCheck
 } from 'react-icons/fa';
@@ -222,7 +222,7 @@ const AdminDashboardPage = () => {
 
       <StatsOverviewContainer>
         <StatCard color={theme.colors.success || '#4CAF50'}>
-          <StatIcon color={theme.colors.success || '#4CAF50'}><FaDollarSign /></StatIcon>
+          <StatIcon color={theme.colors.success || '#4CAF50'}><FaEuroSign /></StatIcon>
           {loadingStats && totalPaidThisMonth === null && <LoadingText>A carregar...</LoadingText>}
           {!loadingStats && statsError && totalPaidThisMonth === null && <ErrorText>Erro</ErrorText>}
           {totalPaidThisMonth !== null && !loadingStats && <StatValue>{Number(totalPaidThisMonth).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</StatValue>}
