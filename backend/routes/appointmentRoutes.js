@@ -19,6 +19,13 @@ router.delete('/:appointmentId/book', protect, isClientUser, appointmentControll
 // --- Rotas para Staff (Admin ou o profissional da consulta) ---
 router.patch('/:appointmentId/respond', protect, isStaff, appointmentController.staffRespondToAppointmentRequest);
 
+router.get(
+    '/stats/today-count',
+    protect,
+    isAdminStaff,
+    appointmentController.getTodayAppointmentsCount
+);
+
 // --- Rotas apenas para Admin Staff (para gestão completa de horários) ---
 router.post('/', protect, isAdminStaff, appointmentController.adminCreateAppointment);
 router.put('/:id', protect, isAdminStaff, appointmentController.adminUpdateAppointment);
