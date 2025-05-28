@@ -7,7 +7,7 @@ import { adminGetTotalPaid } from '../services/paymentService';
 import {
     FaDollarSign, FaUsers, FaCalendarDay, FaChartBar,
     FaCalendarAlt, FaUserMd, FaDumbbell, FaCreditCard,
-    FaRunning, FaRegCalendarCheck
+    FaRunning, FaRegCalendarCheck, FaCalendarCheck
 } from 'react-icons/fa';
 import { theme } from '../theme'; // Assume que o theme está corretamente importado
 
