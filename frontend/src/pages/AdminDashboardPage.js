@@ -1,15 +1,17 @@
 // src/pages/admin/AdminDashboardPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import styled, { css } from 'styled-components'; // Certifique-se de ter css aqui se MessageBaseStyles o usar
-import { useAuth } from '../context/AuthContext';
-import { adminGetTotalPaid } from '../services/paymentService';
+import styled, { css } from 'styled-components';
+import { useAuth } from '../../context/AuthContext';
+import { adminGetTotalPaid } from '../../services/paymentService';
+import { adminGetCurrentWeekSignups, adminGetTodayTrainingsCount } from '../../services/trainingService'; // Adicionado
+import { adminGetTodayAppointmentsCount } from '../../services/appointmentService'; // Adicionado
 import {
-    FaEuroSign, FaUsers, FaCalendarDay, FaChartBar,
+    FaDollarSign, FaUsers, FaCalendarDay,
     FaCalendarAlt, FaUserMd, FaDumbbell, FaCreditCard,
-    FaRunning, FaRegCalendarCheck, FaCalendarCheck
+    FaRunning, FaRegCalendarCheck, FaUserPlus, FaCalendarCheck as FaCalendarCheckIcon
 } from 'react-icons/fa';
-import { theme } from '../theme'; // Assume que o theme está corretamente importado
+import { theme } from '../../theme'; // Assume que o theme está corretamente importado
 
 // --- Styled Components (Completos) ---
 const PageContainer = styled.div`
@@ -58,7 +60,7 @@ const AdminNavGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  margin-top: 20px; // Re-adicionado se removido por engano
+  margin-top: 20px;
 `;
 
 const AdminNavLinkCard = styled(Link)`
@@ -66,7 +68,7 @@ const AdminNavLinkCard = styled(Link)`
   padding: 25px;
   border-radius: 10px;
   text-decoration: none;
-  color: ${({ theme }) => theme.colors.textMain}; // Usar cor do tema
+  color: ${({ theme }) => theme.colors.textMain};
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
   display: flex;
@@ -81,12 +83,12 @@ const AdminNavLinkCard = styled(Link)`
     margin-top: 0;
     margin-bottom: 10px;
     font-size: 1.5rem;
-    display: flex; // Para alinhar ícone e texto
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px; // Espaço entre ícone e texto
-    svg { // Estilo para o ícone dentro do h2
-        font-size: 1.3em; // Tamanho relativo ao h2
+    gap: 8px;
+    svg {
+        font-size: 1.3em;
     }
     @media (max-width: 480px) {
         font-size: 1.3rem;
@@ -151,11 +153,11 @@ const StatLabel = styled.p`
 const MessageBaseStyles = css`
   text-align: center;
   padding: 12px 18px;
-  margin: 10px auto; // Reduzido margin
+  margin: 10px auto;
   border-radius: ${({ theme }) => theme.borderRadius};
   border-width: 1px;
   border-style: solid;
-  max-width: 100%; // Para ocupar a largura do cartão de stat se dentro dele
+  max-width: 100%;
   font-size: 0.9rem;
   font-weight: 500;
 `;
@@ -175,10 +177,11 @@ const ErrorText = styled.p`
     border-color: ${({ theme }) => theme.colors.error};
 `;
 
-
 const AdminDashboardPage = () => {
   const { authState } = useAuth();
   const [totalPaidThisMonth, setTotalPaidThisMonth] = useState(null);
+  const [weeklySignups, setWeeklySignups] = useState(null);
+  const [todayEventsCount, setTodayEventsCount] = useState({ trainings: null, appointments: null });
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState('');
 
@@ -190,19 +193,31 @@ const AdminDashboardPage = () => {
         const today = new Date();
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
         const formattedStartDate = firstDayOfMonth.toISOString().split('T')[0];
         const formattedEndDate = lastDayOfMonth.toISOString().split('T')[0];
 
-        const totalPaidData = await adminGetTotalPaid(authState.token, {
-          startDate: formattedStartDate,
-          endDate: formattedEndDate,
-        });
+        const [
+            totalPaidData,
+            weeklySignupsData,
+            todayTrainingsData,
+            todayAppointmentsData
+        ] = await Promise.all([
+          adminGetTotalPaid(authState.token, { startDate: formattedStartDate, endDate: formattedEndDate }),
+          adminGetCurrentWeekSignups(authState.token),
+          adminGetTodayTrainingsCount(authState.token),
+          adminGetTodayAppointmentsCount(authState.token)
+        ]);
+
         setTotalPaidThisMonth(totalPaidData.totalPaid);
+        setWeeklySignups(weeklySignupsData.currentWeekSignups);
+        setTodayEventsCount({
+            trainings: todayTrainingsData.todayTrainingsCount,
+            appointments: todayAppointmentsData.todayAppointmentsCount
+        });
 
       } catch (err) {
         console.error("Erro ao buscar estatísticas do dashboard admin:", err);
-        setStatsError('Não foi possível carregar algumas estatísticas.');
+        setStatsError('Não foi possível carregar todas as estatísticas.');
       } finally {
         setLoadingStats(false);
       }
@@ -213,6 +228,10 @@ const AdminDashboardPage = () => {
     fetchDashboardStats();
   }, [fetchDashboardStats]);
 
+  const totalTodayEvents = (todayEventsCount.trainings !== null && todayEventsCount.appointments !== null)
+    ? todayEventsCount.trainings + todayEventsCount.appointments
+    : null;
+
   return (
     <PageContainer>
       <Title>Painel de Administração CORE</Title>
@@ -222,7 +241,7 @@ const AdminDashboardPage = () => {
 
       <StatsOverviewContainer>
         <StatCard color={theme.colors.success || '#4CAF50'}>
-          <StatIcon color={theme.colors.success || '#4CAF50'}><FaEuroSign /></StatIcon>
+          <StatIcon color={theme.colors.success || '#4CAF50'}><FaDollarSign /></StatIcon>
           {loadingStats && totalPaidThisMonth === null && <LoadingText>A carregar...</LoadingText>}
           {!loadingStats && statsError && totalPaidThisMonth === null && <ErrorText>Erro</ErrorText>}
           {totalPaidThisMonth !== null && !loadingStats && <StatValue>{Number(totalPaidThisMonth).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</StatValue>}
@@ -230,17 +249,24 @@ const AdminDashboardPage = () => {
         </StatCard>
 
         <StatCard color="#00A9FF">
-          <StatIcon color="#00A9FF"><FaUsers /></StatIcon>
-          {loadingStats && <LoadingText>A carregar...</LoadingText>}
-          {/* <StatValue>XX</StatValue> // A implementar */}
-          <StatLabel>Inscrições Semanais</StatLabel>
+          <StatIcon color="#00A9FF"><FaUserPlus /></StatIcon>
+          {loadingStats && weeklySignups === null && <LoadingText>A carregar...</LoadingText>}
+          {!loadingStats && statsError && weeklySignups === null && <ErrorText>Erro</ErrorText>}
+          {weeklySignups !== null && !loadingStats && <StatValue>{weeklySignups}</StatValue>}
+          <StatLabel>Inscrições Esta Semana</StatLabel>
         </StatCard>
 
         <StatCard color="#FFC107">
           <StatIcon color="#FFC107"><FaCalendarDay /></StatIcon>
-          {loadingStats && <LoadingText>A carregar...</LoadingText>}
-          {/* <StatValue>YY</StatValue> // A implementar */}
-          <StatLabel>Eventos Hoje</StatLabel>
+          {loadingStats && totalTodayEvents === null && <LoadingText>A carregar...</LoadingText>}
+          {!loadingStats && statsError && totalTodayEvents === null && <ErrorText>Erro</ErrorText>}
+          {totalTodayEvents !== null && !loadingStats && <StatValue>{totalTodayEvents}</StatValue>}
+          <StatLabel>Eventos Hoje (Total)</StatLabel>
+          {totalTodayEvents !== null && !loadingStats && (
+            <p style={{fontSize: '0.75rem', color: theme.colors.textMuted, margin: '5px 0 0 0'}}>
+              (Treinos: {todayEventsCount.trainings ?? '?'}, Consultas: {todayEventsCount.appointments ?? '?'})
+            </p>
+          )}
         </StatCard>
       </StatsOverviewContainer>
       {statsError && !loadingStats && <ErrorText style={{maxWidth: '100%', marginBottom: '20px'}}>{statsError}</ErrorText>}
@@ -250,27 +276,22 @@ const AdminDashboardPage = () => {
           <h2><FaCalendarAlt />Calendário Geral</h2>
           <p>Visualizar todos os treinos e consultas.</p>
         </AdminNavLinkCard>
-
         <AdminNavLinkCard to="/admin/manage-users">
           <h2><FaUsers />Gerir Clientes</h2>
           <p>Ver, criar, editar e eliminar contas de clientes.</p>
         </AdminNavLinkCard>
-
         <AdminNavLinkCard to="/admin/manage-staff">
           <h2><FaUserMd />Gerir Equipa</h2>
           <p>Adicionar e gerir contas de instrutores e staff.</p>
         </AdminNavLinkCard>
-
         <AdminNavLinkCard to="/admin/manage-trainings">
           <h2><FaDumbbell />Gerir Treinos</h2>
           <p>Criar, visualizar, editar e eliminar sessões de treino.</p>
         </AdminNavLinkCard>
-
         <AdminNavLinkCard to="/admin/manage-appointments">
-          <h2><FaCalendarCheck />Gerir Consultas</h2>
+          <h2><FaCalendarCheckIcon />Gerir Consultas</h2>
           <p>Criar, visualizar, editar e eliminar horários de consulta.</p>
         </AdminNavLinkCard>
-
         <AdminNavLinkCard to="/admin/manage-payments">
           <h2><FaCreditCard />Gerir Pagamentos</h2>
           <p>Registar e acompanhar pagamentos dos clientes.</p>
