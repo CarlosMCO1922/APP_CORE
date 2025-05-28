@@ -2,14 +2,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components'; // Certifique-se de ter css aqui se MessageBaseStyles o usar
-import { useAuth } from '../../context/AuthContext';
-import { adminGetTotalPaid } from '../../services/paymentService';
+import { useAuth } from '../context/AuthContext';
+import { adminGetTotalPaid } from '../services/paymentService';
 import {
     FaDollarSign, FaUsers, FaCalendarDay, FaChartBar,
     FaCalendarAlt, FaUserMd, FaDumbbell, FaCreditCard,
     FaRunning, FaRegCalendarCheck
 } from 'react-icons/fa';
-import { theme } from '../../theme'; // Assume que o theme está corretamente importado
+import { theme } from '../theme'; // Assume que o theme está corretamente importado
 
 // --- Styled Components (Completos) ---
 const PageContainer = styled.div`
