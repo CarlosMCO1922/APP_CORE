@@ -3,13 +3,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { clientGetMyPayments, createStripePaymentIntentForSignal } from '../services/paymentService';
+// == ALTERAÇÃO AQUI: Importa a nova função ==
+import { clientGetMyPayments, createStripePaymentIntentForSignal, clientConfirmManualPayment } from '../services/paymentService';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 
-// --- Styled Components ---
+// --- Styled Components (Usando a sua última versão) ---
 const PageContainer = styled.div`
   background-color: ${props => props.theme.colors.background};
   color: ${props => props.theme.colors.textMain};
@@ -33,55 +34,58 @@ const Title = styled.h1`
 
 const TableWrapper = styled.div`
   width: 100%;
-  overflow-x: auto; /* Permite scroll horizontal */
-  -webkit-overflow-scrolling: touch;
+  overflow-x: auto; /* Permite scroll horizontal se a tabela for mais larga que o contentor */
+  -webkit-overflow-scrolling: touch; /* Melhora a experiência de scroll em iOS */
   margin-top: 20px;
-  border-radius: ${props => props.theme.borderRadius}; // Adicionado aqui
-  box-shadow: ${props => props.theme.boxShadow}; // Adicionado aqui
-  position: relative; // Pode ajudar com contextos de posicionamento
+  border-radius: ${props => props.theme.borderRadius};
+  box-shadow: ${props => props.theme.boxShadow};
 
-  /* Estilos da Scrollbar */
-  &::-webkit-scrollbar { height: 8px; }
-  &::-webkit-scrollbar-track { background: #2c2c2c; border-radius: 4px; }
-  &::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-  &::-webkit-scrollbar-thumb:hover { background: #666; }
+  &::-webkit-scrollbar {
+    height: 8px;
+    background-color: #252525;
+  }
+  &::-webkit-scrollbar-track {
+    background: #2c2c2c;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  border-spacing: 0; // Boa prática com collapse
   background-color: ${props => props.theme.colors.cardBackground};
-  /* border-radius e overflow: hidden foram movidos/removidos para TableWrapper */
+  border-radius: ${props => props.theme.borderRadius};
 
   th, td {
     border-bottom: 1px solid ${props => props.theme.colors.cardBorder};
     padding: 10px 12px;
     text-align: left;
     font-size: 0.9rem;
-    white-space: nowrap; // Mantém para forçar scroll horizontal
-    vertical-align: middle; // Alinha verticalmente
+    white-space: nowrap;
+    vertical-align: middle; // Adicionado para consistência
   }
 
   th {
-    background-color: #303030; // Fundo sólido é crucial
+    background-color: #303030;
     color: ${props => props.theme.colors.primary};
     font-weight: 600;
-    position: sticky; // Mantido, mas ATENÇÃO a 'overflow' nos pais!
-    top: 0; // Ajuste para 0 se não houver navbar, ou 60px se houver e estiver fixa.
+    position: sticky;
+    top: 60px; // A SUA ALTURA DE NAVBAR FIXA - AJUSTE!
     z-index: 10;
   }
 
-  /* Garante que o fundo do thead é sólido */
-  thead {
+  thead th {
       background-color: #303030;
-      position: sticky; /* Tentar aplicar sticky ao thead pode ser alternativa */
-      top: 0; /* Ajuste este valor */
-      z-index: 10;
   }
 
-  /* Garante fundo sólido nas linhas para não ver através */
-  tbody tr {
+  tbody tr { // Adicionado fundo para opacidade
       background-color: ${props => props.theme.colors.cardBackground};
   }
 
@@ -91,7 +95,7 @@ const Table = styled.table`
 
   td:last-child {
     text-align: center;
-    white-space: normal; // Mantém para botões
+    white-space: normal;
   }
 
   @media (min-width: 768px) {
@@ -124,6 +128,14 @@ const ActionButton = styled.button`
     color: ${props => props.theme.colors.textMuted};
     cursor: not-allowed;
   }
+`;
+
+// == NOVA COR PARA BOTÃO CONFIRMAR (OPCIONAL) ==
+const ConfirmButton = styled(ActionButton)`
+    background-color: #4CAF50; // Verde
+    &:hover:not(:disabled) {
+        background-color: #66BB6A;
+    }
 `;
 
 const RefreshButton = styled(ActionButton)`
@@ -225,7 +237,6 @@ const CloseButton = styled.button`
   &:hover { color: #fff; }
 `;
 
-// Carregue a chave publicável do Stripe a partir das variáveis de ambiente
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
 const MyPaymentsPage = () => {
@@ -249,7 +260,7 @@ const MyPaymentsPage = () => {
         if (showLoadingIndicator) setLoading(true);
         const data = await clientGetMyPayments(authState.token);
         setPayments(data);
-        setPageError(''); // Limpa erros antigos ao carregar com sucesso
+        setPageError('');
       } catch (err) {
         setPageError(err.message || 'Não foi possível carregar os seus pagamentos.');
       } finally {
@@ -262,27 +273,26 @@ const MyPaymentsPage = () => {
     fetchMyPayments();
   }, [fetchMyPayments]);
 
-  // Lógica para mensagens pós-pagamento Stripe
-   useEffect(() => {
+  useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     if (queryParams.get('payment_attempted') === 'true') {
         const internalPaymentId = queryParams.get('internal_payment_id');
         setPageInfoMessage(
-          `O pagamento para ID ${internalPaymentId} foi recebido. O estado será atualizado aqui em breve. Pode precisar de atualizar.`
+          `O pagamento para ID ${internalPaymentId} foi recebido pelo Stripe. O estado final será atualizado aqui em breve. Pode precisar de atualizar.`
         );
         navigate(location.pathname, { replace: true });
         const timer = setTimeout(() => {
             fetchMyPayments(false);
-        }, 5000); // Atualiza após 5s
+        }, 5000);
         return () => clearTimeout(timer);
     }
   }, [location, navigate, fetchMyPayments]);
 
-
   const handleInitiateStripePayment = async (payment) => {
-    const pagableOnlineCategories = ['sinal_consulta', 'consulta_fisioterapia', 'mensalidade_treino'];
+    // == ALTERAÇÃO AQUI: Remove 'mensalidade_treino' ==
+    const pagableOnlineCategories = ['sinal_consulta', 'consulta_fisioterapia'];
     if (payment.status !== 'pendente' || !pagableOnlineCategories.includes(payment.category)) {
-        setPageError("Este pagamento não pode ser pago online ou já não está pendente.");
+        setPageError("Este tipo de pagamento não está configurado para pagamento online ou já não está pendente.");
         return;
     }
     setActionLoading(payment.id);
@@ -294,40 +304,59 @@ const MyPaymentsPage = () => {
         setCurrentPaymentDetails({ id: payment.id, amount: payment.amount, description: payment.description || `Pagamento ID ${payment.id}` });
         setShowStripeModal(true);
       } else {
-        setPageError('Não foi possível iniciar o pagamento. Tente novamente.');
+        setPageError('Não foi possível iniciar o pagamento. Detalhes não recebidos do servidor.');
       }
     } catch (err) {
-      setPageError(err.message || 'Falha ao iniciar o processo de pagamento.');
+      setPageError(err.message || 'Falha ao iniciar o processo de pagamento. Tente novamente.');
     } finally {
       setActionLoading(null);
     }
   };
 
+  // == NOVA FUNÇÃO AQUI ==
+  const handleConfirmPayment = async (payment) => {
+    if (payment.status !== 'pendente' || payment.category !== 'mensalidade_treino') {
+        setPageError("Apenas mensalidades pendentes podem ser confirmadas desta forma.");
+        return;
+    }
+    if (!window.confirm(`Tem a certeza que deseja marcar a mensalidade ID ${payment.id} como paga?`)) {
+        return;
+    }
+    setActionLoading(payment.id);
+    setPageError(''); setPageSuccessMessage(''); setPageInfoMessage('');
+    try {
+      // Chama a nova função do serviço
+      await clientConfirmManualPayment(payment.id, authState.token);
+      setPageSuccessMessage(`Pagamento ID ${payment.id} confirmado com sucesso!`);
+      setTimeout(() => fetchMyPayments(false), 2000);
+    } catch (err) {
+      setPageError(err.message || `Falha ao confirmar o pagamento ID ${payment.id}. Tente novamente.`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+
   const handleStripePaymentSuccess = (paymentIntent) => {
     setShowStripeModal(false);
     setStripeClientSecret(null);
-    setPageSuccessMessage(`Pagamento para "${currentPaymentDetails?.description}" processado! O estado atualizará em breve.`);
+    setPageSuccessMessage(`O pagamento para "${currentPaymentDetails?.description}" foi processado! O estado atualizará em breve.`);
     setCurrentPaymentDetails(null);
-    setTimeout(() => fetchMyPayments(false), 3000); // Re-fetch após 3s
+    setTimeout(() => fetchMyPayments(false), 3000);
   };
 
   const handleStripePaymentError = (errorMessage) => {
     console.error("Stripe Payment Error:", errorMessage);
-    // Erro já mostrado no formulário, talvez fechar modal ou não.
-    // setShowStripeModal(false); // Opcional: fechar modal no erro
-    // setPageError("Ocorreu um erro durante o pagamento."); // Opcional
   };
 
   const handleStripeRequiresAction = (paymentIntent) => {
     console.log("Stripe - Ação Requerida:", paymentIntent);
     setPageInfoMessage("Foram geradas referências. Utilize os dados no formulário para completar o pagamento.");
-    // Manter o modal aberto
   };
 
   const handleRefreshPayments = () => {
     setPageInfoMessage('A atualizar...');
-    setPageError('');
-    setPageSuccessMessage('');
+    setPageError(''); setPageSuccessMessage('');
     fetchMyPayments().finally(() => setTimeout(() => setPageInfoMessage(''), 2000));
   };
 
@@ -382,9 +411,11 @@ const MyPaymentsPage = () => {
                       {payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}
                     </StatusBadge>
                   </td>
+                  {/* == ALTERAÇÃO AQUI: Lógica dos botões == */}
                   <td>
+                    {/* Botão para Pagar Online (Stripe) */}
                     {payment.status === 'pendente' &&
-                     (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia' || payment.category === 'mensalidade_treino') && (
+                     (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia') && (
                       <ActionButton
                           onClick={() => handleInitiateStripePayment(payment)}
                           disabled={actionLoading === payment.id}
@@ -392,7 +423,19 @@ const MyPaymentsPage = () => {
                         {actionLoading === payment.id ? 'Aguarde...' : `Pagar Online`}
                       </ActionButton>
                     )}
+
+                    {/* Botão para Confirmar Pagamento (Mensalidades) */}
+                    {payment.status === 'pendente' &&
+                     (payment.category === 'mensalidade_treino') && (
+                      <ConfirmButton // Usa o botão verde (opcional)
+                          onClick={() => handleConfirmPayment(payment)}
+                          disabled={actionLoading === payment.id}
+                      >
+                        {actionLoading === payment.id ? 'Aguarde...' : `Confirmar Pagamento`}
+                      </ConfirmButton>
+                    )}
                   </td>
+                  {/* == FIM DA ALTERAÇÃO == */}
                 </tr>
               ))}
             </tbody>
@@ -406,7 +449,7 @@ const MyPaymentsPage = () => {
         <ModalOverlay onClick={() => { setShowStripeModal(false); } }>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={() => { setShowStripeModal(false); } }>&times;</CloseButton>
-            <ModalTitle>Pagamento: {currentPaymentDetails.description}</ModalTitle>
+            <ModalTitle>Pagamento Seguro: {currentPaymentDetails.description}</ModalTitle>
             <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, appearance: { theme: 'night', labels: 'floating' } }}>
               <StripeCheckoutForm
                 paymentDetails={currentPaymentDetails}
