@@ -7,6 +7,8 @@ const port = process.env.PORT || 3001;
 
 require('dotenv').config();
 app.use(cors()); 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // NÃO uses app.use(express.json()); globalmente ANTES da rota do webhook
 // Vamos aplicar express.json() e express.raw() de forma mais granular ou após a rota do webhook
