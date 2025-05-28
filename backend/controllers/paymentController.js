@@ -6,6 +6,7 @@ require('dotenv').config(); // Garante que as variáveis de ambiente são carreg
 
 // Inicializa o Stripe com a tua chave secreta
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { startOfMonth, endOfMonth, format } = require('date-fns');
 
 // --- Funções do Administrador (EXISTENTES - MANTÊM-SE) ---
 const adminCreatePayment = async (req, res) => {
@@ -81,11 +82,30 @@ const adminGetAllPayments = async (req, res) => {
 };
 
 const adminGetTotalPaid = async (req, res) => {
+  // startDate e endDate podem ser passados como query params
+  // Ex: /api/payments/total-paid?startDate=2025-05-01&endDate=2025-05-31
+  const { startDate, endDate } = req.query;
+
+  const whereClause = {
+    status: 'pago',
+  };
+
+  if (startDate && endDate) {
+    // Validar as datas seria uma boa prática aqui
+    whereClause.paymentDate = { // Assumindo que 'paymentDate' é a data em que o pagamento foi efetivado
+      [Op.gte]: startDate,
+      [Op.lte]: endDate,
+    };
+  } else if (startDate) {
+    whereClause.paymentDate = { [Op.gte]: startDate };
+  } else if (endDate) {
+    whereClause.paymentDate = { [Op.lte]: endDate };
+  }
+  // Se não houver startDate nem endDate, calcula o total geral
+
   try {
     const totalPaid = await db.Payment.sum('amount', {
-      where: {
-        status: 'pago',
-      },
+      where: whereClause,
     });
     res.status(200).json({ totalPaid: totalPaid || 0 });
   } catch (error) {

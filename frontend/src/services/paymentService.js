@@ -31,15 +31,24 @@ export const adminGetAllPayments = async (filters = {}, token) => {
   } catch (error) { console.error("Erro em adminGetAllPayments:", error); throw error; }
 };
 
-export const adminGetTotalPaid = async (token) => {
+export const adminGetTotalPaid = async (token, dateRange = null) => {
   if (!token) throw new Error('Token de administrador não fornecido para adminGetTotalPaid.');
   try {
-    const response = await fetch(`${API_URL}/payments/total-paid`, {
+    let fetchURL = `${API_URL}/payments/total-paid`;
+    if (dateRange && dateRange.startDate && dateRange.endDate) {
+      const queryParams = new URLSearchParams({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      }).toString();
+      fetchURL += `?${queryParams}`;
+    }
+
+    const response = await fetch(fetchURL, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar total pago.');
-    return data;
+    return data; // Espera-se { totalPaid: XXX }
   } catch (error) { console.error("Erro em adminGetTotalPaid:", error); throw error; }
 };
 
