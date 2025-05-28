@@ -8,7 +8,6 @@ const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddl
 // Criar um novo pagamento para um utilizador
 router.post(
     '/',
-    express.join(),
     protect,
     isAdminStaff,
     paymentController.adminCreatePayment
