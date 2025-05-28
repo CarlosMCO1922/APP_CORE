@@ -9,7 +9,7 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { theme } from '../theme'; 
+import { theme } from '../theme'; // Assume que tem um theme.js exportando o tema
 
 import { useAuth } from '../context/AuthContext';
 import {
@@ -26,24 +26,21 @@ import {
 import { getAllStaffForSelection } from '../services/staffService';
 import {
     FaArrowLeft, FaTimes, FaUsers, FaUserMd, FaExternalLinkAlt,
-    FaCalendarPlus, FaInfoCircle, FaExclamationTriangle,
-    FaCalendarDay, FaClock, FaUserCircle, FaStickyNote
+    FaCalendarPlus, FaInfoCircle, FaCalendarDay, FaClock, FaUserCircle, FaStickyNote
 } from 'react-icons/fa';
-
-
 
 const locales = { 'pt-BR': ptBR };
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
+  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }), // Começar semana na Segunda-feira
   getDay,
   locales,
 });
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
 
-// --- Styled Components (Mantidos e ajustados da tua última versão funcional) ---
+// --- Styled Components (Completos) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -94,7 +91,7 @@ const CalendarWrapper = styled.div`
   border-radius: 12px;
   box-shadow: ${({ theme }) => theme.boxShadow};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  height: 80vh; 
+  height: 80vh; // Altura definida para o calendário
 
   .rbc-toolbar {
     margin-bottom: 25px;
@@ -154,38 +151,27 @@ const CalendarWrapper = styled.div`
     text-transform: capitalize;
     background-color: #282828;
   }
-  
+
   .rbc-event, .rbc-day-slot .rbc-event {
-    border: none; 
-    border-radius: 5px; 
+    border: none;
+    border-radius: 5px;
     padding: 4px 7px;
     font-size: 0.8rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     transition: opacity 0.2s, transform 0.15s ease-out, box-shadow 0.15s ease-out;
     overflow: hidden;
     cursor: pointer;
-    
+
     &:hover {
         opacity: 0.85;
         transform: translateY(-2px) scale(1.03);
         box-shadow: 0 4px 8px rgba(0,0,0,0.4);
     }
   }
-  
-  .rbc-event-label {
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .rbc-event-content { 
-    display: none;
-  }
 
-  .rbc-event.rbc-selected {
-    opacity: 1;
-  }
+  .rbc-event-label { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rbc-event-content { display: none; }
+  .rbc-event.rbc-selected { opacity: 1; }
 
   .rbc-agenda-view {
     table {
@@ -200,48 +186,27 @@ const CalendarWrapper = styled.div`
         tbody tr:hover { background-color: #2f2f2f; }
         .rbc-agenda-date-cell, .rbc-agenda-time-cell {
             color: ${({ theme }) => theme.colors.primary};
-            font-weight: 500;
-            white-space: nowrap;
-            padding: 10px 12px;
+            font-weight: 500; white-space: nowrap; padding: 10px 12px;
         }
-         .rbc-agenda-event-cell {
-            padding: 10px 12px;
-         }
+         .rbc-agenda-event-cell { padding: 10px 12px; }
     }
   }
 
-  .rbc-time-slot, .rbc-day-slot .rbc-time-slot {
-    border-top: 1px dotted #3a3a3a; 
-  }
+  .rbc-time-slot, .rbc-day-slot .rbc-time-slot { border-top: 1px dotted #3a3a3a; }
   .rbc-time-gutter .rbc-timeslot-group { border-bottom: none; }
-  .rbc-time-header-gutter, .rbc-time-gutter {
-    background: #1e1e1e; 
-    border-right: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  }
+  .rbc-time-header-gutter, .rbc-time-gutter { background: #1e1e1e; border-right: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
   .rbc-day-bg + .rbc-day-bg { border-left: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
   .rbc-month-row + .rbc-month-row { border-top: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
-  
-  .rbc-today {
-    background-color: rgba(212, 175, 55, 0.1); 
-  }
+  .rbc-today { background-color: rgba(212, 175, 55, 0.1); }
+  .rbc-off-range-bg { background-color: #212121; }
+  .rbc-slot-selectable { cursor: pointer; &:hover { background-color: rgba(212, 175, 55, 0.06); } }
 
-  .rbc-off-range-bg {
-    background-color: #212121; 
-  }
-  
-  .rbc-slot-selectable {
-    cursor: pointer;
-    &:hover {
-      background-color: rgba(212, 175, 55, 0.06); 
-    }
-  }
   .rbc-current-time-indicator {
-    background-color: ${({ theme }) => theme.colors.error};
-    height: 1.5px;
+    background-color: ${({ theme }) => theme.colors.error}; height: 1.5px;
     box-shadow: 0 0 6px ${({ theme }) => theme.colors.error}90;
     &::before {
-      content: ''; display: block; width: 7px; height: 7px;
-      border-radius: 50%; background-color: ${({ theme }) => theme.colors.error};
+      content: ''; display: block; width: 7px; height: 7px; border-radius: 50%;
+      background-color: ${({ theme }) => theme.colors.error};
       position: absolute; left: -2.5px; top: -2.75px;
     }
   }
@@ -309,8 +274,8 @@ const ModalDetail = styled.p`
   display: flex; align-items: flex-start;
   span {
     font-weight: 600; color: ${({ theme }) => theme.colors.textMain};
-    min-width: 110px; 
-    display: inline-block; 
+    min-width: 110px;
+    display: inline-block;
   }
   svg {
     margin-right: 10px; color: ${({ theme }) => theme.colors.primary};
@@ -351,43 +316,75 @@ const ModalErrorText = styled.p`
   color: ${({ theme }) => theme.colors.error};
   background-color: ${({ theme }) => theme.colors.errorBg};
   border-color: ${({ theme }) => theme.colors.error};
-  margin: -5px 0 10px 0; 
-  text-align: left;      
-  font-size: 0.8rem;    
-  padding: 8px 12px;     
+  margin: -5px 0 10px 0;
+  text-align: left;
+  font-size: 0.8rem;
+  padding: 8px 12px;
 `;
 
 const EventComponentStyled = styled.div`
   display: flex;
   align-items: center;
-  gap: 5px; 
+  gap: 5px;
   height: 100%;
   padding: 2px 0;
-  font-size: inherit; 
+  font-size: inherit;
   color: ${({ theme }) => theme.colors.textDark};
 
-  .event-icon {
-    font-size: 1em; 
-    opacity: 0.85;
-    flex-shrink: 0;
-    line-height: 1; 
+  .event-icon { font-size: 1em; opacity: 0.85; flex-shrink: 0; line-height: 1; }
+  .event-title-text { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
+  .event-details-text { font-size: 0.85em; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: auto; padding-left: 4px; flex-shrink: 0; }
+`;
+
+const ModalPlanLink = styled(Link)`
+  display: inline-flex; align-items: center; gap: 8px;
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textDark};
+  padding: 10px 18px; border-radius: ${({ theme }) => theme.borderRadius};
+  text-decoration: none; font-weight: 600; font-size: 0.9rem;
+  text-align: center; margin-top: 15px;
+  transition: background-color 0.2s ease-in-out, transform 0.15s ease;
+  &:hover { background-color: #e6c358; transform: translateY(-2px); }
+`;
+
+const ParticipantListStyled = styled.div`
+  margin-top: 15px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding-top: 15px;
+
+  h4 {
+    color: ${({ theme }) => theme.colors.primary};
+    font-size: 1rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .event-title-text {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-grow: 1;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    background-color: #222;
+    border-radius: 5px;
+    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   }
-  .event-details-text {
-    font-size: 0.85em;
-    opacity: 0.8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-left: auto;
-    padding-left: 4px;
-    flex-shrink: 0;
+
+  li {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    color: ${({ theme }) => theme.colors.textMuted};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    &:last-child { border-bottom: none; }
+  }
+
+  p.no-participants {
+      font-size: 0.9rem;
+      color: ${({ theme }) => theme.colors.textMuted};
+      font-style: italic;
+      text-align: center;
+      padding: 10px;
   }
 `;
 
@@ -406,20 +403,9 @@ const CustomEventComponent = ({ event }) => (
   </EventComponentStyled>
 );
 
-const ModalPlanLink = styled(Link)`
-  display: inline-flex; align-items: center; gap: 8px;
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.textDark};
-  padding: 10px 18px; border-radius: ${({ theme }) => theme.borderRadius};
-  text-decoration: none; font-weight: 600; font-size: 0.9rem;
-  text-align: center; margin-top: 15px;
-  transition: background-color 0.2s ease-in-out, transform 0.15s ease;
-  &:hover { background-color: #e6c358; transform: translateY(-2px); }
-`;
-
 // --- Componente Principal ---
 const CalendarPage = () => {
-  const { authState } = useAuth(); 
+  const { authState } = useAuth();
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [myBookedTrainingIds, setMyBookedTrainingIds] = useState(new Set());
@@ -437,9 +423,10 @@ const CalendarPage = () => {
   const [requestFormError, setRequestFormError] = useState('');
   const [requestFormLoading, setRequestFormLoading] = useState(false);
 
-  const [actionLoading, setActionLoading] = useState(false); 
+  const [actionLoading, setActionLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState(Views.MONTH);
+  // == ALTERAÇÃO AQUI: Vista padrão para WEEK ==
+  const [currentView, setCurrentView] = useState(Views.WEEK);
 
   const fetchPageData = useCallback(async () => {
     if (!authState.token) {
@@ -485,7 +472,8 @@ const CalendarPage = () => {
         const endDateTime = new Date(startDateTime.getTime() + (training.durationMinutes || 45) * 60 * 1000);
         formattedEvents.push({
           id: `training-${training.id}`, title: `${training.name}`,
-          start: startDateTime, end: endDateTime, resource: { type: 'training', ...training }
+          start: startDateTime, end: endDateTime,
+          resource: { type: 'training', ...training }
         });
       });
       appointmentsData.forEach(appointment => {
@@ -495,7 +483,7 @@ const CalendarPage = () => {
         const endDateTime = new Date(startDateTime.getTime() + (appointment.durationMinutes || 60) * 60 * 1000);
         let title = `${appointment.professional?.firstName || 'Consulta'}`;
         if (appointment.client) title += ` c/ ${appointment.client.firstName}`;
-        
+
         formattedEvents.push({
           id: `appointment-${appointment.id}`, title, start: startDateTime, end: endDateTime,
           resource: { type: 'appointment', ...appointment }
@@ -509,13 +497,14 @@ const CalendarPage = () => {
     finally { setLoading(false); }
   }, [authState.token, authState.role, authState.user?.id]);
 
+
   useEffect(() => { fetchPageData(); }, [fetchPageData]);
 
   const handleSelectEvent = (event) => { setSelectedEvent(event.resource); setShowEventModal(true); setPageSuccessMessage(''); setPageError(''); };
   const handleCloseEventModal = () => { setShowEventModal(false); setSelectedEvent(null); };
 
   const handleSelectSlot = useCallback((slotInfo) => {
-    if (authState.role !== 'user') return;
+    if (authState.role !== 'user') return; // Se for Admin, iremos tratar isto depois
     const selectedDate = format(slotInfo.start, 'yyyy-MM-dd');
     const selectedTime = format(slotInfo.start, 'HH:mm');
     setRequestFormData({ ...initialRequestFormState, date: selectedDate, time: selectedTime });
@@ -533,13 +522,13 @@ const CalendarPage = () => {
       const dataToSend = { ...requestFormData, time: requestFormData.time.length === 5 ? `${requestFormData.time}:00` : requestFormData.time };
       const response = await clientRequestNewAppointment(dataToSend, authState.token);
       setPageSuccessMessage(response.message || 'Pedido de consulta enviado com sucesso!');
-      await fetchPageData(); 
+      await fetchPageData();
       handleCloseRequestModal();
     } catch (err) {
       setRequestFormError(err.message || 'Falha ao enviar pedido de consulta.');
     } finally { setRequestFormLoading(false); }
   };
-  const handleBookSelectedTraining = async () => { 
+  const handleBookSelectedTraining = async () => {
     if (!selectedEvent || selectedEvent.type !== 'training') return;
     if (!window.confirm('Confirmas a inscrição neste treino?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
@@ -551,7 +540,7 @@ const CalendarPage = () => {
       setPageError(err.message || 'Falha ao inscrever no treino.');
     } finally { setActionLoading(false); }
   };
-  const handleCancelTrainingBooking = async () => { 
+  const handleCancelTrainingBooking = async () => {
     if (!selectedEvent || selectedEvent.type !== 'training') return;
     if (!window.confirm('Confirmas o cancelamento da inscrição neste treino?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
@@ -563,7 +552,7 @@ const CalendarPage = () => {
       setPageError(err.message || 'Falha ao cancelar inscrição.');
     } finally { setActionLoading(false); }
   };
-  const handleBookSelectedAppointment = async () => { 
+  const handleBookSelectedAppointment = async () => {
     if (!selectedEvent || selectedEvent.type !== 'appointment') return;
     if (!window.confirm('Confirmas a marcação desta consulta?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
@@ -575,7 +564,7 @@ const CalendarPage = () => {
       setPageError(err.message || 'Falha ao marcar consulta.');
     } finally { setActionLoading(false); }
   };
-  const handleCancelAppointmentBooking = async () => { 
+  const handleCancelAppointmentBooking = async () => {
     if (!selectedEvent || selectedEvent.type !== 'appointment') return;
     if (!window.confirm('Confirmas o cancelamento desta consulta?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
@@ -587,7 +576,7 @@ const CalendarPage = () => {
       setPageError(err.message || 'Falha ao cancelar consulta.');
     } finally { setActionLoading(false); }
   };
-  const handleAdminManageEvent = () => { 
+  const handleAdminManageEvent = () => {
     if (!selectedEvent) return;
     if (selectedEvent.type === 'training') navigate(`/admin/manage-trainings#training-${selectedEvent.id}`);
     else if (selectedEvent.type === 'appointment') navigate(`/admin/manage-appointments#appointment-${selectedEvent.id}`);
@@ -604,28 +593,26 @@ const CalendarPage = () => {
     noEventsInRange: 'Não existem eventos neste período.',
     showMore: total => `+ ${total} mais`
   }), []);
-  
-  // Função para estilizar eventos
+
   const eventStyleGetter = useCallback((event, start, end, isSelected) => {
-    // As cores vêm do 'theme' importado diretamente no topo do ficheiro
-    let backgroundColor = theme.colors.primary; 
+    let backgroundColor = theme.colors.primary;
     let borderColor = theme.colors.primary;
-    let textColor = theme.colors.textDark; 
+    let textColor = theme.colors.textDark;
 
     if (event.resource.type === 'appointment') {
-      backgroundColor = theme.colors.success; 
+      backgroundColor = theme.colors.success;
       borderColor = theme.colors.success;
       if (event.resource.status === 'disponível') {
-        backgroundColor = theme.colors.mediaButtonBg || '#007bff'; 
+        backgroundColor = theme.colors.mediaButtonBg || '#007bff';
         borderColor = theme.colors.mediaButtonBg || '#007bff';
-        textColor = theme.colors.textMain; 
+        textColor = theme.colors.textMain;
       } else if (event.resource.status === 'pendente_aprovacao_staff') {
-        backgroundColor = '#FFA000'; 
+        backgroundColor = '#FFA000';
         borderColor = '#FFA000';
-        textColor = theme.colors.textDark; 
+        textColor = theme.colors.textDark;
       }
     }
-    
+
     const style = {
       backgroundColor: backgroundColor,
       borderRadius: '5px',
@@ -637,9 +624,8 @@ const CalendarPage = () => {
       padding: '3px 5px',
     };
     return { style };
-  }, []); // Removido 'theme' das dependências do useCallback
+  }, []);
 
-  // Função para o tooltip
   const tooltipAccessor = useCallback((event) => {
     const time = `${format(event.start, 'HH:mm')} - ${format(event.end, 'HH:mm')}`;
     let details = `${event.title}\n${time}`;
@@ -655,7 +641,6 @@ const CalendarPage = () => {
     }
     return details;
   }, []);
-
 
   const isAdminOrStaff = authState.role && authState.role !== 'user';
   const isClient = authState.role === 'user';
@@ -678,7 +663,8 @@ const CalendarPage = () => {
           endAccessor="end"
           style={{ height: '100%' }}
           views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-          defaultView={Views.MONTH}
+          // == ALTERAÇÃO AQUI: Vista padrão para WEEK ==
+          defaultView={Views.WEEK}
           view={currentView}
           date={currentDate}
           onNavigate={handleNavigate}
@@ -686,15 +672,16 @@ const CalendarPage = () => {
           messages={messages}
           culture='pt-BR'
           onSelectEvent={handleSelectEvent}
-          onSelectSlot={isClient ? handleSelectSlot : undefined}
-          selectable={isClient}
+          // == ALTERAÇÃO AQUI: Permite seleção de slots para Admin/Staff também ==
+          onSelectSlot={isClient ? handleSelectSlot : (isAdminOrStaff ? handleSelectSlot : undefined)} // Modificado
+          selectable={true} // Permitir sempre seleção (a lógica de o que fazer fica no handler)
           components={{ event: CustomEventComponent }}
           popup
-          eventPropGetter={eventStyleGetter} 
-          tooltipAccessor={tooltipAccessor}   
-          timeslots={1} 
-          step={60}    
-          min={new Date(1970, 0, 1, 7, 0, 0)} 
+          eventPropGetter={eventStyleGetter}
+          tooltipAccessor={tooltipAccessor}
+          timeslots={1}
+          step={60}
+          min={new Date(1970, 0, 1, 7, 0, 0)}
           max={new Date(1970, 0, 1, 22, 0, 0)}
           formats={{
             agendaHeaderFormat: ({ start, end }) => `${format(start, 'dd/MM')} – ${format(end, 'dd/MM')}`,
@@ -711,17 +698,33 @@ const CalendarPage = () => {
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={handleCloseEventModal}><FaTimes /></CloseButton>
             <ModalTitle>{selectedEvent.type === 'training' ? selectedEvent.name : `Consulta: ${selectedEvent.professional?.firstName}`}</ModalTitle>
-            
+
             <ModalDetail><span><FaCalendarDay /> Data:</span> {new Date(selectedEvent.date).toLocaleDateString('pt-PT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</ModalDetail>
             <ModalDetail><span><FaClock /> Hora:</span> {selectedEvent.time.substring(0, 5)}</ModalDetail>
             <ModalDetail><span>Duração:</span> {selectedEvent.durationMinutes} min</ModalDetail>
-            
+
             {selectedEvent.type === 'training' && (<>
               <ModalDetail><span><FaUserMd /> Instrutor:</span> {selectedEvent.instructor?.firstName} {selectedEvent.instructor?.lastName}</ModalDetail>
               <ModalDetail><span><FaUsers /> Vagas:</span> {selectedEvent.capacity - (selectedEvent.participantsCount ?? selectedEvent.participants?.length ?? 0)} / {selectedEvent.capacity}</ModalDetail>
               <ModalDetail><span><FaInfoCircle /> Descrição:</span> {selectedEvent.description || "N/A"}</ModalDetail>
               {isClient && myBookedTrainingIds.has(selectedEvent.id) && (
                 <ModalPlanLink to={`/treinos/${selectedEvent.id}/plano`}> <FaExternalLinkAlt /> Ver Plano de Treino </ModalPlanLink>
+              )}
+              {isAdminOrStaff && (
+                  <ParticipantListStyled>
+                      <h4><FaUsers /> Clientes Inscritos:</h4>
+                      {selectedEvent.participants && selectedEvent.participants.length > 0 ? (
+                          <ul>
+                              {selectedEvent.participants.map(p => (
+                                  <li key={p.id}>
+                                      {p.firstName} {p.lastName} ({p.email})
+                                  </li>
+                              ))}
+                          </ul>
+                      ) : (
+                          <p className="no-participants">Nenhum cliente inscrito.</p>
+                      )}
+                  </ParticipantListStyled>
               )}
             </>)}
 
@@ -731,7 +734,7 @@ const CalendarPage = () => {
               <ModalDetail><span>Status:</span> {selectedEvent.status?.replace(/_/g, ' ')}</ModalDetail>
               <ModalDetail><span><FaStickyNote /> Notas:</span> {selectedEvent.notes || "N/A"}</ModalDetail>
             </>)}
-            
+
             <ModalActions>
               <ModalButton onClick={handleCloseEventModal} secondary>Fechar</ModalButton>
               {isClient && selectedEvent.type === 'training' && (myBookedTrainingIds.has(selectedEvent.id) ? <ModalButton onClick={handleCancelTrainingBooking} disabled={actionLoading} danger> {actionLoading ? 'Aguarde...' : 'Cancelar Inscrição'} </ModalButton> : (selectedEvent.capacity - (selectedEvent.participantsCount ?? selectedEvent.participants?.length ?? 0)) > 0 && <ModalButton onClick={handleBookSelectedTraining} disabled={actionLoading} primary> {actionLoading ? 'Aguarde...' : 'Inscrever-me'} </ModalButton>)}
