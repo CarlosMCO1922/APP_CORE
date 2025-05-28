@@ -3,14 +3,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-// == ALTERAÇÃO AQUI: Importa a nova função ==
+// Importa TODAS as funções necessárias
 import { clientGetMyPayments, createStripePaymentIntentForSignal, clientConfirmManualPayment } from '../services/paymentService';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 
-// --- Styled Components (Usando a sua última versão) ---
+// --- Styled Components (Completos e com Correções de CSS) ---
 const PageContainer = styled.div`
   background-color: ${props => props.theme.colors.background};
   color: ${props => props.theme.colors.textMain};
@@ -34,34 +34,25 @@ const Title = styled.h1`
 
 const TableWrapper = styled.div`
   width: 100%;
-  overflow-x: auto; /* Permite scroll horizontal se a tabela for mais larga que o contentor */
-  -webkit-overflow-scrolling: touch; /* Melhora a experiência de scroll em iOS */
+  overflow-x: auto; /* Permite scroll horizontal */
+  -webkit-overflow-scrolling: touch;
   margin-top: 20px;
   border-radius: ${props => props.theme.borderRadius};
   box-shadow: ${props => props.theme.boxShadow};
+  position: relative;
+  background-color: ${props => props.theme.colors.cardBackground};
 
-  &::-webkit-scrollbar {
-    height: 8px;
-    background-color: #252525;
-  }
-  &::-webkit-scrollbar-track {
-    background: #2c2c2c;
-    border-radius: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #555;
-    border-radius: 4px;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    background: #666;
-  }
+  /* Estilos da Scrollbar */
+  &::-webkit-scrollbar { height: 8px; }
+  &::-webkit-scrollbar-track { background: #2c2c2c; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb:hover { background: #666; }
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  background-color: ${props => props.theme.colors.cardBackground};
-  border-radius: ${props => props.theme.borderRadius};
+  border-spacing: 0;
 
   th, td {
     border-bottom: 1px solid ${props => props.theme.colors.cardBorder};
@@ -69,7 +60,7 @@ const Table = styled.table`
     text-align: left;
     font-size: 0.9rem;
     white-space: nowrap;
-    vertical-align: middle; // Adicionado para consistência
+    vertical-align: middle;
   }
 
   th {
@@ -77,16 +68,19 @@ const Table = styled.table`
     color: ${props => props.theme.colors.primary};
     font-weight: 600;
     position: sticky;
-    top: 60px; // A SUA ALTURA DE NAVBAR FIXA - AJUSTE!
+    top: 0px; // == AJUSTE AQUI == Se tiver Navbar fixa, use a altura dela (ex: 60px). Senão, 0px.
     z-index: 10;
   }
 
-  thead th {
+  thead {
       background-color: #303030;
   }
 
-  tbody tr { // Adicionado fundo para opacidade
+  tbody tr {
       background-color: ${props => props.theme.colors.cardBackground};
+      &:hover {
+         background-color: #2a2a2a;
+      }
   }
 
   tr:last-child td {
@@ -130,7 +124,6 @@ const ActionButton = styled.button`
   }
 `;
 
-// == NOVA COR PARA BOTÃO CONFIRMAR (OPCIONAL) ==
 const ConfirmButton = styled(ActionButton)`
     background-color: #4CAF50; // Verde
     &:hover:not(:disabled) {
@@ -289,7 +282,6 @@ const MyPaymentsPage = () => {
   }, [location, navigate, fetchMyPayments]);
 
   const handleInitiateStripePayment = async (payment) => {
-    // == ALTERAÇÃO AQUI: Remove 'mensalidade_treino' ==
     const pagableOnlineCategories = ['sinal_consulta', 'consulta_fisioterapia'];
     if (payment.status !== 'pendente' || !pagableOnlineCategories.includes(payment.category)) {
         setPageError("Este tipo de pagamento não está configurado para pagamento online ou já não está pendente.");
@@ -313,7 +305,6 @@ const MyPaymentsPage = () => {
     }
   };
 
-  // == NOVA FUNÇÃO AQUI ==
   const handleConfirmPayment = async (payment) => {
     if (payment.status !== 'pendente' || payment.category !== 'mensalidade_treino') {
         setPageError("Apenas mensalidades pendentes podem ser confirmadas desta forma.");
@@ -325,7 +316,6 @@ const MyPaymentsPage = () => {
     setActionLoading(payment.id);
     setPageError(''); setPageSuccessMessage(''); setPageInfoMessage('');
     try {
-      // Chama a nova função do serviço
       await clientConfirmManualPayment(payment.id, authState.token);
       setPageSuccessMessage(`Pagamento ID ${payment.id} confirmado com sucesso!`);
       setTimeout(() => fetchMyPayments(false), 2000);
@@ -347,6 +337,7 @@ const MyPaymentsPage = () => {
 
   const handleStripePaymentError = (errorMessage) => {
     console.error("Stripe Payment Error:", errorMessage);
+    // Opcional: Mostrar erro na página principal, mas já deve ser mostrado no form
   };
 
   const handleStripeRequiresAction = (paymentIntent) => {
@@ -411,9 +402,7 @@ const MyPaymentsPage = () => {
                       {payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}
                     </StatusBadge>
                   </td>
-                  {/* == ALTERAÇÃO AQUI: Lógica dos botões == */}
                   <td>
-                    {/* Botão para Pagar Online (Stripe) */}
                     {payment.status === 'pendente' &&
                      (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia') && (
                       <ActionButton
@@ -423,11 +412,9 @@ const MyPaymentsPage = () => {
                         {actionLoading === payment.id ? 'Aguarde...' : `Pagar Online`}
                       </ActionButton>
                     )}
-
-                    {/* Botão para Confirmar Pagamento (Mensalidades) */}
                     {payment.status === 'pendente' &&
                      (payment.category === 'mensalidade_treino') && (
-                      <ConfirmButton // Usa o botão verde (opcional)
+                      <ConfirmButton
                           onClick={() => handleConfirmPayment(payment)}
                           disabled={actionLoading === payment.id}
                       >
@@ -435,7 +422,6 @@ const MyPaymentsPage = () => {
                       </ConfirmButton>
                     )}
                   </td>
-                  {/* == FIM DA ALTERAÇÃO == */}
                 </tr>
               ))}
             </tbody>
