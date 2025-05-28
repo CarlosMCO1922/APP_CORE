@@ -176,6 +176,29 @@ const clientGetMyPayments = async (req, res) => {
   }
 };
 
+// @desc    Cliente lista os seus próprios pagamentos PENDENTES
+// @route   GET /api/payments/my-payments/pending
+// @access  Privado (Cliente)
+const clientGetMyPendingPayments = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const pendingPayments = await db.Payment.findAll({
+      where: {
+        userId: userId,
+        status: 'pendente', // Apenas pagamentos com status 'pendente'
+      },
+      include: [
+         { model: db.Staff, as: 'registeredBy', attributes: ['firstName', 'lastName'] },
+      ],
+      order: [['paymentDate', 'ASC'], ['createdAt', 'ASC']], // Mais antigos primeiro
+    });
+    res.status(200).json(pendingPayments);
+  } catch (error) {
+    console.error('Erro (cliente) ao listar os seus pagamentos pendentes:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao listar os seus pagamentos pendentes.', error: error.message });
+  }
+};
+
 const createStripePaymentIntent = async (req, res) => {
   const { paymentId } = req.params;
   const userId = req.user.id;
@@ -382,6 +405,7 @@ module.exports = {
   adminUpdatePaymentStatus,
   adminDeletePayment,
   clientGetMyPayments,
+  clientGetMyPendingPayments,
   createStripePaymentIntent,
   clientAcceptPayment: clientAcceptNonStripePayment, 
   stripeWebhookHandler,

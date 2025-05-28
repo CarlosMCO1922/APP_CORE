@@ -94,6 +94,21 @@ export const clientGetMyPayments = async (token) => {
   } catch (error) { console.error("Erro em clientGetMyPayments:", error); throw error; }
 };
 
+export const clientGetMyPendingPaymentsService = async (token) => {
+  if (!token) throw new Error('Token de cliente não fornecido para clientGetMyPendingPaymentsService.');
+  try {
+    const response = await fetch(`${API_URL}/payments/my-payments/pending`, { // Usa o novo endpoint
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar os seus pagamentos pendentes.');
+    return data;
+  } catch (error) {
+    console.error("Erro em clientGetMyPendingPaymentsService:", error);
+    throw error;
+  }
+};
+
 // Função para o cliente "aceitar" pagamentos (LEGADO - Usado agora como base para confirmação)
 export const clientAcceptPayment = async (paymentId, token) => {
   if (!token) throw new Error('Token de cliente não fornecido para clientAcceptPayment.');

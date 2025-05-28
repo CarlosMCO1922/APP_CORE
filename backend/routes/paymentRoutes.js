@@ -55,6 +55,13 @@ router.get(
     paymentController.clientGetMyPayments
 );
 
+router.get(
+    '/my-payments/pending',
+    protect,
+    isClientUser,
+    paymentController.clientGetMyPendingPayments
+);
+
 // Cliente "aceita" um pagamento pendente (LEGADO - para pagamentos não-Stripe)
 router.patch(
     '/:paymentId/accept', // Endpoint para aceitar pagamento não-Stripe
