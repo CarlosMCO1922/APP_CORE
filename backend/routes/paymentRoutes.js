@@ -7,7 +7,8 @@ const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddl
 // --- Rotas do Administrador (Staff com role 'admin') ---
 // Criar um novo pagamento para um utilizador
 router.post(
-    '/', 
+    '/',
+    express.join(),
     protect,
     isAdminStaff,
     paymentController.adminCreatePayment
