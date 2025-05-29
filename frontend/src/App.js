@@ -82,7 +82,6 @@ function App() {
               <Route path="/definicoes" element={<SettingsPage />} />
               <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
               <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
-              <Route path="/notificacoes" element={<NotificationsPage />} />
             </Route>
 
             {/* Rotas de Staff/Admin */}
@@ -97,23 +96,11 @@ function App() {
               <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
               <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
-              <Route path="/notificacoes" element={<NotificationsPage />} />
             </Route>
 
             {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}
-            {/* Esta rota deve estar dentro de um ProtectedRoute genérico ou o ProtectedRoute acima
-                que permite múltiplos roles já serve se "/notificacoes" estiver lá.
-                Dado que /notificacoes está dentro do ProtectedRoute para 'user',
-                staffs não acederiam.
-                Vamos colocar uma rota para /notificacoes que seja acessível por todos os autenticados.
-            */}
             <Route element={<ProtectedRoute allowedRoles={['user', 'admin', 'trainer', 'physiotherapist', 'employee']} />}>
                 <Route path="/notificacoes" element={<NotificationsPage />} />
-                 {/* Se precisar de um caminho específico para admin, pode adicionar:
-                 <Route path="/admin/notificacoes" element={<NotificationsPage />} />
-                 E ajustar o link na Navbar para apontar para /admin/notificacoes se for admin.
-                 Por agora, /notificacoes serve para todos os autenticados.
-                 */}
             </Route>
 
 
