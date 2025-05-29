@@ -37,5 +37,8 @@ router.put('/:id', protect, isAdminStaff, userController.updateUserAsAdmin);
 // @desc    Admin elimina um utilizador
 router.delete('/:id', protect, isAdminStaff, userController.deleteUserAsAdmin);
 
+router.get('/:userId/trainings', protect, isAdminStaff, adminGetUserTrainings);
+router.get('/:userId/appointments', protect, isAdminStaff, adminGetUserAppointments);
+
 
 module.exports = router;

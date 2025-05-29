@@ -16,6 +16,7 @@ import MyPaymentsPage from './pages/MyPaymentsPage';
 import NotificationsPage from './pages/NotificationsPage'; // Importa a nova página
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
+import AdminUserDetailsPage from './pages/admin/AdminUserDetailsPage';
 import AdminManageStaffPage from './pages/admin/AdminManageStaffPage';
 import AdminManageTrainingsPage from './pages/admin/AdminManageTrainingsPage';
 import AdminManageAppointmentsPage from './pages/admin/AdminManageAppointmentsPage';
@@ -24,6 +25,7 @@ import StaffManageRequestsPage from './pages/admin/StaffManageRequestsPage';
 import AdminManageWorkoutPlansPage from './pages/admin/AdminManageWorkoutPlansPage';
 import AdminManageExercisesPage from './pages/admin/AdminManageExercisesPage';
 import ClientTrainingPlanPage from './pages/ClientTrainingPlanPage';
+
 
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
@@ -96,6 +98,7 @@ function App() {
               <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
               <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
+              <Route path="/admin/users/:userId/details" element={<AdminUserDetailsPage />} /> 
             </Route>
 
             {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}

@@ -285,6 +285,90 @@ const deleteUserAsAdmin = async (req, res) => {
   }
 };
 
+// @desc    Admin obtém todos os treinos de um utilizador específico
+// @route   GET /api/users/:userId/trainings
+// @access  Privado (Admin Staff)
+const adminGetUserTrainings = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await db.User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilizador não encontrado.' });
+    }
+
+    const trainings = await db.Training.findAll({
+      include: [
+        {
+          model: db.User,
+          as: 'participants',
+          where: { id: userId }, // Filtra para incluir apenas este utilizador nos participantes
+          attributes: [], // Não precisamos dos atributos do User aqui, já temos o user
+          through: { attributes: [] }
+        },
+        {
+          model: db.Staff,
+          as: 'instructor',
+          attributes: ['id', 'firstName', 'lastName'],
+        }
+      ],
+      order: [['date', 'DESC'], ['time', 'DESC']],
+    });
+
+    // Adicionar contagem de participantes totais a cada treino (opcional, mas útil)
+    const trainingsWithDetails = await Promise.all(trainings.map(async (training) => {
+        const trainingJSON = training.toJSON();
+        const totalParticipants = await training.countParticipants();
+        return {
+            ...trainingJSON,
+            participantsCount: totalParticipants, // Adiciona a contagem total de participantes no treino
+                                                 // Não apenas o user que estamos a filtrar
+        };
+    }));
+
+
+    res.status(200).json(trainingsWithDetails);
+  } catch (error) {
+    console.error(`Erro ao buscar treinos para o utilizador ID ${userId}:`, error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
+// @desc    Admin obtém todas as consultas de um utilizador específico
+// @route   GET /api/users/:userId/appointments
+// @access  Privado (Admin Staff)
+const adminGetUserAppointments = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await db.User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilizador não encontrado.' });
+    }
+
+    const appointments = await db.Appointment.findAll({
+      where: { userId: userId },
+      include: [
+        {
+          model: db.Staff,
+          as: 'professional', // O alias que você definiu para Staff em Appointment
+          attributes: ['id', 'firstName', 'lastName', 'role'],
+        },
+        // O cliente já é o 'user', não precisamos de incluir novamente se o where é userId
+        // Mas se quiser outros detalhes do cliente que não estejam no User.findByPk:
+        // {
+        //   model: db.User,
+        //   as: 'client',
+        //   attributes: ['id', 'firstName', 'lastName', 'email']
+        // }
+      ],
+      order: [['date', 'DESC'], ['time', 'DESC']],
+    });
+    res.status(200).json(appointments);
+  } catch (error) {
+    console.error(`Erro ao buscar consultas para o utilizador ID ${userId}:`, error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
 
 module.exports = {
   getMe,
@@ -296,4 +380,6 @@ module.exports = {
   createUserAsAdmin,
   updateUserAsAdmin,
   deleteUserAsAdmin,
+  adminGetUserTrainings,
+  adminGetUserAppointments,
 };

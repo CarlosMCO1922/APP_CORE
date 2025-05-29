@@ -1,17 +1,23 @@
 // src/pages/admin/AdminManageUsersPage.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import styled from 'styled-components';
+import { Link, useNavigate } from 'react-router-dom';
+import styled, { css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { adminGetAllUsers, adminDeleteUser, adminCreateUser, adminUpdateUser } from '../../services/userService';
-import { FaEdit, FaTrashAlt, FaPlus, FaArrowLeft, FaTimes} from 'react-icons/fa';
+import {
+    adminGetAllUsers,
+    adminCreateUser,
+    adminUpdateUser,
+    adminDeleteUser
+} from '../../services/userService';
+import { FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes, FaEye, FaUserPlus } from 'react-icons/fa';
+import { theme } from '../../theme'; // Garanta que o theme está corretamente importado
 
-// --- Styled Components ---
+// --- Styled Components (Completos) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
   min-height: 100vh;
-  padding: 20px clamp(15px, 4vw, 40px); // Padding responsivo
+  padding: 20px clamp(15px, 4vw, 40px);
   font-family: ${({ theme }) => theme.fonts.main};
 `;
 
@@ -20,14 +26,14 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  flex-wrap: wrap; // Permite quebrar linha em ecrãs pequenos
+  flex-wrap: wrap;
   gap: 15px;
 `;
 
 const Title = styled.h1`
-  font-size: clamp(1.8rem, 4vw, 2.4rem); // Título responsivo
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
   color: ${({ theme }) => theme.colors.primary};
-  margin: 0; // Remover margem para melhor controlo com flex
+  margin: 0;
 `;
 
 const CreateButton = styled.button`
@@ -46,11 +52,11 @@ const CreateButton = styled.button`
   font-size: 0.9rem;
 
   &:hover {
-    background-color: #e6c358; // Um pouco mais claro no hover
+    background-color: #e6c358; // Lighter gold for hover
     transform: translateY(-2px);
   }
   @media (max-width: 480px) {
-    width: 100%; // Ocupa largura total em mobile
+    width: 100%;
     justify-content: center;
     font-size: 1rem;
     padding: 12px;
@@ -82,53 +88,56 @@ const BackLink = styled(Link)`
 const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; 
+  -webkit-overflow-scrolling: touch;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   box-shadow: ${({ theme }) => theme.boxShadow};
-  
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+
   &::-webkit-scrollbar {
     height: 8px;
-    background-color: #252525;
+    background-color: #252525; /* Cor da track da scrollbar */
   }
   &::-webkit-scrollbar-thumb {
-    background: #555;
+    background: #555; /* Cor do thumb da scrollbar */
     border-radius: 4px;
   }
 `;
 
 const Table = styled.table`
   width: 100%;
+  min-width: 800px; /* Largura mínima para scroll horizontal */
   border-collapse: collapse;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
   
   th, td {
     border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
     padding: 10px 12px;
     text-align: left;
-    font-size: 0.9rem;
-    white-space: nowrap; // Evita quebra de linha indesejada nas células
+    font-size: 0.85rem;
+    white-space: nowrap;
+    vertical-align: middle;
   }
   th {
     background-color: #303030;
     color: ${({ theme }) => theme.colors.primary};
     font-weight: 600;
-    position: sticky; // Para cabeçalho fixo ao fazer scroll horizontal
-    left: 0; // Fixa a primeira coluna se necessário (adicionar por th especifico)
+    position: sticky;
+    top: 0;
     z-index: 1;
   }
-  tr:last-child td { border-bottom: none; }
-  tr:hover { background-color: #2c2c2c; }
-
-  td:last-child { // Coluna de ações
-    white-space: normal; // Permite quebra de botões se necessário
-    text-align: right; // Alinha botões à direita
+  tbody tr:hover { /* tbody adicionado para especificidade */
+    background-color: #2c2c2c;
   }
-   @media (max-width: 768px) {
-    th, td {
-      padding: 8px 10px;
-      font-size: 0.85rem;
-    }
+  tr:last-child td { border-bottom: none; }
+
+  td.actions-cell { 
+    white-space: nowrap; 
+    text-align: right;
+    min-width: 280px; /* Espaço para botões */
+  }
+  @media (max-width: 768px) {
+    th, td { padding: 8px 10px; font-size: 0.8rem; }
+    td.actions-cell { min-width: 260px; }
   }
 `;
 
@@ -136,11 +145,12 @@ const ActionButtonContainer = styled.div`
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  flex-wrap: nowrap;
 `;
 
 const ActionButton = styled.button`
   padding: 6px 10px;
-  font-size: 0.8rem;
+  font-size: 0.8rem; /* Ajustado para consistência */
   border-radius: 5px;
   cursor: pointer;
   border: none;
@@ -151,10 +161,10 @@ const ActionButton = styled.button`
   
   background-color: ${props => {
     if (props.danger) return props.theme.colors.error;
-    if (props.secondary) return props.theme.colors.buttonSecondaryBg;
-    return props.theme.colors.primary;
+    if (props.details) return props.theme.colors.info || '#17a2b8'; // Cor para "Detalhes"
+    return props.theme.colors.buttonSecondaryBg; // Default para "Editar"
   }};
-  color: ${props => (props.danger || props.secondary) ? 'white' : props.theme.colors.textDark};
+  color: ${props => (props.danger ? 'white' : (props.details ? 'white' : props.theme.colors.textMain))};
 
   &:hover:not(:disabled) {
     opacity: 0.85;
@@ -167,16 +177,38 @@ const ActionButton = styled.button`
   }
 `;
 
-const MessageBase = styled.p`
-  text-align: center; padding: 12px 18px; margin: 20px auto;
+const MessageBaseStyles = css` 
+  text-align: center;
+  padding: 12px 18px;
+  margin: 20px auto;
   border-radius: ${({ theme }) => theme.borderRadius};
-  border-width: 1px; border-style: solid; max-width: 600px;
-  font-size: 0.9rem; font-weight: 500;
+  border-width: 1px;
+  border-style: solid;
+  max-width: 600px;
+  font-size: 0.9rem;
+  font-weight: 500;
 `;
-const LoadingText = styled(MessageBase)` color: ${({ theme }) => theme.colors.primary}; border-color: transparent; background: transparent;`;
-const ErrorText = styled(MessageBase)` color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border-color: ${({ theme }) => theme.colors.error};`;
-const MessageText = styled(MessageBase)` color: ${({ theme }) => theme.colors.success}; background-color: ${({ theme }) => theme.colors.successBg}; border-color: ${({ theme }) => theme.colors.success};`;
+const LoadingText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.primary};
+  border-color: transparent;
+  background: transparent;
+  font-style: italic;
+`;
+const ErrorText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
+`;
+const MessageText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.success};
+  background-color: ${({ theme }) => theme.colors.successBg};
+  border-color: ${({ theme }) => theme.colors.success};
+`;
 
+// Modal Styled Components
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0,0,0,0.85); display: flex;
@@ -187,8 +219,9 @@ const ModalContent = styled.div`
   background-color: #2A2A2A;
   padding: clamp(25px, 4vw, 35px);
   border-radius: 10px; width: 100%;
-  max-width: 500px; box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  max-width: 550px; box-shadow: 0 8px 25px rgba(0,0,0,0.6);
   position: relative; max-height: 90vh; overflow-y: auto;
+  border-top: 3px solid ${({ theme }) => theme.colors.primary};
 `;
 const ModalTitle = styled.h2`
   color: ${({ theme }) => theme.colors.primary};
@@ -199,6 +232,10 @@ const ModalTitle = styled.h2`
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
 const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
+const ModalLabel = styled.label`
+  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 4px; display: block; font-weight: 500;
+`;
 const ModalInput = styled.input`
   padding: 10px 14px; background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -208,46 +245,86 @@ const ModalInput = styled.input`
   transition: border-color 0.2s, box-shadow 0.2s;
   &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
 `;
-const ModalLabel = styled.label`
-  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: 4px; display: block; font-weight: 500;
-`;
 const ModalCheckboxContainer = styled.div`
-  display: flex; align-items: center; gap: 8px; margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 `;
 const ModalCheckbox = styled.input`
-  accent-color: ${({ theme }) => theme.colors.primary};
-  transform: scale(1.1);
-  cursor: pointer;
+  width: auto; /* Para não ocupar 100% */
+  margin-right: 5px;
+  accent-color: ${({ theme }) => theme.colors.primary}; /* Estiliza a cor do check */
 `;
+
 const ModalActions = styled.div`
   display: flex; flex-direction: column; gap: 10px;
   margin-top: 25px; padding-top: 15px;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
   @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
 `;
-const ModalButton = styled(ActionButton)` // Reutilizando ActionButton para consistência
-  font-size: 0.9rem; // Ajuste de tamanho para botões do modal
+const ModalButton = styled.button` /* Usar este como base para botões do modal */
   padding: 10px 18px;
+  font-size: 0.9rem;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
+  font-weight: 500;
   width: 100%;
   @media (min-width: 480px) { width: auto; }
+
+  background-color: ${props => {
+    if (props.danger) return props.theme.colors.error;
+    if (props.secondary) return props.theme.colors.buttonSecondaryBg;
+    return props.theme.colors.primary;
+  }};
+  color: ${props => (props.danger ? 'white' : (props.secondary ? props.theme.colors.textMain : props.theme.colors.textDark))};
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+  &:disabled {
+    background-color: #404040;
+    color: #777;
+    cursor: not-allowed;
+  }
 `;
 const CloseButton = styled.button`
-  position: absolute; top: 10px; right: 10px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
+  position: absolute; top: 15px; right: 15px; background: transparent; border: none;
+  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 5px;
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
   &:hover { color: #fff; transform: scale(1.1); }
 `;
-//const ModalErrorText = styled.ErrorText'margin: -5px 0 10px 0; text-align:left; font-size: 0.8rem; padding: 8px 12px';
+const ModalErrorText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
+  margin: -5px 0 10px 0;
+  text-align: left;
+  font-size: 0.8rem;
+  padding: 8px 12px;
+`;
 
-
-const initialFormState = {
-  firstName: '', lastName: '', email: '', password: '', isAdmin: false,
+const initialUserFormState = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  isAdmin: false,
 };
 
 const AdminManageUsersPage = () => {
   const { authState } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -255,15 +332,16 @@ const AdminManageUsersPage = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentUserData, setCurrentUserData] = useState(initialFormState);
+  const [currentUserData, setCurrentUserData] = useState(initialUserFormState);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
 
   const fetchUsers = useCallback(async () => {
     if (authState.token) {
+      setLoading(true);
+      setError('');
       try {
-        setLoading(true); setError(''); setSuccessMessage('');
         const data = await adminGetAllUsers(authState.token);
         setUsers(data);
       } catch (err) {
@@ -274,55 +352,86 @@ const AdminManageUsersPage = () => {
     }
   }, [authState.token]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleOpenCreateModal = () => {
-    setIsEditing(false); setCurrentUserData(initialFormState);
-    setCurrentUserId(null); setModalError(''); setShowModal(true);
+    setIsEditing(false);
+    setCurrentUserData(initialUserFormState);
+    setCurrentUserId(null);
+    setModalError('');
+    setShowModal(true);
   };
 
   const handleOpenEditModal = (user) => {
     setIsEditing(true);
     setCurrentUserData({
-      firstName: user.firstName, lastName: user.lastName, email: user.email,
-      password: '', isAdmin: user.isAdmin,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      password: '', // Não preencher password para edição
+      confirmPassword: '',
+      isAdmin: user.isAdmin || false,
     });
-    setCurrentUserId(user.id); setModalError(''); setShowModal(true);
+    setCurrentUserId(user.id);
+    setModalError('');
+    setShowModal(true);
   };
 
   const handleCloseModal = () => {
-    setShowModal(false); setCurrentUserData(initialFormState);
-    setCurrentUserId(null); setModalError('');
+    setShowModal(false);
+    setCurrentUserData(initialUserFormState);
+    setCurrentUserId(null);
+    setModalError('');
   };
 
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setCurrentUserData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    setCurrentUserData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormLoading(true); setModalError(''); setError(''); setSuccessMessage('');
-    const dataToSend = { ...currentUserData };
-    if (isEditing && !dataToSend.password) {
-      delete dataToSend.password;
-    } else if (!isEditing && (!dataToSend.password || dataToSend.password.length < 6 )) {
-        setModalError("Password é obrigatória (mínimo 6 caracteres) para criar novo utilizador.");
-        setFormLoading(false); return;
-    } else if (isEditing && dataToSend.password && dataToSend.password.length < 6) {
-        setModalError("A nova password deve ter pelo menos 6 caracteres.");
-        setFormLoading(false); return;
+    setFormLoading(true);
+    setModalError('');
+    setError('');
+    setSuccessMessage('');
+
+    if (!isEditing && currentUserData.password !== currentUserData.confirmPassword) {
+      setModalError('As passwords não coincidem.');
+      setFormLoading(false);
+      return;
+    }
+    if (isEditing && currentUserData.password && currentUserData.password !== currentUserData.confirmPassword) {
+      setModalError('As novas passwords não coincidem.');
+      setFormLoading(false);
+      return;
+    }
+
+    const userData = {
+      firstName: currentUserData.firstName,
+      lastName: currentUserData.lastName,
+      email: currentUserData.email,
+      isAdmin: currentUserData.isAdmin,
+    };
+    if (currentUserData.password) { // Só envia password se for preenchida
+      userData.password = currentUserData.password;
     }
 
     try {
       if (isEditing) {
-        await adminUpdateUser(currentUserId, dataToSend, authState.token);
+        await adminUpdateUser(currentUserId, userData, authState.token);
         setSuccessMessage('Utilizador atualizado com sucesso!');
       } else {
-        await adminCreateUser(dataToSend, authState.token);
+        await adminCreateUser(userData, authState.token);
         setSuccessMessage('Utilizador criado com sucesso!');
       }
-      fetchUsers(); handleCloseModal();
+      fetchUsers();
+      handleCloseModal();
     } catch (err) {
       setModalError(err.message || `Falha ao ${isEditing ? 'atualizar' : 'criar'} utilizador.`);
     } finally {
@@ -331,8 +440,9 @@ const AdminManageUsersPage = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm(`Tens a certeza que queres eliminar o utilizador com ID ${userId}? Esta ação não pode ser desfeita.`)) return;
-    setError(''); setSuccessMessage('');
+    if (!window.confirm(`Tens a certeza que queres eliminar o utilizador ID ${userId}?`)) return;
+    setError('');
+    setSuccessMessage('');
     try {
       await adminDeleteUser(userId, authState.token);
       setSuccessMessage('Utilizador eliminado com sucesso.');
@@ -341,7 +451,7 @@ const AdminManageUsersPage = () => {
       setError(err.message || 'Falha ao eliminar utilizador.');
     }
   };
-  
+
   if (loading && !showModal) {
     return <PageContainer><LoadingText>A carregar utilizadores...</LoadingText></PageContainer>;
   }
@@ -349,8 +459,8 @@ const AdminManageUsersPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <Title>Gerir Clientes</Title>
-        <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Novo Cliente</CreateButton>
+        <Title>Gerir Clientes (Utilizadores)</Title>
+        <CreateButton onClick={handleOpenCreateModal}><FaUserPlus /> Novo Cliente</CreateButton>
       </HeaderContainer>
       <BackLink to="/admin/dashboard"><FaArrowLeft /> Voltar ao Painel Admin</BackLink>
 
@@ -366,7 +476,7 @@ const AdminManageUsersPage = () => {
               <th>Apelido</th>
               <th>Email</th>
               <th>Admin?</th>
-              <th style={{textAlign: 'right'}}>Ações</th>
+              <th className="actions-cell">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -377,9 +487,15 @@ const AdminManageUsersPage = () => {
                 <td>{user.lastName}</td>
                 <td>{user.email}</td>
                 <td>{user.isAdmin ? 'Sim' : 'Não'}</td>
-                <td>
+                <td className="actions-cell">
                   <ActionButtonContainer>
-                    <ActionButton secondary onClick={() => handleOpenEditModal(user)}>
+                    <ActionButton
+                      details
+                      onClick={() => navigate(`/admin/users/${user.id}/details`)}
+                    >
+                      <FaEye /> Detalhes
+                    </ActionButton>
+                    <ActionButton onClick={() => handleOpenEditModal(user)}>
                       <FaEdit /> Editar
                     </ActionButton>
                     <ActionButton danger onClick={() => handleDeleteUser(user.id)}>
@@ -396,32 +512,36 @@ const AdminManageUsersPage = () => {
       </TableWrapper>
 
       {showModal && (
-        <ModalOverlay onClick={handleCloseModal}> 
+        <ModalOverlay onClick={handleCloseModal}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={handleCloseModal}><FaTimes /></CloseButton>
-            <ModalTitle>{isEditing ? 'Editar Cliente' : 'Criar Novo Cliente'}</ModalTitle>
+            <ModalTitle>{isEditing ? 'Editar Utilizador' : 'Criar Novo Utilizador'}</ModalTitle>
+            {modalError && <ModalErrorText>{modalError}</ModalErrorText>}
             <ModalForm onSubmit={handleFormSubmit}>
-              <ModalLabel htmlFor="firstName">Nome*</ModalLabel>
-              <ModalInput type="text" name="firstName" id="firstName" value={currentUserData.firstName} onChange={handleFormChange} required />
-              
-              <ModalLabel htmlFor="lastName">Apelido*</ModalLabel>
-              <ModalInput type="text" name="lastName" id="lastName" value={currentUserData.lastName} onChange={handleFormChange} required />
-              
-              <ModalLabel htmlFor="email">Email*</ModalLabel>
-              <ModalInput type="email" name="email" id="email" value={currentUserData.email} onChange={handleFormChange} required />
-              
-              <ModalLabel htmlFor="password">Password {isEditing ? '(Deixar em branco para não alterar)' : '(Mín. 6 caracteres)*'}</ModalLabel>
-              <ModalInput type="password" name="password" id="password" value={currentUserData.password} onChange={handleFormChange} placeholder={isEditing ? 'Nova password (opcional)' : 'Mínimo 6 caracteres'} required={!isEditing} autoComplete="new-password" />
+              <ModalLabel htmlFor="firstNameModal">Nome*</ModalLabel>
+              <ModalInput type="text" name="firstName" id="firstNameModal" value={currentUserData.firstName} onChange={handleFormChange} required />
+
+              <ModalLabel htmlFor="lastNameModal">Apelido*</ModalLabel>
+              <ModalInput type="text" name="lastName" id="lastNameModal" value={currentUserData.lastName} onChange={handleFormChange} required />
+
+              <ModalLabel htmlFor="emailModal">Email*</ModalLabel>
+              <ModalInput type="email" name="email" id="emailModal" value={currentUserData.email} onChange={handleFormChange} required />
+
+              <ModalLabel htmlFor="passwordModal">{isEditing ? 'Nova Password (deixar em branco para não alterar)' : 'Password*'}</ModalLabel>
+              <ModalInput type="password" name="password" id="passwordModal" value={currentUserData.password} onChange={handleFormChange} required={!isEditing} />
+
+              <ModalLabel htmlFor="confirmPasswordModal">{isEditing ? 'Confirmar Nova Password' : 'Confirmar Password*'}</ModalLabel>
+              <ModalInput type="password" name="confirmPassword" id="confirmPasswordModal" value={currentUserData.confirmPassword} onChange={handleFormChange} required={!isEditing && !!currentUserData.password} />
               
               <ModalCheckboxContainer>
                 <ModalCheckbox type="checkbox" name="isAdmin" id="isAdminModal" checked={currentUserData.isAdmin} onChange={handleFormChange} />
-                <ModalLabel htmlFor="isAdminModal" style={{marginBottom: 0, cursor: 'pointer', fontWeight: 'normal', color: '#e0e0e0'}}>Este cliente é administrador?</ModalLabel>
+                <ModalLabel htmlFor="isAdminModal" style={{marginBottom: 0}}>Conceder privilégios de Administrador</ModalLabel>
               </ModalCheckboxContainer>
 
               <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
                 <ModalButton type="submit" primary disabled={formLoading}>
-                  {formLoading ? 'A guardar...' : (isEditing ? 'Guardar Alterações' : 'Criar Cliente')}
+                  <FaUserPlus style={{marginRight: '8px'}}/> {formLoading ? 'A guardar...' : (isEditing ? 'Guardar Alterações' : 'Criar Utilizador')}
                 </ModalButton>
               </ModalActions>
             </ModalForm>

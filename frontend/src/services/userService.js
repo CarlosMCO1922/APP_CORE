@@ -103,3 +103,37 @@ export const adminDeleteUser = async (userId, token) => {
     return data; 
   } catch (error) { console.error("Erro em adminDeleteUser:", error); throw error; }
 };
+
+// @desc    Admin obtém todos os treinos de um utilizador específico
+export const adminGetUserTrainingsService = async (userId, token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!userId) throw new Error('ID do Utilizador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}/trainings`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar treinos do utilizador.');
+    return data;
+  } catch (error) {
+    console.error(`Erro em adminGetUserTrainingsService para userId ${userId}:`, error);
+    throw error;
+  }
+};
+
+// @desc    Admin obtém todas as consultas de um utilizador específico
+export const adminGetUserAppointmentsService = async (userId, token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!userId) throw new Error('ID do Utilizador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}/appointments`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar consultas do utilizador.');
+    return data;
+  } catch (error) {
+    console.error(`Erro em adminGetUserAppointmentsService para userId ${userId}:`, error);
+    throw error;
+  }
+};
