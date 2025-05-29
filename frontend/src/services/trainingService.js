@@ -1,20 +1,28 @@
 // src/services/trainingService.js
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-export const getAllTrainings = async (token) => {
+export const getAllTrainings = async (token, filters = {}) => {
+  if (!token) throw new Error('Token não fornecido para getAllTrainings.');
   try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    const response = await fetch(`${API_URL}/trainings`, {
-      method: 'GET',
-      headers,
+    const queryParams = new URLSearchParams();
+    if (filters.instructorId) queryParams.append('instructorId', filters.instructorId);
+    if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
+    if (filters.nameSearch) queryParams.append('nameSearch', filters.nameSearch);
+
+    const queryString = queryParams.toString();
+    const fetchURL = queryString ? `<span class="math-inline">\{API\_URL\}/trainings?</span>{queryString}` : `${API_URL}/trainings`;
+
+    const response = await fetch(fetchURL, {
+      headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar todos os treinos.');
     return data;
-  } catch (error) { console.error("Erro em getAllTrainings:", error); throw error; }
+  } catch (error) {
+    console.error("Erro em getAllTrainings service:", error);
+    throw error;
+  }
 };
 
 export const bookTraining = async (trainingId, token) => {

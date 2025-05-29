@@ -69,9 +69,25 @@ const createTraining = async (req, res) => {
 // @access  Privado (Qualquer utilizador autenticado)
 const getAllTrainings = async (req, res) => {
   try {
-    // Por agora, retorna todos os treinos. Filtros (ex: data futura) podem ser adicionados.
-    // A informação de quem está inscrito já vem com o include 'participants'.
+    const { instructorId, dateFrom, dateTo, nameSearch } = req.query; // Novos query params
+    const whereClause = {};
+
+    if (instructorId) {
+      whereClause.instructorId = parseInt(instructorId, 10);
+    }
+    if (dateFrom && dateTo) {
+      whereClause.date = { [Op.between]: [dateFrom, dateTo] };
+    } else if (dateFrom) {
+      whereClause.date = { [Op.gte]: dateFrom };
+    } else if (dateTo) {
+      whereClause.date = { [Op.lte]: dateTo };
+    }
+    if (nameSearch) {
+      whereClause.name = { [Op.like]: `%${nameSearch}%` };
+    }
+
     const trainings = await db.Training.findAll({
+      where: whereClause, // Aplicar os filtros
       include: [
         {
           model: db.Staff,
@@ -80,17 +96,16 @@ const getAllTrainings = async (req, res) => {
         },
         {
           model: db.User,
-          as: 'participants', // Alias definido na associação Training -> User
+          as: 'participants',
           attributes: ['id', 'firstName', 'lastName', 'email'],
-          through: { attributes: [] }, // Não incluir atributos da tabela de junção
+          through: { attributes: [] },
         },
       ],
       order: [['date', 'ASC'], ['time', 'ASC']],
     });
 
-    // Adicionar a contagem de participantes a cada treino para facilitar no frontend
     const trainingsWithParticipantCount = trainings.map(training => {
-        const trainingJSON = training.toJSON(); // Converte para objeto simples
+        const trainingJSON = training.toJSON();
         return {
             ...trainingJSON,
             participantsCount: trainingJSON.participants ? trainingJSON.participants.length : 0,
@@ -103,6 +118,7 @@ const getAllTrainings = async (req, res) => {
     res.status(500).json({ message: 'Erro interno do servidor ao listar os treinos.', error: error.message });
   }
 };
+
 // @desc    Obter detalhes de um treino específico
 // @route   GET /api/trainings/:id
 // @access  Público/Utilizadores autenticados
