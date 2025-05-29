@@ -10,10 +10,9 @@ import {
   FaCog, FaSignOutAlt, FaBars, FaTimes,
   FaBell, FaEnvelopeOpen, FaCheckDouble
 } from 'react-icons/fa';
-import { theme } from '../../theme'; // Importa o tema para usar nos defaults ou lógica
+import { theme } from '../../theme';
 
-// Constantes de tema removidas do escopo global do módulo
-
+// Styled Components (como estavam na sua última versão completa)
 const Nav = styled.nav`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 0.75rem 1.5rem;
@@ -75,7 +74,7 @@ const NavLinkStyled = styled(Link)`
 
   &:hover {
     color: ${({ theme }) => theme.colors.primary};
-    background-color: #333333; // Mantido hardcoded ou adicione ao tema: theme.colors.dropdownHoverBg
+    background-color: #333333;
   }
 `;
 
@@ -95,7 +94,7 @@ const LogoutButton = styled.button`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.background}; // Para contraste
+    color: ${({ theme }) => theme.colors.background};
   }
 `;
 
@@ -127,7 +126,7 @@ const DropdownButton = styled.button`
 
   &:hover, &.active {
     color: ${({ theme }) => theme.colors.primary};
-    background-color: #333333; // Mantido hardcoded ou adicione ao tema
+    background-color: #333333;
   }
 `;
 
@@ -156,7 +155,7 @@ const DropdownLink = styled(Link)`
   white-space: nowrap;
 
   &:hover {
-    background-color: #333333; // Mantido hardcoded ou adicione ao tema
+    background-color: #333333;
     color: ${({ theme }) => theme.colors.primary};
   }
 `;
@@ -328,7 +327,7 @@ const NotificationItemStyled = styled.div`
   }
 
   &:hover {
-    background-color: #333333; // Ou use uma cor do tema se preferir
+    background-color: #333333;
   }
 
   p {
@@ -353,7 +352,7 @@ const ViewAllNotificationsLink = styled(Link)`
   text-decoration: none;
   border-top: 1px solid #4A4A4A;
   &:hover {
-    background-color: #333333; // Ou use uma cor do tema
+    background-color: #333333;
   }
 `;
 
@@ -378,9 +377,7 @@ function Navbar() {
 
   const handleLogout = () => {
     logout();
-    setManagementDropdownOpen(false);
-    setNotificationsDropdownOpen(false);
-    setIsMobileMenuOpen(false);
+    closeAllMenus(); // Garante que todos os menus fecham ao fazer logout
     navigate('/login');
   };
 
@@ -390,6 +387,7 @@ function Navbar() {
     setIsMobileMenuOpen(false);
   }
 
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (managementDropdownRef.current && !managementDropdownRef.current.contains(event.target)) {
@@ -405,6 +403,7 @@ function Navbar() {
     };
   }, []);
 
+  // Fechar menu mobile se o ecrã for redimensionado para desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 992) {
@@ -419,16 +418,29 @@ function Navbar() {
     if (!notification.isRead) {
       markNotificationAsRead(notification.id);
     }
-    if (notification.link) {
-      navigate(notification.link);
-    }
-    setNotificationsDropdownOpen(false);
-    setIsMobileMenuOpen(false);
+    // A navegação é tratada pelo componente Link agora,
+    // apenas precisamos de fechar os menus.
+    closeAllMenus();
+    // Se o link da notificação não for tratado pelo <Link> (ex: link externo),
+    // pode adicionar a navegação aqui:
+    // if (notification.link) {
+    //   navigate(notification.link);
+    // }
   };
 
   const handleMarkAllReadClick = async () => {
     await markAllNotificationsAsRead();
+    // Opcional: fechar o dropdown após marcar todas como lidas
+    // setNotificationsDropdownOpen(false);
   };
+
+
+  // Esta função será chamada PELO COMPONENTE LINK, apenas para fechar o menu.
+  // A navegação em si é feita pelo <Link to="...">.
+  const handleNavigateAndCloseMenus = () => {
+      closeAllMenus();
+  }
+
 
   if (!authState.isAuthenticated) {
     return null;
@@ -438,20 +450,21 @@ function Navbar() {
   const isStaffGeneral = authState.role && authState.role !== 'user';
   const isAdminStrict = authState.role === 'admin';
 
+  // Blocos JSX para os links
   const commonClientLinksJsx = (
     <>
-      <NavLinkStyled to="/dashboard" onClick={closeAllMenus}><FaTachometerAlt /> Painel</NavLinkStyled>
-      <NavLinkStyled to="/calendario" onClick={closeAllMenus}><FaCalendarAlt /> Calendário</NavLinkStyled>
-      <NavLinkStyled to="/meus-pagamentos" onClick={closeAllMenus}><FaMoneyBillWave /> Pagamentos</NavLinkStyled>
-      <NavLinkStyled to="/definicoes" onClick={closeAllMenus}><FaCog /> Definições</NavLinkStyled>
+      <NavLinkStyled to="/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel</NavLinkStyled>
+      <NavLinkStyled to="/calendario" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled>
+      <NavLinkStyled to="/meus-pagamentos" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</NavLinkStyled>
+      <NavLinkStyled to="/definicoes" onClick={handleNavigateAndCloseMenus}><FaCog /> Definições</NavLinkStyled>
     </>
   );
 
   const commonStaffLinksJsx = (
     <>
-      <NavLinkStyled to="/admin/dashboard" onClick={closeAllMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled>
-      <NavLinkStyled to="/admin/calendario-geral" onClick={closeAllMenus}><FaCalendarAlt /> Calendário</NavLinkStyled>
-      <NavLinkStyled to="/admin/appointment-requests" onClick={closeAllMenus}><FaClipboardList /> Pedidos</NavLinkStyled>
+      <NavLinkStyled to="/admin/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled>
+      <NavLinkStyled to="/admin/calendario-geral" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled>
+      <NavLinkStyled to="/admin/appointment-requests" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Pedidos</NavLinkStyled>
     </>
   );
 
@@ -464,12 +477,12 @@ function Navbar() {
         <FaCog /> Gestão {managementDropdownOpen ? '▴' : '▾'}
       </DropdownButton>
       <DropdownContent $isOpen={managementDropdownOpen}>
-        <DropdownLink to="/admin/manage-users" onClick={closeAllMenus}><FaUsers /> Clientes</DropdownLink>
-        <DropdownLink to="/admin/manage-staff" onClick={closeAllMenus}><FaUserTie /> Equipa</DropdownLink>
-        <DropdownLink to="/admin/manage-trainings" onClick={closeAllMenus}><FaDumbbell /> Treinos</DropdownLink>
-        <DropdownLink to="/admin/manage-appointments" onClick={closeAllMenus}><FaCalendarCheck /> Consultas</DropdownLink>
-        <DropdownLink to="/admin/manage-payments" onClick={closeAllMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-        <DropdownLink to="/admin/manage-exercises" onClick={closeAllMenus}><FaDumbbell /> Exercícios Base</DropdownLink>
+        <DropdownLink to="/admin/manage-users" onClick={handleNavigateAndCloseMenus}><FaUsers /> Clientes</DropdownLink>
+        <DropdownLink to="/admin/manage-staff" onClick={handleNavigateAndCloseMenus}><FaUserTie /> Equipa</DropdownLink>
+        <DropdownLink to="/admin/manage-trainings" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Treinos</DropdownLink>
+        <DropdownLink to="/admin/manage-appointments" onClick={handleNavigateAndCloseMenus}><FaCalendarCheck /> Consultas</DropdownLink>
+        <DropdownLink to="/admin/manage-payments" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
+        <DropdownLink to="/admin/manage-exercises" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Exercícios Base</DropdownLink>
       </DropdownContent>
     </DropdownContainer>
   );
@@ -491,14 +504,34 @@ function Navbar() {
           <NotificationItemStyled
             key={notif.id}
             $isRead={notif.isRead}
-            onClick={() => handleNotificationClick(notif)}
-            title={notif.isRead ? "Lida" : "Não lida"}
+            // Envolve o item com Link se tiver link, senão só o onClick para marcar como lida
+            onClick={() => handleNotificationClick(notif)} // Marca como lida e navega se houver link via navigate()
+            // Se quiser que o clique no item seja o Link diretamente:
+            // as={notif.link ? Link : 'div'} // Renderiza como Link se houver link
+            // to={notif.link || undefined}     // Prop 'to' apenas se for Link
           >
             <p>{notif.message}</p>
             <small>{new Date(notif.createdAt).toLocaleString('pt-PT')}</small>
           </NotificationItemStyled>
         ))}
-        <ViewAllNotificationsLink to="/notificacoes" onClick={closeAllMenus}>
+        {/* == ALTERAÇÃO AQUI: O ViewAllNotificationsLink já é um Link,
+             ele precisa do onClick para fechar o menu, mas a navegação
+             é tratada pelo 'to' prop.
+             A função handleNotificationClick já faz navigate(link)
+             Então, para o "Ver todas", usamos handleNavigateAndCloseMenus
+             para fechar o dropdown ANTES que a navegação do Link ocorra.
+             A forma mais simples é garantir que o clique no Link navega
+             e o menu fecha.
+        == */}
+        <ViewAllNotificationsLink
+            to="/notificacoes"
+            onClick={() => {
+                // A navegação é feita pelo componente Link.
+                // Apenas precisamos de garantir que o dropdown de notificações fecha.
+                setNotificationsDropdownOpen(false);
+                setIsMobileMenuOpen(false); // Também fecha o menu mobile se estiver aberto
+            }}
+        >
           Ver todas as notificações
         </ViewAllNotificationsLink>
       </NotificationsDropdownContent>
@@ -508,7 +541,7 @@ function Navbar() {
   return (
     <>
       <Nav>
-        <NavLogoLink to={isUserClient ? "/dashboard" : "/admin/dashboard"} onClick={closeAllMenus}>
+        <NavLogoLink to={isUserClient ? "/dashboard" : "/admin/dashboard"} onClick={handleNavigateAndCloseMenus}>
           <LogoImage src="/logo_core.png" alt="CORE Logo" />
           <LogoText>CORE</LogoText>
         </NavLogoLink>
