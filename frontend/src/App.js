@@ -98,6 +98,7 @@ function App() {
               <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
               <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
+              <Route path='/admin/notficacoes' element={<NotificationsPage />} />
               {/* == NOVA ROTA (ADMIN/STAFF) == */}
               {/* Pode usar a mesma rota /notificacoes se o conteúdo for o mesmo,
                   ou uma rota específica de admin se precisar de uma página diferente.
