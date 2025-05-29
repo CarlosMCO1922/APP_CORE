@@ -1,7 +1,18 @@
 // backend/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
-const userController = require('../controllers/userController');
+const {
+  registerUser,
+  loginUser,
+  getMe,
+  adminGetAllUsers,
+  adminGetUserById,
+  adminCreateUser,
+  adminUpdateUser,
+  adminDeleteUser,
+  adminGetUserTrainings,
+  adminGetUserAppointments
+} = require('../controllers/userController');
 // Precisamos de isAdminStaff para proteger as rotas de administração de utilizadores
 const { protect, isClientUser, isAdminStaff } = require('../middleware/authMiddleware');
 
