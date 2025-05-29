@@ -82,7 +82,6 @@ function App() {
               <Route path="/definicoes" element={<SettingsPage />} />
               <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
               <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
-              {/* == NOVA ROTA (CLIENTE) == */}
               <Route path="/notificacoes" element={<NotificationsPage />} />
             </Route>
 
@@ -98,21 +97,7 @@ function App() {
               <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
               <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
-              <Route path='/admin/notficacoes' element={<NotificationsPage />} />
-              {/* == NOVA ROTA (ADMIN/STAFF) == */}
-              {/* Pode usar a mesma rota /notificacoes se o conteúdo for o mesmo,
-                  ou uma rota específica de admin se precisar de uma página diferente.
-                  Por agora, vamos assumir que a mesma página serve para ambos.
-                  Se o link na Navbar aponta para /notificacoes, esta rota será usada.
-                  Se quiser um link diferente para admins na Navbar, precisará de ajustar
-                  o `to` do `ViewAllNotificationsLink` condicionalmente na Navbar.
-                  Vamos manter simples por agora e usar /notificacoes para todos os autenticados.
-                  Se a rota /admin/notificacoes for necessária, adicione-a.
-                  O ideal é que a Navbar já direcione para a rota correta dependendo do role.
-                  No Navbar.js, o link é fixo para "/notificacoes".
-                  Então, uma única rota protegida para utilizadores autenticados é suficiente.
-                  Vamos remover a duplicada e colocar uma rota mais genérica.
-              */}
+              <Route path="/notificacoes" element={<NotificationsPage />} />
             </Route>
 
             {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}
