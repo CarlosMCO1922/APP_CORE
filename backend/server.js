@@ -57,7 +57,7 @@ app.use('/staff', express.json(), staffRoutes);
 app.use('/payments', paymentRoutes); // Não adicionar express.json() globalmente aqui
 app.use('/exercises', express.json(), exerciseRoutes);
 app.use('/workout-plans', express.json(), workoutPlanRoutes);
-app.use('/api/notifications', notificationRoutes);
+app.use('/notifications', notificationRoutes);
 
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
