@@ -7,12 +7,26 @@ const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddl
 
 // --- Rotas de Treino (Training) ---
 router.get('/', protect, trainingController.getAllTrainings);
+router.post('/', protect, isAdminStaff, trainingController.createTraining);
 router.get('/:id', protect, trainingController.getTrainingById);
 router.post('/:id/book', protect, isClientUser, trainingController.bookTraining);
 router.delete('/:id/book', protect, isClientUser, trainingController.cancelTrainingBooking);
 router.post('/', protect, isAdminStaff, trainingController.createTraining);
 router.put('/:id', protect, isAdminStaff, trainingController.updateTraining);
 router.delete('/:id', protect, isAdminStaff, trainingController.deleteTraining);
+
+router.post(
+    '/:trainingId/admin-book-client',
+    protect,
+    isAdminStaff,
+    trainingController.adminBookClientForTraining
+);
+router.delete(
+    '/:trainingId/admin-cancel-booking/:userId', // :userId para identificar qual cliente remover
+    protect,
+    isAdminStaff,
+    trainingController.adminCancelClientBooking
+);
 
 router.get(
     '/stats/current-week-signups',

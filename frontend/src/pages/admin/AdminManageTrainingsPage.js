@@ -7,11 +7,17 @@ import {
     getAllTrainings,
     adminCreateTraining,
     adminUpdateTraining,
-    adminDeleteTraining
+    adminDeleteTraining,
+    adminBookClientForTrainingService,
+    adminCancelClientBookingService
 } from '../../services/trainingService';
 import { adminGetAllStaff } from '../../services/staffService';
-import { FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft, FaTimes, FaUsers, FaSearch, FaFilter } from 'react-icons/fa';
-import { theme } from '../../theme'; // Garanta que tem o theme importado
+import { adminGetAllUsers } from '../../services/userService';
+import {
+    FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft,
+    FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus
+} from 'react-icons/fa';
+import { theme } from '../../theme';
 
 // --- Styled Components (Completos) ---
 const PageContainer = styled.div`
@@ -93,8 +99,7 @@ const TableWrapper = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   box-shadow: ${({ theme }) => theme.boxShadow};
-  background-color: ${({ theme }) => theme.colors.cardBackground}; /* Adicionado para contexto */
-
+  background-color: ${({ theme }) => theme.colors.cardBackground};
 
   &::-webkit-scrollbar {
     height: 8px;
@@ -110,7 +115,6 @@ const Table = styled.table`
   width: 100%;
   min-width: 950px;
   border-collapse: collapse;
-  /* background-color movido para TableWrapper se quiser que o radius do wrapper se aplique */
 
   th, td {
     border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -121,17 +125,17 @@ const Table = styled.table`
     vertical-align: middle;
   }
   th {
-    background-color: #303030; /* Cor de fundo para o cabeçalho da tabela */
+    background-color: #303030;
     color: ${({ theme }) => theme.colors.primary};
     font-weight: 600;
     position: sticky;
     top: 0;
-    z-index: 1; /* Para garantir que o cabeçalho fique por cima ao rolar */
+    z-index: 1;
   }
-  tr:last-child td { border-bottom: none; }
-  tbody tr:hover { /* tbody adicionado para especificidade */
+  tbody tr:hover {
     background-color: #2c2c2c;
   }
+  tr:last-child td { border-bottom: none; }
 
   td.actions-cell {
     white-space: nowrap;
@@ -166,8 +170,8 @@ const ActionButton = styled.button`
   background-color: ${props => {
     if (props.danger) return props.theme.colors.error;
     if (props.secondary) return props.theme.colors.buttonSecondaryBg;
-    if (props.plans) return props.theme.colors.mediaButtonBg; // Assumindo que existe
-    if (props.signups) return '#007bff'; // Azul para inscritos
+    if (props.plans) return props.theme.colors.mediaButtonBg || '#6c757d'; // Fallback
+    if (props.signups) return '#007bff';
     return props.theme.colors.primary;
   }};
   color: ${props => (props.danger || props.plans || props.signups) ? 'white' : (props.secondary ? props.theme.colors.textMain : props.theme.colors.textDark)};
@@ -176,11 +180,11 @@ const ActionButton = styled.button`
     opacity: 0.85;
     transform: translateY(-1px);
     background-color: ${props => {
-        if (props.danger) return '#C62828'; // Mais escuro para hover
+        if (props.danger) return '#C62828';
         if (props.secondary) return props.theme.colors.buttonSecondaryHoverBg;
-        if (props.plans) return props.theme.colors.mediaButtonHoverBg; // Assumindo que existe
-        if (props.signups) return '#0056b3'; // Mais escuro para hover
-        return '#e6c358'; // Hover da cor primária
+        if (props.plans) return props.theme.colors.mediaButtonHoverBg || '#5a6268'; // Fallback
+        if (props.signups) return '#0056b3';
+        return '#e6c358';
     }};
   }
   &:disabled {
@@ -224,13 +228,13 @@ const MessageText = styled.p`
   border-color: ${({ theme }) => theme.colors.success};
 `;
 
-// Modal Styled Components
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0,0,0,0.85); display: flex;
   justify-content: center; align-items: center;
   z-index: 1050; padding: 20px;
 `;
+
 const ModalContent = styled.div`
   background-color: #2A2A2A;
   padding: clamp(25px, 4vw, 35px);
@@ -239,6 +243,7 @@ const ModalContent = styled.div`
   position: relative; max-height: 90vh; overflow-y: auto;
   border-top: 3px solid ${({ theme }) => theme.colors.primary};
 `;
+
 const ModalTitle = styled.h2`
   color: ${({ theme }) => theme.colors.primary};
   margin-top: 0; margin-bottom: 20px;
@@ -247,11 +252,14 @@ const ModalTitle = styled.h2`
   padding-bottom: 15px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
+
 const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
+
 const ModalLabel = styled.label`
   font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: 4px; display: block; font-weight: 500;
 `;
+
 const ModalInput = styled.input`
   padding: 10px 14px; background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -261,6 +269,7 @@ const ModalInput = styled.input`
   transition: border-color 0.2s, box-shadow 0.2s;
   &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
 `;
+
 const ModalTextarea = styled.textarea`
   padding: 10px 14px; background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -270,6 +279,7 @@ const ModalTextarea = styled.textarea`
   transition: border-color 0.2s, box-shadow 0.2s;
   &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
 `;
+
 const ModalSelect = styled.select`
   padding: 10px 14px; background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -279,25 +289,29 @@ const ModalSelect = styled.select`
   transition: border-color 0.2s, box-shadow 0.2s;
   &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
 `;
+
 const ModalActions = styled.div`
   display: flex; flex-direction: column; gap: 10px;
   margin-top: 25px; padding-top: 15px;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
   @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
 `;
-const ModalButton = styled(ActionButton)` /* Baseia-se no ActionButton mas pode ter overrides */
+
+const ModalButton = styled(ActionButton)`
   font-size: 0.9rem;
   padding: 10px 18px;
   gap: 6px;
   width: 100%;
   @media (min-width: 480px) { width: auto; }
 `;
+
 const CloseButton = styled.button`
-  position: absolute; top: 10px; right: 10px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
+  position: absolute; top: 15px; right: 15px; background: transparent; border: none;
+  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 5px;
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
   &:hover { color: #fff; transform: scale(1.1); }
 `;
+
 const ModalErrorText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error};
@@ -312,37 +326,40 @@ const ModalErrorText = styled.p`
 const SignupsModalContent = styled(ModalContent)`
   max-width: 600px;
 `;
+
 const ParticipantList = styled.ul`
   list-style: none;
   padding: 0;
-  margin-top: 20px;
-  max-height: 400px;
+  margin-top: 10px; /* Reduzido */
+  max-height: 250px; /* Ajustado */
   overflow-y: auto;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
+  background-color: #222; /* Fundo para a lista */
 `;
+
 const ParticipantItem = styled.li`
-  padding: 12px 18px;
+  padding: 10px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   color: ${({ theme }) => theme.colors.textMain};
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 
   &:last-child {
     border-bottom: none;
   }
   &:nth-child(even) {
-    background-color: #333;
+    background-color: #282828; /* Ligeiramente diferente do fundo da lista */
   }
   .email {
     color: ${({ theme }) => theme.colors.textMuted};
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    margin-left: 10px;
   }
 `;
 
-// Styled Components para Filtros
 const FiltersContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 15px 20px;
@@ -398,8 +415,8 @@ const FilterActions = styled.div`
   display: flex;
   gap: 10px;
   align-items: flex-end;
-  @media (min-width: 992px) { /* Ajustado breakpoint para filtros em linha */
-    grid-column: span 2; /* Ocupar mais espaço se houver */
+  @media (min-width: 992px) {
+    grid-column: span 2;
     justify-self: flex-end;
      button { min-width: 120px; }
   }
@@ -436,6 +453,30 @@ const FilterButton = styled.button`
   }
 `;
 
+const AddSignupFormContainer = styled.div`
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const AddSignupForm = styled.form`
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+`;
+
+const AddSignupSelect = styled(ModalSelect)`
+  flex-grow: 1;
+  min-width: 200px;
+`;
+
+const AddSignupButton = styled(ModalButton)`
+  min-width: 150px;
+  padding: 9px 15px;
+  font-size: 0.85rem;
+  height: 38px;
+`;
 
 const initialTrainingFormState = {
   name: '', description: '', date: '', time: '',
@@ -447,8 +488,10 @@ const AdminManageTrainingsPage = () => {
   const navigate = useNavigate();
   const [trainings, setTrainings] = useState([]);
   const [instructors, setInstructors] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [pageError, setPageError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   const [showModal, setShowModal] = useState(false);
@@ -464,28 +507,45 @@ const AdminManageTrainingsPage = () => {
   const [activeFilters, setActiveFilters] = useState({});
 
   const [showSignupsModal, setShowSignupsModal] = useState(false);
-  const [selectedTrainingParticipants, setSelectedTrainingParticipants] = useState([]);
-  const [selectedTrainingName, setSelectedTrainingName] = useState('');
+  const [selectedTrainingForSignups, setSelectedTrainingForSignups] = useState(null);
+  const [userToBook, setUserToBook] = useState('');
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+
 
   const fetchPageData = useCallback(async (appliedFilters = activeFilters) => {
     if (authState.token) {
-      setLoading(true); setError(''); setSuccessMessage('');
+      setLoading(true); setPageError(''); // Limpa successMessage ao buscar novos dados
       try {
-        const trainingsData = await getAllTrainings(authState.token, appliedFilters);
-        setTrainings(trainingsData);
-
+        const promises = [
+            getAllTrainings(authState.token, appliedFilters),
+        ];
+        // Só busca listas de apoio se ainda não as tiver ou se precisar forçar refresh (não implementado aqui)
         if (instructors.length === 0) {
-            const staffData = await adminGetAllStaff(authState.token);
-            setInstructors(staffData.filter(staff => ['trainer', 'admin'].includes(staff.role)));
+            promises.push(adminGetAllStaff(authState.token));
+        } else {
+            promises.push(Promise.resolve(instructors));
         }
+        if (allUsers.length === 0) {
+            promises.push(adminGetAllUsers(authState.token));
+        } else {
+            promises.push(Promise.resolve(allUsers));
+        }
+
+        const [trainingsData, staffDataResult, usersDataResult] = await Promise.all(promises);
+
+        setTrainings(trainingsData);
+        if (instructors.length === 0) setInstructors(staffDataResult.filter(staff => ['trainer', 'admin'].includes(staff.role)));
+        if (allUsers.length === 0) setAllUsers(usersDataResult.filter(u => !u.isAdmin && !u.isStaff)); // Assume que users não têm isStaff
+
       } catch (err) {
-        setError(err.message || 'Não foi possível carregar os dados da página.');
+        setPageError(err.message || 'Não foi possível carregar os dados da página.');
         setTrainings([]);
       } finally {
         setLoading(false);
       }
     }
-  }, [authState.token, instructors.length, activeFilters]);
+  }, [authState.token, activeFilters, instructors, allUsers ]); // Adicionado instructors e allUsers como dependências
 
   useEffect(() => {
     fetchPageData();
@@ -499,22 +559,22 @@ const AdminManageTrainingsPage = () => {
 
   const handleApplyFilters = () => {
     if (filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo) {
-        setError("A data 'Até' não pode ser anterior à data 'De'.");
+        setPageError("A data 'Até' não pode ser anterior à data 'De'."); // Usar pageError
         return;
     }
-    setError('');
+    setPageError('');
     setActiveFilters(filters);
   };
 
   const handleClearFilters = () => {
     setFilters({ instructorId: '', dateFrom: '', dateTo: '', nameSearch: '' });
     setActiveFilters({});
-    setError('');
+    setPageError('');
   };
 
   const handleOpenCreateModal = () => {
     setIsEditing(false); setCurrentTrainingData(initialTrainingFormState);
-    setCurrentTrainingId(null); setModalError(''); setShowModal(true);
+    setCurrentTrainingId(null); setModalError(''); setSuccessMessage(''); setShowModal(true);
   };
 
   const handleOpenEditModal = (training) => {
@@ -526,7 +586,7 @@ const AdminManageTrainingsPage = () => {
       instructorId: training.instructorId || (training.instructor?.id || ''),
       durationMinutes: training.durationMinutes || 45,
     });
-    setCurrentTrainingId(training.id); setModalError(''); setShowModal(true);
+    setCurrentTrainingId(training.id); setModalError(''); setSuccessMessage(''); setShowModal(true);
   };
 
   const handleCloseModal = () => {
@@ -541,7 +601,7 @@ const AdminManageTrainingsPage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormLoading(true); setModalError(''); setError(''); setSuccessMessage('');
+    setFormLoading(true); setModalError(''); setPageError(''); setSuccessMessage('');
     const dataToSend = {
       ...currentTrainingData,
       capacity: parseInt(currentTrainingData.capacity, 10),
@@ -571,7 +631,7 @@ const AdminManageTrainingsPage = () => {
         await adminCreateTraining(dataToSend, authState.token);
         setSuccessMessage('Treino criado com sucesso!');
       }
-      fetchPageData(activeFilters); // Re-busca com os filtros ativos
+      fetchPageData(activeFilters);
       handleCloseModal();
     } catch (err) {
       setModalError(err.message || `Falha ao ${isEditing ? 'atualizar' : 'criar'} treino.`);
@@ -581,32 +641,98 @@ const AdminManageTrainingsPage = () => {
   };
 
   const handleDeleteTraining = async (trainingId) => {
-    if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}? Esta ação não pode ser desfeita e eliminará também os planos de treino associados.`)) return;
-    setError(''); setSuccessMessage('');
+    if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}?`)) return;
+    setPageError(''); setSuccessMessage('');
     try {
       await adminDeleteTraining(trainingId, authState.token);
       setSuccessMessage('Treino eliminado com sucesso.');
-      fetchPageData(activeFilters); // Re-busca com os filtros ativos
+      fetchPageData(activeFilters);
     } catch (err) {
-      setError(err.message || 'Falha ao eliminar treino.');
+      setPageError(err.message || 'Falha ao eliminar treino.');
     }
   };
 
   const handleOpenSignupsModal = (training) => {
-    setSelectedTrainingParticipants(training.participants || []);
-    setSelectedTrainingName(training.name);
+    setSelectedTrainingForSignups(training);
+    setBookingError('');
+    setSuccessMessage(''); // Limpa mensagem de sucesso geral para não aparecer no modal de inscritos
+    setUserToBook('');
     setShowSignupsModal(true);
   };
 
   const handleCloseSignupsModal = () => {
     setShowSignupsModal(false);
-    setSelectedTrainingParticipants([]);
-    setSelectedTrainingName('');
+    setSelectedTrainingForSignups(null);
+    setBookingError(''); // Limpa erro do modal de inscritos ao fechar
+  };
+
+  const handleAdminBookClient = async (e) => {
+    e.preventDefault();
+    if (!selectedTrainingForSignups || !userToBook) {
+      setBookingError("Selecione um treino e um cliente.");
+      return;
+    }
+    setBookingLoading(true);
+    setBookingError('');
+    setSuccessMessage('');
+    try {
+      const result = await adminBookClientForTrainingService(selectedTrainingForSignups.id, userToBook, authState.token);
+      setSuccessMessage(result.message || "Cliente inscrito com sucesso!");
+      
+      const updatedParticipants = result.training.participants || [];
+      const newParticipantsCount = updatedParticipants.length;
+
+      setSelectedTrainingForSignups(prev => ({...prev, participants: updatedParticipants, participantsCount: newParticipantsCount }));
+      setTrainings(prevTrainings => prevTrainings.map(t => 
+        t.id === selectedTrainingForSignups.id 
+        ? {...t, participants: updatedParticipants, participantsCount: newParticipantsCount} 
+        : t
+      ));
+      
+      setUserToBook('');
+    } catch (err) {
+      setBookingError(err.message || "Falha ao inscrever cliente.");
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const handleAdminCancelClientBooking = async (trainingId, userIdToCancel, clientName) => {
+    if (!window.confirm(`Tem a certeza que quer cancelar a inscrição de ${clientName} neste treino?`)) return;
+
+    setBookingLoading(true);
+    setBookingError('');
+    setSuccessMessage('');
+    try {
+      const result = await adminCancelClientBookingService(trainingId, userIdToCancel, authState.token);
+      setSuccessMessage(result.message || "Inscrição cancelada com sucesso!");
+
+      const updatedParticipants = result.training.participants || [];
+      const newParticipantsCount = updatedParticipants.length;
+
+      setSelectedTrainingForSignups(prev => ({...prev, participants: updatedParticipants, participantsCount: newParticipantsCount }));
+      setTrainings(prevTrainings => prevTrainings.map(t => 
+        t.id === trainingId 
+        ? {...t, participants: updatedParticipants, participantsCount: newParticipantsCount} 
+        : t
+      ));
+
+    } catch (err) {
+      setBookingError(err.message || "Falha ao cancelar inscrição.");
+    } finally {
+      setBookingLoading(false);
+    }
   };
 
   if (loading && trainings.length === 0 && Object.keys(activeFilters).length === 0) {
     return <PageContainer><LoadingText>A carregar treinos...</LoadingText></PageContainer>;
   }
+
+  const availableUsersToBook = selectedTrainingForSignups
+    ? allUsers.filter(user => 
+        !selectedTrainingForSignups.participants?.some(p => p.id === user.id)
+      )
+    : [];
 
   return (
     <PageContainer>
@@ -622,8 +748,8 @@ const AdminManageTrainingsPage = () => {
           <FilterInput type="text" id="nameSearch" name="nameSearch" value={filters.nameSearch} onChange={handleFilterChange} placeholder="Nome do treino..." />
         </FilterGroup>
         <FilterGroup>
-          <FilterLabel htmlFor="instructorId">Instrutor</FilterLabel>
-          <FilterSelect id="instructorId" name="instructorId" value={filters.instructorId} onChange={handleFilterChange}>
+          <FilterLabel htmlFor="instructorIdFilter">Instrutor</FilterLabel>
+          <FilterSelect id="instructorIdFilter" name="instructorId" value={filters.instructorId} onChange={handleFilterChange}>
             <option value="">Todos Instrutores</option>
             {instructors.map(instr => (
               <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName}</option>
@@ -631,12 +757,12 @@ const AdminManageTrainingsPage = () => {
           </FilterSelect>
         </FilterGroup>
         <FilterGroup>
-          <FilterLabel htmlFor="dateFrom">Data De</FilterLabel>
-          <FilterInput type="date" id="dateFrom" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} />
+          <FilterLabel htmlFor="dateFromFilter">Data De</FilterLabel>
+          <FilterInput type="date" id="dateFromFilter" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} />
         </FilterGroup>
         <FilterGroup>
-          <FilterLabel htmlFor="dateTo">Data Até</FilterLabel>
-          <FilterInput type="date" id="dateTo" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} />
+          <FilterLabel htmlFor="dateToFilter">Data Até</FilterLabel>
+          <FilterInput type="date" id="dateToFilter" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} />
         </FilterGroup>
         <FilterActions>
           <FilterButton onClick={handleApplyFilters} primary><FaSearch /> Aplicar</FilterButton>
@@ -644,9 +770,9 @@ const AdminManageTrainingsPage = () => {
         </FilterActions>
       </FiltersContainer>
 
-      {error && <ErrorText>{error}</ErrorText>}
-      {successMessage && <MessageText>{successMessage}</MessageText>}
-      {loading && <LoadingText>A aplicar filtros e carregar treinos...</LoadingText>}
+      {pageError && <ErrorText>{pageError}</ErrorText>}
+      {successMessage && !showModal && !showSignupsModal && <MessageText>{successMessage}</MessageText>}
+      {loading && <LoadingText>A carregar treinos...</LoadingText>}
 
       <TableWrapper>
         <Table>
@@ -742,22 +868,62 @@ const AdminManageTrainingsPage = () => {
         </ModalOverlay>
       )}
 
-      {showSignupsModal && (
+      {showSignupsModal && selectedTrainingForSignups && (
         <ModalOverlay onClick={handleCloseSignupsModal}>
           <SignupsModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={handleCloseSignupsModal}><FaTimes /></CloseButton>
-            <ModalTitle>Inscritos em: {selectedTrainingName}</ModalTitle>
-            {selectedTrainingParticipants.length > 0 ? (
+            <ModalTitle>Inscritos em: {selectedTrainingForSignups.name}</ModalTitle>
+            
+            {bookingError && <ModalErrorText>{bookingError}</ModalErrorText>}
+            {successMessage && showSignupsModal && <MessageText style={{margin: '10px 0'}}>{successMessage}</MessageText>}
+
+
+            <AddSignupFormContainer>
+              <h4>Adicionar Cliente ao Treino</h4>
+              <AddSignupForm onSubmit={handleAdminBookClient}>
+                <ModalLabel htmlFor="userToBookSelectModal" style={{display: 'none'}}>Selecionar Cliente</ModalLabel>
+                <AddSignupSelect
+                  id="userToBookSelectModal"
+                  value={userToBook}
+                  onChange={(e) => setUserToBook(e.target.value)}
+                  required
+                >
+                  <option value="">Selecione um cliente...</option>
+                  {availableUsersToBook.map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName} ({user.email})
+                    </option>
+                  ))}
+                </AddSignupSelect>
+                <AddSignupButton type="submit" primary disabled={bookingLoading || !userToBook || selectedTrainingForSignups.participantsCount >= selectedTrainingForSignups.capacity}>
+                  {bookingLoading ? 'A inscrever...' : <><FaUserPlus /> Inscrever Cliente</>}
+                </AddSignupButton>
+              </AddSignupForm>
+              {selectedTrainingForSignups.participantsCount >= selectedTrainingForSignups.capacity && <p style={{fontSize: '0.8rem', color: theme.colors.warning, marginTop: '5px'}}>Este treino atingiu a capacidade máxima.</p>}
+              {availableUsersToBook.length === 0 && !(selectedTrainingForSignups.participantsCount >= selectedTrainingForSignups.capacity) && <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop: '5px'}}>Todos os clientes já estão inscritos ou não há clientes disponíveis.</p>}
+            </AddSignupFormContainer>
+
+            <h4 style={{marginTop: '25px', color: theme.colors.primary}}>Lista de Inscritos ({selectedTrainingForSignups.participants?.length || 0} / {selectedTrainingForSignups.capacity})</h4>
+            {selectedTrainingForSignups.participants && selectedTrainingForSignups.participants.length > 0 ? (
                 <ParticipantList>
-                    {selectedTrainingParticipants.map(participant => (
+                    {selectedTrainingForSignups.participants.map(participant => (
                         <ParticipantItem key={participant.id}>
-                            <span>{participant.firstName} {participant.lastName}</span>
-                            <span className="email">{participant.email}</span>
+                            <div>
+                                <span>{participant.firstName} {participant.lastName}</span>
+                                <span className="email">{participant.email}</span>
+                            </div>
+                            <ActionButton
+                                danger
+                                onClick={() => handleAdminCancelClientBooking(selectedTrainingForSignups.id, participant.id, `${participant.firstName} ${participant.lastName}`)}
+                                disabled={bookingLoading}
+                            >
+                                <FaUserMinus/> Remover
+                            </ActionButton>
                         </ParticipantItem>
                     ))}
                 </ParticipantList>
             ) : (
-                <p style={{textAlign: 'center', marginTop: '20px', color: '#aaa'}}>Nenhum cliente inscrito neste treino.</p>
+                <p style={{textAlign: 'center', marginTop: '10px', color: '#aaa'}}>Nenhum cliente inscrito neste treino.</p>
             )}
              <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseSignupsModal}>Fechar</ModalButton>
@@ -765,7 +931,6 @@ const AdminManageTrainingsPage = () => {
           </SignupsModalContent>
         </ModalOverlay>
       )}
-
     </PageContainer>
   );
 };

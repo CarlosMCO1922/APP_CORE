@@ -431,6 +431,150 @@ const getTodayTrainingsCount = async (req, res) => {
   }
 };
 
+// @desc    Admin inscreve um cliente específico num treino
+// @route   POST /trainings/:trainingId/admin-book-client
+// @access  Privado (Admin Staff)
+const adminBookClientForTraining = async (req, res) => {
+  const { trainingId } = req.params;
+  const { userId } = req.body; // userId do cliente a ser inscrito
+
+  if (!userId) {
+    return res.status(400).json({ message: 'ID do Utilizador (cliente) é obrigatório.' });
+  }
+
+  try {
+    const training = await db.Training.findByPk(trainingId, {
+      include: [{ model: db.User, as: 'participants' }]
+    });
+    if (!training) {
+      return res.status(404).json({ message: 'Treino não encontrado.' });
+    }
+
+    const userToBook = await db.User.findByPk(userId);
+    if (!userToBook) {
+      return res.status(404).json({ message: 'Utilizador (cliente) a ser inscrito não encontrado.' });
+    }
+    if (userToBook.isAdmin) { // Assumindo que User.isAdmin distingue clientes de staff/admins
+        return res.status(400).json({ message: 'Não é possível inscrever um administrador ou membro da equipa como participante através desta função.' });
+    }
+
+
+    const isAlreadyBooked = await training.hasParticipant(userToBook);
+    if (isAlreadyBooked) {
+      return res.status(400).json({ message: `O cliente ${userToBook.firstName} já está inscrito neste treino.` });
+    }
+
+    const participantsCount = training.participants ? training.participants.length : 0;
+    if (participantsCount >= training.capacity) {
+      return res.status(400).json({ message: 'Este treino já atingiu a capacidade máxima.' });
+    }
+
+    await training.addParticipant(userToBook);
+
+    // Notificar o cliente (opcional, mas bom)
+    _internalCreateNotification({
+      recipientUserId: userToBook.id,
+      message: `Foi inscrito no treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}) por um administrador.`,
+      type: 'TRAINING_BOOKED_BY_ADMIN_CLIENT',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/calendario`
+    });
+
+    // Notificar o instrutor (opcional, se diferente do admin que fez a ação)
+    if (training.instructorId && training.instructorId !== req.staff.id) {
+         _internalCreateNotification({
+            recipientStaffId: training.instructorId,
+            message: `Cliente ${userToBook.firstName} ${userToBook.lastName} foi inscrito no seu treino "${training.name}" por um admin. Vagas: ${training.capacity - (participantsCount + 1)}.`,
+            type: 'CLIENT_BOOKED_BY_ADMIN_STAFF',
+            relatedResourceId: training.id,
+            relatedResourceType: 'training',
+            link: `/admin/calendario-geral`
+        });
+    }
+
+    // Retornar o treino atualizado com a lista de participantes
+    const updatedTraining = await db.Training.findByPk(trainingId, {
+        include: [{ model: db.User, as: 'participants', attributes: ['id', 'firstName', 'lastName', 'email'] }]
+    });
+    const trainingJSON = updatedTraining.toJSON();
+    const response = {
+        ...trainingJSON,
+        participantsCount: trainingJSON.participants ? trainingJSON.participants.length : 0,
+    };
+
+    res.status(200).json({ message: `Cliente ${userToBook.firstName} inscrito com sucesso!`, training: response });
+
+  } catch (error) {
+    console.error('Erro (admin) ao inscrever cliente no treino:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
+// @desc    Admin cancela a inscrição de um cliente específico num treino
+// @route   DELETE /trainings/:trainingId/admin-cancel-booking/:userId
+// @access  Privado (Admin Staff)
+const adminCancelClientBooking = async (req, res) => {
+  const { trainingId, userId } = req.params;
+
+  try {
+    const training = await db.Training.findByPk(trainingId);
+    if (!training) {
+      return res.status(404).json({ message: 'Treino não encontrado.' });
+    }
+
+    const userToCancel = await db.User.findByPk(userId);
+    if (!userToCancel) {
+      return res.status(404).json({ message: 'Utilizador (cliente) não encontrado para cancelar inscrição.' });
+    }
+
+    const isBooked = await training.hasParticipant(userToCancel);
+    if (!isBooked) {
+      return res.status(400).json({ message: `O cliente ${userToCancel.firstName} não está inscrito neste treino.` });
+    }
+
+    await training.removeParticipant(userToCancel);
+
+    // Notificar o cliente (opcional)
+    _internalCreateNotification({
+      recipientUserId: userToCancel.id,
+      message: `A sua inscrição no treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}) foi cancelada por um administrador.`,
+      type: 'TRAINING_CANCELLED_BY_ADMIN_CLIENT',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/calendario`
+    });
+
+    // Notificar o instrutor (opcional)
+    if (training.instructorId && training.instructorId !== req.staff.id) {
+        const currentParticipants = await training.countParticipants();
+         _internalCreateNotification({
+            recipientStaffId: training.instructorId,
+            message: `Inscrição de ${userToCancel.firstName} ${userToCancel.lastName} no treino "${training.name}" foi cancelada por um admin. Vagas: ${training.capacity - currentParticipants}.`,
+            type: 'CLIENT_CANCELLED_BY_ADMIN_STAFF',
+            relatedResourceId: training.id,
+            relatedResourceType: 'training',
+            link: `/admin/calendario-geral`
+        });
+    }
+    
+    const updatedTraining = await db.Training.findByPk(trainingId, {
+        include: [{ model: db.User, as: 'participants', attributes: ['id', 'firstName', 'lastName', 'email'] }]
+    });
+    const trainingJSON = updatedTraining.toJSON();
+    const response = {
+        ...trainingJSON,
+        participantsCount: trainingJSON.participants ? trainingJSON.participants.length : 0,
+    };
+
+    res.status(200).json({ message: `Inscrição do cliente ${userToCancel.firstName} cancelada com sucesso!`, training: response });
+
+  } catch (error) {
+    console.error('Erro (admin) ao cancelar inscrição do cliente:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
 module.exports = {
   createTraining,
   getAllTrainings,
@@ -441,4 +585,6 @@ module.exports = {
   cancelTrainingBooking,
   getCurrentWeekSignups,
   getTodayTrainingsCount,
+  adminBookClientForTraining,
+  adminCancelClientBooking,
 };
