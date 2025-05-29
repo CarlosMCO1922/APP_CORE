@@ -6,6 +6,7 @@ require('dotenv').config(); // Garante que as variáveis de ambiente são carreg
 
 // Inicializa o Stripe com a tua chave secreta
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { _internalCreateNotification } = require('./notificationController');
 const { startOfMonth, endOfMonth, format } = require('date-fns');
 
 // --- Funções do Administrador (EXISTENTES - MANTÊM-SE) ---
@@ -38,6 +39,18 @@ const adminCreatePayment = async (req, res) => {
       relatedResourceId: relatedResourceId ? parseInt(relatedResourceId) : null,
       relatedResourceType: relatedResourceType || null,
     });
+
+    // Opcional: Notificar cliente se um pagamento pendente foi criado para ele pelo admin
+    if (newPayment.status === 'pendente' && newPayment.userId) {
+      _internalCreateNotification({
+        recipientUserId: newPayment.userId,
+        message: `Um novo pagamento de ${Number(newPayment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })} (${newPayment.description || newPayment.category}) foi registado e aguarda a sua ação.`,
+        type: 'NEW_MANUAL_PAYMENT_PENDING_CLIENT',
+        relatedResourceId: newPayment.id,
+        relatedResourceType: 'payment',
+        link: `/meus-pagamentos`
+      });
+    }
 
     res.status(201).json(newPayment);
   } catch (error) {
@@ -148,6 +161,19 @@ const adminUpdatePaymentStatus = async (req, res) => {
             }
             await appointment.save();
             console.log(`Consulta ID ${appointment.id} atualizada pelo adminUpdatePaymentStatus: sinalPago = true, status = ${appointment.status}.`);
+
+            // Notificar cliente que a consulta foi confirmada após pagamento do sinal
+            if (appointment.userId) {
+                _internalCreateNotification({
+                    recipientUserId: appointment.userId,
+                    message: `O seu pagamento de sinal para a consulta de ${format(new Date(appointment.date), 'dd/MM/yyyy')} foi confirmado! A sua consulta está agora CONFIRMADA.`,
+                    type: 'APPOINTMENT_CONFIRMED_CLIENT',
+                    relatedResourceId: appointment.id,
+                    relatedResourceType: 'appointment',
+                    link: `/calendario` // ou link para detalhes da consulta
+                });
+            }
+
           } else {
             console.warn(`AdminUpdatePaymentStatus: Consulta ID ${payment.relatedResourceId} associada ao pagamento de sinal ID ${payment.id} não encontrada.`);
           }
@@ -367,6 +393,31 @@ const stripeWebhookHandler = async (req, res) => {
                   }
                   await appointment.save();
                   console.log(`[WEBHOOK CTRL] Consulta ID ${appointment.id} ATUALIZADA na BD: signalPaid = true, status = ${appointment.status}.`);
+
+                  // Notificar o cliente da confirmação da consulta
+                  if (appointment.userId) {
+                    _internalCreateNotification({
+                      recipientUserId: appointment.userId,
+                      message: `O seu pagamento de sinal para a consulta de ${format(new Date(appointment.date), 'dd/MM/yyyy')} foi bem-sucedido! A sua consulta está agora CONFIRMADA.`,
+                      type: 'APPOINTMENT_CONFIRMED_CLIENT_STRIPE',
+                      relatedResourceId: appointment.id,
+                      relatedResourceType: 'appointment',
+                      link: `/calendario`
+                    });
+                  }
+                  // Notificar o profissional da confirmação da consulta
+                  if (appointment.staffId) {
+                    const clientUser = await db.User.findByPk(appointment.userId);
+                    _internalCreateNotification({
+                        recipientStaffId: appointment.staffId,
+                        message: `Pagamento de sinal recebido e consulta confirmada para ${clientUser?.firstName} ${clientUser?.lastName} em ${format(new Date(appointment.date), 'dd/MM/yyyy')} às ${appointment.time.substring(0,5)}.`,
+                        type: 'APPOINTMENT_CONFIRMED_STAFF_STRIPE',
+                        relatedResourceId: appointment.id,
+                        relatedResourceType: 'appointment',
+                        link: `/admin/calendario-geral`
+                    });
+                  }
+
                 } else {
                   console.warn(`[WEBHOOK CTRL] AVISO: Consulta ID ${payment.relatedResourceId} (associada ao pag. de sinal ID ${payment.id}) não encontrada na BD.`);
                 }

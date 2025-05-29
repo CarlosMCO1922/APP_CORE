@@ -2,6 +2,7 @@
 const db = require('../models');
 const { Op, Sequelize } = require('sequelize'); // Sequelize pode não ser usado diretamente aqui
 const { format } = require('date-fns'); // Para formatar data
+const { _internalCreateNotification } = require('./notificationController');
 
 // --- Função Auxiliar para Verificar Conflitos de Consulta (da tua versão) ---
 const checkForStaffAppointmentConflict = async (staffId, date, time, durationMinutes, excludeAppointmentId = null) => {
@@ -149,6 +150,29 @@ const adminCreateAppointment = async (req, res) => {
     const createdApptWithDetails = await db.Appointment.findByPk(newAppointment.id, {
         include: [{model: db.User, as: 'client'}, {model: db.Staff, as: 'professional'}]
     });
+
+    // Notificar o profissional se uma consulta foi criada diretamente para ele
+    if (newAppointment.staffId) {
+      _internalCreateNotification({
+        recipientStaffId: newAppointment.staffId,
+        message: `Um novo horário/consulta foi adicionado à sua agenda para ${format(new Date(newAppointment.date), 'dd/MM/yyyy')} às ${newAppointment.time.substring(0,5)}.`,
+        type: 'APPOINTMENT_SCHEDULED_STAFF',
+        relatedResourceId: newAppointment.id,
+        relatedResourceType: 'appointment',
+        link: `/admin/calendario-geral` // Ou link para a consulta
+      });
+    }
+    // Notificar o cliente se uma consulta foi criada e atribuída a ele
+    if (newAppointment.userId && clientUser) { // clientUser foi buscado antes
+      _internalCreateNotification({
+        recipientUserId: newAppointment.userId,
+        message: `Uma consulta com ${professional.firstName} foi agendada para si em ${format(new Date(newAppointment.date), 'dd/MM/yyyy')} às ${newAppointment.time.substring(0,5)}.`,
+        type: 'APPOINTMENT_SCHEDULED_CLIENT',
+        relatedResourceId: newAppointment.id,
+        relatedResourceType: 'appointment',
+        link: `/calendario`
+      });
+    }
 
     res.status(201).json(createdApptWithDetails);
   } catch (error) {
@@ -423,6 +447,30 @@ const clientBookAppointment = async (req, res) => {
     }
 
     const bookedAppointment = await db.Appointment.findByPk(appointmentId, { include: [{ model: db.User, as: 'client' }, { model: db.Staff, as: 'professional' }]});
+
+    // Notificar o cliente
+    _internalCreateNotification({
+      recipientUserId: userId,
+      message: `Consulta marcada com ${appointment.professional?.firstName} para ${format(new Date(appointment.date), 'dd/MM/yyyy')} às ${appointment.time.substring(0,5)}. Aguarda pagamento do sinal para confirmação.`,
+      type: 'APPOINTMENT_BOOKED_CLIENT',
+      relatedResourceId: appointment.id,
+      relatedResourceType: 'appointment',
+      link: `/meus-pagamentos` // Para pagar o sinal
+    });
+
+    // Notificar o profissional
+    if (appointment.staffId) {
+      const client = await db.User.findByPk(userId); // Buscar nome do cliente
+      _internalCreateNotification({
+        recipientStaffId: appointment.staffId,
+        message: `Nova consulta marcada por ${client?.firstName} ${client?.lastName} para ${format(new Date(appointment.date), 'dd/MM/yyyy')} às ${appointment.time.substring(0,5)}.`,
+        type: 'APPOINTMENT_BOOKED_STAFF',
+        relatedResourceId: appointment.id,
+        relatedResourceType: 'appointment',
+        link: `/admin/calendario-geral`
+      });
+    }
+
     res.status(200).json({ message: 'Consulta marcada! Pagamento do sinal pendente.', appointment: bookedAppointment });
   } catch (error) {
     console.error('Erro (cliente) ao marcar consulta:', error);
@@ -480,6 +528,30 @@ const clientCancelAppointmentBooking = async (req, res) => {
     await appointment.save();
 
     const updatedAppointment = await db.Appointment.findByPk(appointmentId, { include: [{ model: db.User, as: 'client' }, { model: db.Staff, as: 'professional' }]});
+
+    // Notificar o cliente
+    _internalCreateNotification({
+      recipientUserId: userId,
+      message: `A sua consulta de ${format(new Date(appointment.date), 'dd/MM/yyyy')} com ${appointment.professional?.firstName} foi cancelada.`,
+      type: 'APPOINTMENT_CANCELLED_CLIENT',
+      relatedResourceId: appointment.id,
+      relatedResourceType: 'appointment',
+      link: `/calendario`
+    });
+
+    // Notificar o profissional
+    if (appointment.staffId) {
+      const client = await db.User.findByPk(userId);
+      _internalCreateNotification({
+        recipientStaffId: appointment.staffId,
+        message: `Consulta cancelada por ${client?.firstName} ${client?.lastName} para ${format(new Date(appointment.date), 'dd/MM/yyyy')} às ${appointment.time.substring(0,5)}. O horário está novamente disponível.`,
+        type: 'APPOINTMENT_CANCELLED_STAFF',
+        relatedResourceId: appointment.id,
+        relatedResourceType: 'appointment',
+        link: `/admin/calendario-geral`
+      });
+    }
+
     res.status(200).json({ message: 'Consulta cancelada com sucesso.', appointment: updatedAppointment });
   } catch (error) {
     console.error('Erro (cliente) ao cancelar consulta:', error);
@@ -537,6 +609,19 @@ const clientRequestAppointment = async (req, res) => {
       status: 'pendente_aprovacao_staff',
       // totalCost e signalPaid serão definidos quando o staff aceitar
     });
+
+    // Notificar o profissional do pedido
+    if (newAppointmentRequest.staffId) {
+      const client = await db.User.findByPk(userId);
+      _internalCreateNotification({
+        recipientStaffId: newAppointmentRequest.staffId,
+        message: `Novo pedido de consulta de ${client?.firstName} ${client?.lastName} para ${format(new Date(newAppointmentRequest.date), 'dd/MM/yyyy')} às ${newAppointmentRequest.time.substring(0,5)}.`,
+        type: 'APPOINTMENT_REQUESTED_STAFF',
+        relatedResourceId: newAppointmentRequest.id,
+        relatedResourceType: 'appointment',
+        link: `/admin/appointment-requests` // Ou link para o pedido específico
+      });
+    }
 
     res.status(201).json({
         message: 'Pedido de consulta enviado com sucesso! Aguarda a aprovação do profissional.',
@@ -608,6 +693,27 @@ const staffRespondToAppointmentRequest = async (req, res) => {
     const updatedAppointmentWithDetails = await db.Appointment.findByPk(appointmentId, {
       include: [{ model: db.User, as: 'client' }, { model: db.Staff, as: 'professional' }]
     });
+
+    // Notificar o cliente da decisão
+    if (appointment.userId) {
+      let clientMessage = '';
+      let notificationType = '';
+      if (decision === 'accept') {
+        clientMessage = `O seu pedido de consulta com ${appointment.professional?.firstName} para ${format(new Date(appointment.date), 'dd/MM/yyyy')} foi ACEITE! Por favor, proceda ao pagamento do sinal para confirmar.`;
+        notificationType = 'APPOINTMENT_REQUEST_ACCEPTED_CLIENT';
+      } else { // decision === 'reject'
+        clientMessage = `O seu pedido de consulta com ${appointment.professional?.firstName} para ${format(new Date(appointment.date), 'dd/MM/yyyy')} foi REJEITADO.`;
+        notificationType = 'APPOINTMENT_REQUEST_REJECTED_CLIENT';
+      }
+      _internalCreateNotification({
+        recipientUserId: appointment.userId,
+        message: clientMessage,
+        type: notificationType,
+        relatedResourceId: appointment.id,
+        relatedResourceType: 'appointment',
+        link: decision === 'accept' ? `/meus-pagamentos` : `/calendario`
+      });
+    }
 
     res.status(200).json({
       message: `Pedido de consulta ${decision === 'accept' ? 'aceite. Aguarda pagamento do sinal pelo cliente.' : 'rejeitado'} com sucesso.`,

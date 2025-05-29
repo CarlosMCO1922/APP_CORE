@@ -2,6 +2,7 @@
 const { Op } = require('sequelize'); // Para operadores como "greater than or equal"
 const db = require('../models');
 const { startOfWeek, endOfWeek, format } = require('date-fns');
+const { _internalCreateNotification } = require('./notificationController');
 
 // @desc    Criar um novo treino
 // @route   POST /api/trainings
@@ -39,6 +40,17 @@ const createTraining = async (req, res) => {
       capacity: parseInt(capacity),
       instructorId: parseInt(instructorId),
     });
+
+    if (newTraining.instructorId) {
+      _internalCreateNotification({
+        recipientStaffId: newTraining.instructorId,
+        message: `Foi-lhe atribuído um novo treino: "${newTraining.name}" no dia ${format(new Date(newTraining.date), 'dd/MM/yyyy')} às ${newTraining.time.substring(0,5)}.`,
+        type: 'NEW_TRAINING_ASSIGNED',
+        relatedResourceId: newTraining.id,
+        relatedResourceType: 'training',
+        link: `/calendario` // Ou um link específico para o treino no painel do staff
+      });
+    }
 
     res.status(201).json(newTraining);
   } catch (error) {
@@ -241,6 +253,28 @@ const bookTraining = async (req, res) => {
     // Adicionar o utilizador aos participantes do treino
     await training.addParticipant(user); // 'addParticipant' é outro método mágico
 
+    // Notificar o cliente
+    _internalCreateNotification({
+      recipientUserId: userId,
+      message: `Inscrição confirmada no treino "${training.name}" para ${format(new Date(training.date), 'dd/MM/yyyy')} às ${training.time.substring(0,5)}.`,
+      type: 'TRAINING_BOOKING_CONFIRMED_CLIENT',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/meus-treinos` // ou /calendario ou /treinos/:id/plano
+    });
+
+    // Notificar o instrutor do treino (e/ou admins)
+    if (training.instructorId) {
+      _internalCreateNotification({
+        recipientStaffId: training.instructorId,
+        message: `Nova inscrição no seu treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}): ${user.firstName} ${user.lastName}. Vagas restantes: ${training.capacity - (training.participants.length + 1)}.`,
+        type: 'NEW_TRAINING_SIGNUP_STAFF',
+        relatedResourceId: training.id,
+        relatedResourceType: 'training',
+        link: `/admin/calendario-geral` // Ou um link para gerir o treino
+      });
+    }
+
     res.status(200).json({ message: 'Inscrição no treino realizada com sucesso!' });
   } catch (error) {
     console.error('Erro ao inscrever no treino:', error);
@@ -274,6 +308,29 @@ const cancelTrainingBooking = async (req, res) => {
 
     // Remover o utilizador dos participantes do treino
     await training.removeParticipant(user); // 'removeParticipant'
+
+    // Notificar o cliente
+    _internalCreateNotification({
+      recipientUserId: userId,
+      message: `A sua inscrição no treino "${training.name}" de ${format(new Date(training.date), 'dd/MM/yyyy')} foi cancelada.`,
+      type: 'TRAINING_BOOKING_CANCELLED_CLIENT',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/calendario`
+    });
+
+    // Opcional: Notificar o instrutor/admin sobre o cancelamento e vaga aberta
+    if (training.instructorId) {
+        const currentParticipants = await training.countParticipants(); // Recalcula após remoção
+         _internalCreateNotification({
+            recipientStaffId: training.instructorId,
+            message: `Inscrição cancelada no treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}) por ${user.firstName} ${user.lastName}. Vagas: ${training.capacity - currentParticipants}.`,
+            type: 'TRAINING_SIGNUP_CANCELLED_STAFF',
+            relatedResourceId: training.id,
+            relatedResourceType: 'training',
+            link: `/admin/calendario-geral`
+        });
+    }
 
     res.status(200).json({ message: 'Inscrição no treino cancelada com sucesso!' });
   } catch (error) {

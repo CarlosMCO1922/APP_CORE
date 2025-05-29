@@ -22,6 +22,7 @@ const staffRoutes = require('./routes/staffRoutes');
 const paymentRoutes = require('./routes/paymentRoutes'); // Este já tem express.raw para o webhook
 const exerciseRoutes = require('./routes/exerciseRoutes');
 const workoutPlanRoutes = require('./routes/workoutPlanRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Aplica express.json() aqui para todas as rotas QUE PRECISAM dele,
 // APÓS a rota do webhook ter tido a chance de usar express.raw().
@@ -56,6 +57,7 @@ app.use('/staff', express.json(), staffRoutes);
 app.use('/payments', paymentRoutes); // Não adicionar express.json() globalmente aqui
 app.use('/exercises', express.json(), exerciseRoutes);
 app.use('/workout-plans', express.json(), workoutPlanRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
