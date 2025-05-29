@@ -69,25 +69,40 @@ const createTraining = async (req, res) => {
 // @access  Privado (Qualquer utilizador autenticado)
 const getAllTrainings = async (req, res) => {
   try {
-    const { instructorId, dateFrom, dateTo, nameSearch } = req.query; // Novos query params
+    const { instructorId, dateFrom, dateTo, nameSearch } = req.query;
     const whereClause = {};
 
+    // VALIDAÇÃO E APLICAÇÃO DOS FILTROS
     if (instructorId) {
-      whereClause.instructorId = parseInt(instructorId, 10);
+      const parsedInstructorId = parseInt(instructorId, 10);
+      if (!isNaN(parsedInstructorId)) { // Só aplica o filtro se for um número válido
+        whereClause.instructorId = parsedInstructorId;
+      } else if (instructorId !== '') { // Se não for vazio e não for número, pode ser um erro de input
+        console.warn(`getAllTrainings: instructorId inválido recebido: ${instructorId}`);
+        // Poderia retornar um erro 400 aqui se quisesse ser mais estrito
+      }
+      // Se instructorId for uma string vazia, não adicionamos ao whereClause,
+      // o que significa "todos os instrutores"
     }
+
     if (dateFrom && dateTo) {
+      // Adicionar validação de formato de data se necessário (ex: com date-fns isValid)
       whereClause.date = { [Op.between]: [dateFrom, dateTo] };
     } else if (dateFrom) {
       whereClause.date = { [Op.gte]: dateFrom };
     } else if (dateTo) {
       whereClause.date = { [Op.lte]: dateTo };
     }
-    if (nameSearch) {
-      whereClause.name = { [Op.like]: `%${nameSearch}%` };
+
+    if (nameSearch && typeof nameSearch === 'string' && nameSearch.trim() !== '') {
+      whereClause.name = { [Op.iLike]: `%${nameSearch.trim()}%` }; // Usar iLike para case-insensitive (PostgreSQL)
+                                                              // Para SQLite, Op.like é case-insensitive por padrão
     }
 
+    console.log('Aplicando filtros para treinos:', whereClause); // Log para depuração
+
     const trainings = await db.Training.findAll({
-      where: whereClause, // Aplicar os filtros
+      where: whereClause,
       include: [
         {
           model: db.Staff,
@@ -114,8 +129,8 @@ const getAllTrainings = async (req, res) => {
 
     res.status(200).json(trainingsWithParticipantCount);
   } catch (error) {
-    console.error('Erro ao listar treinos:', error);
-    res.status(500).json({ message: 'Erro interno do servidor ao listar os treinos.', error: error.message });
+    console.error('Erro detalhado ao listar treinos:', error); // Log mais detalhado do erro
+    res.status(500).json({ message: 'Erro interno do servidor ao listar os treinos.', errorDetails: error.message });
   }
 };
 
