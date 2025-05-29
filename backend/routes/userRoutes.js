@@ -1,18 +1,7 @@
 // backend/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
-const {
-  registerUser,
-  loginUser,
-  getMe,
-  adminGetAllUsers,
-  adminGetUserById,
-  adminCreateUser,
-  adminUpdateUser,
-  adminDeleteUser,
-  adminGetUserTrainings,
-  adminGetUserAppointments
-} = require('../controllers/userController');
+const userController = require('../controllers/userController');
 // Precisamos de isAdminStaff para proteger as rotas de administração de utilizadores
 const { protect, isClientUser, isAdminStaff } = require('../middleware/authMiddleware');
 
@@ -48,8 +37,8 @@ router.put('/:id', protect, isAdminStaff, userController.updateUserAsAdmin);
 // @desc    Admin elimina um utilizador
 router.delete('/:id', protect, isAdminStaff, userController.deleteUserAsAdmin);
 
-router.get('/:userId/trainings', protect, isAdminStaff, adminGetUserTrainings);
-router.get('/:userId/appointments', protect, isAdminStaff, adminGetUserAppointments);
+router.get('/:userId/trainings', protect, isAdminStaff, userController.adminGetUserTrainings);
+router.get('/:userId/appointments', protect, isAdminStaff, userController.adminGetUserAppointments);
 
 
 module.exports = router;
