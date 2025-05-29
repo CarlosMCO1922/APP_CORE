@@ -13,6 +13,7 @@ import RegisterPage from './pages/RegisterPage';
 import CalendarPage from './pages/CalendarPage';
 import SettingsPage from './pages/SettingsPage';
 import MyPaymentsPage from './pages/MyPaymentsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
 import AdminManageStaffPage from './pages/admin/AdminManageStaffPage';
@@ -85,6 +86,7 @@ function App() {
               <Route path="/definicoes" element={<SettingsPage />} />
               <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
               <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
+              <Route path="/notificacoes" element={<NotificationsPage />} />
               {/* Adicionar aqui rota para /notificacoes (cliente) quando criarmos a página */}
             </Route>
 
@@ -100,6 +102,7 @@ function App() {
               <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
               <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
+              <Route path="/admin/notificacoes" element={<NotificationsPage />} />
               {/* Adicionar aqui rota para /admin/notificacoes (admin/staff) quando criarmos a página */}
             </Route>
 
