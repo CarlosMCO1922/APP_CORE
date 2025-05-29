@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-// == NOVA IMPORTAÇÃO ==
 import { NotificationProvider } from './context/NotificationContext';
 
 // Componentes de Página
@@ -13,7 +12,8 @@ import RegisterPage from './pages/RegisterPage';
 import CalendarPage from './pages/CalendarPage';
 import SettingsPage from './pages/SettingsPage';
 import MyPaymentsPage from './pages/MyPaymentsPage';
-import NotificationsPage from './pages/NotificationsPage';
+// == NOVA IMPORTAÇÃO ==
+import NotificationsPage from './pages/NotificationsPage'; // Importa a nova página
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
 import AdminManageStaffPage from './pages/admin/AdminManageStaffPage';
@@ -53,14 +53,10 @@ function App() {
   }, [authState]);
 
   return (
-    // O Router deve ser o mais externo possível se o NotificationProvider não depender dele
-    // Mas como o NotificationProvider usa useAuth, ele deve estar dentro do AuthProvider.
-    // E como Navbar usa useNotifications (futuramente), NotificationProvider deve envolver Navbar.
     <Router>
-      {/* == NotificationProvider ENVOLVE A NAVBAR E AS ROTAS == */}
       <NotificationProvider>
         {authState.isAuthenticated && <Navbar />}
-        <div className="main-content-area"> {/* Certifica-te que este estilo é útil ou remove-o */}
+        <div className="main-content-area">
           <Routes>
             <Route
               path="/login"
@@ -86,8 +82,8 @@ function App() {
               <Route path="/definicoes" element={<SettingsPage />} />
               <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
               <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
+              {/* == NOVA ROTA (CLIENTE) == */}
               <Route path="/notificacoes" element={<NotificationsPage />} />
-              {/* Adicionar aqui rota para /notificacoes (cliente) quando criarmos a página */}
             </Route>
 
             {/* Rotas de Staff/Admin */}
@@ -102,9 +98,38 @@ function App() {
               <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
               <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
-              <Route path="/admin/notificacoes" element={<NotificationsPage />} />
-              {/* Adicionar aqui rota para /admin/notificacoes (admin/staff) quando criarmos a página */}
+              {/* == NOVA ROTA (ADMIN/STAFF) == */}
+              {/* Pode usar a mesma rota /notificacoes se o conteúdo for o mesmo,
+                  ou uma rota específica de admin se precisar de uma página diferente.
+                  Por agora, vamos assumir que a mesma página serve para ambos.
+                  Se o link na Navbar aponta para /notificacoes, esta rota será usada.
+                  Se quiser um link diferente para admins na Navbar, precisará de ajustar
+                  o `to` do `ViewAllNotificationsLink` condicionalmente na Navbar.
+                  Vamos manter simples por agora e usar /notificacoes para todos os autenticados.
+                  Se a rota /admin/notificacoes for necessária, adicione-a.
+                  O ideal é que a Navbar já direcione para a rota correta dependendo do role.
+                  No Navbar.js, o link é fixo para "/notificacoes".
+                  Então, uma única rota protegida para utilizadores autenticados é suficiente.
+                  Vamos remover a duplicada e colocar uma rota mais genérica.
+              */}
             </Route>
+
+            {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}
+            {/* Esta rota deve estar dentro de um ProtectedRoute genérico ou o ProtectedRoute acima
+                que permite múltiplos roles já serve se "/notificacoes" estiver lá.
+                Dado que /notificacoes está dentro do ProtectedRoute para 'user',
+                staffs não acederiam.
+                Vamos colocar uma rota para /notificacoes que seja acessível por todos os autenticados.
+            */}
+            <Route element={<ProtectedRoute allowedRoles={['user', 'admin', 'trainer', 'physiotherapist', 'employee']} />}>
+                <Route path="/notificacoes" element={<NotificationsPage />} />
+                 {/* Se precisar de um caminho específico para admin, pode adicionar:
+                 <Route path="/admin/notificacoes" element={<NotificationsPage />} />
+                 E ajustar o link na Navbar para apontar para /admin/notificacoes se for admin.
+                 Por agora, /notificacoes serve para todos os autenticados.
+                 */}
+            </Route>
+
 
             {/* Rota Catch-all */}
             <Route
