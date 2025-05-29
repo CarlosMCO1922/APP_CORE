@@ -10,7 +10,6 @@ const env = process.env.NODE_ENV || 'development';
 const sequelize = require('../config/database'); // Ajuste o caminho se o seu config.js estiver noutro local
 const db = {};
 
-let sequelize;
 if (config.use_env_variable) {
   sequelize = new Sequelize(process.env[config.use_env_variable], config);
 } else {
