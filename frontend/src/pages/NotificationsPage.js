@@ -1,13 +1,13 @@
 // src/pages/NotificationsPage.js
-import React, { useEffect, Fragment } from 'react'; // Fragment para chaves no map
+import React, { useEffect, Fragment } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { FaBell, FaCheckDouble, FaArrowLeft, FaExternalLinkAlt, FaRegClock } from 'react-icons/fa';
-import { theme } from '../theme'; // Garanta que o caminho está correto
+import { theme } from '../theme';
 
-// --- Styled Components ---
+// --- Styled Components (Completos) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -62,7 +62,7 @@ const NotificationListContainer = styled.div`
 `;
 
 const NotificationItem = styled.div`
-  background-color: ${props => props.$isRead ? '#2C2C2C' : '#3A3A3A'}; // Destaque para não lidas
+  background-color: ${props => props.$isRead ? '#2C2C2C' : '#3A3A3A'};
   padding: 15px;
   margin-bottom: 12px;
   border-radius: 8px;
@@ -76,7 +76,7 @@ const NotificationItem = styled.div`
 
   &:hover {
     background-color: #404040;
-    border-left-color: ${coreGold};
+    border-left-color: ${({ theme }) => theme.colors.primary};
   }
 
   p {
@@ -164,17 +164,13 @@ const EmptyStateText = styled.p`
   border-radius: ${({ theme }) => theme.borderRadius};
 `;
 
-// Re-definindo coreGold aqui se não estiver vindo do theme de forma consistente nos styled-components
-const coreGold = theme.colors.primary;
-
-
 const NotificationsPage = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
   const {
     notifications,
     unreadCount,
-    totalNotifications,
+    // totalNotifications, // Não usado diretamente aqui, mas disponível no contexto
     currentPage,
     totalPages,
     isLoading,
@@ -184,18 +180,17 @@ const NotificationsPage = () => {
     markAllNotificationsAsRead,
   } = useNotifications();
 
-  const ITEMS_PER_PAGE = 15; // Quantas notificações por página
+  const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
-    // Busca a primeira página de todas as notificações ao montar
     if (authState.isAuthenticated) {
-      fetchNotifications(1, ITEMS_PER_PAGE, null); // null para status = todas
+      fetchNotifications(1, ITEMS_PER_PAGE, null);
     }
-  }, [authState.isAuthenticated, fetchNotifications]); // Removido ITEMS_PER_PAGE das dependências, é constante
+  }, [authState.isAuthenticated, fetchNotifications]);
 
   const handleNotificationClick = (notification) => {
     if (!notification.isRead) {
-      markNotificationAsRead(notification.id); // Marca como lida via contexto
+      markNotificationAsRead(notification.id);
     }
     if (notification.link) {
       navigate(notification.link);
@@ -210,8 +205,6 @@ const NotificationsPage = () => {
 
   const handleMarkAllReadClick = async () => {
       await markAllNotificationsAsRead();
-      // O contexto já deve re-buscar ou atualizar o estado,
-      // mas podemos forçar um re-fetch da página atual para garantir
       fetchNotifications(currentPage, ITEMS_PER_PAGE, null);
   };
 

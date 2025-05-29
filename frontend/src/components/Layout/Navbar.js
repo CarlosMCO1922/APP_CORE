@@ -10,16 +10,12 @@ import {
   FaCog, FaSignOutAlt, FaBars, FaTimes,
   FaBell, FaEnvelopeOpen, FaCheckDouble
 } from 'react-icons/fa';
-import { theme } from '../../theme';
+import { theme } from '../../theme'; // Importa o tema para usar nos defaults ou lógica
 
-const coreGold = theme.colors.primary;
-const coreBlack = theme.colors.background;
-const navBackground = theme.colors.cardBackground;
-const lightTextColor = theme.colors.textMain;
-const dropdownHoverBg = '#333333';
+// Constantes de tema removidas do escopo global do módulo
 
 const Nav = styled.nav`
-  background-color: ${navBackground};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 0.75rem 1.5rem;
   display: flex;
   justify-content: space-between;
@@ -47,7 +43,7 @@ const LogoImage = styled.img`
 const LogoText = styled.span`
   font-size: 1.4rem;
   font-weight: bold;
-  color: ${coreGold};
+  color: ${({ theme }) => theme.colors.primary};
   @media (max-width: 768px) {
     display: none;
   }
@@ -65,7 +61,7 @@ const DesktopNavLinks = styled.div`
 `;
 
 const NavLinkStyled = styled(Link)`
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
@@ -78,15 +74,15 @@ const NavLinkStyled = styled(Link)`
   border-radius: 6px;
 
   &:hover {
-    color: ${coreGold};
-    background-color: ${dropdownHoverBg};
+    color: ${({ theme }) => theme.colors.primary};
+    background-color: #333333; // Mantido hardcoded ou adicione ao tema: theme.colors.dropdownHoverBg
   }
 `;
 
 const LogoutButton = styled.button`
   background-color: transparent;
-  color: ${lightTextColor};
-  border: 1px solid ${coreGold};
+  color: ${({ theme }) => theme.colors.textMain};
+  border: 1px solid ${({ theme }) => theme.colors.primary};
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
@@ -98,13 +94,13 @@ const LogoutButton = styled.button`
   gap: 0.5rem;
 
   &:hover {
-    background-color: ${coreGold};
-    color: ${coreBlack};
+    background-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.background}; // Para contraste
   }
 `;
 
 const UserInfo = styled.span`
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.9rem;
   margin-right: 1rem;
   white-space: nowrap;
@@ -116,7 +112,7 @@ const DropdownContainer = styled.div`
 `;
 
 const DropdownButton = styled.button`
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   background-color: transparent;
   border: none;
   font-size: 0.9rem;
@@ -130,15 +126,15 @@ const DropdownButton = styled.button`
   transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
 
   &:hover, &.active {
-    color: ${coreGold};
-    background-color: ${dropdownHoverBg};
+    color: ${({ theme }) => theme.colors.primary};
+    background-color: #333333; // Mantido hardcoded ou adicione ao tema
   }
 `;
 
 const DropdownContent = styled.div`
   display: ${props => (props.$isOpen ? 'block' : 'none')};
   position: absolute;
-  background-color: ${navBackground};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   min-width: 240px;
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3);
   z-index: 1001;
@@ -150,7 +146,7 @@ const DropdownContent = styled.div`
 `;
 
 const DropdownLink = styled(Link)`
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   padding: 10px 20px;
   text-decoration: none;
   display: flex;
@@ -160,15 +156,15 @@ const DropdownLink = styled(Link)`
   white-space: nowrap;
 
   &:hover {
-    background-color: ${dropdownHoverBg};
-    color: ${coreGold};
+    background-color: #333333; // Mantido hardcoded ou adicione ao tema
+    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
 const HamburgerIcon = styled.div`
   display: none;
   font-size: 1.8rem;
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   cursor: pointer;
   margin-left: auto;
   padding: 0.5rem;
@@ -181,7 +177,7 @@ const HamburgerIcon = styled.div`
 const MobileMenuOverlay = styled.div`
   display: flex;
   flex-direction: column;
-  background-color: ${navBackground};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   position: fixed;
   top: 60px;
   left: 0;
@@ -242,12 +238,12 @@ const NotificationBellContainer = styled.div`
 
 const BellIcon = styled(FaBell)`
   font-size: 1.5rem;
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   cursor: pointer;
   transition: color 0.2s ease-in-out;
 
   &:hover {
-    color: ${coreGold};
+    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
@@ -255,20 +251,20 @@ const UnreadBadge = styled.span`
   position: absolute;
   top: -5px;
   right: -8px;
-  background-color: ${theme.colors.error || 'red'};
+  background-color: ${({ theme }) => theme.colors.error || 'red'};
   color: white;
   border-radius: 50%;
   padding: 2px 6px;
   font-size: 0.7rem;
   font-weight: bold;
   pointer-events: none;
-  border: 1px solid ${navBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBackground};
 `;
 
 const NotificationsDropdownContent = styled.div`
   display: ${props => (props.$isOpen ? 'block' : 'none')};
   position: absolute;
-  background-color: ${navBackground};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   min-width: 300px;
   max-width: 350px;
   max-height: 400px;
@@ -279,7 +275,7 @@ const NotificationsDropdownContent = styled.div`
   right: 0;
   top: calc(100% + 10px);
   border: 1px solid #4A4A4A;
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
 
   &::-webkit-scrollbar { width: 6px; }
   &::-webkit-scrollbar-track { background: #333; border-radius: 3px; }
@@ -297,14 +293,14 @@ const NotificationHeader = styled.div`
   h4 {
     margin: 0;
     font-size: 1rem;
-    color: ${coreGold};
+    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
 const MarkAllReadButton = styled.button`
   background: none;
   border: none;
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.8rem;
   cursor: pointer;
   padding: 5px;
@@ -312,7 +308,7 @@ const MarkAllReadButton = styled.button`
   align-items: center;
   gap: 5px;
   &:hover {
-    color: ${coreGold};
+    color: ${({ theme }) => theme.colors.primary};
   }
   &:disabled {
     color: #666;
@@ -332,7 +328,7 @@ const NotificationItemStyled = styled.div`
   }
 
   &:hover {
-    background-color: ${dropdownHoverBg};
+    background-color: #333333; // Ou use uma cor do tema se preferir
   }
 
   p {
@@ -353,14 +349,13 @@ const ViewAllNotificationsLink = styled(Link)`
   text-align: center;
   padding: 10px;
   font-size: 0.85rem;
-  color: ${coreGold};
+  color: ${({ theme }) => theme.colors.primary};
   text-decoration: none;
   border-top: 1px solid #4A4A4A;
   &:hover {
-    background-color: ${dropdownHoverBg};
+    background-color: #333333; // Ou use uma cor do tema
   }
 `;
-
 
 function Navbar() {
   const { authState, logout } = useAuth();
@@ -443,7 +438,6 @@ function Navbar() {
   const isStaffGeneral = authState.role && authState.role !== 'user';
   const isAdminStrict = authState.role === 'admin';
 
-  // Definindo os links como JSX para renderização
   const commonClientLinksJsx = (
     <>
       <NavLinkStyled to="/dashboard" onClick={closeAllMenus}><FaTachometerAlt /> Painel</NavLinkStyled>
