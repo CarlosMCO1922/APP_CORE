@@ -10,29 +10,27 @@ import {
   FaCog, FaSignOutAlt, FaBars, FaTimes,
   FaBell, FaEnvelopeOpen, FaCheckDouble
 } from 'react-icons/fa';
-import { theme } from '../../theme'; // Garanta que o theme está importado
+import { theme } from '../../theme';
 
-// --- Styled Components (Completos) ---
+// Styled Components (como estavam na sua última versão completa)
 const Nav = styled.nav`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 0.75rem 1.5rem;
   display: flex;
-  justify-content: space-between; /* PARA DISTRIBUIR ESPAÇO ENTRE LOGO E O RESTO */
+  justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   position: sticky;
   top: 0;
   z-index: 1000;
   min-height: 60px;
-  width: 100%;
-  box-sizing: border-box;
 `;
 
 const NavLogoLink = styled(Link)`
   display: flex;
   align-items: center;
   text-decoration: none;
-  flex-shrink: 0; /* Não deixa o logo encolher */
+  flex-shrink: 0;
 `;
 
 const LogoImage = styled.img`
@@ -53,9 +51,12 @@ const LogoText = styled.span`
 const DesktopNavLinks = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem; /* Reduzido um pouco o gap, ajuste conforme necessário */
-  flex-shrink: 1; /* Permite encolher se o nome do user for muito grande */
-  min-width: 0; /* Para permitir que flex-shrink funcione corretamente */
+  gap: 1rem;
+  margin-left: auto;
+
+  @media (max-width: 992px) {
+    display: none;
+  }
 `;
 
 const NavLinkStyled = styled(Link)`
@@ -70,11 +71,10 @@ const NavLinkStyled = styled(Link)`
   align-items: center;
   gap: 0.5rem;
   border-radius: 6px;
-  white-space: nowrap; /* Evita quebra de texto nos links */
 
   &:hover {
     color: ${({ theme }) => theme.colors.primary};
-    background-color: #333333; // Cor de hover para links
+    background-color: #333333;
   }
 `;
 
@@ -91,28 +91,23 @@ const LogoutButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-shrink: 0; /* Não deixa o botão encolher */
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.background}; // Contraste
+    color: ${({ theme }) => theme.colors.background};
   }
 `;
 
 const UserInfo = styled.span`
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.9rem;
+  margin-right: 1rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px; /* Ajuste conforme necessário */
-  flex-shrink: 1; /* Permite encolher */
 `;
 
 const DropdownContainer = styled.div`
   position: relative;
   display: inline-block;
-  flex-shrink: 0; /* Não deixa o dropdown encolher */
 `;
 
 const DropdownButton = styled.button`
@@ -128,11 +123,10 @@ const DropdownButton = styled.button`
   gap: 0.5rem;
   border-radius: 6px;
   transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
-  white-space: nowrap;
 
   &:hover, &.active {
     color: ${({ theme }) => theme.colors.primary};
-    background-color: #333333; // Cor de hover para botões dropdown
+    background-color: #333333;
   }
 `;
 
@@ -145,7 +139,7 @@ const DropdownContent = styled.div`
   z-index: 1001;
   border-radius: 8px;
   right: 0;
-  top: calc(100% + 5px); /* Espaçamento do botão */
+  top: calc(100% + 5px);
   border: 1px solid #4A4A4A;
   padding: 0.5rem 0;
 `;
@@ -161,7 +155,7 @@ const DropdownLink = styled(Link)`
   white-space: nowrap;
 
   &:hover {
-    background-color: #333333; // Cor de hover para links dropdown
+    background-color: #333333;
     color: ${({ theme }) => theme.colors.primary};
   }
 `;
@@ -171,6 +165,7 @@ const HamburgerIcon = styled.div`
   font-size: 1.8rem;
   color: ${({ theme }) => theme.colors.textMain};
   cursor: pointer;
+  margin-left: auto;
   padding: 0.5rem;
 
   @media (max-width: 992px) {
@@ -183,7 +178,7 @@ const MobileMenuOverlay = styled.div`
   flex-direction: column;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   position: fixed;
-  top: 60px; /* Altura da Navbar */
+  top: 60px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -212,18 +207,18 @@ const MobileMenuOverlay = styled.div`
   }
   ${DropdownButton} {
     width: 100%;
-    justify-content: space-between; /* Para alinhar texto e ícone do dropdown */
+    justify-content: space-between;
     padding: 1rem;
     border-bottom: 1px solid #4A4A4A;
   }
   ${DropdownContent} {
-    position: static; /* Dentro do fluxo normal no mobile */
+    position: static;
     width: 100%;
     box-shadow: none;
     border: none;
     border-top: 1px dashed #555;
-    padding-left: 1rem; /* Indentação para sub-itens */
-    background-color: #2a2a2a; /* Fundo ligeiramente diferente para sub-menu */
+    padding-left: 1rem;
+    background-color: #2a2a2a;
   }
 
   @media (min-width: 993px) {
@@ -233,7 +228,11 @@ const MobileMenuOverlay = styled.div`
 
 const NotificationBellContainer = styled.div`
   position: relative;
-  flex-shrink: 0;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  @media (max-width: 992px) {
+    margin-left: 0;
+  }
 `;
 
 const BellIcon = styled(FaBell)`
@@ -357,7 +356,6 @@ const ViewAllNotificationsLink = styled(Link)`
   }
 `;
 
-// --- Lógica do Componente ---
 function Navbar() {
   const { authState, logout } = useAuth();
   const {
@@ -379,7 +377,7 @@ function Navbar() {
 
   const handleLogout = () => {
     logout();
-    closeAllMenus();
+    closeAllMenus(); // Garante que todos os menus fecham ao fazer logout
     navigate('/login');
   };
 
@@ -389,6 +387,7 @@ function Navbar() {
     setIsMobileMenuOpen(false);
   }
 
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (managementDropdownRef.current && !managementDropdownRef.current.contains(event.target)) {
@@ -404,6 +403,7 @@ function Navbar() {
     };
   }, []);
 
+  // Fechar menu mobile se o ecrã for redimensionado para desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 992) {
@@ -418,19 +418,29 @@ function Navbar() {
     if (!notification.isRead) {
       markNotificationAsRead(notification.id);
     }
-    if (notification.link) {
-      navigate(notification.link);
-    }
+    // A navegação é tratada pelo componente Link agora,
+    // apenas precisamos de fechar os menus.
     closeAllMenus();
+    // Se o link da notificação não for tratado pelo <Link> (ex: link externo),
+    // pode adicionar a navegação aqui:
+    // if (notification.link) {
+    //   navigate(notification.link);
+    // }
   };
 
   const handleMarkAllReadClick = async () => {
     await markAllNotificationsAsRead();
+    // Opcional: fechar o dropdown após marcar todas como lidas
+    // setNotificationsDropdownOpen(false);
   };
 
+
+  // Esta função será chamada PELO COMPONENTE LINK, apenas para fechar o menu.
+  // A navegação em si é feita pelo <Link to="...">.
   const handleNavigateAndCloseMenus = () => {
       closeAllMenus();
   }
+
 
   if (!authState.isAuthenticated) {
     return null;
@@ -440,6 +450,7 @@ function Navbar() {
   const isStaffGeneral = authState.role && authState.role !== 'user';
   const isAdminStrict = authState.role === 'admin';
 
+  // Blocos JSX para os links
   const commonClientLinksJsx = (
     <>
       <NavLinkStyled to="/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel</NavLinkStyled>
@@ -494,18 +505,32 @@ function Navbar() {
           <NotificationItemStyled
             key={notif.id}
             $isRead={notif.isRead}
-            onClick={() => handleNotificationClick(notif)}
-            title={notif.isRead ? "Lida" : "Não lida"}
+            // Envolve o item com Link se tiver link, senão só o onClick para marcar como lida
+            onClick={() => handleNotificationClick(notif)} // Marca como lida e navega se houver link via navigate()
+            // Se quiser que o clique no item seja o Link diretamente:
+            // as={notif.link ? Link : 'div'} // Renderiza como Link se houver link
+            // to={notif.link || undefined}     // Prop 'to' apenas se for Link
           >
             <p>{notif.message}</p>
             <small>{new Date(notif.createdAt).toLocaleString('pt-PT')}</small>
           </NotificationItemStyled>
         ))}
+        {/* == ALTERAÇÃO AQUI: O ViewAllNotificationsLink já é um Link,
+             ele precisa do onClick para fechar o menu, mas a navegação
+             é tratada pelo 'to' prop.
+             A função handleNotificationClick já faz navigate(link)
+             Então, para o "Ver todas", usamos handleNavigateAndCloseMenus
+             para fechar o dropdown ANTES que a navegação do Link ocorra.
+             A forma mais simples é garantir que o clique no Link navega
+             e o menu fecha.
+        == */}
         <ViewAllNotificationsLink
             to="/notificacoes"
             onClick={() => {
+                // A navegação é feita pelo componente Link.
+                // Apenas precisamos de garantir que o dropdown de notificações fecha.
                 setNotificationsDropdownOpen(false);
-                setIsMobileMenuOpen(false);
+                setIsMobileMenuOpen(false); // Também fecha o menu mobile se estiver aberto
             }}
         >
           Ver todas as notificações
