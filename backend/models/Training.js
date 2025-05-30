@@ -1,6 +1,7 @@
 // backend/models/Training.js
+const { DataTypes } = require('sequelize');
 
-module.exports = (sequelize, DataTypes) => {
+module.exports = (sequelize) => {
   const Training = sequelize.define('Training', {
     id: {
       type: DataTypes.INTEGER,

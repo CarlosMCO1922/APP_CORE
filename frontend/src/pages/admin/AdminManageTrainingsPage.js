@@ -11,6 +11,7 @@ import {
     adminBookClientForTrainingService,
     adminCancelClientBookingService,
     adminGetTrainingWaitlistService,
+    getTrainingById,
     adminPromoteClientFromWaitlistService
 } from '../../services/trainingService';
 import { adminGetAllStaff } from '../../services/staffService';

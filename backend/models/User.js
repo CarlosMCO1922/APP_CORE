@@ -1,7 +1,7 @@
 // backend/models/User.js
-//const { DataTypes } = require('sequelize');
+const { DataTypes } = require('sequelize');
 
-module.exports = (sequelize, DataTypes) => {
+module.exports = (sequelize) => {
   const User = sequelize.define('User', {
     id: {
       type: DataTypes.INTEGER,
@@ -50,13 +50,12 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'userId', // Chave estrangeira em Appointment que referencia User
       as: 'appointments',
     });
-  };
-
-  User.hasMany(models.TrainingWaitlist, {
+    User.hasMany(models.TrainingWaitlist, {
       foreignKey: 'userId',
       as: 'waitlistEntries', // user.getWaitlistEntries()
       onDelete: 'CASCADE', // Se o user for apagado, as suas entradas na lista de espera são apagadas
     });
+  };
 
   return User;
 };
