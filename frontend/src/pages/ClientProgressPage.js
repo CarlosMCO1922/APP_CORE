@@ -1,7 +1,7 @@
 // src/pages/ClientProgressPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService'; // Para listar treinos inscritos
 import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService'; // Para buscar o plano do treino
