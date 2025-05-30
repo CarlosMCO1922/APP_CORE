@@ -24,6 +24,7 @@ import StaffManageRequestsPage from './pages/admin/StaffManageRequestsPage';
 import AdminManageWorkoutPlansPage from './pages/admin/AdminManageWorkoutPlansPage';
 import AdminManageExercisesPage from './pages/admin/AdminManageExercisesPage';
 import ClientTrainingPlanPage from './pages/ClientTrainingPlanPage';
+import ClientProgressPage from './pages/ClientProgressPage';
 
 
 // Componente de Layout
