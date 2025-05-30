@@ -61,16 +61,14 @@ module.exports = (sequelize, DataTypes) => {
       as: 'workoutPlans', // training.getWorkoutPlans()
       onDelete: 'CASCADE', // Se o treino for apagado, os seus planos também
     });
-    // A associação Staff.hasMany(models.Training, ...) já deve estar no Staff.js
-  };
 
-  Training.hasMany(models.TrainingWaitlist, {
+    Training.hasMany(models.TrainingWaitlist, {
       foreignKey: 'trainingId',
       as: 'waitlistEntries', // training.getWaitlistEntries()
       onDelete: 'CASCADE', // Se o treino for apagado, todas as suas entradas na lista de espera são apagadas
     });
-
-  
+    // A associação Staff.hasMany(models.Training, ...) já deve estar no Staff.js
+  };
 
   return Training;
 };
