@@ -202,6 +202,13 @@ const PerformanceHistoryItem = styled.div`
   border-left: 2px solid #444;
 `;
 
+const PageSuccessMessage = styled.p`
+  ${MessageBaseStyles} // Se usar um estilo base
+  color: ${({ theme }) => theme.colors.success || '#28a745'}; // Fallback color
+  background-color: ${({ theme }) => theme.colors.successBg || 'rgba(40, 167, 69, 0.1)'}; // Fallback color
+  border-color: ${({ theme }) => theme.colors.success || '#28a745'}; // Fallback color
+`;
+
 
 const ClientProgressPage = () => {
   const { authState } = useAuth();

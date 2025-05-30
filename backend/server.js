@@ -25,24 +25,6 @@ const workoutPlanRoutes = require('./routes/workoutPlanRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 
-// Aplica express.json() aqui para todas as rotas QUE PRECISAM dele,
-// APÓS a rota do webhook ter tido a chance de usar express.raw().
-// No entanto, a abordagem mais comum e limpa é deixar o express.raw()
-// na própria definição da rota do webhook ter prioridade.
-
-// A configuração correta é que paymentRoutes.js já lida com o express.raw()
-// especificamente para /stripe-webhook.
-// O app.use(express.json()) global ANTES das rotas pode ser o problema se
-// ele processar o corpo antes do express.raw() específico da rota.
-
-// Vamos tentar colocar o express.json() DEPOIS da montagem da rota de pagamentos
-// ou usar uma abordagem condicional.
-
-// Temporariamente, para testar, vamos remover o app.use(express.json()) global
-// e adicionar express.json() individualmente às rotas que precisam, exceto a de pagamentos.
-// ESTA É UMA MUDANÇA SIGNIFICATIVA PARA TESTE.
-
-// app.use(express.json()); // COMENTA OU REMOVE ESTA LINHA GLOBAL POR AGORA
 
 app.get('/', (req, res) => {
   res.send('Servidor CORE a funcionar!');
@@ -59,7 +41,7 @@ app.use('/payments', paymentRoutes); // Não adicionar express.json() globalment
 app.use('/exercises', express.json(), exerciseRoutes);
 app.use('/workout-plans', express.json(), workoutPlanRoutes);
 app.use('/notifications', notificationRoutes);
-app.use('/progress', progressRoutes);
+app.use('/progress', express.json(), progressRoutes);
 
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
