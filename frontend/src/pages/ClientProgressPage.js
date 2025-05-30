@@ -202,6 +202,19 @@ const PerformanceHistoryItem = styled.div`
   border-left: 2px solid #444;
 `;
 
+const MessageBaseStyles = css` // Se tiver um estilo base
+  text-align: center;
+  padding: 12px 18px;
+  margin: 20px auto;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border-width: 1px;
+  border-style: solid;
+  max-width: 600px;
+  font-size: 0.9rem;
+  font-weight: 500;
+`;
+
+
 const PageSuccessMessage = styled.p`
   ${MessageBaseStyles} // Se usar um estilo base
   color: ${({ theme }) => theme.colors.success || '#28a745'}; // Fallback color
