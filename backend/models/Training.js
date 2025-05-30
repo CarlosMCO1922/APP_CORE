@@ -68,6 +68,12 @@ module.exports = (sequelize) => {
       as: 'waitlistEntries', // training.getWaitlistEntries()
       onDelete: 'CASCADE', // Se o treino for apagado, todas as suas entradas na lista de espera são apagadas
     });
+
+    Training.hasMany(models.ClientExercisePerformance, {
+      foreignKey: 'trainingId',
+      as: 'clientPerformances', // training.getClientPerformances()
+      onDelete: 'CASCADE',
+    });
     // A associação Staff.hasMany(models.Training, ...) já deve estar no Staff.js
   };
 

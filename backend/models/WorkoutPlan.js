@@ -45,5 +45,11 @@ module.exports = (sequelize) => {
     });
   };
 
+  WorkoutPlan.hasMany(models.ClientExercisePerformance, {
+      foreignKey: 'workoutPlanId',
+      as: 'clientPerformances', // workoutPlan.getClientPerformances()
+      onDelete: 'CASCADE',
+    });
+
   return WorkoutPlan;
 };

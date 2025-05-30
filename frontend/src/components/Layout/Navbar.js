@@ -455,6 +455,7 @@ function Navbar() {
     <>
       <NavLinkStyled to="/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel</NavLinkStyled>
       <NavLinkStyled to="/calendario" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled>
+      <NavLinkStyled to="/meu-progresso" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Meu Progresso</NavLinkStyled>
       <NavLinkStyled to="/meus-pagamentos" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</NavLinkStyled>
       <NavLinkStyled to="/definicoes" onClick={handleNavigateAndCloseMenus}><FaCog /> Definições</NavLinkStyled>
     </>

@@ -47,6 +47,12 @@ module.exports = (sequelize) => {
       foreignKey: { name: 'exerciseId', allowNull: false, },
       as: 'exerciseDetails',
     });
+
+    WorkoutPlanExercise.hasMany(models.ClientExercisePerformance, {
+      foreignKey: 'planExerciseId',
+      as: 'clientPerformances', // workoutPlanExercise.getClientPerformances()
+      onDelete: 'CASCADE',
+    });
   };
 
   return WorkoutPlanExercise;

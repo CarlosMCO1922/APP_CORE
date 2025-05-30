@@ -55,6 +55,11 @@ module.exports = (sequelize) => {
       as: 'waitlistEntries', // user.getWaitlistEntries()
       onDelete: 'CASCADE', // Se o user for apagado, as suas entradas na lista de espera são apagadas
     });
+    User.hasMany(models.ClientExercisePerformance, {
+      foreignKey: 'userId',
+      as: 'exercisePerformances', // user.getExercisePerformances()
+      onDelete: 'CASCADE',
+});
   };
 
   return User;

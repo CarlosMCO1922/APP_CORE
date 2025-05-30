@@ -12,7 +12,6 @@ import RegisterPage from './pages/RegisterPage';
 import CalendarPage from './pages/CalendarPage';
 import SettingsPage from './pages/SettingsPage';
 import MyPaymentsPage from './pages/MyPaymentsPage';
-// == NOVA IMPORTAÇÃO ==
 import NotificationsPage from './pages/NotificationsPage'; // Importa a nova página
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
@@ -84,6 +83,7 @@ function App() {
               <Route path="/definicoes" element={<SettingsPage />} />
               <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
               <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
+              <Route path="/meu-progresso" element={<ClientProgressPage />} />
             </Route>
 
             {/* Rotas de Staff/Admin */}
