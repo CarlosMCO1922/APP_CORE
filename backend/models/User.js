@@ -52,5 +52,11 @@ module.exports = (sequelize) => {
     });
   };
 
+  User.hasMany(models.TrainingWaitlist, {
+      foreignKey: 'userId',
+      as: 'waitlistEntries', // user.getWaitlistEntries()
+      onDelete: 'CASCADE', // Se o user for apagado, as suas entradas na lista de espera são apagadas
+    });
+
   return User;
 };

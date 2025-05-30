@@ -9,13 +9,15 @@ import {
     adminUpdateTraining,
     adminDeleteTraining,
     adminBookClientForTrainingService,
-    adminCancelClientBookingService
+    adminCancelClientBookingService,
+    adminGetTrainingWaitlistService,
+    adminPromoteClientFromWaitlistService
 } from '../../services/trainingService';
 import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
 import {
     FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft,
-    FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus
+    FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus, FaLevelUpAlt
 } from 'react-icons/fa';
 import { theme } from '../../theme';
 
@@ -170,7 +172,7 @@ const ActionButton = styled.button`
   background-color: ${props => {
     if (props.danger) return props.theme.colors.error;
     if (props.secondary) return props.theme.colors.buttonSecondaryBg;
-    if (props.plans) return props.theme.colors.mediaButtonBg || '#6c757d'; // Fallback
+    if (props.plans) return props.theme.colors.mediaButtonBg || '#6c757d';
     if (props.signups) return '#007bff';
     return props.theme.colors.primary;
   }};
@@ -182,7 +184,7 @@ const ActionButton = styled.button`
     background-color: ${props => {
         if (props.danger) return '#C62828';
         if (props.secondary) return props.theme.colors.buttonSecondaryHoverBg;
-        if (props.plans) return props.theme.colors.mediaButtonHoverBg || '#5a6268'; // Fallback
+        if (props.plans) return props.theme.colors.mediaButtonHoverBg || '#5a6268';
         if (props.signups) return '#0056b3';
         return '#e6c358';
     }};
@@ -330,12 +332,12 @@ const SignupsModalContent = styled(ModalContent)`
 const ParticipantList = styled.ul`
   list-style: none;
   padding: 0;
-  margin-top: 10px; /* Reduzido */
-  max-height: 250px; /* Ajustado */
+  margin-top: 10px;
+  max-height: 250px;
   overflow-y: auto;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
-  background-color: #222; /* Fundo para a lista */
+  background-color: #222;
 `;
 
 const ParticipantItem = styled.li`
@@ -351,7 +353,7 @@ const ParticipantItem = styled.li`
     border-bottom: none;
   }
   &:nth-child(even) {
-    background-color: #282828; /* Ligeiramente diferente do fundo da lista */
+    background-color: #282828;
   }
   .email {
     color: ${({ theme }) => theme.colors.textMuted};
@@ -478,6 +480,15 @@ const AddSignupButton = styled(ModalButton)`
   height: 38px;
 `;
 
+const WaitlistSectionTitle = styled.h4`
+  margin-top: 25px;
+  color: ${({ theme }) => theme.colors.warning || '#FFA000'};
+  padding-bottom: 10px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+// --- Fim Styled Components ---
+
+
 const initialTrainingFormState = {
   name: '', description: '', date: '', time: '',
   capacity: 10, instructorId: '', durationMinutes: 45,
@@ -512,15 +523,18 @@ const AdminManageTrainingsPage = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
+  const [selectedTrainingWaitlist, setSelectedTrainingWaitlist] = useState([]);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [promoteLoading, setPromoteLoading] = useState(null);
+
 
   const fetchPageData = useCallback(async (appliedFilters = activeFilters) => {
     if (authState.token) {
-      setLoading(true); setPageError(''); // Limpa successMessage ao buscar novos dados
+      setLoading(true); setPageError('');
       try {
         const promises = [
             getAllTrainings(authState.token, appliedFilters),
         ];
-        // Só busca listas de apoio se ainda não as tiver ou se precisar forçar refresh (não implementado aqui)
         if (instructors.length === 0) {
             promises.push(adminGetAllStaff(authState.token));
         } else {
@@ -535,8 +549,12 @@ const AdminManageTrainingsPage = () => {
         const [trainingsData, staffDataResult, usersDataResult] = await Promise.all(promises);
 
         setTrainings(trainingsData);
-        if (instructors.length === 0) setInstructors(staffDataResult.filter(staff => ['trainer', 'admin'].includes(staff.role)));
-        if (allUsers.length === 0) setAllUsers(usersDataResult.filter(u => !u.isAdmin && !u.isStaff)); // Assume que users não têm isStaff
+        if (instructors.length === 0 && Array.isArray(staffDataResult)) {
+             setInstructors(staffDataResult.filter(staff => ['trainer', 'admin'].includes(staff.role)));
+        }
+        if (allUsers.length === 0 && Array.isArray(usersDataResult)) {
+            setAllUsers(usersDataResult.filter(u => !u.isAdmin && !u.isStaff)); // Assume-se que users da API geral não têm isStaff
+        }
 
       } catch (err) {
         setPageError(err.message || 'Não foi possível carregar os dados da página.');
@@ -545,7 +563,7 @@ const AdminManageTrainingsPage = () => {
         setLoading(false);
       }
     }
-  }, [authState.token, activeFilters, instructors, allUsers ]); // Adicionado instructors e allUsers como dependências
+  }, [authState.token, activeFilters, instructors, allUsers ]);
 
   useEffect(() => {
     fetchPageData();
@@ -559,7 +577,7 @@ const AdminManageTrainingsPage = () => {
 
   const handleApplyFilters = () => {
     if (filters.dateFrom && filters.dateTo && filters.dateFrom > filters.dateTo) {
-        setPageError("A data 'Até' não pode ser anterior à data 'De'."); // Usar pageError
+        setPageError("A data 'Até' não pode ser anterior à data 'De'.");
         return;
     }
     setPageError('');
@@ -652,18 +670,30 @@ const AdminManageTrainingsPage = () => {
     }
   };
 
-  const handleOpenSignupsModal = (training) => {
+  const handleOpenSignupsModal = async (training) => {
     setSelectedTrainingForSignups(training);
     setBookingError('');
-    setSuccessMessage(''); // Limpa mensagem de sucesso geral para não aparecer no modal de inscritos
+    setSuccessMessage('');
     setUserToBook('');
     setShowSignupsModal(true);
+    setWaitlistLoading(true);
+    setSelectedTrainingWaitlist([]);
+    try {
+      const waitlistData = await adminGetTrainingWaitlistService(training.id, authState.token);
+      setSelectedTrainingWaitlist(waitlistData || []);
+    } catch (err) {
+      console.error("Erro ao buscar lista de espera:", err);
+      setBookingError("Falha ao carregar lista de espera: " + err.message);
+    } finally {
+      setWaitlistLoading(false);
+    }
   };
 
   const handleCloseSignupsModal = () => {
     setShowSignupsModal(false);
     setSelectedTrainingForSignups(null);
-    setBookingError(''); // Limpa erro do modal de inscritos ao fechar
+    setBookingError('');
+    setSelectedTrainingWaitlist([]);
   };
 
   const handleAdminBookClient = async (e) => {
@@ -678,17 +708,17 @@ const AdminManageTrainingsPage = () => {
     try {
       const result = await adminBookClientForTrainingService(selectedTrainingForSignups.id, userToBook, authState.token);
       setSuccessMessage(result.message || "Cliente inscrito com sucesso!");
-      
+
       const updatedParticipants = result.training.participants || [];
       const newParticipantsCount = updatedParticipants.length;
 
       setSelectedTrainingForSignups(prev => ({...prev, participants: updatedParticipants, participantsCount: newParticipantsCount }));
-      setTrainings(prevTrainings => prevTrainings.map(t => 
-        t.id === selectedTrainingForSignups.id 
-        ? {...t, participants: updatedParticipants, participantsCount: newParticipantsCount} 
+      setTrainings(prevTrainings => prevTrainings.map(t =>
+        t.id === selectedTrainingForSignups.id
+        ? {...t, participants: updatedParticipants, participantsCount: newParticipantsCount}
         : t
       ));
-      
+
       setUserToBook('');
     } catch (err) {
       setBookingError(err.message || "Falha ao inscrever cliente.");
@@ -711,9 +741,9 @@ const AdminManageTrainingsPage = () => {
       const newParticipantsCount = updatedParticipants.length;
 
       setSelectedTrainingForSignups(prev => ({...prev, participants: updatedParticipants, participantsCount: newParticipantsCount }));
-      setTrainings(prevTrainings => prevTrainings.map(t => 
-        t.id === trainingId 
-        ? {...t, participants: updatedParticipants, participantsCount: newParticipantsCount} 
+      setTrainings(prevTrainings => prevTrainings.map(t =>
+        t.id === trainingId
+        ? {...t, participants: updatedParticipants, participantsCount: newParticipantsCount}
         : t
       ));
 
@@ -724,13 +754,51 @@ const AdminManageTrainingsPage = () => {
     }
   };
 
+  const handleAdminPromoteClient = async (trainingId, userIdToPromote, waitlistEntryId, clientName) => {
+    if (!selectedTrainingForSignups) return;
+
+    const currentParticipantsCount = selectedTrainingForSignups.participants?.length || 0;
+    if (currentParticipantsCount >= selectedTrainingForSignups.capacity) {
+      setBookingError("O treino já atingiu a capacidade máxima. Cancele uma inscrição primeiro.");
+      return;
+    }
+
+    if (!window.confirm(`Tem a certeza que quer promover ${clientName} da lista de espera para este treino?`)) return;
+
+    setPromoteLoading(userIdToPromote);
+    setBookingError(''); setSuccessMessage('');
+    try {
+      const result = await adminPromoteClientFromWaitlistService(trainingId, userIdToPromote, authState.token, waitlistEntryId);
+      setSuccessMessage(result.message || "Cliente promovido com sucesso!");
+
+      // Re-buscar lista de espera e detalhes do treino para atualizar tudo
+      const [updatedTrainingData, updatedWaitlistData] = await Promise.all([
+        getTrainingById(trainingId, authState.token),
+        adminGetTrainingWaitlistService(trainingId, authState.token)
+      ]);
+
+      if (updatedTrainingData) {
+        setSelectedTrainingForSignups(updatedTrainingData);
+        setTrainings(prevTrainings => prevTrainings.map(t => t.id === trainingId ? updatedTrainingData : t));
+      }
+      setSelectedTrainingWaitlist(updatedWaitlistData || []);
+
+    } catch (err) {
+      setBookingError(err.message || "Falha ao promover cliente da lista de espera.");
+    } finally {
+      setPromoteLoading(null);
+    }
+  };
+
+
   if (loading && trainings.length === 0 && Object.keys(activeFilters).length === 0) {
     return <PageContainer><LoadingText>A carregar treinos...</LoadingText></PageContainer>;
   }
 
   const availableUsersToBook = selectedTrainingForSignups
-    ? allUsers.filter(user => 
-        !selectedTrainingForSignups.participants?.some(p => p.id === user.id)
+    ? allUsers.filter(user =>
+        !selectedTrainingForSignups.participants?.some(p => p.id === user.id) &&
+        !selectedTrainingWaitlist?.some(w => w.userId === user.id && w.status === 'PENDING')
       )
     : [];
 
@@ -744,8 +812,8 @@ const AdminManageTrainingsPage = () => {
 
       <FiltersContainer>
         <FilterGroup>
-          <FilterLabel htmlFor="nameSearch">Pesquisar Nome</FilterLabel>
-          <FilterInput type="text" id="nameSearch" name="nameSearch" value={filters.nameSearch} onChange={handleFilterChange} placeholder="Nome do treino..." />
+          <FilterLabel htmlFor="nameSearchFilter">Pesquisar Nome</FilterLabel>
+          <FilterInput type="text" id="nameSearchFilter" name="nameSearch" value={filters.nameSearch} onChange={handleFilterChange} placeholder="Nome do treino..." />
         </FilterGroup>
         <FilterGroup>
           <FilterLabel htmlFor="instructorIdFilter">Instrutor</FilterLabel>
@@ -831,32 +899,25 @@ const AdminManageTrainingsPage = () => {
             <ModalTitle>{isEditing ? 'Editar Treino' : 'Criar Novo Treino'}</ModalTitle>
             {modalError && <ModalErrorText>{modalError}</ModalErrorText>}
             <ModalForm onSubmit={handleFormSubmit}>
-              <ModalLabel htmlFor="nameTrainModal">Nome do Treino*</ModalLabel>
-              <ModalInput type="text" name="name" id="nameTrainModal" value={currentTrainingData.name} onChange={handleFormChange} required />
-
-              <ModalLabel htmlFor="descriptionTrainModal">Descrição</ModalLabel>
-              <ModalTextarea name="description" id="descriptionTrainModal" value={currentTrainingData.description} onChange={handleFormChange} />
-
-              <ModalLabel htmlFor="dateTrainModal">Data*</ModalLabel>
-              <ModalInput type="date" name="date" id="dateTrainModal" value={currentTrainingData.date} onChange={handleFormChange} required />
-
-              <ModalLabel htmlFor="timeTrainModal">Hora (HH:MM)*</ModalLabel>
-              <ModalInput type="time" name="time" id="timeTrainModal" value={currentTrainingData.time} onChange={handleFormChange} required />
-
-              <ModalLabel htmlFor="durationMinutesTrainModal">Duração (minutos)*</ModalLabel>
-              <ModalInput type="number" name="durationMinutes" id="durationMinutesTrainModal" value={currentTrainingData.durationMinutes} onChange={handleFormChange} required min="1" />
-
-              <ModalLabel htmlFor="capacityTrainModal">Capacidade*</ModalLabel>
-              <ModalInput type="number" name="capacity" id="capacityTrainModal" value={currentTrainingData.capacity} onChange={handleFormChange} required min="1" />
-
-              <ModalLabel htmlFor="instructorIdTrainModal">Instrutor*</ModalLabel>
-              <ModalSelect name="instructorId" id="instructorIdTrainModal" value={currentTrainingData.instructorId} onChange={handleFormChange} required>
+              <ModalLabel htmlFor="nameTrainModalForm">Nome do Treino*</ModalLabel>
+              <ModalInput type="text" name="name" id="nameTrainModalForm" value={currentTrainingData.name} onChange={handleFormChange} required />
+              <ModalLabel htmlFor="descriptionTrainModalForm">Descrição</ModalLabel>
+              <ModalTextarea name="description" id="descriptionTrainModalForm" value={currentTrainingData.description} onChange={handleFormChange} />
+              <ModalLabel htmlFor="dateTrainModalForm">Data*</ModalLabel>
+              <ModalInput type="date" name="date" id="dateTrainModalForm" value={currentTrainingData.date} onChange={handleFormChange} required />
+              <ModalLabel htmlFor="timeTrainModalForm">Hora (HH:MM)*</ModalLabel>
+              <ModalInput type="time" name="time" id="timeTrainModalForm" value={currentTrainingData.time} onChange={handleFormChange} required />
+              <ModalLabel htmlFor="durationMinutesTrainModalForm">Duração (minutos)*</ModalLabel>
+              <ModalInput type="number" name="durationMinutes" id="durationMinutesTrainModalForm" value={currentTrainingData.durationMinutes} onChange={handleFormChange} required min="1" />
+              <ModalLabel htmlFor="capacityTrainModalForm">Capacidade*</ModalLabel>
+              <ModalInput type="number" name="capacity" id="capacityTrainModalForm" value={currentTrainingData.capacity} onChange={handleFormChange} required min="1" />
+              <ModalLabel htmlFor="instructorIdTrainModalForm">Instrutor*</ModalLabel>
+              <ModalSelect name="instructorId" id="instructorIdTrainModalForm" value={currentTrainingData.instructorId} onChange={handleFormChange} required>
                 <option value="">Selecione um instrutor</option>
                 {instructors.map(instr => (
                   <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName} ({instr.role})</option>
                 ))}
               </ModalSelect>
-
               <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
                 <ModalButton type="submit" primary disabled={formLoading}>
@@ -872,35 +933,34 @@ const AdminManageTrainingsPage = () => {
         <ModalOverlay onClick={handleCloseSignupsModal}>
           <SignupsModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={handleCloseSignupsModal}><FaTimes /></CloseButton>
-            <ModalTitle>Inscritos em: {selectedTrainingForSignups.name}</ModalTitle>
+            <ModalTitle>Gerir Inscrições: {selectedTrainingForSignups.name}</ModalTitle>
             
             {bookingError && <ModalErrorText>{bookingError}</ModalErrorText>}
             {successMessage && showSignupsModal && <MessageText style={{margin: '10px 0'}}>{successMessage}</MessageText>}
 
-
             <AddSignupFormContainer>
               <h4>Adicionar Cliente ao Treino</h4>
               <AddSignupForm onSubmit={handleAdminBookClient}>
-                <ModalLabel htmlFor="userToBookSelectModal" style={{display: 'none'}}>Selecionar Cliente</ModalLabel>
+                <ModalLabel htmlFor="userToBookSelectModalForm" style={{display: 'none'}}>Selecionar Cliente</ModalLabel>
                 <AddSignupSelect
-                  id="userToBookSelectModal"
+                  id="userToBookSelectModalForm"
                   value={userToBook}
                   onChange={(e) => setUserToBook(e.target.value)}
                   required
                 >
-                  <option value="">Selecione um cliente...</option>
+                  <option value="">Selecione um cliente para inscrever...</option>
                   {availableUsersToBook.map(user => (
                     <option key={user.id} value={user.id}>
                       {user.firstName} {user.lastName} ({user.email})
                     </option>
                   ))}
                 </AddSignupSelect>
-                <AddSignupButton type="submit" primary disabled={bookingLoading || !userToBook || selectedTrainingForSignups.participantsCount >= selectedTrainingForSignups.capacity}>
-                  {bookingLoading ? 'A inscrever...' : <><FaUserPlus /> Inscrever Cliente</>}
+                <AddSignupButton type="submit" primary disabled={bookingLoading || !userToBook || (selectedTrainingForSignups.participants?.length || 0) >= selectedTrainingForSignups.capacity}>
+                  {bookingLoading ? 'A inscrever...' : <><FaUserPlus /> Inscrever</>}
                 </AddSignupButton>
               </AddSignupForm>
-              {selectedTrainingForSignups.participantsCount >= selectedTrainingForSignups.capacity && <p style={{fontSize: '0.8rem', color: theme.colors.warning, marginTop: '5px'}}>Este treino atingiu a capacidade máxima.</p>}
-              {availableUsersToBook.length === 0 && !(selectedTrainingForSignups.participantsCount >= selectedTrainingForSignups.capacity) && <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop: '5px'}}>Todos os clientes já estão inscritos ou não há clientes disponíveis.</p>}
+              {(selectedTrainingForSignups.participants?.length || 0) >= selectedTrainingForSignups.capacity && <p style={{fontSize: '0.8rem', color: theme.colors.warning, marginTop: '5px'}}>Este treino atingiu a capacidade máxima.</p>}
+              {availableUsersToBook.length === 0 && !((selectedTrainingForSignups.participants?.length || 0) >= selectedTrainingForSignups.capacity) && <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop: '5px'}}>Todos os clientes já estão inscritos, na lista de espera, ou não há clientes disponíveis.</p>}
             </AddSignupFormContainer>
 
             <h4 style={{marginTop: '25px', color: theme.colors.primary}}>Lista de Inscritos ({selectedTrainingForSignups.participants?.length || 0} / {selectedTrainingForSignups.capacity})</h4>
@@ -925,6 +985,33 @@ const AdminManageTrainingsPage = () => {
             ) : (
                 <p style={{textAlign: 'center', marginTop: '10px', color: '#aaa'}}>Nenhum cliente inscrito neste treino.</p>
             )}
+
+            <WaitlistSectionTitle>
+              <FaUsers style={{ marginRight: '8px' }} /> Lista de Espera ({selectedTrainingWaitlist.length})
+            </WaitlistSectionTitle>
+            {waitlistLoading && <LoadingText>A carregar lista de espera...</LoadingText>}
+            {!waitlistLoading && selectedTrainingWaitlist.length > 0 ? (
+              <ParticipantList>
+                {selectedTrainingWaitlist.map(entry => (
+                  <ParticipantItem key={entry.id}>
+                    <div>
+                      <span>{entry.user?.firstName} {entry.user?.lastName}</span>
+                      <span className="email">{entry.user?.email} (Adicionado em: {new Date(entry.createdAt).toLocaleDateString('pt-PT')})</span>
+                    </div>
+                    <ActionButton
+                      style={{backgroundColor: theme.colors.success, color: 'white'}}
+                      onClick={() => handleAdminPromoteClient(selectedTrainingForSignups.id, entry.userId, entry.id, `${entry.user?.firstName} ${entry.user?.lastName}`)}
+                      disabled={promoteLoading === entry.userId || (selectedTrainingForSignups.participants?.length || 0) >= selectedTrainingForSignups.capacity}
+                    >
+                      {promoteLoading === entry.userId ? 'A promover...' : <><FaLevelUpAlt /> Promover</>}
+                    </ActionButton>
+                  </ParticipantItem>
+                ))}
+              </ParticipantList>
+            ) : (
+              !waitlistLoading && <p style={{textAlign: 'center', marginTop: '10px', color: '#aaa'}}>Nenhum cliente na lista de espera.</p>
+            )}
+
              <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseSignupsModal}>Fechar</ModalButton>
              </ModalActions>

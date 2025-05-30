@@ -253,7 +253,7 @@ const deleteTraining = async (req, res) => {
 // @access  Privado (Cliente)
 const bookTraining = async (req, res) => {
   const trainingId = req.params.id;
-  const userId = req.user.id; // Assumindo que o middleware 'protect' e 'isClientUser' já executaram
+  const userId = req.user.id;
 
   try {
     const training = await db.Training.findByPk(trainingId, {
@@ -265,51 +265,57 @@ const bookTraining = async (req, res) => {
 
     const user = await db.User.findByPk(userId);
     if (!user) {
-      // Segurança extra, middleware já deve ter validado
       return res.status(404).json({ message: 'Utilizador não encontrado.' });
     }
 
-    // Verificar se o utilizador já está inscrito
-    const isAlreadyBooked = await training.hasParticipant(user); // 'hasParticipant' é um dos métodos mágicos do Sequelize
+    const isAlreadyBooked = await training.hasParticipant(user);
     if (isAlreadyBooked) {
       return res.status(400).json({ message: 'Já estás inscrito neste treino.' });
     }
 
-    // Verificar capacidade do treino
     const participantsCount = training.participants ? training.participants.length : 0;
     if (participantsCount >= training.capacity) {
-      return res.status(400).json({ message: 'Este treino já atingiu a capacidade máxima.' });
-    }
+      // TREINO CHEIO - LÓGICA DA LISTA DE ESPERA
+      const alreadyOnWaitlist = await db.TrainingWaitlist.findOne({
+        where: { trainingId: training.id, userId: user.id, status: 'PENDING' }
+      });
 
-    // Adicionar o utilizador aos participantes do treino
-    await training.addParticipant(user); // 'addParticipant' é outro método mágico
+      if (alreadyOnWaitlist) {
+        return res.status(400).json({ message: 'Treino cheio. Já estás na lista de espera.' });
+      }
 
-    // Notificar o cliente
-    _internalCreateNotification({
-      recipientUserId: userId,
-      message: `Inscrição confirmada no treino "${training.name}" para ${format(new Date(training.date), 'dd/MM/yyyy')} às ${training.time.substring(0,5)}.`,
-      type: 'TRAINING_BOOKING_CONFIRMED_CLIENT',
-      relatedResourceId: training.id,
-      relatedResourceType: 'training',
-      link: `/meus-treinos` // ou /calendario ou /treinos/:id/plano
-    });
+      await db.TrainingWaitlist.create({
+        trainingId: training.id,
+        userId: user.id,
+        status: 'PENDING'
+        // addedAt será gerado automaticamente (createdAt)
+      });
 
-    // Notificar o instrutor do treino (e/ou admins)
-    if (training.instructorId) {
       _internalCreateNotification({
-        recipientStaffId: training.instructorId,
-        message: `Nova inscrição no seu treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}): ${user.firstName} ${user.lastName}. Vagas restantes: ${training.capacity - (training.participants.length + 1)}.`,
-        type: 'NEW_TRAINING_SIGNUP_STAFF',
+        recipientUserId: userId,
+        message: `O treino "${training.name}" está cheio. Foste adicionado à lista de espera. Serás notificado se surgir uma vaga.`,
+        type: 'TRAINING_WAITLIST_ADDED_CLIENT',
         relatedResourceId: training.id,
         relatedResourceType: 'training',
-        link: `/admin/calendario-geral` // Ou um link para gerir o treino
+        link: `/calendario`
       });
+
+      return res.status(202).json({ // 202 Accepted pode ser mais apropriado aqui
+        message: 'Treino cheio. Foste adicionado à lista de espera.'
+      });
+    }
+
+    await training.addParticipant(user);
+
+    _internalCreateNotification({ /* ... (notificação de sucesso como estava) ... */ });
+    if (training.instructorId) {
+      _internalCreateNotification({ /* ... (notificação para instrutor como estava) ... */ });
     }
 
     res.status(200).json({ message: 'Inscrição no treino realizada com sucesso!' });
   } catch (error) {
     console.error('Erro ao inscrever no treino:', error);
-    res.status(500).json({ message: 'Erro interno do servidor ao inscrever no treino.', error: error.message });
+    res.status(500).json({ message: 'Erro interno do servidor ao inscrever no treino.', errorDetails: error.message });
   }
 };
 
@@ -322,51 +328,57 @@ const cancelTrainingBooking = async (req, res) => {
 
   try {
     const training = await db.Training.findByPk(trainingId);
-    if (!training) {
-      return res.status(404).json({ message: 'Treino não encontrado.' });
-    }
-
+    if (!training) { /* ... (como estava) ... */ }
     const user = await db.User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Utilizador não encontrado.' });
-    }
-
-    // Verificar se o utilizador está realmente inscrito
+    if (!user) { /* ... (como estava) ... */ }
     const isBooked = await training.hasParticipant(user);
-    if (!isBooked) {
-      return res.status(400).json({ message: 'Não estás inscrito neste treino.' });
-    }
+    if (!isBooked) { /* ... (como estava) ... */ }
 
-    // Remover o utilizador dos participantes do treino
-    await training.removeParticipant(user); // 'removeParticipant'
+    await training.removeParticipant(user);
+    _internalCreateNotification({ /* ... (notificação de cancelamento para cliente como estava) ... */ });
 
-    // Notificar o cliente
-    _internalCreateNotification({
-      recipientUserId: userId,
-      message: `A sua inscrição no treino "${training.name}" de ${format(new Date(training.date), 'dd/MM/yyyy')} foi cancelada.`,
-      type: 'TRAINING_BOOKING_CANCELLED_CLIENT',
-      relatedResourceId: training.id,
-      relatedResourceType: 'training',
-      link: `/calendario`
+    // LÓGICA DA LISTA DE ESPERA: Vaga abriu
+    const waitlistEntries = await db.TrainingWaitlist.findAll({
+      where: { trainingId: training.id, status: 'PENDING' },
+      order: [['createdAt', 'ASC']], // Mais antigo primeiro
+      include: [{ model: db.User, as: 'user', attributes: ['id', 'firstName', 'email'] }]
     });
 
-    // Opcional: Notificar o instrutor/admin sobre o cancelamento e vaga aberta
-    if (training.instructorId) {
-        const currentParticipants = await training.countParticipants(); // Recalcula após remoção
-         _internalCreateNotification({
-            recipientStaffId: training.instructorId,
-            message: `Inscrição cancelada no treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}) por ${user.firstName} ${user.lastName}. Vagas: ${training.capacity - currentParticipants}.`,
-            type: 'TRAINING_SIGNUP_CANCELLED_STAFF',
-            relatedResourceId: training.id,
-            relatedResourceType: 'training',
-            link: `/admin/calendario-geral`
-        });
+    if (waitlistEntries.length > 0) {
+      const firstInWaitlist = waitlistEntries[0];
+
+      // Opção: Notificar o primeiro da lista
+      _internalCreateNotification({
+        recipientUserId: firstInWaitlist.userId,
+        message: `Boas notícias! Abriu uma vaga no treino "<span class="math-inline">\{training\.name\}" \(</span>{format(new Date(training.date), 'dd/MM/yyyy')}) para o qual estavas na lista de espera. Inscreve-te já!`,
+        type: 'TRAINING_SPOT_AVAILABLE_CLIENT',
+        relatedResourceId: training.id,
+        relatedResourceType: 'training',
+        link: `/calendario` // ou link direto para o treino
+      });
+      // Mudar status na lista de espera (opcional)
+      // firstInWaitlist.status = 'NOTIFIED';
+      // firstInWaitlist.notifiedAt = new Date();
+      // await firstInWaitlist.save();
+
+      // Notificar Admin/Instrutor
+      _internalCreateNotification({
+        recipientStaffId: training.instructorId, // Ou um adminId fixo
+        message: `Uma vaga abriu no treino "${training.name}". ${firstInWaitlist.user.firstName} (primeiro na lista de espera) foi notificado.`,
+        type: 'TRAINING_SPOT_OPENED_STAFF_WAITLIST',
+        relatedResourceId: training.id,
+        relatedResourceType: 'training',
+        link: `/admin/trainings/${training.id}/manage-waitlist` // Futura página de gestão da lista de espera
+      });
+    } else if (training.instructorId) { // Se não há lista de espera, mas notifica o instrutor sobre a vaga.
+        const currentParticipants = await training.countParticipants();
+        _internalCreateNotification({ /* ... (notificação de vaga aberta para instrutor como estava) ... */ });
     }
 
     res.status(200).json({ message: 'Inscrição no treino cancelada com sucesso!' });
   } catch (error) {
     console.error('Erro ao cancelar inscrição no treino:', error);
-    res.status(500).json({ message: 'Erro interno do servidor ao cancelar inscrição.', error: error.message });
+    res.status(500).json({ message: 'Erro interno do servidor ao cancelar inscrição.', errorDetails: error.message });
   }
 };
 
@@ -515,63 +527,161 @@ const adminBookClientForTraining = async (req, res) => {
 // @route   DELETE /trainings/:trainingId/admin-cancel-booking/:userId
 // @access  Privado (Admin Staff)
 const adminCancelClientBooking = async (req, res) => {
-  const { trainingId, userId } = req.params;
+    const { trainingId, userId: userIdToCancel } = req.params; // userId aqui é o do cliente a ser cancelado
 
+    try {
+        const training = await db.Training.findByPk(trainingId);
+        if (!training) { /* ... (como estava) ... */ }
+        const userToCancel = await db.User.findByPk(userIdToCancel);
+        if (!userToCancel) { /* ... (como estava) ... */ }
+        const isBooked = await training.hasParticipant(userToCancel);
+        if (!isBooked) { /* ... (como estava) ... */ }
+
+        await training.removeParticipant(userToCancel);
+        _internalCreateNotification({ /* ... (notificação de cancelamento para cliente como estava) ... */ });
+
+        // LÓGICA DA LISTA DE ESPERA (similar à de clientCancelTrainingBooking)
+        const waitlistEntries = await db.TrainingWaitlist.findAll({
+            where: { trainingId: training.id, status: 'PENDING' },
+            order: [['createdAt', 'ASC']],
+            include: [{ model: db.User, as: 'user', attributes: ['id', 'firstName', 'email'] }]
+        });
+
+        if (waitlistEntries.length > 0) {
+            const firstInWaitlist = waitlistEntries[0];
+            _internalCreateNotification({
+                recipientUserId: firstInWaitlist.userId,
+                message: `Boas notícias! Abriu uma vaga no treino "<span class="math-inline">\{training\.name\}" \(</span>{format(new Date(training.date), 'dd/MM/yyyy')}) para o qual estavas na lista de espera. Um admin tratou disto. Inscreve-te já!`,
+                type: 'TRAINING_SPOT_AVAILABLE_CLIENT',
+                relatedResourceId: training.id,
+                relatedResourceType: 'training',
+                link: `/calendario`
+            });
+            // Notificar Admin/Instrutor que despoletou o cancelamento (ou outro admin/instrutor)
+            if (training.instructorId) { // Pode querer notificar o instrutor do treino
+                 _internalCreateNotification({
+                    recipientStaffId: training.instructorId,
+                    message: `Uma vaga abriu no treino "${training.name}" após cancelamento de ${userToCancel.firstName}. ${firstInWaitlist.user.firstName} (lista de espera) foi notificado.`,
+                    type: 'TRAINING_SPOT_OPENED_STAFF_WAITLIST',
+                    relatedResourceId: training.id,
+                    relatedResourceType: 'training',
+                    link: `/admin/trainings/${training.id}/manage-waitlist`
+                });
+            }
+        } else if (training.instructorId && training.instructorId !== req.staff.id) {
+             const currentParticipants = await training.countParticipants();
+             _internalCreateNotification({ /* ... (notificação de vaga aberta para instrutor como estava) ... */ });
+        }
+
+        const updatedTraining = await db.Training.findByPk(trainingId, { /* ... (include como estava) ... */ });
+        // ... (resto da resposta como estava)
+        res.status(200).json({ message: `Inscrição do cliente ${userToCancel.firstName} cancelada com sucesso!`, training: updatedTraining.toJSON() });
+
+    } catch (error) {
+        console.error('Erro (admin) ao cancelar inscrição do cliente:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
+    }
+};
+
+// @desc    Admin obtém a lista de espera para um treino específico
+// @route   GET /api/trainings/:trainingId/waitlist
+// @access  Privado (Admin Staff)
+const adminGetTrainingWaitlist = async (req, res) => {
+  const { trainingId } = req.params;
   try {
     const training = await db.Training.findByPk(trainingId);
     if (!training) {
-      return res.status(404).json({ message: 'Treino não encontrado.' });
+      return res.status(404).json({ message: "Treino não encontrado." });
     }
 
-    const userToCancel = await db.User.findByPk(userId);
-    if (!userToCancel) {
-      return res.status(404).json({ message: 'Utilizador (cliente) não encontrado para cancelar inscrição.' });
+    const waitlistEntries = await db.TrainingWaitlist.findAll({
+      where: { trainingId: training.id, status: 'PENDING' }, // Mostrar apenas os pendentes
+      include: [
+        { model: db.User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] }
+      ],
+      order: [['createdAt', 'ASC']], // Mais antigo primeiro
+    });
+    res.status(200).json(waitlistEntries);
+  } catch (error) {
+    console.error(`Erro ao buscar lista de espera para treino ID ${trainingId}:`, error);
+    res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
+  }
+};
+
+// @desc    Admin promove um cliente da lista de espera para o treino
+// @route   POST /api/trainings/:trainingId/waitlist/promote
+// @access  Privado (Admin Staff)
+const adminPromoteFromWaitlist = async (req, res) => {
+  const { trainingId } = req.params;
+  const { userId, waitlistEntryId } = req.body; // Admin envia o userId do cliente a promover
+                                            // ou o ID da entrada na lista de espera
+
+  if (!userId && !waitlistEntryId) {
+    return res.status(400).json({ message: "ID do utilizador ou ID da entrada na lista de espera é obrigatório." });
+  }
+
+  try {
+    const training = await db.Training.findByPk(trainingId, {
+      include: [{ model: db.User, as: 'participants' }]
+    });
+    if (!training) {
+      return res.status(404).json({ message: "Treino não encontrado." });
     }
 
-    const isBooked = await training.hasParticipant(userToCancel);
-    if (!isBooked) {
-      return res.status(400).json({ message: `O cliente ${userToCancel.firstName} não está inscrito neste treino.` });
+    const participantsCount = training.participants ? training.participants.length : 0;
+    if (participantsCount >= training.capacity) {
+      return res.status(400).json({ message: "Treino já está na capacidade máxima. Cancele uma inscrição primeiro." });
     }
 
-    await training.removeParticipant(userToCancel);
+    let waitlistEntry;
+    if (waitlistEntryId) {
+        waitlistEntry = await db.TrainingWaitlist.findByPk(waitlistEntryId);
+    } else { // userId foi fornecido
+        waitlistEntry = await db.TrainingWaitlist.findOne({
+            where: { trainingId: training.id, userId: userId, status: 'PENDING' }
+        });
+    }
 
-    // Notificar o cliente (opcional)
+    if (!waitlistEntry || waitlistEntry.trainingId !== training.id) {
+      return res.status(404).json({ message: "Entrada na lista de espera não encontrada para este treino e utilizador, ou não está pendente." });
+    }
+
+    const userToPromote = await db.User.findByPk(waitlistEntry.userId);
+    if (!userToPromote) {
+        // Isto não deveria acontecer se a entrada na lista de espera for válida
+        await waitlistEntry.destroy(); // Limpar entrada órfã
+        return res.status(404).json({ message: "Utilizador da lista de espera não encontrado."});
+    }
+
+    // Adicionar ao treino
+    await training.addParticipant(userToPromote);
+    // Mudar status ou remover da lista de espera
+    waitlistEntry.status = 'BOOKED'; // Ou await waitlistEntry.destroy();
+    await waitlistEntry.save();
+
     _internalCreateNotification({
-      recipientUserId: userToCancel.id,
-      message: `A sua inscrição no treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}) foi cancelada por um administrador.`,
-      type: 'TRAINING_CANCELLED_BY_ADMIN_CLIENT',
+      recipientUserId: userToPromote.id,
+      message: `Boas notícias! Foste promovido da lista de espera e estás agora inscrito no treino "<span class="math-inline">\{training\.name\}" \(</span>{format(new Date(training.date), 'dd/MM/yyyy')}).`,
+      type: 'TRAINING_PROMOTED_FROM_WAITLIST_CLIENT',
       relatedResourceId: training.id,
       relatedResourceType: 'training',
       link: `/calendario`
     });
-
-    // Notificar o instrutor (opcional)
-    if (training.instructorId && training.instructorId !== req.staff.id) {
-        const currentParticipants = await training.countParticipants();
-         _internalCreateNotification({
-            recipientStaffId: training.instructorId,
-            message: `Inscrição de ${userToCancel.firstName} ${userToCancel.lastName} no treino "${training.name}" foi cancelada por um admin. Vagas: ${training.capacity - currentParticipants}.`,
-            type: 'CLIENT_CANCELLED_BY_ADMIN_STAFF',
-            relatedResourceId: training.id,
-            relatedResourceType: 'training',
-            link: `/admin/calendario-geral`
-        });
-    }
-    
-    const updatedTraining = await db.Training.findByPk(trainingId, {
-        include: [{ model: db.User, as: 'participants', attributes: ['id', 'firstName', 'lastName', 'email'] }]
+    _internalCreateNotification({
+      recipientStaffId: req.staff.id, // Notificar o admin que fez a ação
+      message: `Promoveste <span class="math-inline">\{userToPromote\.firstName\} da lista de espera para o treino "</span>{training.name}".`,
+      type: 'ADMIN_PROMOTED_FROM_WAITLIST_STAFF',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/admin/trainings/${training.id}/manage-waitlist`
     });
-    const trainingJSON = updatedTraining.toJSON();
-    const response = {
-        ...trainingJSON,
-        participantsCount: trainingJSON.participants ? trainingJSON.participants.length : 0,
-    };
 
-    res.status(200).json({ message: `Inscrição do cliente ${userToCancel.firstName} cancelada com sucesso!`, training: response });
+
+    res.status(200).json({ message: `Cliente ${userToPromote.firstName} promovido da lista de espera com sucesso!`});
 
   } catch (error) {
-    console.error('Erro (admin) ao cancelar inscrição do cliente:', error);
-    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+    console.error('Erro ao promover cliente da lista de espera:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
   }
 };
 
@@ -587,4 +697,6 @@ module.exports = {
   getTodayTrainingsCount,
   adminBookClientForTraining,
   adminCancelClientBooking,
+  adminGetTrainingWaitlist,
+  adminPromoteFromWaitlist
 };

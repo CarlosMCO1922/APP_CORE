@@ -3,10 +3,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const Sequelize = require('sequelize'); // Classe Sequelize
+const Sequelize = require('sequelize');
 const basename = path.basename(__filename);
-// Importa a instância do Sequelize já configurada do seu ficheiro database.js
-const sequelize = require('../config/database'); // ESTA É A ÚNICA DECLARAÇÃO DE 'sequelize' QUE PRECISA
+const sequelize = require('../config/database');
 const db = {};
 
 fs
@@ -20,7 +19,6 @@ fs
     );
   })
   .forEach(file => {
-    // Passa a instância 'sequelize' e 'Sequelize.DataTypes' para cada modelo
     const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
     db[model.name] = model;
   });
@@ -31,8 +29,11 @@ Object.keys(db).forEach(modelName => {
   }
 });
 
-// Adiciona as associações 'hasMany' para User e Staff com Notification,
-// verificando se já não existem para evitar duplicados.
+// As associações hasMany para TrainingWaitlist nos modelos User e Training
+// já foram definidas dentro dos seus respetivos ficheiros de modelo (User.js, Training.js)
+// e serão chamadas pelo loop Object.keys(db) acima.
+
+// Mantém as associações explícitas para Notification se ainda as tiver aqui.
 if (db.User && db.Notification && !db.User.associations.notifications) {
     db.User.hasMany(db.Notification, {
         foreignKey: 'recipientUserId',
@@ -42,11 +43,11 @@ if (db.User && db.Notification && !db.User.associations.notifications) {
 if (db.Staff && db.Notification && !db.Staff.associations.staffNotifications) {
     db.Staff.hasMany(db.Notification, {
         foreignKey: 'recipientStaffId',
-        as: 'staffNotifications', // 'staffNotifications' como no modelo Notification.js
+        as: 'staffNotifications',
     });
 }
 
-db.sequelize = sequelize; // Exporta a instância do Sequelize
-db.Sequelize = Sequelize; // Exporta a classe Sequelize
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
 
 module.exports = db;

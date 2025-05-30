@@ -54,6 +54,19 @@ router.get(
   protect, // Permissão verificada no controlador
   workoutPlanController.getWorkoutPlansForTraining
 );
+
+router.get(
+    '/:trainingId/waitlist',
+    protect,
+    isAdminStaff,
+    trainingController.adminGetTrainingWaitlist
+);
+router.post( // Usar POST para uma ação de 'promover' que modifica estado
+    '/:trainingId/waitlist/promote',
+    protect,
+    isAdminStaff,
+    trainingController.adminPromoteFromWaitlist
+);
 // As rotas PUT e DELETE para WorkoutPlan e todas as rotas para WorkoutPlanExercise
 // podem ser montadas num router separado '/api/workout-plans' (como no workoutPlanRoutes.js acima)
 // para evitar URLs excessivamente longas como /api/trainings/:trainingId/workout-plans/:planId/exercises/:exerciseId

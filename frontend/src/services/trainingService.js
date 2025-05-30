@@ -197,4 +197,48 @@ export const adminCancelClientBookingService = async (trainingId, userId, token)
     throw error;
   }
 };
-// == FIM DAS NOVAS FUNÇÕES ==
+
+// @desc    Admin obtém a lista de espera para um treino específico
+export const adminGetTrainingWaitlistService = async (trainingId, token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!trainingId) throw new Error('ID do Treino não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/${trainingId}/waitlist`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar lista de espera do treino.');
+    return data; // Espera-se um array de entradas da lista de espera
+  } catch (error) {
+    console.error(`Erro em adminGetTrainingWaitlistService para trainingId ${trainingId}:`, error);
+    throw error;
+  }
+};
+
+// @desc    Admin promove um cliente da lista de espera para o treino
+export const adminPromoteClientFromWaitlistService = async (trainingId, userIdToPromote, token, waitlistEntryId = null) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!trainingId) throw new Error('ID do Treino não fornecido.');
+  if (!userIdToPromote && !waitlistEntryId) throw new Error('ID do Utilizador ou ID da Entrada na Lista de Espera é obrigatório.');
+
+  const body = {};
+  if (userIdToPromote) body.userId = userIdToPromote;
+  if (waitlistEntryId) body.waitlistEntryId = waitlistEntryId;
+
+  try {
+    const response = await fetch(`${API_URL}/trainings/${trainingId}/waitlist/promote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao promover cliente da lista de espera.');
+    return data; // Espera-se { message }
+  } catch (error) {
+    console.error(`Erro em adminPromoteClientFromWaitlistService para trainingId ${trainingId}:`, error);
+    throw error;
+  }
+};
