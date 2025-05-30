@@ -1,7 +1,7 @@
 // backend/models/TrainingWaitlist.js
-const { DataTypes } = require('sequelize');
+//const { DataTypes } = require('sequelize');
 
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {
   const TrainingWaitlist = sequelize.define('TrainingWaitlist', {
     id: {
       type: DataTypes.INTEGER,
