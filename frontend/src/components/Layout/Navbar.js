@@ -12,7 +12,6 @@ import {
 } from 'react-icons/fa';
 import { theme } from '../../theme';
 
-// Styled Components (como estavam na sua última versão completa)
 const Nav = styled.nav`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 0.75rem 1.5rem;
@@ -24,6 +23,8 @@ const Nav = styled.nav`
   top: 0;
   z-index: 1000;
   min-height: 60px;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const NavLogoLink = styled(Link)`
@@ -49,14 +50,20 @@ const LogoText = styled.span`
 `;
 
 const DesktopNavLinks = styled.div`
-  display: flex;
+  display: flex; /* Escondido por defeito no mobile, mostrado em desktop */
   align-items: center;
-  gap: 1rem;
-  margin-left: auto;
+  gap: 0.5rem; /* Reduzido o gap para tentar ganhar espaço */
+  flex-grow: 1; /* Permite que ocupe espaço disponível */
+  justify-content: flex-end; /* Alinha itens à direita dentro deste container */
+  min-width: 0; /* Ajuda com flex-shrink e overflow */
 
   @media (max-width: 992px) {
     display: none;
   }
+`;
+
+const NavItem = styled.div` // Novo wrapper para itens que não devem encolher
+  flex-shrink: 0;
 `;
 
 const NavLinkStyled = styled(Link)`
@@ -71,6 +78,7 @@ const NavLinkStyled = styled(Link)`
   align-items: center;
   gap: 0.5rem;
   border-radius: 6px;
+  white-space: nowrap;
 
   &:hover {
     color: ${({ theme }) => theme.colors.primary};
@@ -91,6 +99,7 @@ const LogoutButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.primary};
@@ -101,13 +110,18 @@ const LogoutButton = styled.button`
 const UserInfo = styled.span`
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.9rem;
-  margin-right: 1rem;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px; /* Reduzido, ajuste conforme necessário */
+  flex-shrink: 1; /* Permite encolher */
+  padding: 0.5rem 0; /* Para alinhar verticalmente com botões/links */
 `;
 
 const DropdownContainer = styled.div`
   position: relative;
   display: inline-block;
+  flex-shrink: 0;
 `;
 
 const DropdownButton = styled.button`
@@ -356,7 +370,9 @@ const ViewAllNotificationsLink = styled(Link)`
   }
 `;
 
+// --- Lógica do Componente ---
 function Navbar() {
+  // ... (toda a lógica de useState, useEffect, handlers como estava na sua última versão completa)
   const { authState, logout } = useAuth();
   const {
     notifications,
@@ -377,7 +393,7 @@ function Navbar() {
 
   const handleLogout = () => {
     logout();
-    closeAllMenus(); // Garante que todos os menus fecham ao fazer logout
+    closeAllMenus();
     navigate('/login');
   };
 
@@ -387,7 +403,6 @@ function Navbar() {
     setIsMobileMenuOpen(false);
   }
 
-  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (managementDropdownRef.current && !managementDropdownRef.current.contains(event.target)) {
@@ -403,7 +418,6 @@ function Navbar() {
     };
   }, []);
 
-  // Fechar menu mobile se o ecrã for redimensionado para desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 992) {
@@ -418,29 +432,19 @@ function Navbar() {
     if (!notification.isRead) {
       markNotificationAsRead(notification.id);
     }
-    // A navegação é tratada pelo componente Link agora,
-    // apenas precisamos de fechar os menus.
+    if (notification.link) {
+      navigate(notification.link);
+    }
     closeAllMenus();
-    // Se o link da notificação não for tratado pelo <Link> (ex: link externo),
-    // pode adicionar a navegação aqui:
-    // if (notification.link) {
-    //   navigate(notification.link);
-    // }
   };
 
   const handleMarkAllReadClick = async () => {
     await markAllNotificationsAsRead();
-    // Opcional: fechar o dropdown após marcar todas como lidas
-    // setNotificationsDropdownOpen(false);
   };
 
-
-  // Esta função será chamada PELO COMPONENTE LINK, apenas para fechar o menu.
-  // A navegação em si é feita pelo <Link to="...">.
   const handleNavigateAndCloseMenus = () => {
       closeAllMenus();
   }
-
 
   if (!authState.isAuthenticated) {
     return null;
@@ -450,22 +454,21 @@ function Navbar() {
   const isStaffGeneral = authState.role && authState.role !== 'user';
   const isAdminStrict = authState.role === 'admin';
 
-  // Blocos JSX para os links
   const commonClientLinksJsx = (
     <>
-      <NavLinkStyled to="/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel</NavLinkStyled>
-      <NavLinkStyled to="/calendario" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled>
-      <NavLinkStyled to="/meu-progresso" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Meu Progresso</NavLinkStyled>
-      <NavLinkStyled to="/meus-pagamentos" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</NavLinkStyled>
-      <NavLinkStyled to="/definicoes" onClick={handleNavigateAndCloseMenus}><FaCog /> Definições</NavLinkStyled>
+      <NavItem><NavLinkStyled to="/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/calendario" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/meu-progresso" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Meu Progresso</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/meus-pagamentos" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/definicoes" onClick={handleNavigateAndCloseMenus}><FaCog /> Definições</NavLinkStyled></NavItem>
     </>
   );
 
   const commonStaffLinksJsx = (
     <>
-      <NavLinkStyled to="/admin/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled>
-      <NavLinkStyled to="/admin/calendario-geral" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled>
-      <NavLinkStyled to="/admin/appointment-requests" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Pedidos</NavLinkStyled>
+      <NavItem><NavLinkStyled to="/admin/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Pedidos</NavLinkStyled></NavItem>
     </>
   );
 
@@ -505,32 +508,18 @@ function Navbar() {
           <NotificationItemStyled
             key={notif.id}
             $isRead={notif.isRead}
-            // Envolve o item com Link se tiver link, senão só o onClick para marcar como lida
-            onClick={() => handleNotificationClick(notif)} // Marca como lida e navega se houver link via navigate()
-            // Se quiser que o clique no item seja o Link diretamente:
-            // as={notif.link ? Link : 'div'} // Renderiza como Link se houver link
-            // to={notif.link || undefined}     // Prop 'to' apenas se for Link
+            onClick={() => handleNotificationClick(notif)}
+            title={notif.isRead ? "Lida" : "Não lida"}
           >
             <p>{notif.message}</p>
             <small>{new Date(notif.createdAt).toLocaleString('pt-PT')}</small>
           </NotificationItemStyled>
         ))}
-        {/* == ALTERAÇÃO AQUI: O ViewAllNotificationsLink já é um Link,
-             ele precisa do onClick para fechar o menu, mas a navegação
-             é tratada pelo 'to' prop.
-             A função handleNotificationClick já faz navigate(link)
-             Então, para o "Ver todas", usamos handleNavigateAndCloseMenus
-             para fechar o dropdown ANTES que a navegação do Link ocorra.
-             A forma mais simples é garantir que o clique no Link navega
-             e o menu fecha.
-        == */}
         <ViewAllNotificationsLink
             to="/notificacoes"
             onClick={() => {
-                // A navegação é feita pelo componente Link.
-                // Apenas precisamos de garantir que o dropdown de notificações fecha.
                 setNotificationsDropdownOpen(false);
-                setIsMobileMenuOpen(false); // Também fecha o menu mobile se estiver aberto
+                setIsMobileMenuOpen(false);
             }}
         >
           Ver todas as notificações
@@ -538,6 +527,7 @@ function Navbar() {
       </NotificationsDropdownContent>
     </NotificationBellContainer>
   );
+
 
   return (
     <>
@@ -549,22 +539,18 @@ function Navbar() {
 
         <DesktopNavLinks>
           {authState.user && (
-            <UserInfo>
-              Olá, {authState.user.firstName}!
-            </UserInfo>
+            <NavItem><UserInfo>Olá, {authState.user.firstName}!</UserInfo></NavItem>
           )}
           {isUserClient && commonClientLinksJsx}
           {isStaffGeneral && !isAdminStrict && commonStaffLinksJsx}
           {isAdminStrict && (
             <>
               {commonStaffLinksJsx}
-              {adminManagementDropdownJsx}
+              <NavItem>{adminManagementDropdownJsx}</NavItem>
             </>
           )}
-          {notificationBellJsx}
-          <LogoutButton onClick={handleLogout}>
-            <FaSignOutAlt /> Logout
-          </LogoutButton>
+          <NavItem>{notificationBellJsx}</NavItem>
+          <NavItem><LogoutButton onClick={handleLogout}><FaSignOutAlt /> Logout</LogoutButton></NavItem>
         </DesktopNavLinks>
 
         <HamburgerIcon onClick={() => setIsMobileMenuOpen(prev => !prev)}>
@@ -575,7 +561,7 @@ function Navbar() {
       <MobileMenuOverlay $isOpen={isMobileMenuOpen}>
         <div style={{padding: '1rem', borderBottom: '1px solid #4A4A4A', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             {authState.user && (
-                <UserInfo style={{marginRight: 'auto'}}>
+                <UserInfo style={{marginRight: 'auto', maxWidth: 'none' }}> {/* maxWidth none para mobile */}
                     Olá, {authState.user.firstName}!
                 </UserInfo>
             )}
