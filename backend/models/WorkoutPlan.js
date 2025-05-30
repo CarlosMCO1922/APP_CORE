@@ -43,13 +43,13 @@ module.exports = (sequelize) => {
       as: 'planExercises', // workoutPlan.getPlanExercises()
       onDelete: 'CASCADE', 
     });
-  };
 
-  WorkoutPlan.hasMany(models.ClientExercisePerformance, {
+    WorkoutPlan.hasMany(models.ClientExercisePerformance, {
       foreignKey: 'workoutPlanId',
       as: 'clientPerformances', // workoutPlan.getClientPerformances()
       onDelete: 'CASCADE',
     });
+  };
 
   return WorkoutPlan;
 };
