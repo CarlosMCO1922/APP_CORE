@@ -1,7 +1,7 @@
 // src/services/trainingService.js
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-// --- Funções Existentes (Preservadas) ---
+// --- Funções Existentes (Preservadas do seu ficheiro) ---
 export const getAllTrainings = async (token, filters = {}) => {
   if (!token) throw new Error('Token não fornecido para getAllTrainings.');
   try {
@@ -12,7 +12,8 @@ export const getAllTrainings = async (token, filters = {}) => {
     if (filters.nameSearch && filters.nameSearch.trim() !== '') queryParams.append('nameSearch', filters.nameSearch.trim());
 
     const queryString = queryParams.toString();
-    const fetchURL = queryString ? `${API_URL}/trainings?${queryString}` : `${API_URL}/trainings`;
+    // Assumindo que o seu backend espera /api/trainings
+    const fetchURL = queryString ? `${API_URL}/api/trainings?${queryString}` : `${API_URL}/api/trainings`;
 
     console.log("[trainingService] Fetching trainings from URL:", fetchURL);
 
@@ -21,9 +22,6 @@ export const getAllTrainings = async (token, filters = {}) => {
     });
 
     const responseText = await response.text();
-    // console.log("[trainingService] Raw response status:", response.status); // Descomente para depuração
-    // console.log("[trainingService] Raw response text (primeiros 500 chars):", responseText.substring(0, 500)); 
-
     if (!response.ok) {
       let errorMessage = `Erro HTTP ${response.status}.`;
       try {
@@ -45,7 +43,7 @@ export const getAllTrainings = async (token, filters = {}) => {
 export const adminCreateTraining = async (trainingData, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/trainings`, {
+    const response = await fetch(`${API_URL}/api/trainings`, { // Adicionado /api
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(trainingData),
@@ -60,7 +58,7 @@ export const getTrainingById = async (trainingId, token) => {
   if (!token) throw new Error('Token não fornecido para getTrainingById.');
   if (!trainingId) throw new Error('ID do Treino não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}`, { // Adicionado /api
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
@@ -73,7 +71,7 @@ export const adminUpdateTraining = async (trainingId, trainingData, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido para atualização.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}`, { // Adicionado /api
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(trainingData),
@@ -88,7 +86,7 @@ export const adminDeleteTraining = async (trainingId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido para eliminação.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}`, { // Adicionado /api
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -102,7 +100,7 @@ export const bookTraining = async (trainingId, token) => {
   if (!token) throw new Error('Token de cliente não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido para inscrição.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}/book`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}/book`, { // Adicionado /api
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     });
@@ -116,7 +114,7 @@ export const cancelTrainingBooking = async (trainingId, token) => {
   if (!token) throw new Error('Token de cliente não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido para cancelar inscrição.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}/book`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}/book`, { // Adicionado /api
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -129,7 +127,7 @@ export const cancelTrainingBooking = async (trainingId, token) => {
 export const adminGetCurrentWeekSignups = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/trainings/stats/current-week-signups`, {
+    const response = await fetch(`${API_URL}/api/trainings/stats/current-week-signups`, { // Adicionado /api
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
@@ -141,7 +139,7 @@ export const adminGetCurrentWeekSignups = async (token) => {
 export const adminGetTodayTrainingsCount = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/trainings/stats/today-count`, {
+    const response = await fetch(`${API_URL}/api/trainings/stats/today-count`, { // Adicionado /api
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
@@ -154,7 +152,7 @@ export const adminBookClientForTrainingService = async (trainingId, userId, toke
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId || !userId) throw new Error('ID do Treino e ID do Utilizador são obrigatórios.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}/admin-book-client`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}/admin-book-client`, { // Adicionado /api
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -175,7 +173,7 @@ export const adminCancelClientBookingService = async (trainingId, userId, token)
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId || !userId) throw new Error('ID do Treino e ID do Utilizador são obrigatórios.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}/admin-cancel-booking/${userId}`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}/admin-cancel-booking/${userId}`, { // Adicionado /api
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json', 
@@ -195,12 +193,12 @@ export const adminGetTrainingWaitlistService = async (trainingId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}/waitlist`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}/waitlist`, { // Adicionado /api
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar lista de espera do treino.');
-    return data;
+    return data; 
   } catch (error) {
     console.error(`Erro em adminGetTrainingWaitlistService para trainingId ${trainingId}:`, error);
     throw error;
@@ -217,7 +215,7 @@ export const adminPromoteClientFromWaitlistService = async (trainingId, userIdTo
   if (waitlistEntryId) body.waitlistEntryId = waitlistEntryId;
 
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}/waitlist/promote`, {
+    const response = await fetch(`${API_URL}/api/trainings/${trainingId}/waitlist/promote`, { // Adicionado /api
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -234,22 +232,10 @@ export const adminPromoteClientFromWaitlistService = async (trainingId, userIdTo
   }
 };
 
-
-// --- 👇 NOVAS FUNÇÕES PARA SÉRIES DE TREINOS RECORRENTES 👇 ---
-
-/**
- * Admin cria uma nova série de treinos recorrentes.
- * @param {object} seriesData - Dados da série de treinos.
- * @param {string} token - Token de autenticação do admin.
- * @returns {Promise<object>} - A resposta da API.
- */
+// --- NOVAS FUNÇÕES PARA SÉRIES DE TREINOS RECORRENTES ---
 export const createTrainingSeriesService = async (seriesData, token) => {
   if (!token) throw new Error('Token não fornecido para criar série de treinos.');
-  
-  // Confirme que o seu backend expõe este endpoint em /api/training-series
-  // Se for, por exemplo, /admin/training-series, ajuste aqui.
   const url = `${API_URL}/api/training-series`; 
-
   console.log('Frontend Service: Criando série de treinos. URL:', url, 'Payload:', seriesData);
   const response = await fetch(url, {
     method: 'POST',
@@ -274,69 +260,60 @@ export const createTrainingSeriesService = async (seriesData, token) => {
     console.error('Erro na resposta de createTrainingSeriesService (status não OK):', data);
     throw new Error(data.message || `Erro ao criar série de treinos. Status: ${response.status}`);
   }
-  return data; // Espera-se { message: 'Série criada...', series: newSeries, instancesCreated: count }
+  return data;
 };
 
-/**
- * Admin obtém todas as séries de treinos recorrentes.
- * (Implementar o endpoint no backend: GET /api/training-series/admin-list ou similar)
- * @param {string} token - Token de autenticação do admin.
- * @returns {Promise<Array>} - Array com as séries de treinos.
- */
-// export const getAllTrainingSeriesAdminService = async (token) => {
-//   if (!token) throw new Error('Token não fornecido para buscar séries de treinos.');
-//   const url = `${API_URL}/api/training-series`; // Ou um endpoint específico de admin
-//   console.log('Frontend Service: Buscando todas as séries (admin). URL:', url);
-//   const response = await fetch(url, {
-//     headers: { 'Authorization': `Bearer ${token}` },
-//   });
-//   const responseText = await response.text();
-//   let data;
-//   try {
-//     data = JSON.parse(responseText);
-//   } catch (e) {
-//      console.error("Falha ao parsear JSON de getAllTrainingSeriesAdminService", e);
-//      console.error("Resposta (texto):", responseText);
-//      throw new Error(`Resposta do servidor para buscar séries não é JSON. Status: ${response.status}`);
-//   }
-//   if (!response.ok) {
-//     throw new Error(data.message || 'Erro ao buscar séries de treinos.');
-//   }
-//   return data; // Espera-se um array de TrainingSeries
-// };
+export const getActiveTrainingSeriesForClientService = async (token) => {
+  if (!token) throw new Error('Token não fornecido para buscar séries ativas.');
+  const url = `${API_URL}/api/training-series`; // Ajuste se o endpoint no backend for diferente
+  console.log('Frontend Service: Buscando séries ativas para cliente. URL:', url);
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  const responseText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+     console.error("Falha ao parsear JSON de getActiveTrainingSeriesForClientService", e);
+     console.error("Resposta (texto):", responseText);
+     throw new Error(`Resposta do servidor para buscar séries (cliente) não é JSON. Status: ${response.status}`);
+  }
+  if (!response.ok) {
+    throw new Error(data.message || 'Erro ao buscar séries de treinos ativas.');
+  }
+  return data; // Espera-se um array de TrainingSeries
+};
 
-/**
- * Cliente obtém todas as séries de treinos recorrentes ativas para se inscrever.
- * (Implementar o endpoint no backend: GET /api/training-series/active-for-clients ou similar)
- * @param {string} token - Token de autenticação do cliente.
- * @returns {Promise<Array>} - Array com as séries de treinos ativas.
- */
-// export const getActiveTrainingSeriesForClientService = async (token) => {
-//   // ... implementação similar a getAllTrainingSeriesAdminService, mas para clientes ...
-// };
+export const createSeriesSubscriptionService = async (subscriptionData, token) => {
+  if (!token) throw new Error('Token não fornecido para criar subscrição em série.');
+  // subscriptionData = { trainingSeriesId, clientSubscriptionStartDate?, clientSubscriptionEndDate? }
+  const url = `${API_URL}/api/training-series/subscriptions`;
+  console.log('Frontend Service: Criando subscrição em série. URL:', url, 'Payload:', subscriptionData);
+  
+  const response = await fetch(url, {
+     method: 'POST',
+     headers: { 
+       'Content-Type': 'application/json',
+       'Authorization': `Bearer ${token}`
+     },
+     body: JSON.stringify(subscriptionData),
+  });
+  
+  const responseText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+     console.error("Falha ao parsear JSON de createSeriesSubscriptionService", e);
+     console.error("Resposta (texto):", responseText);
+     throw new Error(`Resposta do servidor para criar subscrição não é JSON. Status: ${response.status}`);
+  }
+ 
+  if (!response.ok) {
+    throw new Error(data.message || 'Erro ao inscrever-se na série de treinos.');
+  }
+  return data; // Espera-se { message, subscription, bookingsCreatedCount, bookingsSkippedCount }
+};
 
-
-/**
- * Cliente inscreve-se numa série de treinos.
- * @param {object} subscriptionData - ex: { trainingSeriesId, clientSubscriptionStartDate?, clientSubscriptionEndDate? }
- * @param {string} token - Token do cliente
- * @returns {Promise<object>} - Resposta da API
- */
-// export const createSeriesSubscriptionService = async (subscriptionData, token) => {
-//   if (!token) throw new Error('Token não fornecido.');
-//   const url = `${API_URL}/api/training-series/subscriptions`;
-//   console.log('Frontend Service: Criando subscrição em série. URL:', url, 'Payload:', subscriptionData);
-//   const response = await fetch(url, {
-//      method: 'POST',
-//      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-//      body: JSON.stringify(subscriptionData),
-//   });
-//   // ... (tratamento de resposta similar a createTrainingSeriesService) ...
-//   const data = await response.json(); // Adicionar tratamento de texto antes do parse
-//   if (!response.ok) throw new Error(data.message || 'Erro ao inscrever-se na série.');
-//   return data;
-// };
-
-// TODO: Adicionar mais serviços para:
-// - Admin: atualizar série, apagar série
-// - Cliente: listar suas subscrições, cancelar subscrição
+// Adicionar aqui outros serviços para séries se necessário (listar para admin, update, delete, etc.)

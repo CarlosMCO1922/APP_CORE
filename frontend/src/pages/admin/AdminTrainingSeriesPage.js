@@ -1,11 +1,11 @@
 // src/pages/admin/AdminTrainingSeriesPage.js
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../../context/AuthContext'; // Ajuste o caminho
-import { createTrainingSeriesService } from '../../services/trainingService'; // Ajustado para trainingService
-import { getAllStaffForSelection } from '../../services/staffService'; // Para buscar instrutores
+import { useAuth } from '../../context/AuthContext'; // Ajuste o caminho se necessário
+import { createTrainingSeriesService } from '../../services/trainingService'; // Importa do trainingService
+import { getAllStaffForSelection } from '../../services/staffService'; 
 import { FaCalendarPlus, FaListAlt, FaArrowLeft } from 'react-icons/fa';
-import { theme } from '../../theme'; // Ajuste o caminho
+import { theme } from '../../theme'; // Ajuste o caminho se necessário
 import { Link } from 'react-router-dom';
 
 // --- Styled Components (Adapte ou reutilize os seus estilos globais/de outras páginas admin) ---
@@ -184,7 +184,7 @@ const AdminTrainingSeriesPage = () => {
     name: '',
     description: '',
     instructorId: '', 
-    dayOfWeek: '1', // Segunda-feira como default (0-Dom, 1-Seg, ...)
+    dayOfWeek: '1', 
     startTime: '18:00',
     endTime: '19:00',
     seriesStartDate: '',
@@ -197,7 +197,6 @@ const AdminTrainingSeriesPage = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loadingInstructors, setLoadingInstructors] = useState(true);
 
-
   useEffect(() => {
     const fetchInstructors = async () => {
       if (!authState.token) {
@@ -206,17 +205,12 @@ const AdminTrainingSeriesPage = () => {
       }
       try {
         setLoadingInstructors(true);
-        const data = await getAllStaffForSelection(authState.token);
-        // O endpoint /staff/professionals retorna { professionals: [...] }
-        // E cada profissional tem userDetails: { id, firstName, lastName } e também o role no objeto staff
-        // Filtrar para apenas roles que podem ser instrutores (ex: 'trainer', 'admin')
+        const data = await getAllStaffForSelection(authState.token); // Do seu staffService
         const validInstructors = (data.professionals || [])
-            .filter(p => p.role === 'trainer' || p.role === 'admin' || p.role === 'physiotherapist') // Ajuste os roles conforme necessário
+            .filter(p => p.role === 'trainer' || p.role === 'admin' || p.role === 'physiotherapist') 
             .map(p => ({
-                id: p.userId, // Usar o ID do User para consistência com o backend TrainingSeries.instructorId
-                firstName: p.userDetails.firstName,
-                lastName: p.userDetails.lastName,
-                role: p.role
+                id: p.userId, // Assumindo que o backend TrainingSeries.instructorId é o User ID do Staff
+                name: `${p.userDetails.firstName} ${p.userDetails.lastName} (${p.role})`
         }));
         setInstructors(validInstructors);
       } catch (error) {
@@ -236,8 +230,7 @@ const AdminTrainingSeriesPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Utilizar authState.user?.isAdmin ou uma verificação de role mais específica se tiver
-    if (!authState.token || !(authState.user?.isStaff && authState.user?.isAdmin)) { 
+    if (!authState.token || !(authState.user?.role === 'admin')) { 
       setMessage({ type: 'error', text: 'Apenas administradores podem criar séries de treinos.'});
       return;
     }
@@ -266,7 +259,6 @@ const AdminTrainingSeriesPage = () => {
         return;
     }
 
-
     try {
       const payload = {
         ...seriesData,
@@ -292,7 +284,9 @@ const AdminTrainingSeriesPage = () => {
 
   return (
     <PageContainer>
-      <BackLink to="/admin/dashboard"> <FaArrowLeft /> Voltar ao Painel Admin</BackLink> 
+      <BackLink to={authState.user?.role === 'admin' ? "/admin/dashboard" : "/dashboard"}> 
+          <FaArrowLeft /> Voltar ao Painel
+      </BackLink> 
       <HeaderContainer>
         <Title><FaCalendarPlus /> Criar Nova Série de Treinos</Title>
       </HeaderContainer>
@@ -315,7 +309,7 @@ const AdminTrainingSeriesPage = () => {
               <Select name="instructorId" id="instructorId" value={seriesData.instructorId} onChange={handleChange} required disabled={loadingInstructors}>
                 <option value="">{loadingInstructors ? 'A carregar...' : 'Selecione um instrutor'}</option>
                 {instructors.map(inst => (
-                  <option key={inst.id} value={inst.id}>{inst.firstName} {inst.lastName} ({inst.role})</option>
+                  <option key={inst.id} value={inst.id}>{inst.name}</option>
                 ))}
               </Select>
             </FormGroup>
@@ -372,7 +366,7 @@ const AdminTrainingSeriesPage = () => {
       <FormSection style={{marginTop: '40px'}}>
         <Title as="h2" style={{fontSize: '1.5rem', borderBottom: 'none', marginBottom: '15px'}}><FaListAlt /> Séries de Treinos Programadas</Title>
         <p style={{color: theme.colors.textMuted}}><i>(A funcionalidade de listar e gerir séries existentes será implementada aqui no futuro.)</i></p>
-        {/* TODO: Implementar listagem de TrainingSeries aqui */}
+        {/* TODO: Implementar listagem de TrainingSeries aqui, chamando getAllTrainingSeriesAdminService */}
       </FormSection>
 
     </PageContainer>

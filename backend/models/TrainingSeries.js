@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false, // Ou true se puder ser definido por instância
       references: {
-        model: 'users', // Nome da tabela de Users (confirme se é 'Users' ou 'Staffs')
+        model: 'staff', 
         key: 'id',
       },
     },
@@ -70,7 +70,7 @@ module.exports = (sequelize, DataTypes) => {
       as: 'instances', // db.TrainingSeries.findAll({ include: 'instances' })
       onDelete: 'CASCADE', // Se apagar a série, apaga as instâncias
     });
-    TrainingSeries.belongsTo(models.User, { // Assumindo que User é o modelo para instrutores
+    TrainingSeries.belongsTo(models.Staff, { // Assumindo que User é o modelo para instrutores
       as: 'instructor', 
       foreignKey: 'instructorId' 
     });
