@@ -15,7 +15,7 @@ import {
     FaRunning, FaClipboardList, FaSave, FaArrowLeft, FaEdit,
     FaCheckCircle, FaHistory, FaTimes, FaRegClock, FaExternalLinkAlt,
     FaDumbbell, FaTrash, FaChartLine, FaWeightHanging, FaStopwatch, // <<< ÍCONES ADICIONADOS/ATUALIZADOS
-    FaCalendarCheck 
+    FaCalendarCheck, FaChartBar
 } from 'react-icons/fa';
 import { theme } from '../theme'; 
 import ExerciseProgressChart from '../components/ExerciseProgressChart'; // <<< ADICIONADO (ajuste o caminho se necessário)
