@@ -1,12 +1,12 @@
 // src/pages/ClientProgressPage.js
-import React, { useEffect, useState, useCallback } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import styled, {css} from 'styled-components';
+import React, { useEffect, useState, useCallback, useMemo } from 'react'; // useMemo não está a ser usado, pode ser removido se não for adicionado mais tarde
+import { Link, useNavigate } from 'react-router-dom'; // useParams não está a ser usado aqui, mas pode ser no futuro se a rota incluir :trainingId
+import styled, { css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { getMyBookings } from '../services/userService'; // Para listar treinos inscritos
-import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService'; // Para buscar o plano do treino
+import { getMyBookings } from '../services/userService';
+import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService';
 import { logExercisePerformanceService, getMyPerformanceForWorkoutPlanService } from '../services/progressService';
-import { FaRunning, FaClipboardList, FaSave, FaArrowLeft, FaEdit, FaCheckCircle } from 'react-icons/fa';
+import { FaRunning, FaClipboardList, FaSave, FaArrowLeft, FaEdit, FaCheckCircle } from 'react-icons/fa'; // FaEdit, FaCheckCircle não estão a ser usados
 import { theme } from '../theme';
 
 // --- Styled Components ---
@@ -51,9 +51,48 @@ const BackLink = styled(Link)`
   }
 `;
 
-const LoadingText = styled.p` /* ... (pode copiar do DashboardPage.js) ... */ `;
-const ErrorText = styled.p` /* ... (pode copiar do DashboardPage.js) ... */ `;
-const EmptyText = styled.p` /* ... (pode copiar do DashboardPage.js) ... */ `;
+const MessageBaseStyles = css`
+  text-align: center;
+  padding: 12px 18px;
+  margin: 20px auto;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border-width: 1px;
+  border-style: solid;
+  max-width: 600px;
+  font-size: 0.9rem;
+  font-weight: 500;
+`;
+
+const LoadingText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.primary};
+  border-color: transparent;
+  background: transparent;
+  font-style: italic;
+`;
+
+const ErrorText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.error};
+  background-color: ${({ theme }) => theme.colors.errorBg};
+  border-color: ${({ theme }) => theme.colors.error};
+`;
+
+const EmptyText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-style: italic;
+  border-color: transparent; /* Ou uma borda subtil */
+  background-color: rgba(0,0,0,0.05); /* Um fundo muito leve se desejar */
+  padding: 30px 15px;
+`;
+
+const PageSuccessMessage = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.success || '#28a745'};
+  background-color: ${({ theme }) => theme.colors.successBg || 'rgba(40, 167, 69, 0.1)'};
+  border-color: ${({ theme }) => theme.colors.success || '#28a745'};
+`;
 
 const SectionTitle = styled.h2`
     font-size: 1.6rem;
@@ -116,14 +155,38 @@ const SelectTrainingButton = styled.button`
 
 const WorkoutPlanDisplay = styled.div`
   margin-top: 20px;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: clamp(15px, 3vw, 25px);
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  margin-bottom: 20px;
+
+  h3 { /* Estilo para o nome do plano */
+    color: ${({ theme }) => theme.colors.secondary || theme.colors.primary}; /* Usar secondary se existir, senão primary */
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha};
+  }
+  p > i { /* Estilo para notas do plano */
+    display: block;
+    background-color: rgba(0,0,0,0.1);
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    color: ${({ theme }) => theme.colors.textMuted};
+    margin-bottom: 15px;
+  }
 `;
 
 const ExerciseLogItem = styled.div`
-  background-color: #2C2C2C;
+  background-color: #2C2C2C; // Um pouco mais escuro que o cardBackground para contraste
   padding: 15px;
   border-radius: 8px;
-  margin-bottom: 15px;
+  margin-bottom: 20px; // Mais espaço entre exercícios
   border-left: 4px solid ${({ theme }) => theme.colors.primary};
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 `;
 
 const ExerciseName = styled.h4`
@@ -135,50 +198,66 @@ const ExerciseName = styled.h4`
 const PrescribedDetails = styled.p`
   font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: 10px;
+  margin-bottom: 15px; // Mais espaço
   font-style: italic;
+  line-height: 1.4;
+  padding: 8px;
+  background-color: rgba(0,0,0,0.1);
+  border-radius: 4px;
 `;
 
 const LogInputGroup = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 10px;
-  margin-bottom: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); // Ajustado minmax
+  gap: 15px; // Aumentado gap
+  margin-bottom: 15px;
   align-items: flex-end;
 `;
 
 const LogLabel = styled.label`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: 3px;
+  margin-bottom: 5px; // Mais espaço
   display: block;
+  font-weight: 500;
 `;
 
 const LogInput = styled.input`
   width: 100%;
-  padding: 8px 10px;
-  background-color: #333;
+  padding: 10px 12px; // Aumentado padding
+  background-color: #383838; // Cor de fundo ligeiramente diferente
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.9rem;
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
 `;
 
 const LogTextarea = styled.textarea`
   width: 100%;
-  padding: 8px 10px;
-  background-color: #333;
+  padding: 10px 12px;
+  background-color: #383838;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.9rem;
-  min-height: 60px;
+  min-height: 70px; // Ajustado
   resize: vertical;
+  margin-bottom: 10px; // Espaço antes do botão
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
 `;
 const LogButton = styled.button`
   background-color: ${({ theme }) => theme.colors.success};
   color: white;
-  padding: 10px 15px;
+  padding: 10px 18px; // Aumentado padding
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
   cursor: pointer;
@@ -187,122 +266,107 @@ const LogButton = styled.button`
   align-items: center;
   gap: 8px;
   margin-top: 10px;
+  transition: background-color 0.2s;
+  &:hover:not(:disabled) {
+    background-color: ${({ theme }) => theme.colors.successDark || '#388E3C'};
+  }
   &:disabled {
     background-color: #555;
     cursor: not-allowed;
   }
 `;
 
-// Estilo para histórico de performance
 const PerformanceHistoryItem = styled.div`
-  font-size: 0.8rem;
-  color: #aaa;
-  margin-top: 5px;
-  padding-left: 10px;
+  font-size: 0.85rem; /* Aumentado */
+  color: #b0b0b0; /* Cor mais clara para melhor leitura */
+  margin-top: 8px;
+  padding: 8px 10px; /* Adicionado padding */
   border-left: 2px solid #444;
+  background-color: rgba(0,0,0,0.05); /* Fundo subtil */
+  border-radius: 0 4px 4px 0;
+  line-height: 1.5;
 `;
-
-const MessageBaseStyles = css` // Se tiver um estilo base
-  text-align: center;
-  padding: 12px 18px;
-  margin: 20px auto;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  border-width: 1px;
-  border-style: solid;
-  max-width: 600px;
-  font-size: 0.9rem;
-  font-weight: 500;
-`;
-
-
-const PageSuccessMessage = styled.p`
-  ${MessageBaseStyles} // Se usar um estilo base
-  color: ${({ theme }) => theme.colors.success || '#28a745'}; // Fallback color
-  background-color: ${({ theme }) => theme.colors.successBg || 'rgba(40, 167, 69, 0.1)'}; // Fallback color
-  border-color: ${({ theme }) => theme.colors.success || '#28a745'}; // Fallback color
-`;
-
 
 const ClientProgressPage = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
 
   const [myTrainings, setMyTrainings] = useState([]);
-  const [selectedTraining, setSelectedTraining] = useState(null); // Guarda o ID do treino
+  const [selectedTraining, setSelectedTraining] = useState(null);
   const [selectedTrainingName, setSelectedTrainingName] = useState('');
-  const [workoutPlans, setWorkoutPlans] = useState([]); // Planos do treino selecionado
-  const [performanceLogs, setPerformanceLogs] = useState({}); // Objeto: { planExerciseId: [{log}, {log}] }
-  const [currentPerformanceInputs, setCurrentPerformanceInputs] = useState({}); // { planExerciseId: { performedReps: '', performedWeight: '', notes: '' ... } }
+  const [workoutPlans, setWorkoutPlans] = useState([]);
+  const [performanceLogs, setPerformanceLogs] = useState({});
+  const [currentPerformanceInputs, setCurrentPerformanceInputs] = useState({});
 
   const [loadingTrainings, setLoadingTrainings] = useState(true);
-  const [loadingPlans, setLoadingPlans] = useState(false);
-  const [loadingPerformance, setLoadingPerformance] = useState(false);
+  const [loadingPlansAndProgress, setLoadingPlansAndProgress] = useState(false); // Estado combinado
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Buscar treinos inscritos pelo cliente
   useEffect(() => {
     if (authState.token) {
       setLoadingTrainings(true);
       getMyBookings(authState.token)
         .then(data => {
-          // Filtrar apenas treinos futuros ou recentes para registo de progresso
-          const now = new Date();
-          const relevantTrainings = (data.trainings || []).filter(t => {
-            const trainingDate = new Date(`<span class="math-inline">\{t\.date\}T</span>{t.time}`);
-            // Exemplo: permitir log para treinos dos últimos 7 dias ou futuros
-            // return trainingDate <= now && now.getTime() - trainingDate.getTime() < 7 * 24 * 60 * 60 * 1000 || trainingDate > now;
-            return true; // Por agora, todos os treinos inscritos
-          });
-          setMyTrainings(relevantTrainings);
+          setMyTrainings(data.trainings || []);
         })
         .catch(err => setError('Falha ao buscar seus treinos inscritos: ' + err.message))
         .finally(() => setLoadingTrainings(false));
     }
   }, [authState.token]);
 
-  // Buscar planos e logs de performance quando um treino é selecionado
   useEffect(() => {
     if (selectedTraining && authState.token) {
-      setLoadingPlans(true);
-      setLoadingPerformance(true);
-      setWorkoutPlans([]); // Limpa planos anteriores
-      setPerformanceLogs({}); // Limpa logs anteriores
-      setCurrentPerformanceInputs({}); // Limpa inputs anteriores
+      setLoadingPlansAndProgress(true);
+      setError('');
+      setSuccessMessage('');
+      setWorkoutPlans([]);
+      setPerformanceLogs({});
+      setCurrentPerformanceInputs({});
 
       const trainingDetails = myTrainings.find(t => t.id === selectedTraining);
-      if (trainingDetails) setSelectedTrainingName(trainingDetails.name);
+      if (trainingDetails) {
+        setSelectedTrainingName(trainingDetails.name);
+      }
 
+      getWorkoutPlansByTrainingId(selectedTraining, authState.token)
+        .then(async (plansData) => {
+          const plans = plansData || [];
+          setWorkoutPlans(plans);
 
-      Promise.all([
-        getWorkoutPlansByTrainingId(selectedTraining, authState.token),
-        // Por agora, vamos buscar o histórico de performance por plano quando o plano é selecionado
-        // ou podemos buscar todos os logs de um treino, mas a API foi desenhada para plano
-      ])
-      .then(([plansData]) => {
-        setWorkoutPlans(plansData || []);
-        // Para cada plano, buscar o histórico de performance
-        (plansData || []).forEach(plan => {
-          getMyPerformanceForWorkoutPlanService(selectedTraining, plan.id, authState.token)
-            .then(performanceData => {
-              // Agrupar performance por planExerciseId
-              const logsByExercise = {};
-              (performanceData || []).forEach(perf => {
-                if (!logsByExercise[perf.planExerciseId]) {
-                  logsByExercise[perf.planExerciseId] = [];
+          if (plans.length > 0) {
+            const performancePromises = plans.map(plan =>
+              getMyPerformanceForWorkoutPlanService(selectedTraining, plan.id, authState.token)
+                .catch(err => {
+                  console.error(`Falha ao buscar performance para plano ${plan.id}:`, err);
+                  return [];
+                })
+            );
+            const performancesForAllPlans = await Promise.all(performancePromises);
+            const allLogsByExercise = {};
+            performancesForAllPlans.forEach(planPerformances => {
+              (planPerformances || []).forEach(perf => {
+                if (!allLogsByExercise[perf.planExerciseId]) {
+                  allLogsByExercise[perf.planExerciseId] = [];
                 }
-                logsByExercise[perf.planExerciseId].push(perf);
+                if (!allLogsByExercise[perf.planExerciseId].find(p => p.id === perf.id)) {
+                    allLogsByExercise[perf.planExerciseId].push(perf);
+                }
               });
-              setPerformanceLogs(prevLogs => ({ ...prevLogs, ...logsByExercise }));
-            })
-            .catch(err => console.error(`Falha ao buscar performance para plano ${plan.id}:`, err));
-        });
-      })
-      .catch(err => setError('Falha ao buscar planos de treino: ' + err.message))
-      .finally(() => {
-        setLoadingPlans(false);
-        setLoadingPerformance(false); // Assumimos que a performance é carregada com os planos
-      });
+            });
+            setPerformanceLogs(allLogsByExercise);
+          }
+        })
+        .catch(err => {
+          setError('Falha ao buscar planos de treino ou progresso: ' + err.message);
+          setWorkoutPlans([]);
+          setPerformanceLogs({});
+        })
+        .finally(() => setLoadingPlansAndProgress(false));
+    } else {
+      setWorkoutPlans([]);
+      setPerformanceLogs({});
+      setSelectedTrainingName('');
     }
   }, [selectedTraining, authState.token, myTrainings]);
 
@@ -319,43 +383,45 @@ const ClientProgressPage = () => {
   const handleLogPerformance = async (planExerciseId, workoutPlanId) => {
     if (!selectedTraining) return;
     const inputs = currentPerformanceInputs[planExerciseId];
-    if (!inputs || (!inputs.performedReps && !inputs.performedWeight && !inputs.performedDurationSeconds)) {
-      setError("Preencha pelo menos um campo de desempenho (reps, peso ou duração).");
-      return;
+    if (!inputs || (inputs.performedReps === undefined && inputs.performedWeight === undefined && inputs.performedDurationSeconds === undefined)) {
+      if(!inputs || (inputs.performedReps === '' && inputs.performedWeight === '' && inputs.performedDurationSeconds === '' && inputs.notes === '')) {
+        setError("Preencha pelo menos um campo de desempenho (reps, peso, duração ou notas) ou as notas não podem estar vazias sozinhas se for o único campo.");
+        return;
+      }
+       if (!inputs || (!inputs.performedReps && !inputs.performedWeight && !inputs.performedDurationSeconds && !inputs.notes)) {
+         setError("Preencha pelo menos um campo de desempenho (reps, peso ou duração) ou adicione notas.");
+         return;
+       }
     }
+
     setError(''); setSuccessMessage('');
     try {
       const performanceData = {
         trainingId: selectedTraining,
         workoutPlanId: workoutPlanId,
         planExerciseId: planExerciseId,
-        performedAt: new Date().toISOString().split('T')[0], // Usar data atual para o log
+        performedAt: new Date().toISOString().split('T')[0],
         performedReps: inputs.performedReps ? parseInt(inputs.performedReps) : null,
         performedWeight: inputs.performedWeight ? parseFloat(inputs.performedWeight) : null,
         performedDurationSeconds: inputs.performedDurationSeconds ? parseInt(inputs.performedDurationSeconds) : null,
         notes: inputs.notes || null,
-        // setNumber: Podes adicionar lógica para séries se necessário
       };
       const result = await logExercisePerformanceService(performanceData, authState.token);
       setSuccessMessage(result.message || "Desempenho registado!");
-      // Atualizar logs locais
+      
       setPerformanceLogs(prevLogs => {
-        const updatedLogs = { ...prevLogs };
-        if (!updatedLogs[planExerciseId]) updatedLogs[planExerciseId] = [];
-        updatedLogs[planExerciseId].push(result.performance); // Adiciona o novo log
-        return updatedLogs;
+        const newLogsForExercise = [...(prevLogs[planExerciseId] || []), result.performance];
+        return {
+          ...prevLogs,
+          [planExerciseId]: newLogsForExercise.sort((a,b) => new Date(b.performedAt) - new Date(a.performedAt))
+        };
       });
-      // Limpar inputs para este exercício
-      setCurrentPerformanceInputs(prev => ({
-        ...prev,
-        [planExerciseId]: {}
-      }));
+      setCurrentPerformanceInputs(prev => ({ ...prev, [planExerciseId]: {} }));
 
     } catch (err) {
       setError("Falha ao registar desempenho: " + err.message);
     }
   };
-
 
   if (loadingTrainings) return <PageContainer><LoadingText>A carregar seus treinos...</LoadingText></PageContainer>;
 
@@ -378,7 +444,7 @@ const ClientProgressPage = () => {
                 <TrainingCard key={training.id} onClick={() => setSelectedTraining(training.id)}>
                   <div>
                     <h3>{training.name}</h3>
-                    <p>Data: {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time.substring(0,5)}</p>
+                    <p>Data: {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time ? training.time.substring(0,5) : 'N/A'}</p>
                     <p>Instrutor: {training.instructor?.firstName} {training.instructor?.lastName}</p>
                   </div>
                   <SelectTrainingButton onClick={(e) => { e.stopPropagation(); setSelectedTraining(training.id); }}>
@@ -388,29 +454,30 @@ const ClientProgressPage = () => {
               ))}
             </TrainingSelectorGrid>
           ) : (
-            <EmptyText>Não está inscrito em nenhum treino relevante para registo de progresso ou não há treinos futuros/recentes.</EmptyText>
+            <EmptyText>Não está inscrito em nenhum treino ou não há treinos disponíveis para registo.</EmptyText>
           )}
         </>
       ) : (
         <>
           <SectionTitle>A Registar Progresso para: {selectedTrainingName}</SectionTitle>
-          <button onClick={() => setSelectedTraining(null)} style={{marginBottom: '20px'}}>Mudar Treino</button>
-          {loadingPlans && <LoadingText>A carregar plano de treino...</LoadingText>}
-          {!loadingPlans && workoutPlans.length === 0 && <EmptyText>Este treino não tem um plano definido.</EmptyText>}
+          <SelectTrainingButton onClick={() => setSelectedTraining(null)} style={{marginBottom: '20px', backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain}}>Mudar Treino</SelectTrainingButton>
+          
+          {loadingPlansAndProgress && <LoadingText>A carregar plano e progresso...</LoadingText>}
+          {!loadingPlansAndProgress && workoutPlans.length === 0 && <EmptyText>Este treino não tem um plano definido.</EmptyText>}
 
           {workoutPlans.map(plan => (
             <WorkoutPlanDisplay key={plan.id}>
-              <h3>Plano: {plan.name} (Ordem: {plan.order + 1})</h3>
+              <h3>Plano: {plan.name} (Bloco: {plan.order + 1})</h3>
               {plan.notes && <p><i>Notas do Plano: {plan.notes}</i></p>}
               {(plan.planExercises || []).sort((a,b) => a.order - b.order).map(planEx => (
                 <ExerciseLogItem key={planEx.id}>
                   <ExerciseName>{planEx.exerciseDetails?.name || 'Exercício Desconhecido'}</ExerciseName>
                   <PrescribedDetails>
                     Prescrito:
-                    {planEx.sets && ` Séries: ${planEx.sets} `}
-                    {planEx.reps && ` Reps: ${planEx.reps} `}
-                    {planEx.durationSeconds && ` Duração: ${planEx.durationSeconds}s `}
-                    {planEx.restSeconds !== null && ` Descanso: ${planEx.restSeconds}s`}
+                    {planEx.sets ? ` Séries: ${planEx.sets}` : ''}
+                    {planEx.reps ? ` Reps: ${planEx.reps}` : ''}
+                    {planEx.durationSeconds ? ` Duração: ${planEx.durationSeconds}s` : ''}
+                    {planEx.restSeconds !== null ? ` Descanso: ${planEx.restSeconds}s` : ''}
                     {planEx.notes && ` (Notas Instrutor: ${planEx.notes})`}
                   </PrescribedDetails>
 
@@ -423,7 +490,7 @@ const ClientProgressPage = () => {
                     </div>
                     <div>
                       <LogLabel htmlFor={`weight-${planEx.id}`}>Peso (kg)</LogLabel>
-                      <LogInput type="number" step="0.1" id={`weight-${planEx.id}`} placeholder="Ex: 50.5"
+                      <LogInput type="number" step="0.01" id={`weight-${planEx.id}`} placeholder="Ex: 50.5"
                         value={currentPerformanceInputs[planEx.id]?.performedWeight || ''}
                         onChange={e => handlePerformanceInputChange(planEx.id, 'performedWeight', e.target.value)} />
                     </div>
@@ -444,18 +511,20 @@ const ClientProgressPage = () => {
                     <FaSave /> Registar Desempenho
                   </LogButton>
 
-                  {/* Mostrar Histórico para este exercício específico */}
                   {performanceLogs[planEx.id] && performanceLogs[planEx.id].length > 0 && (
                     <div style={{marginTop: '15px'}}>
-                        <h5 style={{fontSize: '0.9rem', color: theme.colors.textMuted}}>Seu Histórico para este Exercício:</h5>
-                        {performanceLogs[planEx.id].sort((a,b) => new Date(b.performedAt) - new Date(a.performedAt)).slice(0,3).map(log => ( // Mostrar os 3 mais recentes
-                            <PerformanceHistoryItem key={log.id}>
-                                {new Date(log.performedAt).toLocaleDateString('pt-PT')}:
-                                {log.performedReps && ` Reps: ${log.performedReps}`}
-                                {log.performedWeight && ` Peso: ${log.performedWeight}kg`}
-                                {log.performedDurationSeconds && ` Duração: ${log.performedDurationSeconds}s`}
-                                {log.notes && ` (Notas: ${log.notes})`}
-                            </PerformanceHistoryItem>
+                        <h5 style={{fontSize: '0.9rem', color: theme.colors.textMuted, marginBottom: '5px'}}>Seu Histórico para este Exercício (Mais Recentes):</h5>
+                        {performanceLogs[planEx.id]
+                            .sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()) // Garante ordenação correta
+                            .slice(0,3) // Mostrar os 3 mais recentes
+                            .map(log => (
+                                <PerformanceHistoryItem key={log.id}>
+                                    {new Date(log.performedAt).toLocaleDateString('pt-PT')}:
+                                    {log.performedReps !== null ? ` Reps: ${log.performedReps}` : ''}
+                                    {log.performedWeight !== null ? ` Peso: ${log.performedWeight}kg` : ''}
+                                    {log.performedDurationSeconds !== null ? ` Duração: ${log.performedDurationSeconds}s` : ''}
+                                    {log.notes && ` (Notas: ${log.notes})`}
+                                </PerformanceHistoryItem>
                         ))}
                     </div>
                   )}
