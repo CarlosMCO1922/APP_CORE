@@ -1,18 +1,18 @@
 // backend/controllers/progressController.js
-const db = require('../models');
-const { Op } = require('sequelize');
+const db = require('../models'); // Seu acesso aos modelos Sequelize
+const { Op } = require('sequelize'); // Se precisar de operadores Sequelize
 
 // @desc    Cliente regista o seu desempenho num exercício de um plano de treino
 // @route   POST /api/progress/log-performance
 // @access  Privado (Cliente)
 const logExercisePerformance = async (req, res) => {
-  const userId = req.user.id; // Do middleware 'protect'
+  const userId = req.user.id; // Do middleware 'protect' e 'isClientUser'
   const {
     trainingId,
     workoutPlanId,
     planExerciseId, // ID do WorkoutPlanExercise
     performedAt, // Data da realização do treino/log
-    setNumber,
+    setNumber, // Opcional, mas bom para tracking de séries individuais
     performedReps,
     performedWeight,
     performedDurationSeconds,
@@ -24,11 +24,8 @@ const logExercisePerformance = async (req, res) => {
   }
 
   try {
-    // Validações opcionais: verificar se o user está inscrito no treino, se o plano pertence ao treino, etc.
-    // Por simplicidade, vamos assumir que o frontend envia dados válidos.
-
     const newPerformance = await db.ClientExercisePerformance.create({
-      userId,
+      userId, // Certifique-se que este campo existe no seu modelo ClientExercisePerformance e corresponde ao ID do utilizador
       trainingId: parseInt(trainingId),
       workoutPlanId: parseInt(workoutPlanId),
       planExerciseId: parseInt(planExerciseId),
@@ -67,11 +64,11 @@ const getMyPerformanceForWorkoutPlan = async (req, res) => {
       include: [
         {
           model: db.WorkoutPlanExercise,
-          as: 'planExerciseDetails', // Para ver os detalhes do exercício prescrito
-          include: [{ model: db.Exercise, as: 'exerciseDetails' }] // Para ter o nome do exercício base
+          as: 'planExerciseDetails', 
+          include: [{ model: db.Exercise, as: 'exerciseDetails' }] 
         }
       ],
-      order: [['performedAt', 'DESC'], ['setNumber', 'ASC']], // Mais recentes primeiro, séries em ordem
+      order: [['performedAt', 'DESC'], ['setNumber', 'ASC'], ['createdAt', 'DESC']], // Adicionado createdAt para desempate se performedAt e setNumber forem iguais
     });
     res.status(200).json(performances);
   } catch (error) {
@@ -85,7 +82,7 @@ const getMyPerformanceForWorkoutPlan = async (req, res) => {
 // @access  Privado (Cliente)
 const getMyPerformanceHistoryForExercise = async (req, res) => {
   const userId = req.user.id;
-  const { planExerciseId } = req.params; // ID do WorkoutPlanExercise
+  const { planExerciseId } = req.params; 
 
   try {
     const performances = await db.ClientExercisePerformance.findAll({
@@ -93,10 +90,10 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
         userId,
         planExerciseId: parseInt(planExerciseId)
       },
-      include: [ // Opcional: incluir detalhes do treino ou plano se necessário para contexto
+      include: [ 
         { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
       ],
-      order: [['performedAt', 'DESC']],
+      order: [['performedAt', 'DESC'], ['createdAt', 'DESC']], // Adicionado createdAt para desempate
     });
     res.status(200).json(performances);
   } catch (error) {
@@ -105,10 +102,57 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
   }
 };
 
-// TODO (Opcional): Adicionar PUT /api/progress/log/:performanceId para atualizar um registo
+// --- NOVA FUNÇÃO PARA ELIMINAR UM REGISTO DE PERFORMANCE ---
+// @desc    Cliente elimina um registo de desempenho específico
+// @route   DELETE /api/progress/log/:logId
+// @access  Privado (Cliente)
+const deletePerformanceLog = async (req, res) => {
+    try {
+        const logIdToDelete = parseInt(req.params.logId, 10);
+        const authenticatedUserId = req.user.id; 
+
+        if (isNaN(logIdToDelete)) {
+            return res.status(400).json({ message: 'ID do registo inválido.' });
+        }
+
+        // Tenta eliminar o registo, garantindo que pertence ao utilizador autenticado.
+        // Confirme que 'userId' é o nome correto da foreign key no seu modelo ClientExercisePerformance.
+        const numberOfDeletedRows = await db.ClientExercisePerformance.destroy({
+            where: {
+                id: logIdToDelete,
+                userId: authenticatedUserId 
+            }
+        });
+
+        if (numberOfDeletedRows === 0) {
+            // Nenhuma linha eliminada: verificar se o registo existia mas não pertencia ao utilizador, ou se não existia de todo.
+            const logEntry = await db.ClientExercisePerformance.findByPk(logIdToDelete);
+            if (!logEntry) {
+                return res.status(404).json({ message: 'Registo de desempenho não encontrado.' });
+            } else {
+                // O registo existe, mas não pertence ao utilizador autenticado.
+                return res.status(403).json({ message: 'Não autorizado a eliminar este registo.' });
+            }
+        }
+        
+        // Pelo menos uma linha foi eliminada.
+        console.log(`Utilizador ${authenticatedUserId} eliminou o registo de log de exercício ${logIdToDelete}`);
+        
+        // Resposta de sucesso: 204 No Content (sem corpo na resposta)
+        return res.status(204).send();
+
+    } catch (error) {
+        console.error('Erro no controlador deletePerformanceLog:', error);
+        if (error.name === 'SequelizeForeignKeyConstraintError') {
+             return res.status(400).json({ message: 'Não é possível eliminar este registo pois outros dados dependem dele.'});
+        }
+        return res.status(500).json({ message: 'Erro interno do servidor ao tentar eliminar o registo.' });
+    }
+};
 
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
   getMyPerformanceHistoryForExercise,
+  deletePerformanceLog, // <<< ADICIONAR A NOVA FUNÇÃO AOS EXPORTS
 };
