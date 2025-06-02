@@ -2,17 +2,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled, { css } from 'styled-components';
-import { useAuth } from '../../context/AuthContext'; // Ajuste o caminho se necessário
-import { useNotifications } from '../../context/NotificationContext'; // Ajuste o caminho se necessário
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import {
   FaTachometerAlt, FaCalendarAlt, FaClipboardList, FaUsers,
   FaUserTie, FaDumbbell, FaCalendarCheck, FaMoneyBillWave,
   FaCog, FaSignOutAlt, FaBars, FaTimes,
   FaBell, FaEnvelopeOpen, FaCheckDouble,
-  FaListOl // Ícone para Exercícios Base (Exemplo, pode escolher outro)
-  // FaCalendarPlus // Ícone para Séries de Treinos (se não estiver já importado de outro lado)
-} from 'react-icons/fa'; // FaListOl pode ser usado para Exercícios Base se FaDumbbell já estiver em uso para Treinos
-import { theme } from '../../theme'; // Ajuste o caminho se necessário
+  FaListOl, // Adicionado para "Exercícios Base"
+  FaCalendarPlus // <<< ADICIONADO AQUI para "Séries de Treinos"
+} from 'react-icons/fa';
+import { theme } from '../../theme';
 
 // --- Styled Components (Como no seu ficheiro) ---
 const Nav = styled.nav`
@@ -106,7 +106,7 @@ const LogoutButton = styled.button`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.textOnPrimary || theme.colors.background}; // Ajustado
+    color: ${({ theme }) => theme.colors.textOnPrimary || theme.colors.background};
   }
 `;
 
@@ -151,13 +151,13 @@ const DropdownContent = styled.div`
   display: ${props => (props.$isOpen ? 'block' : 'none')};
   position: absolute;
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  min-width: 240px; // Aumentado para acomodar texto mais longo
+  min-width: 240px;
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3);
   z-index: 1001;
   border-radius: 8px;
   right: 0;
   top: calc(100% + 5px);
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'}; // Adicionado fallback
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'};
   padding: 0.5rem 0;
 `;
 
@@ -195,7 +195,7 @@ const MobileMenuOverlay = styled.div`
   flex-direction: column;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   position: fixed;
-  top: 60px; // Altura da Navbar
+  top: 60px; 
   left: 0;
   right: 0;
   bottom: 0;
@@ -235,7 +235,7 @@ const MobileMenuOverlay = styled.div`
     border: none;
     border-top: 1px dashed #555;
     padding-left: 1rem;
-    background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#2a2a2a'}; // Ligeiramente diferente
+    background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#2a2a2a'};
   }
 
   @media (min-width: 993px) {
@@ -248,7 +248,7 @@ const NotificationBellContainer = styled.div`
   margin-left: 1rem;
   margin-right: 1rem;
   @media (max-width: 992px) {
-    margin-left: 0; // Ajuste para o layout mobile
+    margin-left: 0; 
   }
 `;
 
@@ -373,7 +373,7 @@ const ViewAllNotificationsLink = styled(Link)`
   }
 `;
 
-// --- Lógica do Componente (como no seu ficheiro, com a adição do link) ---
+// --- Lógica do Componente ---
 function Navbar() {
   const { authState, logout } = useAuth();
   const {
@@ -381,7 +381,8 @@ function Navbar() {
     unreadCount,
     markNotificationAsRead,
     markAllNotificationsAsRead,
-    isLoading: notificationsLoading
+    isLoading: notificationsLoading,
+    totalNotifications // <<< ADICIONADO AQUI
   } = useNotifications();
 
   const navigate = useNavigate();
@@ -422,7 +423,7 @@ function Navbar() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 992) { // Limite do seu @media para DesktopNavLinks
+      if (window.innerWidth > 992) { 
         setIsMobileMenuOpen(false);
       }
     };
@@ -442,12 +443,10 @@ function Navbar() {
 
   const handleMarkAllReadClick = async () => {
     await markAllNotificationsAsRead();
-    // As notificações são atualizadas no contexto, não precisa de re-fetch aqui a menos que o contexto não re-renderize
   };
 
-  const handleNavigateAndCloseMenus = (path) => { // Modificado para aceitar path se necessário, ou apenas fechar
+  const handleNavigateAndCloseMenus = () => { 
       closeAllMenus();
-      // Se path for fornecido e diferente do atual, navigate(path)
   }
 
   if (!authState.isAuthenticated) {
@@ -455,27 +454,24 @@ function Navbar() {
   }
 
   const isUserClient = authState.role === 'user';
-  // `isStaff` do seu authMiddleware usa `req.authContext` que tem `id` e `role`.
-  // No frontend, `authState.user` contém os dados do user ou staff.
-  // `authState.role` já deve estar definido corretamente pelo `AuthContext`.
   const isStaffGeneral = authState.role && authState.role !== 'user';
-  const isAdminStrict = authState.role === 'admin'; // Assumindo que o role 'admin' é o "super admin"
+  const isAdminStrict = authState.role === 'admin'; 
 
   const commonClientLinksJsx = (
     <>
-      <NavItem><NavLinkStyled to="/dashboard" onClick={() => handleNavigateAndCloseMenus()}><FaTachometerAlt /> Painel</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/calendario" onClick={() => handleNavigateAndCloseMenus()}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/meu-progresso" onClick={() => handleNavigateAndCloseMenus()}><FaClipboardList /> Meu Progresso</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/meus-pagamentos" onClick={() => handleNavigateAndCloseMenus()}><FaMoneyBillWave /> Pagamentos</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/definicoes" onClick={() => handleNavigateAndCloseMenus()}><FaCog /> Definições</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/calendario" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/meu-progresso" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Meu Progresso</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/meus-pagamentos" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/definicoes" onClick={handleNavigateAndCloseMenus}><FaCog /> Definições</NavLinkStyled></NavItem>
     </>
   );
 
   const commonStaffLinksJsx = (
     <>
-      <NavItem><NavLinkStyled to="/admin/dashboard" onClick={() => handleNavigateAndCloseMenus()}><FaTachometerAlt /> Painel Staff</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={() => handleNavigateAndCloseMenus()}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={() => handleNavigateAndCloseMenus()}><FaClipboardList /> Pedidos</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Pedidos</NavLinkStyled></NavItem>
     </>
   );
 
@@ -488,14 +484,13 @@ function Navbar() {
         <FaCog /> Gestão {managementDropdownOpen ? '▴' : '▾'}
       </DropdownButton>
       <DropdownContent $isOpen={managementDropdownOpen}>
-        <DropdownLink to="/admin/manage-users" onClick={() => handleNavigateAndCloseMenus()}><FaUsers /> Clientes</DropdownLink>
-        <DropdownLink to="/admin/manage-staff" onClick={() => handleNavigateAndCloseMenus()}><FaUserTie /> Equipa</DropdownLink>
-        <DropdownLink to="/admin/manage-trainings" onClick={() => handleNavigateAndCloseMenus()}><FaDumbbell /> Treinos Individuais</DropdownLink>
-        {/* 👇 NOVO LINK ADICIONADO PARA SÉRIES DE TREINOS 👇 */}
-        <DropdownLink to="/admin/training-series" onClick={() => handleNavigateAndCloseMenus()}><FaCalendarPlus /> Séries de Treinos</DropdownLink>
-        <DropdownLink to="/admin/manage-appointments" onClick={() => handleNavigateAndCloseMenus()}><FaCalendarCheck /> Consultas</DropdownLink>
-        <DropdownLink to="/admin/manage-payments" onClick={() => handleNavigateAndCloseMenus()}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-        <DropdownLink to="/admin/manage-exercises" onClick={() => handleNavigateAndCloseMenus()}><FaListOl /> Exercícios Base</DropdownLink>
+        <DropdownLink to="/admin/manage-users" onClick={handleNavigateAndCloseMenus}><FaUsers /> Clientes</DropdownLink>
+        <DropdownLink to="/admin/manage-staff" onClick={handleNavigateAndCloseMenus}><FaUserTie /> Equipa</DropdownLink>
+        <DropdownLink to="/admin/manage-trainings" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Treinos Individuais</DropdownLink>
+        <DropdownLink to="/admin/training-series" onClick={handleNavigateAndCloseMenus}><FaCalendarPlus /> Séries de Treinos</DropdownLink> {/* Ícone FaCalendarPlus já importado */}
+        <DropdownLink to="/admin/manage-appointments" onClick={handleNavigateAndCloseMenus}><FaCalendarCheck /> Consultas</DropdownLink>
+        <DropdownLink to="/admin/manage-payments" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
+        <DropdownLink to="/admin/manage-exercises" onClick={handleNavigateAndCloseMenus}><FaListOl /> Exercícios Base</DropdownLink>
       </DropdownContent>
     </DropdownContainer>
   );
@@ -528,28 +523,28 @@ function Navbar() {
             <ViewAllNotificationsLink
                 to="/notificacoes"
                 onClick={() => {
-                    setNotificationsDropdownOpen(false); // Fecha o dropdown
-                    setIsMobileMenuOpen(false); // Fecha o menu mobile se estiver aberto
+                    setNotificationsDropdownOpen(false); 
+                    setIsMobileMenuOpen(false); 
                 }}
             >
-            Ver todas as notificações ({totalNotifications})
+              {/* Usar totalNotifications aqui */}
+              Ver todas as notificações ({totalNotifications}) 
             </ViewAllNotificationsLink>
         )}
       </NotificationsDropdownContent>
     </NotificationBellContainer>
   );
 
-
   return (
     <>
       <Nav>
-        <NavLogoLink to={isUserClient ? "/dashboard" : "/admin/dashboard"} onClick={() => handleNavigateAndCloseMenus()}>
-          <LogoImage src="/logo_core.png" alt="CORE Logo" /> {/* Certifique-se que este logo está na pasta public */}
+        <NavLogoLink to={isUserClient ? "/dashboard" : "/admin/dashboard"} onClick={handleNavigateAndCloseMenus}>
+          <LogoImage src="/logo_core.png" alt="CORE Logo" />
           <LogoText>CORE</LogoText>
         </NavLogoLink>
 
         <DesktopNavLinks>
-          {authState.user && ( // authState.user deve conter os dados do user/staff logado
+          {authState.user && (
             <NavItem><UserInfo>Olá, {authState.user.firstName}!</UserInfo></NavItem>
           )}
           {isUserClient && commonClientLinksJsx}
@@ -576,7 +571,6 @@ function Navbar() {
                     Olá, {authState.user.firstName}!
                 </UserInfo>
             )}
-            {/* Precisamos clonar para poder passar a key e evitar warning de keys no mobile */}
             {React.cloneElement(notificationBellJsx, { key: "notification-mobile-bell"})} 
         </div>
 
@@ -585,7 +579,6 @@ function Navbar() {
         {isAdminStrict && (
           <>
             {commonStaffLinksJsx}
-            {/* Precisamos clonar para poder passar a key */}
             {React.cloneElement(adminManagementDropdownJsx, { key: "admin-mobile-dropdown"})} 
           </>
         )}
