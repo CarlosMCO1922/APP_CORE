@@ -9,7 +9,9 @@ import {
     getActiveTrainingSeriesForClientService, 
     createSeriesSubscriptionService 
 } from '../services/trainingService'; 
-import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, FaRegClock, FaExclamationTriangle, FaCreditCard } from 'react-icons/fa';
+import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, 
+    FaRegClock, FaExclamationTriangle, FaCreditCard, FaUsers, 
+    FaInfoCircle, FaTimes, FaPlusSquare } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
 import { theme } from '../theme'; // Assume que tem um theme.js
@@ -336,6 +338,66 @@ const ModalMessageText = styled.p` /* Para mensagens dentro do modal */
   &.error { color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border: 1px solid ${({ theme }) => theme.colors.error};}
 `;
 
+const NoItemsText = styled.p` // Pode basear-se no seu NoBookingsText ou criar um novo
+  text-align: center;
+  font-size: 1rem;
+  color: ${({ theme }) => theme.colors.textMuted || '#888'};
+  padding: 20px;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#222'}; // Cor de fundo um pouco diferente
+  border-radius: ${({ theme }) => theme.borderRadius || '8px'};
+  margin-top: 20px;
+`;
+
+const ItemList = styled.ul` // Similar ao seu BookingList
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); // Ajuste minmax conforme necessário
+  gap: 20px;
+`;
+
+const ItemCard = styled.li` // Similar ao seu BookingItem
+  background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
+  padding: 20px;
+  border-radius: ${({ theme }) => theme.borderRadius || '10px'};
+  border-left: 5px solid ${({ theme, itemType }) => 
+    itemType === 'series' ? (theme.colors.success || '#66BB6A') : (theme.colors.primary || '#D4AF37')};
+  box-shadow: ${({ theme }) => theme.boxShadow || '0 4px 12px rgba(0,0,0,0.4)'};
+  transition: transform 0.2s ease-in-out;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  &:hover {
+    transform: translateY(-3px);
+  }
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: ${({ theme }) => theme.colors.textMain};
+    font-size: 1.25rem;
+  }
+  p {
+    margin: 6px 0;
+    font-size: 0.95rem;
+    color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'};
+    line-height: 1.5;
+    display: flex; // Para alinhar ícones com texto em <p>
+    align-items: center;
+    gap: 6px;
+  }
+  p svg { // Estilo para ícones dentro de <p> se os usar lá
+     color: ${({ theme }) => theme.colors.primary};
+     margin-right: 4px;
+  }
+  span { // Para destacar partes do texto dentro de <p>
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textMain || '#c8c8c8'};
+  }
+`;
+
 const ViewDetailsButton = styled.button`
   background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   color: ${({ theme }) => theme.colors.textMain};
@@ -353,6 +415,8 @@ const ViewDetailsButton = styled.button`
     background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
   }
 `;
+
+
 
 
 const DashboardPage = () => {
