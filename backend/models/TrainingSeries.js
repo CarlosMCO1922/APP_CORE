@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false, // Ou true se puder ser definido por instância
       references: {
-        model: 'Users', // Nome da tabela de Users (confirme se é 'Users' ou 'Staffs')
+        model: 'users', // Nome da tabela de Users (confirme se é 'Users' ou 'Staffs')
         key: 'id',
       },
     },
