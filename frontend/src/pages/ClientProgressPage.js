@@ -719,7 +719,7 @@ const ClientProgressPage = () => {
         trainingId: selectedTraining,
         workoutPlanId: workoutPlanId,
         planExerciseId: planExerciseId,
-        performedAt: new Date().toISOString().split('T')[0],
+        performedAt: new Date().toISOString(),
         performedReps: inputs.performedReps ? parseInt(inputs.performedReps) : null,
         performedWeight: inputs.performedWeight ? parseFloat(inputs.performedWeight) : null,
         performedDurationSeconds: inputs.performedDurationSeconds ? parseInt(inputs.performedDurationSeconds) : null,
