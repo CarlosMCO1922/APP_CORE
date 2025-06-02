@@ -25,6 +25,7 @@ import AdminManageWorkoutPlansPage from './pages/admin/AdminManageWorkoutPlansPa
 import AdminManageExercisesPage from './pages/admin/AdminManageExercisesPage';
 import ClientTrainingPlanPage from './pages/ClientTrainingPlanPage';
 import ClientProgressPage from './pages/ClientProgressPage';
+import AdminTrainingSeriesPage from './pages/admin/AdminTrainingSeriesPage';
 
 
 // Componente de Layout
@@ -100,6 +101,7 @@ function App() {
               <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
               <Route path="/admin/users/:userId/details" element={<AdminUserDetailsPage />} /> 
+              <Route path='/admin/training-series' element={<AdminTrainingSeriesPage />} />
             </Route>
 
             {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}

@@ -24,6 +24,7 @@ const exerciseRoutes = require('./routes/exerciseRoutes');
 const workoutPlanRoutes = require('./routes/workoutPlanRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const progressRoutes = require('./routes/progressRoutes');
+const trainingSeriesRoutes = require('./routes/trainingSeriesRoutes');
 
 
 app.get('/', (req, res) => {
@@ -42,6 +43,7 @@ app.use('/exercises', express.json(), exerciseRoutes);
 app.use('/workout-plans', express.json(), workoutPlanRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/progress', express.json(), progressRoutes);
+app.use('/training-series', trainingSeriesRoutes);
 
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---

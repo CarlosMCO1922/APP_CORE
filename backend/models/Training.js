@@ -36,7 +36,19 @@ module.exports = (sequelize) => {
         min: 1,
       },
     },
-    // instructorId é definido pela associação
+    trainingSeriesId: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // Permite treinos únicos que não pertencem a uma série
+      references: {
+        model: 'TrainingSeries', // Nome da tabela TrainingSeries
+        key: 'id',
+      },
+      onDelete: 'CASCADE', // Se a série for apagada, as instâncias também são (ou SET NULL, dependendo da lógica)
+    },
+    isGeneratedInstance: { // Flag para identificar facilmente instâncias geradas
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    }
   }, {
     tableName: 'trainings',
     timestamps: true,
@@ -73,6 +85,11 @@ module.exports = (sequelize) => {
       foreignKey: 'trainingId',
       as: 'clientPerformances', // training.getClientPerformances()
       onDelete: 'CASCADE',
+    });
+    
+    Training.belongsTo(models.TrainingSeries, {
+      foreignKey: 'trainingSeriesId',
+      as: 'series',
     });
     // A associação Staff.hasMany(models.Training, ...) já deve estar no Staff.js
   };
