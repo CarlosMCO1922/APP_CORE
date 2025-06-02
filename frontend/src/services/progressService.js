@@ -43,8 +43,8 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
   if (!token) throw new Error('Token não fornecido para getMyPerformanceForWorkoutPlanService.');
   if (!trainingId || !workoutPlanId) throw new Error('ID do Treino e ID do Plano de Treino são obrigatórios.');
   try {
-    const response = await fetch(`<span class="math-inline">\{API\_URL\}/progress/my\-history/training/</span>{trainingId}/plan/${workoutPlanId}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+    const response = await fetch(`<span class="math-inline">\{API\_URL\}/progress/my\-history/training/</span>{trainingId}/plan/${workoutPlanId}`, { // CORRETO
+        headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
     if (!response.ok) {
@@ -67,8 +67,8 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
   if (!token) throw new Error('Token não fornecido para getMyPerformanceHistoryForExerciseService.');
   if (!planExerciseId) throw new Error('ID do Exercício do Plano (planExerciseId) é obrigatório.');
   try {
-    const response = await fetch(`<span class="math-inline">\{API\_URL\}/progress/my\-exercise\-history/</span>{planExerciseId}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+    const response = await fetch(`<span class="math-inline">\{API\_URL\}/progress/my\-exercise\-history/</span>{planExerciseId}`, { // INCORRETO
+        headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
     if (!response.ok) {
