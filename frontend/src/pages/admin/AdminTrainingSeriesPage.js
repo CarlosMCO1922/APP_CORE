@@ -1,11 +1,11 @@
 // src/pages/admin/AdminTrainingSeriesPage.js
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../../context/AuthContext'; // Ajuste o caminho se necessário
-import { createTrainingSeriesService } from '../../services/trainingService'; // Importa do trainingService
+import { useAuth } from '../../context/AuthContext'; 
+import { createTrainingSeriesService } from '../../services/trainingService'; 
 import { getAllStaffForSelection } from '../../services/staffService'; 
 import { FaCalendarPlus, FaListAlt, FaArrowLeft } from 'react-icons/fa';
-import { theme } from '../../theme'; // Ajuste o caminho se necessário
+import { theme } from '../../theme'; 
 import { Link } from 'react-router-dom';
 
 // --- Styled Components (Adapte ou reutilize os seus estilos globais/de outras páginas admin) ---
@@ -197,6 +197,7 @@ const AdminTrainingSeriesPage = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loadingInstructors, setLoadingInstructors] = useState(true);
 
+
   useEffect(() => {
     const fetchInstructors = async () => {
       if (!authState.token) {
@@ -205,11 +206,18 @@ const AdminTrainingSeriesPage = () => {
       }
       try {
         setLoadingInstructors(true);
-        const data = await getAllStaffForSelection(authState.token); // Do seu staffService
+        const data = await getAllStaffForSelection(authState.token); // Do seu staffService.js
+        // O endpoint /staff/professionals retorna { professionals: [...] }
+        // E cada profissional tem userDetails: { id, firstName, lastName } e também o role no objeto staff
         const validInstructors = (data.professionals || [])
-            .filter(p => p.role === 'trainer' || p.role === 'admin' || p.role === 'physiotherapist') 
+            .filter(p => ['trainer', 'admin', 'physiotherapist'].includes(p.role)) // Ajuste os roles conforme necessário
             .map(p => ({
-                id: p.userId, // Assumindo que o backend TrainingSeries.instructorId é o User ID do Staff
+                // O backend TrainingSeries.instructorId espera o ID do Staff (ou User, dependendo da sua definição de FK)
+                // Se TrainingSeries.instructorId é o ID da tabela Staff, use p.id
+                // Se TrainingSeries.instructorId é o ID da tabela User, use p.userId
+                // Vou assumir que é o ID da tabela Staff, com base no nome "instructorId"
+                id: p.id, // Usar p.id (ID do Staff) se TrainingSeries.instructorId refere-se a Staff
+                // id: p.userId, // Usar p.userId se TrainingSeries.instructorId refere-se a User
                 name: `${p.userDetails.firstName} ${p.userDetails.lastName} (${p.role})`
         }));
         setInstructors(validInstructors);
@@ -262,13 +270,13 @@ const AdminTrainingSeriesPage = () => {
     try {
       const payload = {
         ...seriesData,
-        instructorId: parseInt(seriesData.instructorId),
+        instructorId: parseInt(seriesData.instructorId), // Certifique-se que isto é o ID que o backend espera (User ID ou Staff ID)
         dayOfWeek: parseInt(seriesData.dayOfWeek),
         capacity: capacityNum,
       };
 
       const result = await createTrainingSeriesService(payload, authState.token);
-      setMessage({ type: 'success', text: `${result.message} Foram criadas ${result.instancesCreatedCount || 0} instâncias de treino.` });
+      setMessage({ type: 'success', text: `${result.message} Foram criadas ${result.instancesCreatedCount || result.instancesCreated || 0} instâncias de treino.` });
       setSeriesData({ 
          name: '', description: '', instructorId: '', dayOfWeek: '1', 
          startTime: '18:00', endTime: '19:00', seriesStartDate: '', 
@@ -281,10 +289,13 @@ const AdminTrainingSeriesPage = () => {
       setLoading(false);
     }
   };
+  
+  // Adicionar verificação de isAdmin do user (do AuthContext)
+  const isAdminUserCheck = authState.user?.role === 'admin'; // Ou authState.user?.isAdmin se tiver essa flag no objeto user do AuthContext
 
   return (
     <PageContainer>
-      <BackLink to={authState.user?.role === 'admin' ? "/admin/dashboard" : "/dashboard"}> 
+      <BackLink to={isAdminUserCheck ? "/admin/dashboard" : "/dashboard"}> 
           <FaArrowLeft /> Voltar ao Painel
       </BackLink> 
       <HeaderContainer>
@@ -293,82 +304,87 @@ const AdminTrainingSeriesPage = () => {
       
       {message.text && <Message className={message.type}>{message.text}</Message>}
 
-      <FormSection>
-        <Form onSubmit={handleSubmit}>
-          <FormGroup>
-            <Label htmlFor="name">Nome da Série*</Label>
-            <Input type="text" name="name" id="name" value={seriesData.name} onChange={handleChange} required />
-          </FormGroup>
-          <FormGroup>
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea name="description" id="description" value={seriesData.description} onChange={handleChange} />
-          </FormGroup>
-          <FormRow>
+      {isAdminUserCheck ? (
+        <FormSection>
+          <Form onSubmit={handleSubmit}>
             <FormGroup>
-              <Label htmlFor="instructorId">Instrutor Responsável*</Label>
-              <Select name="instructorId" id="instructorId" value={seriesData.instructorId} onChange={handleChange} required disabled={loadingInstructors}>
-                <option value="">{loadingInstructors ? 'A carregar...' : 'Selecione um instrutor'}</option>
-                {instructors.map(inst => (
-                  <option key={inst.id} value={inst.id}>{inst.name}</option>
-                ))}
-              </Select>
+              <Label htmlFor="name">Nome da Série*</Label>
+              <Input type="text" name="name" id="name" value={seriesData.name} onChange={handleChange} required />
             </FormGroup>
             <FormGroup>
-              <Label htmlFor="dayOfWeek">Dia da Semana*</Label>
-              <Select name="dayOfWeek" id="dayOfWeek" value={seriesData.dayOfWeek} onChange={handleChange}>
-                <option value="1">Segunda-feira</option>
-                <option value="2">Terça-feira</option>
-                <option value="3">Quarta-feira</option>
-                <option value="4">Quinta-feira</option>
-                <option value="5">Sexta-feira</option>
-                <option value="6">Sábado</option>
-                <option value="0">Domingo</option>
-              </Select>
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea name="description" id="description" value={seriesData.description} onChange={handleChange} />
             </FormGroup>
-          </FormRow>
-          <FormRow>
-            <FormGroup>
-              <Label htmlFor="startTime">Hora de Início*</Label>
-              <Input type="time" name="startTime" id="startTime" value={seriesData.startTime} onChange={handleChange} required />
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="endTime">Hora de Fim*</Label>
-              <Input type="time" name="endTime" id="endTime" value={seriesData.endTime} onChange={handleChange} required />
-            </FormGroup>
-          </FormRow>
-          <FormRow>
-            <FormGroup>
-              <Label htmlFor="seriesStartDate">Data de Início da Série*</Label>
-              <Input type="date" name="seriesStartDate" id="seriesStartDate" value={seriesData.seriesStartDate} onChange={handleChange} required />
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="seriesEndDate">Data de Fim da Série*</Label>
-              <Input type="date" name="seriesEndDate" id="seriesEndDate" value={seriesData.seriesEndDate} onChange={handleChange} required />
-            </FormGroup>
-          </FormRow>
-          <FormRow>
-            <FormGroup>
-              <Label htmlFor="capacity">Capacidade por Aula*</Label>
-              <Input type="number" name="capacity" id="capacity" value={seriesData.capacity} onChange={handleChange} min="1" required/>
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="location">Localização (Opcional)</Label>
-              <Input type="text" name="location" id="location" value={seriesData.location} onChange={handleChange} />
-            </FormGroup>
-          </FormRow>
-          
-          <SubmitButton type="submit" disabled={loading || loadingInstructors}>
-            <FaCalendarPlus /> {loading ? 'A Criar...' : 'Criar Série de Treinos'}
-          </SubmitButton>
-        </Form>
-      </FormSection>
+            <FormRow>
+              <FormGroup>
+                <Label htmlFor="instructorId">Instrutor Responsável*</Label>
+                <Select name="instructorId" id="instructorId" value={seriesData.instructorId} onChange={handleChange} required disabled={loadingInstructors}>
+                  <option value="">{loadingInstructors ? 'A carregar...' : 'Selecione um instrutor'}</option>
+                  {instructors.map(inst => (
+                    <option key={inst.id} value={inst.id}>{inst.name}</option>
+                  ))}
+                </Select>
+              </FormGroup>
+              <FormGroup>
+                <Label htmlFor="dayOfWeek">Dia da Semana*</Label>
+                <Select name="dayOfWeek" id="dayOfWeek" value={seriesData.dayOfWeek} onChange={handleChange}>
+                  <option value="1">Segunda-feira</option>
+                  <option value="2">Terça-feira</option>
+                  <option value="3">Quarta-feira</option>
+                  <option value="4">Quinta-feira</option>
+                  <option value="5">Sexta-feira</option>
+                  <option value="6">Sábado</option>
+                  <option value="0">Domingo</option>
+                </Select>
+              </FormGroup>
+            </FormRow>
+            <FormRow>
+              <FormGroup>
+                <Label htmlFor="startTime">Hora de Início*</Label>
+                <Input type="time" name="startTime" id="startTime" value={seriesData.startTime} onChange={handleChange} required />
+              </FormGroup>
+              <FormGroup>
+                <Label htmlFor="endTime">Hora de Fim*</Label>
+                <Input type="time" name="endTime" id="endTime" value={seriesData.endTime} onChange={handleChange} required />
+              </FormGroup>
+            </FormRow>
+            <FormRow>
+              <FormGroup>
+                <Label htmlFor="seriesStartDate">Data de Início da Série*</Label>
+                <Input type="date" name="seriesStartDate" id="seriesStartDate" value={seriesData.seriesStartDate} onChange={handleChange} required />
+              </FormGroup>
+              <FormGroup>
+                <Label htmlFor="seriesEndDate">Data de Fim da Série*</Label>
+                <Input type="date" name="seriesEndDate" id="seriesEndDate" value={seriesData.seriesEndDate} onChange={handleChange} required />
+              </FormGroup>
+            </FormRow>
+            <FormRow>
+              <FormGroup>
+                <Label htmlFor="capacity">Capacidade por Aula*</Label>
+                <Input type="number" name="capacity" id="capacity" value={seriesData.capacity} onChange={handleChange} min="1" required/>
+              </FormGroup>
+              <FormGroup>
+                <Label htmlFor="location">Localização (Opcional)</Label>
+                <Input type="text" name="location" id="location" value={seriesData.location} onChange={handleChange} />
+              </FormGroup>
+            </FormRow>
+            
+            <SubmitButton type="submit" disabled={loading || loadingInstructors}>
+              <FaCalendarPlus /> {loading ? 'A Criar...' : 'Criar Série de Treinos'}
+            </SubmitButton>
+          </Form>
+        </FormSection>
+      ) : (
+        <Message className="error">Apenas administradores podem aceder a esta página.</Message>
+      )}
 
-      <FormSection style={{marginTop: '40px'}}>
-        <Title as="h2" style={{fontSize: '1.5rem', borderBottom: 'none', marginBottom: '15px'}}><FaListAlt /> Séries de Treinos Programadas</Title>
-        <p style={{color: theme.colors.textMuted}}><i>(A funcionalidade de listar e gerir séries existentes será implementada aqui no futuro.)</i></p>
-        {/* TODO: Implementar listagem de TrainingSeries aqui, chamando getAllTrainingSeriesAdminService */}
-      </FormSection>
-
+      {isAdminUserCheck && (
+        <FormSection style={{marginTop: '40px'}}>
+            <Title as="h2" style={{fontSize: '1.5rem', borderBottom: 'none', marginBottom: '15px'}}><FaListAlt /> Séries de Treinos Programadas</Title>
+            <p style={{color: theme.colors.textMuted}}><i>(A funcionalidade de listar e gerir séries existentes será implementada aqui no futuro.)</i></p>
+            {/* TODO: Implementar listagem de TrainingSeries aqui */}
+        </FormSection>
+      )}
     </PageContainer>
   );
 };
