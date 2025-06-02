@@ -398,6 +398,16 @@ const ViewHistoryButton = styled.button`
     color: white;
   }
 `;
+
+const ModalActions = styled.div`
+  display: flex;
+  justify-content: flex-end; /* Alinha o botão de fechar à direita */
+  gap: 10px; /* Espaço entre botões, se houver mais de um */
+  margin-top: 20px; /* Espaço acima da linha de botões */
+  padding-top: 15px; /* Espaço dentro, acima dos botões */
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}; /* Linha separadora */
+`;
+
 // --- Fim Styled Components ---
 
 
