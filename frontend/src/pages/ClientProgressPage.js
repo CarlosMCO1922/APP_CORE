@@ -18,7 +18,7 @@ import {
     FaCalendarCheck 
 } from 'react-icons/fa';
 import { theme } from '../theme'; 
-import ExerciseProgressChart from '../components/Charts/ExerciseProgressChart'; // <<< ADICIONADO (ajuste o caminho se necessário)
+import ExerciseProgressChart from '../components/ExerciseProgressChart'; // <<< ADICIONADO (ajuste o caminho se necessário)
 
 // --- Styled Components ---
 const PageContainer = styled.div`
