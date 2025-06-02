@@ -5,7 +5,13 @@ import styled, { css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
 import { clientGetMyPendingPaymentsService } from '../services/paymentService'; // Importado
+import { 
+    getActiveTrainingSeriesForClientService, 
+    createSeriesSubscriptionService 
+} from '../services/trainingService'; 
 import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, FaRegClock, FaExclamationTriangle, FaCreditCard } from 'react-icons/fa';
+import moment from 'moment';
+import 'moment/locale/pt';
 import { theme } from '../theme'; // Assume que tem um theme.js
 
 // --- Styled Components ---
@@ -265,6 +271,89 @@ const PayNowButton = styled(Link)`
   }
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.88); display: flex;
+  justify-content: center; align-items: center;
+  z-index: 1050; padding: 20px;
+`;
+const ModalContent = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#2C2C2C'};
+  padding: clamp(25px, 4vw, 35px);
+  border-radius: 10px; width: 100%; max-width: 550px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  position: relative; color: ${({ theme }) => theme.colors.textMain};
+  max-height: 90vh; overflow-y: auto;
+  border-top: 3px solid ${({ theme }) => theme.colors.primary};
+`;
+const ModalTitle = styled.h2`
+  color: ${({ theme }) => theme.colors.primary};
+  margin-top: 0; margin-bottom: 20px;
+  font-size: clamp(1.4rem, 3.5vw, 1.7rem);
+  font-weight: 600; text-align: center;
+  padding-bottom: 15px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+const ModalDetail = styled.p`
+  margin: 8px 0; font-size: 0.9rem; line-height: 1.6;
+  color: ${({ theme }) => theme.colors.textMuted};
+  strong { font-weight: 600; color: ${({ theme }) => theme.colors.textMain}; }
+`;
+const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; margin-top: 20px;`;
+const ModalLabel = styled.label` font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 3px; display: block; font-weight: 500;`;
+const ModalInput = styled.input`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; }
+`;
+const ModalActions = styled.div`
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 25px; padding-top: 20px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
+`;
+const ModalButton = styled.button`
+  background-color: ${props => props.primary ? props.theme.colors.primary : props.theme.colors.buttonSecondaryBg};
+  color: ${props => props.primary ? props.theme.colors.textDark : props.theme.colors.textMain};
+  padding: 10px 18px; border-radius: ${({ theme }) => theme.borderRadius};
+  border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { background-color: #444; color: #888; cursor: not-allowed; }
+  width: 100%;
+  @media (min-width: 480px) { width: auto; }
+`;
+const CloseModalButton = styled.button` /* Renomeado de CloseButton */
+  position: absolute; top: 10px; right: 15px; background: transparent; border: none;
+  color: #aaa; font-size: 1.8rem; cursor: pointer;
+  &:hover { color: #fff; }
+`;
+const ModalMessageText = styled.p` /* Para mensagens dentro do modal */
+  font-size: 0.9rem; text-align: center; padding: 10px; margin: 10px 0 0 0;
+  border-radius: 4px;
+  &.success { color: ${({ theme }) => theme.colors.success}; background-color: ${({ theme }) => theme.colors.successBg}; border: 1px solid ${({ theme }) => theme.colors.success};}
+  &.error { color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border: 1px solid ${({ theme }) => theme.colors.error};}
+`;
+
+const ViewDetailsButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  padding: 8px 15px;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+  }
+`;
+
 
 const DashboardPage = () => {
   const { authState } = useAuth();
@@ -273,6 +362,15 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pendingPaymentsError, setPendingPaymentsError] = useState('');
+
+  const [availableSeries, setAvailableSeries] = useState([]);
+  const [loadingSeries, setLoadingSeries] = useState(true);
+  const [seriesError, setSeriesError] = useState('');
+  const [showSeriesModal, setShowSeriesModal] = useState(false);
+  const [selectedSeriesForSubscription, setSelectedSeriesForSubscription] = useState(null);
+  const [clientSubscriptionEndDate, setClientSubscriptionEndDate] = useState('');
+  const [subscribingToSeries, setSubscribingToSeries] = useState(false);
+  const [seriesModalMessage, setSeriesModalMessage] = useState({type: '', text: ''});
 
   const fetchPageData = useCallback(async () => {
     if (authState.token) {
@@ -349,6 +447,57 @@ const DashboardPage = () => {
     return allEvents.sort((a, b) => a.date - b.date).slice(0, 3);
   }, [bookings.trainings, bookings.appointments]);
 
+  // 👇 NOVAS FUNÇÕES HANDLER PARA SÉRIES 👇
+  const handleOpenSeriesSubscriptionModal = (series) => {
+    setSelectedSeriesForSubscription(series);
+    setClientSubscriptionEndDate(series.seriesEndDate); // Default para o fim da série
+    setSeriesModalMessage({type: '', text: ''});
+    setShowSeriesModal(true);
+  };
+
+  const handleCloseSeriesSubscriptionModal = () => {
+    setShowSeriesModal(false);
+    setSelectedSeriesForSubscription(null);
+    setClientSubscriptionEndDate('');
+    setSeriesModalMessage({type: '', text: ''});
+  };
+
+  const handleSubscriptionDateChange = (e) => {
+    setClientSubscriptionEndDate(e.target.value);
+  };
+
+  const handleSubscribeToSeries = async (e) => {
+    e.preventDefault();
+    if (!selectedSeriesForSubscription || !authState.token) return;
+
+    setSubscribingToSeries(true);
+    setSeriesModalMessage({type: '', text: ''});
+    try {
+      const subscriptionData = {
+        trainingSeriesId: selectedSeriesForSubscription.id,
+        clientSubscriptionEndDate: clientSubscriptionEndDate,
+        // O backend calculará a clientSubscriptionStartDate se não for enviada,
+        // ou pode definir aqui se quiser que o cliente possa escolher (ex: new Date().toISOString().split('T')[0])
+      };
+      const result = await createSeriesSubscriptionService(subscriptionData, authState.token);
+      setSeriesModalMessage({type: 'success', text: result.message || 'Inscrição na série bem-sucedida!'});
+      // Refresh bookings para mostrar as novas aulas da série
+      fetchPageData(); 
+      // Opcional: fechar modal após um tempo ou deixar o user fechar
+      setTimeout(() => {
+          handleCloseSeriesSubscriptionModal();
+          // Pode querer redirecionar para /calendario ou /meus-agendamentos
+          // navigate('/calendario'); 
+      }, 3000);
+
+    } catch (error) {
+      console.error("Erro ao inscrever na série:", error);
+      setSeriesModalMessage({type: 'error', text: error.message || 'Falha ao inscrever na série.'});
+    } finally {
+      setSubscribingToSeries(false);
+    }
+  };
+
   if (loading) {
     return <PageContainer><LoadingText>A carregar o seu dashboard...</LoadingText></PageContainer>;
   }
@@ -412,6 +561,33 @@ const DashboardPage = () => {
       </Section>
 
       <Section>
+        <SectionTitle><FaCalendarAlt /> Descobrir Programas Semanais</SectionTitle>
+        {loadingSeries && <LoadingText>A carregar programas...</LoadingText>}
+        {seriesError && <ErrorText>{seriesError}</ErrorText>}
+        {!loadingSeries && !seriesError && availableSeries.length === 0 && (
+          <NoItemsText>De momento, não há programas semanais disponíveis.</NoItemsText>
+        )}
+        {!loadingSeries && !seriesError && availableSeries.length > 0 && (
+          <ItemList>
+            {availableSeries.map(series => (
+              <ItemCard key={`series-${series.id}`} itemType="series">
+                <div>
+                  <h3>{series.name}</h3>
+                  {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
+                  <p><span>Horário:</span> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
+                  <p><span>Período:</span> {moment(series.seriesStartDate).format('DD/MM/YY')} a {moment(series.seriesEndDate).format('DD/MM/YY')}</p>
+                  {series.description && <p><FaInfoCircle /> {series.description.substring(0,100)}{series.description.length > 100 && '...'}</p>}
+                </div>
+                <ViewDetailsButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
+                  <FaPlusSquare /> Detalhes e Inscrição
+                </ViewDetailsButton>
+              </ItemCard>
+            ))}
+          </ItemList>
+        )}
+      </Section>
+
+      <Section>
         <SectionTitle><FaRunning /> Meus Treinos Inscritos</SectionTitle>
         {bookings.trainings.length > 0 ? (
           <BookingList>
@@ -452,6 +628,48 @@ const DashboardPage = () => {
           !loading && <NoBookingsText>Não tens consultas agendadas.</NoBookingsText>
         )}
       </Section>
+
+      {showSeriesModal && selectedSeriesForSubscription && (
+        <ModalOverlay onClick={handleCloseSeriesSubscriptionModal}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseModalButton onClick={handleCloseSeriesSubscriptionModal}><FaTimes /></CloseModalButton>
+            <ModalTitle>Inscrever em: {selectedSeriesForSubscription.name}</ModalTitle>
+            
+            <ModalDetail><strong>Instrutor:</strong> {selectedSeriesForSubscription.instructor?.firstName} {selectedSeriesForSubscription.instructor?.lastName}</ModalDetail>
+            <ModalDetail>
+                <strong>Horário Fixo Semanal:</strong> Todas as {moment().day(selectedSeriesForSubscription.dayOfWeek).format('dddd')}s, das {selectedSeriesForSubscription.startTime.substring(0,5)} às {selectedSeriesForSubscription.endTime.substring(0,5)}.
+            </ModalDetail>
+            <ModalDetail><strong>Período da Série:</strong> {moment(selectedSeriesForSubscription.seriesStartDate).format('L')} a {moment(selectedSeriesForSubscription.seriesEndDate).format('L')}.</ModalDetail>
+            {selectedSeriesForSubscription.description && <ModalDetail><strong>Descrição:</strong> {selectedSeriesForSubscription.description}</ModalDetail>}
+            {selectedSeriesForSubscription.location && <ModalDetail><strong>Local:</strong> {selectedSeriesForSubscription.location}</ModalDetail>}
+            <ModalDetail><strong>Capacidade por Aula:</strong> {selectedSeriesForSubscription.capacity} participantes.</ModalDetail>
+            
+            <ModalForm onSubmit={handleSubscribeToSeries}>
+              <ModalLabel htmlFor="clientSubscriptionEndDate">Pretendo frequentar até à data (inclusive):</ModalLabel>
+              <ModalInput 
+                type="date" 
+                id="clientSubscriptionEndDate"
+                name="clientSubscriptionEndDate"
+                value={clientSubscriptionEndDate}
+                onChange={handleSubscriptionDateChange}
+                min={moment.max(moment(), moment(selectedSeriesForSubscription.seriesStartDate)).format('YYYY-MM-DD')}
+                max={selectedSeriesForSubscription.seriesEndDate}
+                required
+              />
+              <p style={{fontSize: '0.8rem', color: theme.colors.textMuted}}>
+                Pode escolher qualquer data de fim até ao final da série. A sua inscrição será para todas as aulas semanais dentro do período que selecionar.
+              </p>
+              {seriesModalMessage.text && <ModalMessageText className={seriesModalMessage.type}>{seriesModalMessage.text}</ModalMessageText>}
+              <ModalActions>
+                <ModalButton type="button" onClick={handleCloseSeriesSubscriptionModal} disabled={subscribingToSeries}>Cancelar</ModalButton>
+                <ModalButton type="submit" primary disabled={subscribingToSeries}>
+                  {subscribingToSeries ? 'A Inscrever...' : 'Confirmar Inscrição na Série'}
+                </ModalButton>
+              </ModalActions>
+            </ModalForm>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </PageContainer>
   );
 };
