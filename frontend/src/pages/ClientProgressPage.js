@@ -1,15 +1,22 @@
 // src/pages/ClientProgressPage.js
-import React, { useEffect, useState, useCallback, useMemo } from 'react'; // useMemo não está a ser usado, pode ser removido se não for adicionado mais tarde
-import { Link, useNavigate } from 'react-router-dom'; // useParams não está a ser usado aqui, mas pode ser no futuro se a rota incluir :trainingId
+import React, { useEffect, useState, useCallback, Fragment } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
 import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService';
-import { logExercisePerformanceService, getMyPerformanceForWorkoutPlanService } from '../services/progressService';
-import { FaRunning, FaClipboardList, FaSave, FaArrowLeft, FaEdit, FaCheckCircle } from 'react-icons/fa'; // FaEdit, FaCheckCircle não estão a ser usados
-import { theme } from '../theme';
+import {
+    logExercisePerformanceService,
+    getMyPerformanceForWorkoutPlanService,
+    getMyPerformanceHistoryForExerciseService
+} from '../services/progressService';
+import {
+    FaRunning, FaClipboardList, FaSave, FaArrowLeft, FaEdit,
+    FaCheckCircle, FaHistory, FaTimes, FaRegClock, FaExternalLinkAlt // Adicionado FaRegClock e FaExternalLinkAlt
+} from 'react-icons/fa';
+import { theme } from '../theme'; // Garanta que o theme está corretamente importado
 
-// --- Styled Components ---
+// --- Styled Components (Completos) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -82,8 +89,8 @@ const EmptyText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.textMuted};
   font-style: italic;
-  border-color: transparent; /* Ou uma borda subtil */
-  background-color: rgba(0,0,0,0.05); /* Um fundo muito leve se desejar */
+  border-color: transparent;
+  background-color: rgba(0,0,0,0.05);
   padding: 30px 15px;
 `;
 
@@ -162,14 +169,14 @@ const WorkoutPlanDisplay = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   margin-bottom: 20px;
 
-  h3 { /* Estilo para o nome do plano */
-    color: ${({ theme }) => theme.colors.secondary || theme.colors.primary}; /* Usar secondary se existir, senão primary */
+  h3 {
+    color: ${({ theme }) => theme.colors.secondary || theme.colors.primary};
     font-size: 1.3rem;
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha};
   }
-  p > i { /* Estilo para notas do plano */
+  p > i {
     display: block;
     background-color: rgba(0,0,0,0.1);
     padding: 10px;
@@ -181,10 +188,10 @@ const WorkoutPlanDisplay = styled.div`
 `;
 
 const ExerciseLogItem = styled.div`
-  background-color: #2C2C2C; // Um pouco mais escuro que o cardBackground para contraste
+  background-color: #2C2C2C;
   padding: 15px;
   border-radius: 8px;
-  margin-bottom: 20px; // Mais espaço entre exercícios
+  margin-bottom: 20px;
   border-left: 4px solid ${({ theme }) => theme.colors.primary};
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 `;
@@ -198,7 +205,7 @@ const ExerciseName = styled.h4`
 const PrescribedDetails = styled.p`
   font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: 15px; // Mais espaço
+  margin-bottom: 15px;
   font-style: italic;
   line-height: 1.4;
   padding: 8px;
@@ -208,8 +215,8 @@ const PrescribedDetails = styled.p`
 
 const LogInputGroup = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); // Ajustado minmax
-  gap: 15px; // Aumentado gap
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
   margin-bottom: 15px;
   align-items: flex-end;
 `;
@@ -217,15 +224,15 @@ const LogInputGroup = styled.div`
 const LogLabel = styled.label`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: 5px; // Mais espaço
+  margin-bottom: 5px;
   display: block;
   font-weight: 500;
 `;
 
 const LogInput = styled.input`
   width: 100%;
-  padding: 10px 12px; // Aumentado padding
-  background-color: #383838; // Cor de fundo ligeiramente diferente
+  padding: 10px 12px;
+  background-color: #383838;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
@@ -245,9 +252,9 @@ const LogTextarea = styled.textarea`
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.9rem;
-  min-height: 70px; // Ajustado
+  min-height: 70px;
   resize: vertical;
-  margin-bottom: 10px; // Espaço antes do botão
+  margin-bottom: 10px;
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
@@ -257,7 +264,7 @@ const LogTextarea = styled.textarea`
 const LogButton = styled.button`
   background-color: ${({ theme }) => theme.colors.success};
   color: white;
-  padding: 10px 18px; // Aumentado padding
+  padding: 10px 18px;
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
   cursor: pointer;
@@ -277,15 +284,122 @@ const LogButton = styled.button`
 `;
 
 const PerformanceHistoryItem = styled.div`
-  font-size: 0.85rem; /* Aumentado */
-  color: #b0b0b0; /* Cor mais clara para melhor leitura */
+  font-size: 0.85rem;
+  color: #b0b0b0;
   margin-top: 8px;
-  padding: 8px 10px; /* Adicionado padding */
+  padding: 8px 10px;
   border-left: 2px solid #444;
-  background-color: rgba(0,0,0,0.05); /* Fundo subtil */
+  background-color: rgba(0,0,0,0.05);
   border-radius: 0 4px 4px 0;
   line-height: 1.5;
 `;
+
+const ModalOverlayStyled = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.88); display: flex;
+  justify-content: center; align-items: center;
+  z-index: 1050; padding: 20px;
+`;
+
+const ModalContentStyled = styled.div`
+  background-color: #2A2A2A;
+  padding: clamp(20px, 3vw, 30px);
+  border-radius: 10px; width: 100%;
+  max-width: 700px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  position: relative; color: ${({ theme }) => theme.colors.textMain};
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-top: 3px solid ${({ theme }) => theme.colors.primary};
+`;
+
+const ModalHeaderStyled = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+`;
+
+const ModalTitleStyled = styled.h3`
+  color: ${({ theme }) => theme.colors.primary};
+  margin: 0;
+  font-size: clamp(1.3rem, 3vw, 1.6rem);
+`;
+
+const CloseModalButtonStyled = styled.button`
+  background: transparent; border: none;
+  color: #aaa; font-size: 1.8rem; cursor: pointer;
+  padding: 5px; line-height: 1;
+  &:hover { color: white; }
+`;
+
+const FullHistoryTableContainer = styled.div`
+  overflow-y: auto;
+  max-height: 60vh;
+  margin-bottom: 15px;
+
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: #383838; border-radius: 3px; }
+  &::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+  &::-webkit-scrollbar-thumb:hover { background: #666; }
+`;
+
+const FullHistoryTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th, td {
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.05)'};
+    padding: 8px 10px;
+    text-align: left;
+  }
+  th {
+    background-color: #333;
+    color: ${({ theme }) => theme.colors.primary};
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  tbody tr:nth-child(even) {
+    background-color: #272727;
+  }
+  td {
+    color: ${({ theme }) => theme.colors.textMuted};
+    span.notes {
+      display: block;
+      font-style: italic;
+      font-size: 0.8rem;
+      color: #999;
+      white-space: pre-wrap;
+    }
+  }
+`;
+
+const ViewHistoryButton = styled.button`
+  background-color: transparent;
+  color: ${({ theme }) => theme.colors.info || '#17a2b8'};
+  border: 1px solid ${({ theme }) => theme.colors.info || '#17a2b8'};
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.info || '#17a2b8'};
+    color: white;
+  }
+`;
+// --- Fim Styled Components ---
+
 
 const ClientProgressPage = () => {
   const { authState } = useAuth();
@@ -299,9 +413,15 @@ const ClientProgressPage = () => {
   const [currentPerformanceInputs, setCurrentPerformanceInputs] = useState({});
 
   const [loadingTrainings, setLoadingTrainings] = useState(true);
-  const [loadingPlansAndProgress, setLoadingPlansAndProgress] = useState(false); // Estado combinado
+  const [loadingPlansAndProgress, setLoadingPlansAndProgress] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  const [showFullHistoryModal, setShowFullHistoryModal] = useState(false);
+  const [selectedExerciseForHistory, setSelectedExerciseForHistory] = useState(null);
+  const [fullHistoryLogs, setFullHistoryLogs] = useState([]);
+  const [loadingFullHistory, setLoadingFullHistory] = useState(false);
+  const [fullHistoryError, setFullHistoryError] = useState('');
 
   useEffect(() => {
     if (authState.token) {
@@ -384,14 +504,10 @@ const ClientProgressPage = () => {
     if (!selectedTraining) return;
     const inputs = currentPerformanceInputs[planExerciseId];
     if (!inputs || (inputs.performedReps === undefined && inputs.performedWeight === undefined && inputs.performedDurationSeconds === undefined)) {
-      if(!inputs || (inputs.performedReps === '' && inputs.performedWeight === '' && inputs.performedDurationSeconds === '' && inputs.notes === '')) {
-        setError("Preencha pelo menos um campo de desempenho (reps, peso, duração ou notas) ou as notas não podem estar vazias sozinhas se for o único campo.");
+      if(!inputs || (inputs.performedReps === '' && inputs.performedWeight === '' && inputs.performedDurationSeconds === '' && (inputs.notes === undefined || inputs.notes === ''))) {
+        setError("Preencha pelo menos um campo de desempenho (reps, peso, duração) ou adicione notas.");
         return;
       }
-       if (!inputs || (!inputs.performedReps && !inputs.performedWeight && !inputs.performedDurationSeconds && !inputs.notes)) {
-         setError("Preencha pelo menos um campo de desempenho (reps, peso ou duração) ou adicione notas.");
-         return;
-       }
     }
 
     setError(''); setSuccessMessage('');
@@ -408,12 +524,12 @@ const ClientProgressPage = () => {
       };
       const result = await logExercisePerformanceService(performanceData, authState.token);
       setSuccessMessage(result.message || "Desempenho registado!");
-      
+
       setPerformanceLogs(prevLogs => {
         const newLogsForExercise = [...(prevLogs[planExerciseId] || []), result.performance];
         return {
           ...prevLogs,
-          [planExerciseId]: newLogsForExercise.sort((a,b) => new Date(b.performedAt) - new Date(a.performedAt))
+          [planExerciseId]: newLogsForExercise.sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime())
         };
       });
       setCurrentPerformanceInputs(prev => ({ ...prev, [planExerciseId]: {} }));
@@ -421,6 +537,35 @@ const ClientProgressPage = () => {
     } catch (err) {
       setError("Falha ao registar desempenho: " + err.message);
     }
+  };
+
+  const handleOpenFullHistoryModal = async (planExercise) => {
+    if (!planExercise || !planExercise.id || !planExercise.exerciseDetails?.name) return;
+
+    setSelectedExerciseForHistory({
+        id: planExercise.id,
+        name: planExercise.exerciseDetails.name
+    });
+    setShowFullHistoryModal(true);
+    setLoadingFullHistory(true);
+    setFullHistoryError('');
+    setFullHistoryLogs([]);
+    try {
+      const historyData = await getMyPerformanceHistoryForExerciseService(planExercise.id, authState.token);
+      setFullHistoryLogs(historyData || []);
+    } catch (err) {
+      console.error("Erro ao buscar histórico completo do exercício:", err);
+      setFullHistoryError(err.message || "Falha ao carregar histórico completo.");
+    } finally {
+      setLoadingFullHistory(false);
+    }
+  };
+
+  const handleCloseFullHistoryModal = () => {
+    setShowFullHistoryModal(false);
+    setSelectedExerciseForHistory(null);
+    setFullHistoryLogs([]);
+    setFullHistoryError('');
   };
 
   if (loadingTrainings) return <PageContainer><LoadingText>A carregar seus treinos...</LoadingText></PageContainer>;
@@ -461,7 +606,7 @@ const ClientProgressPage = () => {
         <>
           <SectionTitle>A Registar Progresso para: {selectedTrainingName}</SectionTitle>
           <SelectTrainingButton onClick={() => setSelectedTraining(null)} style={{marginBottom: '20px', backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain}}>Mudar Treino</SelectTrainingButton>
-          
+
           {loadingPlansAndProgress && <LoadingText>A carregar plano e progresso...</LoadingText>}
           {!loadingPlansAndProgress && workoutPlans.length === 0 && <EmptyText>Este treino não tem um plano definido.</EmptyText>}
 
@@ -513,10 +658,10 @@ const ClientProgressPage = () => {
 
                   {performanceLogs[planEx.id] && performanceLogs[planEx.id].length > 0 && (
                     <div style={{marginTop: '15px'}}>
-                        <h5 style={{fontSize: '0.9rem', color: theme.colors.textMuted, marginBottom: '5px'}}>Seu Histórico para este Exercício (Mais Recentes):</h5>
+                        <h5 style={{fontSize: '0.9rem', color: theme.colors.textMuted, marginBottom: '5px'}}>Seu Histórico (Mais Recentes):</h5>
                         {performanceLogs[planEx.id]
-                            .sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()) // Garante ordenação correta
-                            .slice(0,3) // Mostrar os 3 mais recentes
+                            .sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime())
+                            .slice(0,3)
                             .map(log => (
                                 <PerformanceHistoryItem key={log.id}>
                                     {new Date(log.performedAt).toLocaleDateString('pt-PT')}:
@@ -526,7 +671,13 @@ const ClientProgressPage = () => {
                                     {log.notes && ` (Notas: ${log.notes})`}
                                 </PerformanceHistoryItem>
                         ))}
+                        <ViewHistoryButton onClick={() => handleOpenFullHistoryModal(planEx)}>
+                            <FaHistory /> Ver Histórico Completo
+                        </ViewHistoryButton>
                     </div>
+                  )}
+                  {(!performanceLogs[planEx.id] || performanceLogs[planEx.id].length === 0) && (
+                     <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop: '10px'}}>Ainda não há registos para este exercício.</p>
                   )}
                 </ExerciseLogItem>
               ))}
@@ -534,6 +685,60 @@ const ClientProgressPage = () => {
           ))}
         </>
       )}
+
+      {showFullHistoryModal && selectedExerciseForHistory && (
+        <ModalOverlayStyled onClick={handleCloseFullHistoryModal}>
+          <ModalContentStyled onClick={(e) => e.stopPropagation()}>
+            <ModalHeaderStyled>
+              <ModalTitleStyled>Histórico Completo: {selectedExerciseForHistory.name}</ModalTitleStyled>
+              <CloseModalButtonStyled onClick={handleCloseFullHistoryModal}><FaTimes /></CloseModalButtonStyled>
+            </ModalHeaderStyled>
+
+            {loadingFullHistory && <LoadingText>A carregar histórico...</LoadingText>}
+            {fullHistoryError && <ErrorText>{fullHistoryError}</ErrorText>}
+
+            {!loadingFullHistory && !fullHistoryError && fullHistoryLogs.length === 0 && (
+              <EmptyText>Nenhum registo de desempenho encontrado para este exercício.</EmptyText>
+            )}
+
+            {!loadingFullHistory && !fullHistoryError && fullHistoryLogs.length > 0 && (
+              <FullHistoryTableContainer>
+                <FullHistoryTable>
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Reps</th>
+                      <th>Peso (kg)</th>
+                      <th>Duração (s)</th>
+                      <th>Notas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fullHistoryLogs.sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()).map(log => (
+                      <tr key={log.id}>
+                        <td>{new Date(log.performedAt).toLocaleDateString('pt-PT')}</td>
+                        <td>{log.performedReps ?? '-'}</td>
+                        <td>{log.performedWeight ?? '-'}</td>
+                        <td>{log.performedDurationSeconds ?? '-'}</td>
+                        <td>{log.notes ? <span className="notes">{log.notes}</span> : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </FullHistoryTable>
+              </FullHistoryTableContainer>
+            )}
+             <ModalActions style={{marginTop: '10px', paddingTop: '10px'}}>
+                <SelectTrainingButton // Reutilizando SelectTrainingButton para consistência, ou crie ModalButton secondary
+                    onClick={handleCloseFullHistoryModal}
+                    style={{backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain}}
+                >
+                    Fechar
+                </SelectTrainingButton>
+             </ModalActions>
+          </ModalContentStyled>
+        </ModalOverlayStyled>
+      )}
+
     </PageContainer>
   );
 };
