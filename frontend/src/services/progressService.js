@@ -32,8 +32,8 @@ export const logExercisePerformanceService = async (performanceData, token) => {
       data = JSON.parse(responseText);
     } catch (e) {
       console.error("Falha ao fazer parse da resposta JSON de logExercisePerformanceService:", e);
-      console.error("Resposta recebida (texto):", responseText);
-      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
+      console.error("Resposta recebida (texto) de logExercisePerformanceService:", responseText);
+      throw new Error(`Resposta do servidor para log-performance não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
     }
 
     if (!response.ok) {
@@ -71,8 +71,8 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
       data = JSON.parse(responseText);
     } catch (e) {
       console.error("Falha ao fazer parse da resposta JSON de getMyPerformanceForWorkoutPlanService:", e);
-      console.error("Resposta recebida (texto):", responseText);
-      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
+      console.error("Resposta recebida (texto) de getMyPerformanceForWorkoutPlanService:", responseText);
+      throw new Error(`Resposta do servidor para my-history/training/... não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
     }
 
     if (!response.ok) {
@@ -83,8 +83,8 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
   } catch (error) {
     console.error("Erro em getMyPerformanceForWorkoutPlanService:", error);
     // Adiciona mais contexto se o erro for de parsing, indicando que a resposta não foi JSON
-    if (error.message.toLowerCase().includes("unexpected token") || error.message.toLowerCase().includes("json.parse")) {
-        console.error("Detalhe: A resposta do servidor para getMyPerformanceForWorkoutPlanService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor.");
+    if (error.message.toLowerCase().includes("unexpected token") || error.message.toLowerCase().includes("json.parse") || error.message.toLowerCase().includes("não é json válido")) {
+        console.error("Detalhe: A resposta do servidor para getMyPerformanceForWorkoutPlanService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor, ou pode ser um erro na URL/endpoint.");
     }
     throw error;
   }
@@ -113,8 +113,8 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
       data = JSON.parse(responseText);
     } catch (e) {
       console.error("Falha ao fazer parse da resposta JSON de getMyPerformanceHistoryForExerciseService:", e);
-      console.error("Resposta recebida (texto):", responseText);
-      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
+      console.error("Resposta recebida (texto) de getMyPerformanceHistoryForExerciseService:", responseText);
+      throw new Error(`Resposta do servidor para my-exercise-history/... não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
     }
     
     if (!response.ok) {
@@ -124,8 +124,8 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
     return data; // Espera-se um array de objetos ClientExercisePerformance
   } catch (error) {
     console.error("Erro em getMyPerformanceHistoryForExerciseService:", error);
-    if (error.message.toLowerCase().includes("unexpected token") || error.message.toLowerCase().includes("json.parse")) {
-        console.error("Detalhe: A resposta do servidor para getMyPerformanceHistoryForExerciseService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor.");
+    if (error.message.toLowerCase().includes("unexpected token") || error.message.toLowerCase().includes("json.parse") || error.message.toLowerCase().includes("não é json válido")) {
+        console.error("Detalhe: A resposta do servidor para getMyPerformanceHistoryForExerciseService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor, ou pode ser um erro na URL/endpoint.");
     }
     throw error;
   }
