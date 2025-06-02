@@ -8,15 +8,19 @@ import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService';
 import {
     logExercisePerformanceService,
     getMyPerformanceForWorkoutPlanService,
-    getMyPerformanceHistoryForExerciseService
+    getMyPerformanceHistoryForExerciseService,
+    deleteExercisePerformanceLogService // <<< ADICIONADO
 } from '../services/progressService';
 import {
     FaRunning, FaClipboardList, FaSave, FaArrowLeft, FaEdit,
-    FaCheckCircle, FaHistory, FaTimes, FaRegClock, FaExternalLinkAlt // Adicionado FaRegClock e FaExternalLinkAlt
+    FaCheckCircle, FaHistory, FaTimes, FaRegClock, FaExternalLinkAlt,
+    FaDumbbell, FaTrash, FaChartLine, FaWeightHanging, FaStopwatch, // <<< ÍCONES ADICIONADOS/ATUALIZADOS
+    FaCalendarCheck 
 } from 'react-icons/fa';
-import { theme } from '../theme'; // Garanta que o theme está corretamente importado
+import { theme } from '../theme'; 
+import ExerciseProgressChart from '../components/charts/ExerciseProgressChart'; // <<< ADICIONADO (ajuste o caminho se necessário)
 
-// --- Styled Components (Completos) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -54,7 +58,7 @@ const BackLink = styled(Link)`
   font-size: 0.95rem;
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: #fff; // Considerar usar theme.colors.primaryHoverText ou similar
   }
 `;
 
@@ -90,7 +94,7 @@ const EmptyText = styled.p`
   color: ${({ theme }) => theme.colors.textMuted};
   font-style: italic;
   border-color: transparent;
-  background-color: rgba(0,0,0,0.05);
+  background-color: rgba(0,0,0,0.05); // Considerar theme.colors.emptyBg
   padding: 30px 15px;
 `;
 
@@ -131,7 +135,7 @@ const TrainingCard = styled.div`
 
     &:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.2); // Considerar theme.boxShadowHover
     }
 
     h3 {
@@ -147,7 +151,7 @@ const TrainingCard = styled.div`
 
 const SelectTrainingButton = styled.button`
     background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.textDark};
+    color: ${({ theme }) => theme.colors.textDark || '#212529'}; // Cor de texto para botões primários
     padding: 10px 15px;
     border: none;
     border-radius: ${({ theme }) => theme.borderRadius};
@@ -156,7 +160,7 @@ const SelectTrainingButton = styled.button`
     margin-top: 15px;
     transition: background-color 0.2s;
     &:hover {
-        background-color: #e6c358;
+        background-color: ${({ theme }) => theme.colors.primaryHover || '#e6c358'};
     }
 `;
 
@@ -164,7 +168,7 @@ const WorkoutPlanDisplay = styled.div`
   margin-top: 20px;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: clamp(15px, 3vw, 25px);
-  border-radius: 12px;
+  border-radius: 12px; 
   box-shadow: ${({ theme }) => theme.boxShadow};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   margin-bottom: 20px;
@@ -176,9 +180,9 @@ const WorkoutPlanDisplay = styled.div`
     padding-bottom: 10px;
     border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha};
   }
-  p > i {
+  p > i { // Para notas do plano
     display: block;
-    background-color: rgba(0,0,0,0.1);
+    background-color: rgba(0,0,0,0.1); // Considerar theme.colors.notesBg
     padding: 10px;
     border-radius: 5px;
     font-size: 0.85rem;
@@ -188,12 +192,12 @@ const WorkoutPlanDisplay = styled.div`
 `;
 
 const ExerciseLogItem = styled.div`
-  background-color: #2C2C2C;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#2C2C2C'};
   padding: 15px;
   border-radius: 8px;
   margin-bottom: 20px;
   border-left: 4px solid ${({ theme }) => theme.colors.primary};
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2); // Considerar theme.boxShadowSubtle
 `;
 
 const ExerciseName = styled.h4`
@@ -209,7 +213,7 @@ const PrescribedDetails = styled.p`
   font-style: italic;
   line-height: 1.4;
   padding: 8px;
-  background-color: rgba(0,0,0,0.1);
+  background-color: rgba(0,0,0,0.1); // Considerar theme.colors.notesBg
   border-radius: 4px;
 `;
 
@@ -232,7 +236,7 @@ const LogLabel = styled.label`
 const LogInput = styled.input`
   width: 100%;
   padding: 10px 12px;
-  background-color: #383838;
+  background-color: ${({ theme }) => theme.colors.inputBg || '#383838'};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
@@ -240,14 +244,14 @@ const LogInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusShadow || 'rgba(212, 175, 55, 0.2)'};
   }
 `;
 
 const LogTextarea = styled.textarea`
   width: 100%;
   padding: 10px 12px;
-  background-color: #383838;
+  background-color: ${({ theme }) => theme.colors.inputBg || '#383838'};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
@@ -258,12 +262,12 @@ const LogTextarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusShadow || 'rgba(212, 175, 55, 0.2)'};
   }
 `;
 const LogButton = styled.button`
   background-color: ${({ theme }) => theme.colors.success};
-  color: white;
+  color: white; // Ou theme.colors.textOnSuccess
   padding: 10px 18px;
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
@@ -278,20 +282,38 @@ const LogButton = styled.button`
     background-color: ${({ theme }) => theme.colors.successDark || '#388E3C'};
   }
   &:disabled {
-    background-color: #555;
+    background-color: ${({ theme }) => theme.colors.disabledBg || '#555'};
     cursor: not-allowed;
   }
 `;
 
 const PerformanceHistoryItem = styled.div`
   font-size: 0.85rem;
-  color: #b0b0b0;
+  color: #b0b0b0; // theme.colors.textMutedLighter
   margin-top: 8px;
   padding: 8px 10px;
-  border-left: 2px solid #444;
-  background-color: rgba(0,0,0,0.05);
+  border-left: 2px solid ${({ theme }) => theme.colors.cardBorderDarker || '#444'};
+  background-color: rgba(0,0,0,0.05); // theme.colors.historyItemBg
   border-radius: 0 4px 4px 0;
   line-height: 1.5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  span.log-details {
+    flex-grow: 1;
+  }
+`;
+
+const DeleteIcon = styled(FaTrash)`
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.error || 'red'};
+  margin-left: 10px;
+  font-size: 0.9em;
+  transition: color 0.2s;
+  &:hover {
+    color: ${({ theme }) => theme.colors.errorDark || '#cc0000'};
+  }
 `;
 
 const ModalOverlayStyled = styled.div`
@@ -302,10 +324,10 @@ const ModalOverlayStyled = styled.div`
 `;
 
 const ModalContentStyled = styled.div`
-  background-color: #2A2A2A;
+  background-color: ${({ theme }) => theme.colors.modalBg || '#2A2A2A'};
   padding: clamp(20px, 3vw, 30px);
   border-radius: 10px; width: 100%;
-  max-width: 700px;
+  max-width: 750px; // Aumentado para acomodar gráfico e tabela
   box-shadow: 0 8px 25px rgba(0,0,0,0.6);
   position: relative; color: ${({ theme }) => theme.colors.textMain};
   max-height: 90vh;
@@ -327,24 +349,28 @@ const ModalTitleStyled = styled.h3`
   color: ${({ theme }) => theme.colors.primary};
   margin: 0;
   font-size: clamp(1.3rem, 3vw, 1.6rem);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 `;
 
 const CloseModalButtonStyled = styled.button`
   background: transparent; border: none;
   color: #aaa; font-size: 1.8rem; cursor: pointer;
   padding: 5px; line-height: 1;
+  transition: color 0.2s;
   &:hover { color: white; }
 `;
 
 const FullHistoryTableContainer = styled.div`
   overflow-y: auto;
-  max-height: 60vh;
+  max-height: 50vh; // Ajustar se necessário para dar espaço ao gráfico
   margin-bottom: 15px;
 
   &::-webkit-scrollbar { width: 6px; }
-  &::-webkit-scrollbar-track { background: #383838; border-radius: 3px; }
-  &::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-  &::-webkit-scrollbar-thumb:hover { background: #666; }
+  &::-webkit-scrollbar-track { background: ${({ theme }) => theme.colors.scrollbarTrack || '#383838'}; border-radius: 3px; }
+  &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.scrollbarThumb || '#555'}; border-radius: 3px; }
+  &::-webkit-scrollbar-thumb:hover { background: ${({ theme }) => theme.colors.scrollbarThumbHover || '#666'}; }
 `;
 
 const FullHistoryTable = styled.table`
@@ -358,14 +384,14 @@ const FullHistoryTable = styled.table`
     text-align: left;
   }
   th {
-    background-color: #333;
+    background-color: ${({ theme }) => theme.colors.tableHeaderBg || '#333'};
     color: ${({ theme }) => theme.colors.primary};
     position: sticky;
     top: 0;
     z-index: 1;
   }
   tbody tr:nth-child(even) {
-    background-color: #272727;
+    background-color: ${({ theme }) => theme.colors.tableRowEvenBg || '#272727'};
   }
   td {
     color: ${({ theme }) => theme.colors.textMuted};
@@ -373,7 +399,7 @@ const FullHistoryTable = styled.table`
       display: block;
       font-style: italic;
       font-size: 0.8rem;
-      color: #999;
+      color: #999; // theme.colors.textMutedDarker
       white-space: pre-wrap;
     }
   }
@@ -395,20 +421,161 @@ const ViewHistoryButton = styled.button`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.info || '#17a2b8'};
-    color: white;
+    color: white; // theme.colors.textOnInfo
   }
 `;
 
 const ModalActions = styled.div`
   display: flex;
-  justify-content: flex-end; /* Alinha o botão de fechar à direita */
-  gap: 10px; /* Espaço entre botões, se houver mais de um */
-  margin-top: 20px; /* Espaço acima da linha de botões */
-  padding-top: 15px; /* Espaço dentro, acima dos botões */
-  border-top: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}; /* Linha separadora */
+  justify-content: flex-end;
+  gap: 10px;
+`;
+
+// Styled Components para Estatísticas (adicionados/atualizados)
+const StatisticsSection = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: clamp(15px, 3vw, 25px);
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  margin-top: 30px;
+  margin-bottom: 20px;
+
+  h3 {
+    color: ${({ theme }) => theme.colors.secondary || theme.colors.primary};
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha};
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+`;
+
+const StatCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#2C2C2C'}; 
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 3px solid ${({ theme }) => theme.colors.primary};
+  
+  h4 {
+    font-size: 0.9rem;
+    color: ${({ theme }) => theme.colors.textMuted};
+    margin-top: 0;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500; // Mais suave que bold
+  }
+  
+  p {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: ${({ theme }) => theme.colors.textMain};
+    margin: 0;
+  }
+`;
+
+const ChartMetricSelectorContainer = styled.div`
+  margin: 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  label {
+    color: ${({ theme }) => theme.colors.textMuted};
+    font-size: 0.9rem;
+  }
+
+  select {
+    padding: 8px 12px;
+    background-color: ${({ theme }) => theme.colors.inputBg || '#383838'};
+    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    border-radius: ${({ theme }) => theme.borderRadius};
+    color: ${({ theme }) => theme.colors.textMain};
+    font-size: 0.9rem;
+    &:focus {
+      outline: none;
+      border-color: ${({ theme }) => theme.colors.primary};
+    }
+  }
 `;
 
 // --- Fim Styled Components ---
+
+
+const calculateAggregateStats = (performanceLogs, workoutPlans, allPlanExercises) => {
+    if (!performanceLogs || Object.keys(performanceLogs).length === 0) {
+        return null;
+    }
+
+    let totalSetsLogged = 0;
+    let totalRepsLogged = 0;
+    let totalDurationLoggedSeconds = 0;
+    const exerciseWeights = {};
+    const exerciseLoggedCount = {};
+    let distinctExercisesPrescribed = 0;
+    let totalVolume = 0; 
+
+    const prescribedExerciseIds = new Set();
+    (allPlanExercises || []).forEach(planEx => prescribedExerciseIds.add(planEx.id));
+    distinctExercisesPrescribed = prescribedExerciseIds.size;
+
+    Object.values(performanceLogs).flat().forEach(log => {
+        totalSetsLogged++;
+        if (log.performedReps) totalRepsLogged += log.performedReps;
+        if (log.performedDurationSeconds) totalDurationLoggedSeconds += log.performedDurationSeconds;
+
+        if (log.performedReps && log.performedWeight) {
+            totalVolume += (log.performedReps * log.performedWeight);
+        }
+
+        if (log.performedWeight && log.planExerciseId) {
+            const exName = (allPlanExercises || []).find(pe => pe.id === log.planExerciseId)?.exerciseDetails?.name || 'Exercício Desconhecido';
+            if (!exerciseWeights[log.planExerciseId]) {
+                exerciseWeights[log.planExerciseId] = { sum: 0, count: 0, name: exName };
+            }
+            exerciseWeights[log.planExerciseId].sum += log.performedWeight;
+            exerciseWeights[log.planExerciseId].count++;
+        }
+        if(log.planExerciseId) {
+            exerciseLoggedCount[log.planExerciseId] = (exerciseLoggedCount[log.planExerciseId] || 0) + 1;
+        }
+    });
+
+    const averageWeights = {};
+    for (const planExId in exerciseWeights) {
+        const data = exerciseWeights[planExId];
+        if (data.count > 0) {
+            averageWeights[data.name] = data.sum / data.count;
+        }
+    }
+
+    const exercisesAttempted = Object.keys(exerciseLoggedCount).length;
+    let consistency = 0;
+    if (distinctExercisesPrescribed > 0) {
+        consistency = (exercisesAttempted / distinctExercisesPrescribed) * 100;
+    }
+
+    return {
+        totalSetsLogged,
+        totalRepsLogged,
+        totalDurationLoggedSeconds,
+        averageWeights,
+        exercisesAttempted,
+        distinctExercisesPrescribed,
+        consistency: parseFloat(consistency.toFixed(1)),
+        totalVolume: parseFloat(totalVolume.toFixed(2)),
+    };
+};
 
 
 const ClientProgressPage = () => {
@@ -432,6 +599,10 @@ const ClientProgressPage = () => {
   const [fullHistoryLogs, setFullHistoryLogs] = useState([]);
   const [loadingFullHistory, setLoadingFullHistory] = useState(false);
   const [fullHistoryError, setFullHistoryError] = useState('');
+  
+  const [trainingStatistics, setTrainingStatistics] = useState(null);
+  const [loadingStatistics, setLoadingStatistics] = useState(false);
+  const [chartMetric, setChartMetric] = useState('performedWeight'); 
 
   useEffect(() => {
     if (authState.token) {
@@ -453,6 +624,8 @@ const ClientProgressPage = () => {
       setWorkoutPlans([]);
       setPerformanceLogs({});
       setCurrentPerformanceInputs({});
+      setTrainingStatistics(null); 
+      setLoadingStatistics(true);
 
       const trainingDetails = myTrainings.find(t => t.id === selectedTraining);
       if (trainingDetails) {
@@ -464,39 +637,58 @@ const ClientProgressPage = () => {
           const plans = plansData || [];
           setWorkoutPlans(plans);
 
+          const allPlanExercisesFromPlans = plans.reduce((acc, plan) => {
+              return acc.concat(plan.planExercises || []);
+          }, []);
+
           if (plans.length > 0) {
             const performancePromises = plans.map(plan =>
               getMyPerformanceForWorkoutPlanService(selectedTraining, plan.id, authState.token)
                 .catch(err => {
                   console.error(`Falha ao buscar performance para plano ${plan.id}:`, err);
-                  return [];
+                  return []; 
                 })
             );
-            const performancesForAllPlans = await Promise.all(performancePromises);
-            const allLogsByExercise = {};
-            performancesForAllPlans.forEach(planPerformances => {
-              (planPerformances || []).forEach(perf => {
-                if (!allLogsByExercise[perf.planExerciseId]) {
-                  allLogsByExercise[perf.planExerciseId] = [];
+            const performancesForAllPlans = (await Promise.all(performancePromises)).flat();
+            const aggregatedLogsByExercise = {};
+            
+            performancesForAllPlans.forEach(perf => {
+                if (!aggregatedLogsByExercise[perf.planExerciseId]) {
+                    aggregatedLogsByExercise[perf.planExerciseId] = [];
                 }
-                if (!allLogsByExercise[perf.planExerciseId].find(p => p.id === perf.id)) {
-                    allLogsByExercise[perf.planExerciseId].push(perf);
+                if (!aggregatedLogsByExercise[perf.planExerciseId].find(p => p.id === perf.id)) {
+                    aggregatedLogsByExercise[perf.planExerciseId].push(perf);
                 }
-              });
             });
-            setPerformanceLogs(allLogsByExercise);
+            
+            for (const planExId in aggregatedLogsByExercise) {
+                aggregatedLogsByExercise[planExId].sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime());
+            }
+            setPerformanceLogs(aggregatedLogsByExercise);
+            
+            const stats = calculateAggregateStats(aggregatedLogsByExercise, plans, allPlanExercisesFromPlans);
+            setTrainingStatistics(stats);
+
+          } else {
+            setPerformanceLogs({});
+            setTrainingStatistics(null);
           }
         })
         .catch(err => {
           setError('Falha ao buscar planos de treino ou progresso: ' + err.message);
           setWorkoutPlans([]);
           setPerformanceLogs({});
+          setTrainingStatistics(null);
         })
-        .finally(() => setLoadingPlansAndProgress(false));
+        .finally(() => {
+            setLoadingPlansAndProgress(false);
+            setLoadingStatistics(false);
+        });
     } else {
       setWorkoutPlans([]);
       setPerformanceLogs({});
       setSelectedTrainingName('');
+      setTrainingStatistics(null);
     }
   }, [selectedTraining, authState.token, myTrainings]);
 
@@ -513,11 +705,12 @@ const ClientProgressPage = () => {
   const handleLogPerformance = async (planExerciseId, workoutPlanId) => {
     if (!selectedTraining) return;
     const inputs = currentPerformanceInputs[planExerciseId];
-    if (!inputs || (inputs.performedReps === undefined && inputs.performedWeight === undefined && inputs.performedDurationSeconds === undefined)) {
-      if(!inputs || (inputs.performedReps === '' && inputs.performedWeight === '' && inputs.performedDurationSeconds === '' && (inputs.notes === undefined || inputs.notes === ''))) {
+    if (!inputs || ( (inputs.performedReps === undefined || inputs.performedReps === '') && 
+                     (inputs.performedWeight === undefined || inputs.performedWeight === '') && 
+                     (inputs.performedDurationSeconds === undefined || inputs.performedDurationSeconds === '') && 
+                     (inputs.notes === undefined || inputs.notes.trim() === ''))) {
         setError("Preencha pelo menos um campo de desempenho (reps, peso, duração) ou adicione notas.");
         return;
-      }
     }
 
     setError(''); setSuccessMessage('');
@@ -536,11 +729,16 @@ const ClientProgressPage = () => {
       setSuccessMessage(result.message || "Desempenho registado!");
 
       setPerformanceLogs(prevLogs => {
-        const newLogsForExercise = [...(prevLogs[planExerciseId] || []), result.performance];
-        return {
-          ...prevLogs,
-          [planExerciseId]: newLogsForExercise.sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime())
-        };
+        const newLogsForExercise = [result.performance, ...(prevLogs[planExerciseId] || [])] 
+            .sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime());
+        
+        const newLogs = { ...prevLogs, [planExerciseId]: newLogsForExercise };
+        
+        const allPlanExercisesFromPlans = workoutPlans.reduce((acc, plan) => acc.concat(plan.planExercises || []), []);
+        const stats = calculateAggregateStats(newLogs, workoutPlans, allPlanExercisesFromPlans);
+        setTrainingStatistics(stats);
+        
+        return newLogs;
       });
       setCurrentPerformanceInputs(prev => ({ ...prev, [planExerciseId]: {} }));
 
@@ -549,11 +747,44 @@ const ClientProgressPage = () => {
     }
   };
 
+  const handleDeletePerformanceLog = async (logIdToDelete, planExerciseId) => {
+      if (!window.confirm("Tem a certeza que quer eliminar este registo? Esta ação não pode ser desfeita.")) {
+          return;
+      }
+      setError(''); setSuccessMessage('');
+      try {
+          await deleteExercisePerformanceLogService(logIdToDelete, authState.token);
+          setSuccessMessage("Registo de desempenho eliminado com sucesso!");
+
+          setPerformanceLogs(prevLogs => {
+              const updatedLogsForExercise = (prevLogs[planExerciseId] || [])
+                  .filter(log => log.id !== logIdToDelete)
+                  .sort((a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime());
+              
+              const newLogs = { ...prevLogs, [planExerciseId]: updatedLogsForExercise };
+              
+              const allPlanExercisesFromPlans = workoutPlans.reduce((acc, plan) => acc.concat(plan.planExercises || []), []);
+              const stats = calculateAggregateStats(newLogs, workoutPlans, allPlanExercisesFromPlans);
+              setTrainingStatistics(stats);
+
+              return newLogs;
+          });
+
+          if (showFullHistoryModal && selectedExerciseForHistory && selectedExerciseForHistory.id === planExerciseId) {
+              setFullHistoryLogs(prevFullLogs => prevFullLogs.filter(log => log.id !== logIdToDelete)
+                .sort((a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime())
+              );
+          }
+      } catch (err) {
+          setError("Falha ao eliminar registo: " + err.message);
+      }
+  };
+
   const handleOpenFullHistoryModal = async (planExercise) => {
     if (!planExercise || !planExercise.id || !planExercise.exerciseDetails?.name) return;
 
     setSelectedExerciseForHistory({
-        id: planExercise.id,
+        id: planExercise.id, 
         name: planExercise.exerciseDetails.name
     });
     setShowFullHistoryModal(true);
@@ -562,7 +793,7 @@ const ClientProgressPage = () => {
     setFullHistoryLogs([]);
     try {
       const historyData = await getMyPerformanceHistoryForExerciseService(planExercise.id, authState.token);
-      setFullHistoryLogs(historyData || []);
+      setFullHistoryLogs( (historyData || []).sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()) );
     } catch (err) {
       console.error("Erro ao buscar histórico completo do exercício:", err);
       setFullHistoryError(err.message || "Falha ao carregar histórico completo.");
@@ -576,6 +807,7 @@ const ClientProgressPage = () => {
     setSelectedExerciseForHistory(null);
     setFullHistoryLogs([]);
     setFullHistoryError('');
+    setChartMetric('performedWeight'); // Resetar métrica do gráfico
   };
 
   if (loadingTrainings) return <PageContainer><LoadingText>A carregar seus treinos...</LoadingText></PageContainer>;
@@ -615,10 +847,57 @@ const ClientProgressPage = () => {
       ) : (
         <>
           <SectionTitle>A Registar Progresso para: {selectedTrainingName}</SectionTitle>
-          <SelectTrainingButton onClick={() => setSelectedTraining(null)} style={{marginBottom: '20px', backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain}}>Mudar Treino</SelectTrainingButton>
+          <SelectTrainingButton onClick={() => setSelectedTraining(null)} style={{marginBottom: '20px', backgroundColor: theme.colors.buttonSecondaryBg || '#555', color: theme.colors.textMain}}>Mudar Treino</SelectTrainingButton>
 
           {loadingPlansAndProgress && <LoadingText>A carregar plano e progresso...</LoadingText>}
           {!loadingPlansAndProgress && workoutPlans.length === 0 && <EmptyText>Este treino não tem um plano definido.</EmptyText>}
+
+          {loadingStatistics && !loadingPlansAndProgress && <LoadingText>A calcular estatísticas...</LoadingText>}
+          {!loadingStatistics && trainingStatistics && workoutPlans.length > 0 && (
+            <StatisticsSection>
+              <h3><FaChartBar /> Estatísticas do Treino</h3>
+              <StatsGrid>
+                <StatCard>
+                  <h4><FaClipboardList /> Séries Registadas</h4>
+                  <p>{trainingStatistics.totalSetsLogged}</p>
+                </StatCard>
+                <StatCard>
+                  <h4><FaRunning /> Repetições Totais</h4>
+                  <p>{trainingStatistics.totalRepsLogged}</p>
+                </StatCard>
+                <StatCard>
+                  <h4><FaDumbbell /> Volume Total Treinado</h4>
+                  <p>{trainingStatistics.totalVolume} kg</p>
+                </StatCard>
+                <StatCard>
+                  <h4><FaStopwatch /> Duração Total (Exercícios)</h4>
+                  <p>{Math.floor(trainingStatistics.totalDurationLoggedSeconds / 60)}m {trainingStatistics.totalDurationLoggedSeconds % 60}s</p>
+                </StatCard>
+                 <StatCard>
+                  <h4><FaCalendarCheck /> Consistência (Exercícios Tentados)</h4>
+                  <p>{trainingStatistics.exercisesAttempted} de {trainingStatistics.distinctExercisesPrescribed} ({trainingStatistics.consistency}%)</p>
+                </StatCard>
+              </StatsGrid>
+              {Object.keys(trainingStatistics.averageWeights).length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <h4 style={{ fontSize: '1rem', color: theme.colors.textMuted, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FaWeightHanging /> Média de Peso Levantado:
+                  </h4>
+                  <ul style={{ listStyle: 'none', paddingLeft: '10px' }}>
+                    {Object.entries(trainingStatistics.averageWeights).map(([exName, avgW]) => (
+                      <li key={exName} style={{ fontSize: '0.9rem', marginBottom: '5px' }}>
+                        <strong>{exName}:</strong> {avgW.toFixed(2)} kg
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </StatisticsSection>
+          )}
+          {!loadingStatistics && !trainingStatistics && !loadingPlansAndProgress && workoutPlans.length > 0 && (
+            <EmptyText>Ainda não há dados de desempenho suficientes para exibir estatísticas.</EmptyText>
+          )}
+
 
           {workoutPlans.map(plan => (
             <WorkoutPlanDisplay key={plan.id}>
@@ -670,15 +949,20 @@ const ClientProgressPage = () => {
                     <div style={{marginTop: '15px'}}>
                         <h5 style={{fontSize: '0.9rem', color: theme.colors.textMuted, marginBottom: '5px'}}>Seu Histórico (Mais Recentes):</h5>
                         {performanceLogs[planEx.id]
-                            .sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime())
-                            .slice(0,3)
+                            .slice(0,3) 
                             .map(log => (
                                 <PerformanceHistoryItem key={log.id}>
-                                    {new Date(log.performedAt).toLocaleDateString('pt-PT')}:
-                                    {log.performedReps !== null ? ` Reps: ${log.performedReps}` : ''}
-                                    {log.performedWeight !== null ? ` Peso: ${log.performedWeight}kg` : ''}
-                                    {log.performedDurationSeconds !== null ? ` Duração: ${log.performedDurationSeconds}s` : ''}
-                                    {log.notes && ` (Notas: ${log.notes})`}
+                                    <span className="log-details">
+                                        {new Date(log.performedAt).toLocaleDateString('pt-PT')}:
+                                        {log.performedReps !== null ? ` Reps: ${log.performedReps}` : ''}
+                                        {log.performedWeight !== null ? ` Peso: ${log.performedWeight}kg` : ''}
+                                        {log.performedDurationSeconds !== null ? ` Duração: ${log.performedDurationSeconds}s` : ''}
+                                        {log.notes && ` (Notas: ${log.notes})`}
+                                    </span>
+                                    <DeleteIcon 
+                                        onClick={() => handleDeletePerformanceLog(log.id, planEx.id)}
+                                        title="Eliminar este registo"
+                                    />
                                 </PerformanceHistoryItem>
                         ))}
                         <ViewHistoryButton onClick={() => handleOpenFullHistoryModal(planEx)}>
@@ -700,7 +984,7 @@ const ClientProgressPage = () => {
         <ModalOverlayStyled onClick={handleCloseFullHistoryModal}>
           <ModalContentStyled onClick={(e) => e.stopPropagation()}>
             <ModalHeaderStyled>
-              <ModalTitleStyled>Histórico Completo: {selectedExerciseForHistory.name}</ModalTitleStyled>
+              <ModalTitleStyled><FaHistory /> Histórico Completo: {selectedExerciseForHistory.name}</ModalTitleStyled>
               <CloseModalButtonStyled onClick={handleCloseFullHistoryModal}><FaTimes /></CloseModalButtonStyled>
             </ModalHeaderStyled>
 
@@ -712,35 +996,68 @@ const ClientProgressPage = () => {
             )}
 
             {!loadingFullHistory && !fullHistoryError && fullHistoryLogs.length > 0 && (
-              <FullHistoryTableContainer>
-                <FullHistoryTable>
-                  <thead>
-                    <tr>
-                      <th>Data</th>
-                      <th>Reps</th>
-                      <th>Peso (kg)</th>
-                      <th>Duração (s)</th>
-                      <th>Notas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fullHistoryLogs.sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()).map(log => (
-                      <tr key={log.id}>
-                        <td>{new Date(log.performedAt).toLocaleDateString('pt-PT')}</td>
-                        <td>{log.performedReps ?? '-'}</td>
-                        <td>{log.performedWeight ?? '-'}</td>
-                        <td>{log.performedDurationSeconds ?? '-'}</td>
-                        <td>{log.notes ? <span className="notes">{log.notes}</span> : '-'}</td>
+              <>
+                <FullHistoryTableContainer>
+                  <FullHistoryTable>
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Reps</th>
+                        <th>Peso (kg)</th>
+                        <th>Duração (s)</th>
+                        <th>Notas</th>
+                        <th>Ações</th> 
                       </tr>
-                    ))}
-                  </tbody>
-                </FullHistoryTable>
-              </FullHistoryTableContainer>
+                    </thead>
+                    <tbody>
+                      {fullHistoryLogs.map(log => ( 
+                        <tr key={log.id}>
+                          <td>{new Date(log.performedAt).toLocaleDateString('pt-PT')}</td>
+                          <td>{log.performedReps ?? '-'}</td>
+                          <td>{log.performedWeight ?? '-'}</td>
+                          <td>{log.performedDurationSeconds ?? '-'}</td>
+                          <td>{log.notes ? <span className="notes">{log.notes}</span> : '-'}</td>
+                          <td> 
+                            <DeleteIcon
+                                onClick={() => handleDeletePerformanceLog(log.id, selectedExerciseForHistory.id)}
+                                title="Eliminar este registo"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </FullHistoryTable>
+                </FullHistoryTableContainer>
+
+                <div style={{ marginTop: '25px', borderTop: `1px solid ${theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}`, paddingTop: '15px' }}>
+                    <h4 style={{color: theme.colors.primary, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FaChartLine /> Gráfico de Progressão
+                    </h4>
+                    <ChartMetricSelectorContainer>
+                        <label htmlFor="chartMetricSelectModal">Visualizar Métrica:</label>
+                        <select 
+                            id="chartMetricSelectModal" 
+                            value={chartMetric} 
+                            onChange={(e) => setChartMetric(e.target.value)}
+                        >
+                            <option value="performedWeight">Peso Levantado</option>
+                            <option value="performedReps">Repetições</option>
+                            <option value="volume">Volume (Reps x Peso)</option>
+                            <option value="performedDurationSeconds">Duração (s)</option>
+                        </select>
+                    </ChartMetricSelectorContainer>
+                    <ExerciseProgressChart 
+                        historyLogs={fullHistoryLogs} 
+                        metric={chartMetric} 
+                        theme={theme} 
+                    />
+                </div>
+              </>
             )}
-             <ModalActions style={{marginTop: '10px', paddingTop: '10px'}}>
-                <SelectTrainingButton // Reutilizando SelectTrainingButton para consistência, ou crie ModalButton secondary
+             <ModalActions style={{marginTop: '20px', paddingTop: '15px', borderTop: `1px solid ${theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}`}}>
+                <SelectTrainingButton 
                     onClick={handleCloseFullHistoryModal}
-                    style={{backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain}}
+                    style={{backgroundColor: theme.colors.buttonSecondaryBg || '#6c757d', color: theme.colors.textMain}}
                 >
                     Fechar
                 </SelectTrainingButton>
@@ -748,7 +1065,6 @@ const ClientProgressPage = () => {
           </ModalContentStyled>
         </ModalOverlayStyled>
       )}
-
     </PageContainer>
   );
 };

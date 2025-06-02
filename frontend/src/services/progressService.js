@@ -4,7 +4,7 @@ console.log('API_URL em uso no progressService:', API_URL); // Para depuração
 
 /**
  * Regista o desempenho de um cliente num exercício específico.
- * @param {object} performanceData - Dados do desempenho, ex: { trainingId, workoutPlanId, planExerciseId, performedAt, performedReps, performedWeight, performedDurationSeconds, notes }
+ * @param {object} performanceData - Dados do desempenho.
  * @param {string} token - Token de autenticação do cliente.
  * @returns {Promise<object>} - A resposta da API.
  */
@@ -25,7 +25,6 @@ export const logExercisePerformanceService = async (performanceData, token) => {
       body: JSON.stringify(performanceData),
     });
     
-    // Tenta ler a resposta como texto primeiro para depuração, caso não seja JSON válido
     const responseText = await response.text();
     let data;
     try {
@@ -40,7 +39,7 @@ export const logExercisePerformanceService = async (performanceData, token) => {
       console.error('Erro na resposta de logExercisePerformanceService (status não OK):', data);
       throw new Error(data.message || `Erro ao registar desempenho do exercício. Status: ${response.status}`);
     }
-    return data; // Espera-se { message: 'Desempenho registado...', performance: newPerformance }
+    return data;
   } catch (error) {
     console.error("Erro em logExercisePerformanceService:", error);
     throw error;
@@ -64,7 +63,6 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
         headers: { 'Authorization': `Bearer ${token}` },
     });
 
-    // Tenta ler a resposta como texto primeiro para depuração
     const responseText = await response.text();
     let data;
     try {
@@ -79,10 +77,9 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
       console.error('Erro na resposta de getMyPerformanceForWorkoutPlanService (status não OK):', data);
       throw new Error(data.message || `Erro ao buscar histórico de desempenho do plano. Status: ${response.status}`);
     }
-    return data; // Espera-se um array de objetos ClientExercisePerformance
+    return data; 
   } catch (error) {
     console.error("Erro em getMyPerformanceForWorkoutPlanService:", error);
-    // Adiciona mais contexto se o erro for de parsing, indicando que a resposta não foi JSON
     if (error.message.toLowerCase().includes("unexpected token") || error.message.toLowerCase().includes("json.parse") || error.message.toLowerCase().includes("não é json válido")) {
         console.error("Detalhe: A resposta do servidor para getMyPerformanceForWorkoutPlanService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor, ou pode ser um erro na URL/endpoint.");
     }
@@ -106,7 +103,6 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
         headers: { 'Authorization': `Bearer ${token}` },
     });
 
-    // Tenta ler a resposta como texto primeiro para depuração
     const responseText = await response.text();
     let data;
     try {
@@ -121,7 +117,7 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
       console.error('Erro na resposta de getMyPerformanceHistoryForExerciseService (status não OK):', data);
       throw new Error(data.message || `Erro ao buscar histórico de desempenho do exercício. Status: ${response.status}`);
     }
-    return data; // Espera-se um array de objetos ClientExercisePerformance
+    return data;
   } catch (error) {
     console.error("Erro em getMyPerformanceHistoryForExerciseService:", error);
     if (error.message.toLowerCase().includes("unexpected token") || error.message.toLowerCase().includes("json.parse") || error.message.toLowerCase().includes("não é json válido")) {
@@ -131,5 +127,58 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
   }
 };
 
-// TODO (Opcional): Adicionar updateExercisePerformanceService se implementou o endpoint PUT no backend
-// export const updateExercisePerformanceService = async (performanceId, performanceData, token) => { ... };
+/**
+ * Elimina um registo de desempenho de exercício específico.
+ * @param {number|string} logId - ID do registo de desempenho a ser eliminado.
+ * @param {string} token - Token de autenticação do cliente.
+ * @returns {Promise<object>} - A resposta da API.
+ */
+export const deleteExercisePerformanceLogService = async (logId, token) => {
+  if (!token) throw new Error('Token não fornecido para deleteExercisePerformanceLogService.');
+  if (!logId) throw new Error('ID do Log é obrigatório para eliminar.');
+  try {
+    const url = `${API_URL}/progress/log/${logId}`; // Confirme se este é o seu endpoint DELETE no backend
+    console.log('deleteExercisePerformanceLogService URL:', url);
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    // Muitos backends retornam 204 No Content para DELETEs bem-sucedidos e não têm corpo na resposta.
+    if (response.status === 204) { 
+      return { message: 'Registo eliminado com sucesso.' };
+    }
+
+    const responseText = await response.text();
+    // Se houver um corpo na resposta (ex: uma mensagem de sucesso ou erro em JSON)
+    if (responseText) {
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Falha ao fazer parse da resposta JSON de deleteExercisePerformanceLogService:", e);
+            console.error("Resposta recebida (texto) de deleteExercisePerformanceLogService:", responseText);
+            // Se não for JSON, mas a resposta for ok (ex: 200 com texto), pode tratar de forma diferente
+            if(response.ok) return { message: responseText || "Operação concluída (resposta não JSON)." };
+            throw new Error(`Resposta do servidor para delete log não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0,200)}...`);
+        }
+        if (!response.ok) {
+            console.error('Erro na resposta de deleteExercisePerformanceLogService (status não OK):', data);
+            throw new Error(data.message || `Erro ao eliminar registo. Status: ${response.status}`);
+        }
+        return data; // Espera-se { message: 'Registo eliminado com sucesso.' } ou similar
+    } else if (!response.ok) {
+        // Se não houver corpo e a resposta não for OK.
+        throw new Error(`Erro ao eliminar registo. Status: ${response.status}. Nenhuma mensagem adicional do servidor.`);
+    }
+    
+    // Se chegou aqui, pode ser uma resposta OK sem corpo, mas não 204 (ex: 200 OK sem corpo)
+    return { message: 'Operação de eliminação processada pelo servidor.' };
+
+  } catch (error) {
+    console.error("Erro em deleteExercisePerformanceLogService:", error);
+    throw error;
+  }
+};
