@@ -16,7 +16,8 @@ import {
     getAllTrainings,
     bookTraining as bookTrainingService,
     cancelTrainingBooking as cancelTrainingBookingService,
-    adminCreateTraining
+    adminCreateTraining,
+    createSeriesSubscriptionService,
 } from '../services/trainingService';
 import {
     getAllAppointments,
@@ -575,11 +576,10 @@ const CalendarPage = () => {
   const [adminStaffListForAppointment, setAdminStaffListForAppointment] = useState([]);
   const [adminUserListForAppointment, setAdminUserListForAppointment] = useState([]);
 
-  const [showRecurringOptionsModal, setShowRecurringOptionsModal] = useState(false); // Renomeado para clareza
-  const [clientRecurringEndDate, setClientRecurringEndDate] = useState('');
-  const [recurringSubscriptionMessage, setRecurringSubscriptionMessage] = useState({type: '', text: ''});
-  const [isSubscribingRecurring, setIsSubscribingRecurring] = useState(false);
-
+  const [showSubscribeSeriesModal, setShowSubscribeSeriesModal] = useState(false);
+  const [seriesSubscriptionEndDate, setSeriesSubscriptionEndDate] = useState('');
+  const [seriesSubscriptionError, setSeriesSubscriptionError] = useState('');
+  
 
   const [actionLoading, setActionLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -894,6 +894,57 @@ const CalendarPage = () => {
     }
   };
 
+  const handleOpenSubscribeToSeriesModal = () => {
+    if (!selectedEvent || !selectedEvent.resource.trainingSeriesId) return;
+    
+    // Tenta buscar a seriesEndDate da instância ou da série completa, se disponível
+    // O teu evento no calendário (selectedEvent.resource) pode já ter a série completa via include do backend,
+    // ou podes precisar buscar os detalhes da série TrainingSeries separadamente se não os tiveres.
+    // Por agora, vou assumir que tens acesso a series.seriesEndDate de alguma forma.
+    // Se não, precisarias buscar os detalhes da TrainingSeries pelo selectedEvent.resource.trainingSeriesId.
+    const seriesEndDate = selectedEvent.resource.seriesDetails?.seriesEndDate || selectedEvent.resource.seriesEndDate || ''; // Ajusta conforme os teus dados
+    
+    setSeriesSubscriptionEndDate(seriesEndDate); // Preenche com o fim da série como default
+    setSeriesSubscriptionError('');
+    setPageError(''); setPageSuccessMessage(''); // Limpa mensagens da página
+    setShowSubscribeSeriesModal(true);
+  };
+
+  const handleCloseSubscribeSeriesModal = () => {
+    setShowSubscribeSeriesModal(false);
+    setSeriesSubscriptionEndDate('');
+    setSeriesSubscriptionError('');
+  };
+
+  const handleSeriesSubscriptionSubmit = async (e) => {
+    e.preventDefault(); // Se for um formulário
+    if (!selectedEvent?.resource.trainingSeriesId || !seriesSubscriptionEndDate) {
+      setSeriesSubscriptionError("Por favor, selecione uma data de fim para a subscrição.");
+      return;
+    }
+    setFormLoading(true); // Ou um estado de loading específico para este modal
+    setSeriesSubscriptionError(''); setPageError(''); setPageSuccessMessage('');
+
+    try {
+      const result = await createSeriesSubscriptionService(
+        {
+          trainingSeriesId: selectedEvent.resource.trainingSeriesId,
+          clientSubscriptionEndDate: seriesSubscriptionEndDate,
+          // clientSubscriptionStartDate: // Opcional, se o cliente puder escolher. Senão, o backend trata.
+        },
+        authState.token
+      );
+      setPageSuccessMessage(result.message || "Inscrição na série realizada com sucesso! As suas aulas foram adicionadas ao calendário.");
+      fetchPageData(); // Re-busca todos os eventos
+      handleCloseSubscribeSeriesModal(); // Fecha este modal
+      handleCloseEventModal();      // Fecha o modal do evento original
+    } catch (err) {
+      setSeriesSubscriptionError(err.message || "Falha ao subscrever a série.");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   if (loading) return <PageContainer><LoadingText>A carregar calendário...</LoadingText></PageContainer>;
 
   return (
@@ -1087,69 +1138,103 @@ const CalendarPage = () => {
         </ModalOverlay>
       )}
 
-    {showAdminCreateAppointmentModal && isAdminOrStaff && (
-        <ModalOverlay onClick={handleCloseAdminCreateAppointmentModal}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
-                <CloseButton onClick={handleCloseAdminCreateAppointmentModal}><FaTimes /></CloseButton>
-                <ModalTitle>Criar Nova Consulta</ModalTitle>
-                {adminAppointmentModalError && <ModalErrorText>{adminAppointmentModalError}</ModalErrorText>}
-                <AdminModalForm onSubmit={handleAdminCreateAppointmentSubmit}>
-                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
-                        <div>
-                            <AdminModalLabel htmlFor="adminApptDate">Data*</AdminModalLabel>
-                            <AdminModalInput type="date" name="date" id="adminApptDate" value={adminAppointmentFormData.date} onChange={handleAdminAppointmentFormChange} required />
-                        </div>
-                        <div>
-                            <AdminModalLabel htmlFor="adminApptTime">Hora (HH:MM)*</AdminModalLabel>
-                            <AdminModalInput type="time" name="time" id="adminApptTime" value={adminAppointmentFormData.time} onChange={handleAdminAppointmentFormChange} required />
-                        </div>
-                    </div>
-                    <AdminModalLabel htmlFor="adminApptDuration">Duração (minutos)*</AdminModalLabel>
-                    <AdminModalInput type="number" name="durationMinutes" id="adminApptDuration" value={adminAppointmentFormData.durationMinutes} onChange={handleAdminAppointmentFormChange} required min="1" />
-
-                    <AdminModalLabel htmlFor="adminApptStaff">Profissional*</AdminModalLabel>
-                    <AdminModalSelect name="staffId" id="adminApptStaff" value={adminAppointmentFormData.staffId} onChange={handleAdminAppointmentFormChange} required>
-                        <option value="">Selecione um profissional</option>
-                        {adminStaffListForAppointment.map(staff => (
-                            <option key={staff.id} value={staff.id}>{staff.firstName} {staff.lastName} ({staff.role})</option>
-                        ))}
-                    </AdminModalSelect>
-
-                    <AdminModalLabel htmlFor="adminApptUser">Cliente (Opcional)</AdminModalLabel>
-                    <AdminModalSelect name="userId" id="adminApptUser" value={adminAppointmentFormData.userId} onChange={handleAdminAppointmentFormChange}>
-                        <option value="">Nenhum (Horário Vago)</option>
-                        {adminUserListForAppointment.map(user => (
-                            <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
-                        ))}
-                    </AdminModalSelect>
-
-                    {adminAppointmentFormData.userId && (
-                        <>
-                            <AdminModalLabel htmlFor="adminApptCost">Custo Total (EUR){adminAppointmentFormData.userId ? '*' : ''}</AdminModalLabel>
-                            <AdminModalInput type="number" name="totalCost" id="adminApptCost" value={adminAppointmentFormData.totalCost} onChange={handleAdminAppointmentFormChange} placeholder="Ex: 50.00" step="0.01" min={adminAppointmentFormData.userId ? "0.01" : "0"} />
-                        </>
-                    )}
-
-                    <AdminModalLabel htmlFor="adminApptStatus">Status*</AdminModalLabel>
-                    <AdminModalSelect name="status" id="adminApptStatus" value={adminAppointmentFormData.status} onChange={handleAdminAppointmentFormChange} required>
-                        {appointmentStatuses.map(statusValue => (
-                            <option key={statusValue} value={statusValue}>{statusValue.charAt(0).toUpperCase() + statusValue.slice(1).replace(/_/g, ' ')}</option>
-                        ))}
-                    </AdminModalSelect>
-
-                    <AdminModalLabel htmlFor="adminApptNotes">Notas Adicionais</AdminModalLabel>
-                    <AdminModalTextarea name="notes" id="adminApptNotes" value={adminAppointmentFormData.notes} onChange={handleAdminAppointmentFormChange} />
-
-                    <ModalActions>
-                        <AdminModalButton type="button" secondary onClick={handleCloseAdminCreateAppointmentModal} disabled={adminAppointmentFormLoading}>Cancelar</AdminModalButton>
-                        <AdminModalButton type="submit" primary disabled={adminAppointmentFormLoading}>
-                            <FaCalendarPlus style={{marginRight: '8px'}}/> {adminAppointmentFormLoading ? 'A criar...' : 'Criar Consulta'}
-                        </AdminModalButton>
-                    </ModalActions>
-                </AdminModalForm>
+        {showSubscribeSeriesModal && selectedEvent && (
+          <ModalOverlay onClick={handleCloseSubscribeSeriesModal}>
+            <ModalContent onClick={e => e.stopPropagation()}>
+              <CloseButton onClick={handleCloseSubscribeSeriesModal}>&times;</CloseButton>
+              <ModalTitle>Inscrever na Série: {selectedEvent.title}</ModalTitle>
+              {seriesSubscriptionError && <ModalErrorText>{seriesSubscriptionError}</ModalErrorText>}
+              
+              <ModalForm onSubmit={handleSeriesSubscriptionSubmit}>
+                <ModalLabel htmlFor="seriesSubEndDate">Quero participar na série até à data (inclusive):*</ModalLabel>
+                <ModalInput
+                  type="date"
+                  id="seriesSubEndDate"
+                  value={seriesSubscriptionEndDate}
+                  onChange={(e) => setSeriesSubscriptionEndDate(e.target.value)}
+                  min={moment.max(moment(), moment(selectedEvent.resource.seriesStartDate || selectedEvent.start)).format('YYYY-MM-DD')} // Não antes de hoje ou do início da série
+                  max={selectedEvent.resource.seriesEndDate || undefined} // Não depois do fim da série
+                  required
+                />
+                <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop:'5px'}}>
+                  A sua inscrição será para todas as aulas desta série que ocorram até à data selecionada.
+                </p>
+                <ModalActions>
+                  <ModalButton type="button" secondary onClick={handleCloseSubscribeSeriesModal} disabled={formLoading}>
+                    Cancelar
+                  </ModalButton>
+                  <ModalButton type="submit" primary disabled={formLoading}>
+                    {formLoading ? 'A Subscrever...' : 'Confirmar Inscrição na Série'}
+                  </ModalButton>
+                </ModalActions>
+              </ModalForm>
             </ModalContent>
-        </ModalOverlay>
-    )}
+          </ModalOverlay>
+        )}
+
+        {showAdminCreateAppointmentModal && isAdminOrStaff && (
+              <ModalOverlay onClick={handleCloseAdminCreateAppointmentModal}>
+                  <ModalContent onClick={(e) => e.stopPropagation()}>
+                      <CloseButton onClick={handleCloseAdminCreateAppointmentModal}><FaTimes /></CloseButton>
+                      <ModalTitle>Criar Nova Consulta</ModalTitle>
+                      {adminAppointmentModalError && <ModalErrorText>{adminAppointmentModalError}</ModalErrorText>}
+                      <AdminModalForm onSubmit={handleAdminCreateAppointmentSubmit}>
+                          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                              <div>
+                                  <AdminModalLabel htmlFor="adminApptDate">Data*</AdminModalLabel>
+                                  <AdminModalInput type="date" name="date" id="adminApptDate" value={adminAppointmentFormData.date} onChange={handleAdminAppointmentFormChange} required />
+                              </div>
+                              <div>
+                                  <AdminModalLabel htmlFor="adminApptTime">Hora (HH:MM)*</AdminModalLabel>
+                                  <AdminModalInput type="time" name="time" id="adminApptTime" value={adminAppointmentFormData.time} onChange={handleAdminAppointmentFormChange} required />
+                              </div>
+                          </div>
+                          <AdminModalLabel htmlFor="adminApptDuration">Duração (minutos)*</AdminModalLabel>
+                          <AdminModalInput type="number" name="durationMinutes" id="adminApptDuration" value={adminAppointmentFormData.durationMinutes} onChange={handleAdminAppointmentFormChange} required min="1" />
+
+                          <AdminModalLabel htmlFor="adminApptStaff">Profissional*</AdminModalLabel>
+                          <AdminModalSelect name="staffId" id="adminApptStaff" value={adminAppointmentFormData.staffId} onChange={handleAdminAppointmentFormChange} required>
+                              <option value="">Selecione um profissional</option>
+                              {adminStaffListForAppointment.map(staff => (
+                                  <option key={staff.id} value={staff.id}>{staff.firstName} {staff.lastName} ({staff.role})</option>
+                              ))}
+                          </AdminModalSelect>
+
+                          <AdminModalLabel htmlFor="adminApptUser">Cliente (Opcional)</AdminModalLabel>
+                          <AdminModalSelect name="userId" id="adminApptUser" value={adminAppointmentFormData.userId} onChange={handleAdminAppointmentFormChange}>
+                              <option value="">Nenhum (Horário Vago)</option>
+                              {adminUserListForAppointment.map(user => (
+                                  <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
+                              ))}
+                          </AdminModalSelect>
+
+                          {adminAppointmentFormData.userId && (
+                              <>
+                                  <AdminModalLabel htmlFor="adminApptCost">Custo Total (EUR){adminAppointmentFormData.userId ? '*' : ''}</AdminModalLabel>
+                                  <AdminModalInput type="number" name="totalCost" id="adminApptCost" value={adminAppointmentFormData.totalCost} onChange={handleAdminAppointmentFormChange} placeholder="Ex: 50.00" step="0.01" min={adminAppointmentFormData.userId ? "0.01" : "0"} />
+                              </>
+                          )}
+
+                          <AdminModalLabel htmlFor="adminApptStatus">Status*</AdminModalLabel>
+                          <AdminModalSelect name="status" id="adminApptStatus" value={adminAppointmentFormData.status} onChange={handleAdminAppointmentFormChange} required>
+                              {appointmentStatuses.map(statusValue => (
+                                  <option key={statusValue} value={statusValue}>{statusValue.charAt(0).toUpperCase() + statusValue.slice(1).replace(/_/g, ' ')}</option>
+                              ))}
+                          </AdminModalSelect>
+
+                          <AdminModalLabel htmlFor="adminApptNotes">Notas Adicionais</AdminModalLabel>
+                          <AdminModalTextarea name="notes" id="adminApptNotes" value={adminAppointmentFormData.notes} onChange={handleAdminAppointmentFormChange} />
+
+                          <ModalActions>
+                              <AdminModalButton type="button" secondary onClick={handleCloseAdminCreateAppointmentModal} disabled={adminAppointmentFormLoading}>Cancelar</AdminModalButton>
+                              <AdminModalButton type="submit" primary disabled={adminAppointmentFormLoading}>
+                                  <FaCalendarPlus style={{marginRight: '8px'}}/> {adminAppointmentFormLoading ? 'A criar...' : 'Criar Consulta'}
+                              </AdminModalButton>
+                          </ModalActions>
+                      </AdminModalForm>
+                  </ModalContent>
+              </ModalOverlay>
+          )}
 
     </PageContainer>
   );

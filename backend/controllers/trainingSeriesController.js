@@ -1,36 +1,37 @@
 // backend/controllers/trainingSeriesController.js
 const db = require('../models');
-const moment = require('moment'); // Lembre-se de instalar: npm install moment
+const moment = require('moment'); // Certifica-te que tens 'moment' instalado
 
-// @desc    Admin cria uma nova série de treinos recorrentes e as suas instâncias
-// @route   POST /api/admin/training-series  (Exemplo de rota, ajuste conforme necessário)
-// @access  Privado (Admin)
 exports.createTrainingSeries = async (req, res) => {
     const {
         name,
         description,
-        instructorId, // ID do instrutor para a série e instâncias
-        dayOfWeek,    // Número: 0 (Dom) a 6 (Sáb)
-        startTime,    // String: "HH:MM:SS"
-        endTime,      // String: "HH:MM:SS"
-        seriesStartDate, // String: "YYYY-MM-DD"
-        seriesEndDate,   // String: "YYYY-MM-DD"
+        instructorId,
+        recurrenceType, // NOVO
+        dayOfWeek,      // AGORA PODE SER NULL
+        startTime,
+        endTime,
+        seriesStartDate,
+        seriesEndDate,
         capacity,
         location,
-        // workoutPlanId // Opcional: se a série tem um plano fixo
+        // workoutPlanId // OPCIONAL
     } = req.body;
 
     // Validações
-    if (!name || instructorId === undefined || dayOfWeek === undefined || !startTime || !endTime || !seriesStartDate || !seriesEndDate) {
-        return res.status(400).json({ message: 'Campos obrigatórios em falta (name, instructorId, dayOfWeek, startTime, endTime, seriesStartDate, seriesEndDate).' });
+    if (!name || instructorId === undefined || !recurrenceType || !startTime || !endTime || !seriesStartDate || !seriesEndDate) {
+        return res.status(400).json({ message: 'Campos obrigatórios em falta (name, instructorId, recurrenceType, startTime, endTime, seriesStartDate, seriesEndDate).' });
     }
     if (moment(seriesEndDate).isBefore(seriesStartDate)) {
         return res.status(400).json({ message: 'A data de fim da série não pode ser anterior à data de início.' });
     }
-    if (parseInt(dayOfWeek) < 0 || parseInt(dayOfWeek) > 6) {
-        return res.status(400).json({ message: 'Dia da semana inválido (deve ser 0-6).' });
+    if (recurrenceType === 'weekly' && (dayOfWeek === undefined || dayOfWeek === null || parseInt(dayOfWeek) < 0 || parseInt(dayOfWeek) > 6)) {
+        return res.status(400).json({ message: 'Dia da semana inválido (0-6) é obrigatório para recorrência semanal.' });
     }
-    
+    if (capacity !== undefined && (isNaN(parseInt(capacity)) || parseInt(capacity) <=0)) {
+        return res.status(400).json({ message: 'Capacidade deve ser um número positivo.'});
+    }
+
     const transaction = await db.sequelize.transaction();
 
     try {
@@ -38,33 +39,52 @@ exports.createTrainingSeries = async (req, res) => {
             name,
             description,
             instructorId: parseInt(instructorId),
-            dayOfWeek: parseInt(dayOfWeek),
+            recurrenceType,
+            dayOfWeek: recurrenceType === 'weekly' ? parseInt(dayOfWeek) : null,
             startTime,
             endTime,
             seriesStartDate,
             seriesEndDate,
-            capacity: capacity ? parseInt(capacity) : 10, // Default capacity
+            capacity: capacity ? parseInt(capacity) : 10,
             location,
             // workoutPlanId: workoutPlanId ? parseInt(workoutPlanId) : null,
         }, { transaction });
 
         const instancesToCreate = [];
-        let currentDate = moment(newSeries.seriesStartDate); // Usa moment para iteração
+        let currentDate = moment(newSeries.seriesStartDate);
         const finalEndDate = moment(newSeries.seriesEndDate);
+        const trainingNameBase = newSeries.name;
+        const seriesDurationMinutes = moment(newSeries.endTime, "HH:mm:ss").diff(moment(newSeries.startTime, "HH:mm:ss"), 'minutes');
 
         while (currentDate.isSameOrBefore(finalEndDate)) {
-            if (currentDate.day() === newSeries.dayOfWeek) { // moment().day() é 0 para Domingo, 1 para Segunda...
+            let createInstanceToday = false;
+            if (newSeries.recurrenceType === 'daily') {
+                createInstanceToday = true;
+            } else if (newSeries.recurrenceType === 'weekly') {
+                if (currentDate.day() === newSeries.dayOfWeek) {
+                    createInstanceToday = true;
+                }
+            } else if (newSeries.recurrenceType === 'monthly') {
+                // Lógica para mensal: Exemplo - mesmo dia do mês
+                // Se dayOfWeek também for relevante para mensal (ex: 1ª Segunda-feira do mês), ajusta aqui.
+                if (currentDate.date() === moment(newSeries.seriesStartDate).date()) {
+                     createInstanceToday = true;
+                }
+            }
+
+            if (createInstanceToday) {
                 instancesToCreate.push({
-                    name: `${newSeries.name} - ${currentDate.format('DD/MM/YYYY')}`,
+                    name: `${trainingNameBase} - ${currentDate.format('DD/MM/YYYY')}`,
                     description: newSeries.description,
                     date: currentDate.format('YYYY-MM-DD'),
                     time: newSeries.startTime,
-                    instructorId: newSeries.instructorId, // Instrutor da série
+                    durationMinutes: seriesDurationMinutes > 0 ? seriesDurationMinutes : 60, // Fallback para duração
+                    instructorId: newSeries.instructorId,
                     capacity: newSeries.capacity,
                     location: newSeries.location,
                     status: 'scheduled',
-                    // workoutPlanId: newSeries.workoutPlanId,
-                    trainingSeriesId: newSeries.id, // Link para a série mãe
+                    // workoutPlanId: newSeries.workoutPlanId, // Se for usar
+                    trainingSeriesId: newSeries.id,
                     isGeneratedInstance: true,
                 });
             }
@@ -77,10 +97,10 @@ exports.createTrainingSeries = async (req, res) => {
         }
 
         await transaction.commit();
-        res.status(201).json({ 
-            message: 'Série de treinos e instâncias criadas com sucesso!', 
-            series: newSeries, 
-            instancesCreated: createdInstances.length 
+        res.status(201).json({
+            message: `Série de treinos "${newSeries.name}" e ${createdInstances.length} instâncias criadas com sucesso!`,
+            series: newSeries,
+            instancesCreatedCount: createdInstances.length
         });
 
     } catch (error) {
@@ -93,8 +113,5 @@ exports.createTrainingSeries = async (req, res) => {
     }
 };
 
-// Outras funções para listar, atualizar, apagar séries podem ser adicionadas aqui
+// Adiciona outras funções do controller se existirem (listar, atualizar, apagar séries)...
 // exports.getAllTrainingSeries = async (req, res) => { ... };
-// exports.getTrainingSeriesById = async (req, res) => { ... };
-// exports.updateTrainingSeries = async (req, res) => { ... }; // Cuidado ao atualizar, pode precisar regenerar instâncias
-// exports.deleteTrainingSeries = async (req, res) => { ... }; // Apagará instâncias devido ao onDelete: 'CASCADE'

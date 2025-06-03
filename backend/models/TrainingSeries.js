@@ -15,18 +15,25 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    instructorId: { // Instrutor responsável pela série (e instâncias, salvo override)
+    instructorId: {
       type: DataTypes.INTEGER,
-      allowNull: false, // Ou true se puder ser definido por instância
+      allowNull: false,
       references: {
-        model: 'staff', 
+        model: 'staff', // Nome da tabela staff (confirma se é 'staff' ou 'Users' para instrutores)
         key: 'id',
       },
     },
-    dayOfWeek: { // 0 para Domingo, 1 para Segunda, ..., 6 para Sábado
-      type: DataTypes.INTEGER,
+    // NOVO CAMPO E AJUSTE EM dayOfWeek
+    recurrenceType: {
+      type: DataTypes.ENUM('daily', 'weekly', 'monthly'),
       allowNull: false,
-      comment: 'Dia da semana (0-Domingo, 1-Segunda, ...)',
+      defaultValue: 'weekly',
+      comment: 'Tipo de recorrência: diária, semanal, mensal',
+    },
+    dayOfWeek: { // MODIFICADO
+      type: DataTypes.INTEGER, // 0 (Dom) a 6 (Sáb)
+      allowNull: true, // Nulo se recurrenceType for 'daily', ou para alguns tipos de 'monthly'
+      comment: 'Dia da semana (0-Dom, 1-Seg, ...), relevante para semanal/mensal',
     },
     startTime: { // Ex: "18:00:00"
       type: DataTypes.TIME,
@@ -36,45 +43,47 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TIME,
       allowNull: false,
     },
-    seriesStartDate: { // Data de início da primeira ocorrência da série
+    seriesStartDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-    seriesEndDate: { // Data de fim da última ocorrência da série
+    seriesEndDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-    capacity: { // Capacidade de cada instância da série
+    capacity: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      defaultValue: 10, // Exemplo de default
+      defaultValue: 10,
     },
     location: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    // Adicione workoutPlanId se uma série tiver um plano fixo
+    // OPCIONAL: Adicionar um workoutPlanId global para a série
     // workoutPlanId: {
     //   type: DataTypes.INTEGER,
     //   allowNull: true,
     //   references: {
-    //     model: 'WorkoutPlans',
+    //     model: 'workout_plans', // Confirma o nome da tua tabela
     //     key: 'id',
     //   },
     // },
   });
 
   TrainingSeries.associate = (models) => {
-    TrainingSeries.hasMany(models.Training, { // Uma série tem muitas instâncias de treino
+    TrainingSeries.hasMany(models.Training, {
       foreignKey: 'trainingSeriesId',
-      as: 'instances', // db.TrainingSeries.findAll({ include: 'instances' })
-      onDelete: 'CASCADE', // Se apagar a série, apaga as instâncias
+      as: 'instances',
+      onDelete: 'CASCADE',
     });
-    TrainingSeries.belongsTo(models.Staff, { // Assumindo que User é o modelo para instrutores
-      as: 'instructor', 
-      foreignKey: 'instructorId' 
+    TrainingSeries.belongsTo(models.Staff, { // Confirma se o modelo de instrutor é 'Staff'
+      as: 'instructor',
+      foreignKey: 'instructorId'
     });
-    // TrainingSeries.belongsTo(models.WorkoutPlan, { as: 'workoutPlan', foreignKey: 'workoutPlanId' });
+    // if (models.WorkoutPlan && TrainingSeries.rawAttributes.workoutPlanId) { // Se adicionares workoutPlanId
+    //   TrainingSeries.belongsTo(models.WorkoutPlan, { as: 'workoutPlan', foreignKey: 'workoutPlanId' });
+    // }
     TrainingSeries.hasMany(models.SeriesSubscription, {
         foreignKey: 'trainingSeriesId',
         as: 'subscriptions'

@@ -3,19 +3,16 @@ const db = require('../models');
 const moment = require('moment');
 const { Op } = require('sequelize');
 
-// @desc    Cliente inscreve-se numa série de treinos recorrentes
-// @route   POST /api/series-subscriptions (Exemplo de rota)
-// @access  Privado (Cliente)
 exports.createSeriesSubscription = async (req, res) => {
-    const clientId = req.user.id; // Assumindo que req.user.id é o ID do cliente
+    const clientId = req.user.id;
     const {
         trainingSeriesId,
-        clientSubscriptionStartDate, // Opcional: cliente pode querer começar depois do início da série
-        clientSubscriptionEndDate    // Opcional: cliente pode querer terminar antes do fim da série
+        clientSubscriptionStartDate, // Opcional
+        clientSubscriptionEndDate    // Obrigatório para o cliente definir até quando quer
     } = req.body;
 
-    if (!trainingSeriesId) {
-        return res.status(400).json({ message: 'ID da série de treino é obrigatório.' });
+    if (!trainingSeriesId || !clientSubscriptionEndDate) {
+        return res.status(400).json({ message: 'ID da série de treino e data de fim da subscrição são obrigatórios.' });
     }
 
     const transaction = await db.sequelize.transaction();
@@ -27,15 +24,21 @@ exports.createSeriesSubscription = async (req, res) => {
             return res.status(404).json({ message: 'Série de treino não encontrada.' });
         }
 
-        // Definir datas de subscrição do cliente, respeitando os limites da série
+        const clientUser = await db.User.findByPk(clientId, { transaction });
+        if (!clientUser) {
+            await transaction.rollback();
+            return res.status(404).json({ message: 'Utilizador cliente não encontrado.' });
+        }
+
+        // Datas efetivas da subscrição do cliente, respeitando os limites da série e a data de início do cliente (se fornecida)
         const effectiveSubStartDate = moment.max(
-            moment(series.seriesStartDate), 
-            clientSubscriptionStartDate ? moment(clientSubscriptionStartDate) : moment(series.seriesStartDate)
+            moment(series.seriesStartDate),
+            clientSubscriptionStartDate ? moment(clientSubscriptionStartDate) : moment(series.seriesStartDate) // Usa início da série se cliente não especificar
         ).format('YYYY-MM-DD');
 
         const effectiveSubEndDate = moment.min(
-            moment(series.seriesEndDate),
-            clientSubscriptionEndDate ? moment(clientSubscriptionEndDate) : moment(series.seriesEndDate)
+            moment(series.seriesEndDate), // Não pode ir além do fim da série
+            moment(clientSubscriptionEndDate) // Data escolhida pelo cliente
         ).format('YYYY-MM-DD');
 
         if (moment(effectiveSubEndDate).isBefore(effectiveSubStartDate)) {
@@ -43,7 +46,6 @@ exports.createSeriesSubscription = async (req, res) => {
             return res.status(400).json({ message: 'Período de subscrição inválido ou fora dos limites da série.' });
         }
 
-        // Verificar se já existe uma subscrição ativa
         const existingSubscription = await db.SeriesSubscription.findOne({
             where: { userId: clientId, trainingSeriesId: series.id, isActive: true },
             transaction
@@ -62,7 +64,6 @@ exports.createSeriesSubscription = async (req, res) => {
             isActive: true,
         }, { transaction });
 
-        // Criar Bookings individuais para cada instância de treino aplicável à subscrição do cliente
         const instancesToBook = await db.Training.findAll({
             where: {
                 trainingSeriesId: series.id,
@@ -72,55 +73,42 @@ exports.createSeriesSubscription = async (req, res) => {
                 },
                 status: 'scheduled', // Apenas inscreve em aulas agendadas
             },
-            attributes: ['id', 'capacity'], // Apenas os campos necessários
+            // attributes: ['id', 'capacity'], // Podes precisar de mais atributos se o addParticipant os usar
             transaction
         });
 
-        const bookingsToCreate = [];
+        let bookingsSuccessful = 0;
         let bookingsSkippedDueToCapacity = 0;
 
         for (const instance of instancesToBook) {
-            const currentBookingsCount = await db.Booking.count({
-                where: { trainingId: instance.id },
-                transaction
-            });
+            const participantsCount = await instance.countParticipants({ transaction }); // Método do Sequelize ou contagem manual
 
-            if (instance.capacity !== null && currentBookingsCount >= instance.capacity) {
+            if (instance.capacity !== null && participantsCount >= instance.capacity) {
                 bookingsSkippedDueToCapacity++;
-                console.warn(`Capacidade esgotada para treino ID ${instance.id} na data ${instance.date}. User ${clientId} não inscrito nesta instância.`);
-                continue; // Pula esta instância se estiver lotada
+                console.warn(`Capacidade esgotada para treino ID ${instance.id} na data ${instance.date}. User ${clientId} não inscrito nesta instância da série.`);
+                continue;
             }
-
-            bookingsToCreate.push({
-                clientId: clientId, // No seu modelo Booking, confirme o nome da foreign key para User/Client
-                trainingId: instance.id,
-                bookingDate: moment().toISOString(), // Data/hora da criação do booking
-                status: 'confirmed', // Status inicial do booking
-                // seriesSubscriptionId: newSubscription.id, // Opcional: linkar booking à subscrição
-            });
-        }
-
-        if (bookingsToCreate.length > 0) {
-            await db.Booking.bulkCreate(bookingsToCreate, { transaction });
+            // Cria a entrada na tabela de junção UserTrainings
+            await instance.addParticipant(clientUser, { transaction });
+            bookingsSuccessful++;
         }
 
         await transaction.commit();
-        
-        let responseMessage = 'Inscrição na série realizada com sucesso!';
+
+        let responseMessage = `Inscrição na série "${series.name}" realizada! ${bookingsSuccessful} aulas agendadas no seu calendário.`;
         if (bookingsSkippedDueToCapacity > 0) {
             responseMessage += ` No entanto, ${bookingsSkippedDueToCapacity} aula(s) não puderam ser agendadas por falta de capacidade.`;
         }
-        if (bookingsToCreate.length === 0 && bookingsSkippedDueToCapacity === 0 && instancesToBook.length > 0) {
-            responseMessage = 'Inscrição na série realizada, mas não foram encontradas aulas agendáveis no período (verifique capacidade ou status das aulas).';
-        } else if (instancesToBook.length === 0) {
-             responseMessage = 'Inscrição na série realizada, mas não existem aulas futuras agendadas para este período.';
+        if (bookingsSuccessful === 0 && instancesToBook.length > 0 && bookingsSkippedDueToCapacity > 0) {
+            responseMessage = `Inscrição na série "${series.name}" processada, mas todas as ${instancesToBook.length} aulas no período estão lotadas.`;
+        } else if (bookingsSuccessful === 0 && instancesToBook.length === 0) {
+            responseMessage = `Inscrição na série "${series.name}" realizada, mas não foram encontradas aulas agendáveis no período selecionado.`;
         }
-
 
         res.status(201).json({
             message: responseMessage,
             subscription: newSubscription,
-            bookingsCreatedCount: bookingsToCreate.length,
+            bookingsCreatedCount: bookingsSuccessful,
             bookingsSkippedCount: bookingsSkippedDueToCapacity
         });
 
@@ -133,7 +121,3 @@ exports.createSeriesSubscription = async (req, res) => {
         res.status(500).json({ message: 'Erro interno do servidor ao processar subscrição.', errorDetails: error.message });
     }
 };
-
-// Outras funções: listar subscrições do cliente, cancelar subscrição, etc.
-// exports.getMySeriesSubscriptions = async (req, res) => { ... };
-// exports.cancelSeriesSubscription = async (req, res) => { ... }; // (Isto precisaria de apagar Bookings futuros)

@@ -12,7 +12,8 @@ import {
     adminCancelClientBookingService,
     adminGetTrainingWaitlistService,
     getTrainingById,
-    adminPromoteClientFromWaitlistService
+    adminPromoteClientFromWaitlistService,
+    createTrainingSeriesService
 } from '../../services/trainingService';
 import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
@@ -494,6 +495,11 @@ const WaitlistSectionTitle = styled.h4`
 const initialTrainingFormState = {
   name: '', description: '', date: '', time: '',
   capacity: 10, instructorId: '', durationMinutes: 45,
+  isRecurring: false, // NOVO
+  recurrenceType: 'weekly', // NOVO
+  seriesStartDate: '', // NOVO
+  seriesEndDate: '', // NOVO
+  dayOfWeek: '1',
 };
 
 const AdminManageTrainingsPage = () => {
@@ -621,42 +627,88 @@ const AdminManageTrainingsPage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormLoading(true); setModalError(''); setPageError(''); setSuccessMessage('');
-    const dataToSend = {
-      ...currentTrainingData,
-      capacity: parseInt(currentTrainingData.capacity, 10),
-      instructorId: parseInt(currentTrainingData.instructorId, 10),
-      durationMinutes: parseInt(currentTrainingData.durationMinutes, 10),
-      time: currentTrainingData.time.length === 5 ? `${currentTrainingData.time}:00` : currentTrainingData.time,
-    };
+    setFormLoading(true); setModalError(''); setError(''); setSuccessMessage('');
 
-    if (isNaN(dataToSend.capacity) || dataToSend.capacity <= 0) {
-        setModalError("Capacidade deve ser um número positivo.");
-        setFormLoading(false); return;
-    }
-    if (isNaN(dataToSend.instructorId) || !dataToSend.instructorId) {
-        setModalError("Por favor, selecione um instrutor.");
-        setFormLoading(false); return;
-    }
-     if (isNaN(dataToSend.durationMinutes) || dataToSend.durationMinutes <= 0) {
-        setModalError("Duração deve ser um número positivo.");
-        setFormLoading(false); return;
-    }
+    if (currentTrainingData.isRecurring) {
+        // Lógica para criar SÉRIE DE TREINOS
+        const seriesPayload = {
+            name: currentTrainingData.name,
+            description: currentTrainingData.description,
+            instructorId: parseInt(currentTrainingData.instructorId),
+            recurrenceType: currentTrainingData.recurrenceType,
+            dayOfWeek: currentTrainingData.recurrenceType === 'weekly' ? parseInt(currentTrainingData.dayOfWeek) : null,
+            startTime: currentTrainingData.time, // Usar o time do "treino base" como startTime da série
+            seriesStartDate: currentTrainingData.seriesStartDate,
+            seriesEndDate: currentTrainingData.seriesEndDate,
+            capacity: parseInt(currentTrainingData.capacity),
+            location: currentTrainingData.location || '',
+            // workoutPlanId: currentTrainingData.workoutPlanId, // Se tiveres workoutPlanId associado
+        };
 
-    try {
-      if (isEditing) {
-        await adminUpdateTraining(currentTrainingId, dataToSend, authState.token);
-        setSuccessMessage('Treino atualizado com sucesso!');
-      } else {
-        await adminCreateTraining(dataToSend, authState.token);
-        setSuccessMessage('Treino criado com sucesso!');
-      }
-      fetchPageData(activeFilters);
-      handleCloseModal();
-    } catch (err) {
-      setModalError(err.message || `Falha ao ${isEditing ? 'atualizar' : 'criar'} treino.`);
-    } finally {
-      setFormLoading(false);
+        // Calcular endTime para a série baseado na durationMinutes do "treino base"
+        if (currentTrainingData.time && currentTrainingData.durationMinutes) {
+            const [hours, minutes] = currentTrainingData.time.split(':').map(Number);
+            const startMoment = moment().year(2000).month(0).date(1).hours(hours).minutes(minutes); // Data arbitrária para cálculo
+            const endMoment = startMoment.add(parseInt(currentTrainingData.durationMinutes, 10), 'minutes');
+            seriesPayload.endTime = endMoment.format('HH:mm:ss');
+        } else {
+             setModalError("Hora de início e duração são necessários para calcular a hora de fim da série.");
+             setFormLoading(false);
+             return;
+        }
+
+        if (!seriesPayload.seriesStartDate || !seriesPayload.seriesEndDate || !seriesPayload.instructorId) {
+            setModalError("Para treinos recorrentes, preencha nome, instrutor, tipo de recorrência, datas de início/fim da série, hora de início e capacidade.");
+            setFormLoading(false);
+            return;
+        }
+         if (moment(seriesPayload.seriesEndDate).isBefore(seriesPayload.seriesStartDate)) {
+            setModalError('A data de fim da série não pode ser anterior à data de início.');
+            setFormLoading(false);
+            return;
+        }
+
+        try {
+            await createTrainingSeriesService(seriesPayload, authState.token);
+            setSuccessMessage('Série de treinos recorrentes criada com sucesso!');
+            fetchPageData(activeFilters); // Rebusca a lista principal de treinos (que pode mostrar instâncias)
+            handleCloseModal();
+        } catch (err) {
+            setModalError(err.message || 'Falha ao criar série de treinos recorrentes.');
+        } finally {
+            setFormLoading(false);
+        }
+
+    } else {
+        // Lógica existente para criar/atualizar TREINO ÚNICO
+        const dataToSend = {
+            name: currentTrainingData.name,
+            description: currentTrainingData.description,
+            date: currentTrainingData.date,
+            time: currentTrainingData.time.length === 5 ? `${currentTrainingData.time}:00` : currentTrainingData.time,
+            capacity: parseInt(currentTrainingData.capacity, 10),
+            instructorId: parseInt(currentTrainingData.instructorId, 10),
+            durationMinutes: parseInt(currentTrainingData.durationMinutes, 10),
+        };
+         if (!dataToSend.date || !dataToSend.time || !dataToSend.instructorId || isNaN(dataToSend.capacity) || dataToSend.capacity <=0 || isNaN(dataToSend.durationMinutes) || dataToSend.durationMinutes <=0 ) {
+            setModalError("Para treino único, preencha nome, data, hora, duração, capacidade e instrutor.");
+            setFormLoading(false); return;
+        }
+        try {
+            if (isEditing && currentTrainingId) { // Garante que currentTrainingId existe para edição
+                await adminUpdateTraining(currentTrainingId, dataToSend, authState.token);
+                setSuccessMessage('Treino atualizado com sucesso!');
+            } else {
+                await adminCreateTraining(dataToSend, authState.token);
+                setSuccessMessage('Treino criado com sucesso!');
+            }
+            fetchPageData(activeFilters);
+            handleCloseModal();
+        } catch (err) {
+            setModalError(err.message || `Falha ao ${isEditing ? 'atualizar' : 'criar'} treino.`);
+        } finally {
+            setFormLoading(false);
+        }
     }
   };
 
@@ -920,6 +972,64 @@ const AdminManageTrainingsPage = () => {
                   <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName} ({instr.role})</option>
                 ))}
               </ModalSelect>
+              {!isEditing || (isEditing && !currentTrainingData.isGeneratedInstance) ? ( // Verifica se currentTrainingData existe
+              <>
+                <ModalLabel htmlFor="isRecurringTrainModalForm">Treino Recorrente?</ModalLabel>
+                <ModalInput
+                  type="checkbox"
+                  name="isRecurring"
+                  id="isRecurringTrainModalForm"
+                  checked={currentTrainingData.isRecurring || false}
+                  onChange={handleFormChange}
+                  disabled={isEditing} // Desabilitar alteração de recorrência na edição por simplicidade
+                />
+              </>
+          ) : (
+              isEditing && currentTrainingData.isGeneratedInstance && <p style={{fontSize: '0.8rem', color: theme.colors.textMuted}}>Este é um treino gerado por uma série, edite a série para alterar recorrências.</p>
+          )}
+
+
+          {currentTrainingData.isRecurring && !isEditing && ( // Só mostra campos de série na criação de nova série
+              <>
+                  <ModalLabel htmlFor="recurrenceTypeTrainModalForm">Repetir*</ModalLabel>
+                  <ModalSelect name="recurrenceType" id="recurrenceTypeTrainModalForm" value={currentTrainingData.recurrenceType} onChange={handleFormChange}>
+                      <option value="weekly">Semanalmente</option>
+                      <option value="daily">Diariamente</option>
+                      <option value="monthly">Mensalmente</option>
+                  </ModalSelect>
+
+                  {currentTrainingData.recurrenceType === 'weekly' && (
+                      <>
+                          <ModalLabel htmlFor="dayOfWeekTrainModalForm">Dia da Semana da Repetição*</ModalLabel>
+                          <ModalSelect name="dayOfWeek" id="dayOfWeekTrainModalForm" value={currentTrainingData.dayOfWeek} onChange={handleFormChange}>
+                              <option value="1">Segunda-feira</option>
+                              <option value="2">Terça-feira</option>
+                              <option value="3">Quarta-feira</option>
+                              <option value="4">Quinta-feira</option>
+                              <option value="5">Sexta-feira</option>
+                              <option value="6">Sábado</option>
+                              <option value="0">Domingo</option>
+                          </ModalSelect>
+                      </>
+                  )}
+                  {/* Nota: Para 'monthly', podes precisar de lógica adicional no frontend se dayOfWeek for usado (ex: 1ª Seg do mês) */}
+
+                  <ModalLabel htmlFor="seriesStartDateTrainModalForm">Data de Início da Série*</ModalLabel>
+                  <ModalInput type="date" name="seriesStartDate" id="seriesStartDateTrainModalForm" value={currentTrainingData.seriesStartDate} onChange={handleFormChange} />
+
+                  <ModalLabel htmlFor="seriesEndDateTrainModalForm">Data de Fim da Série*</ModalLabel>
+                  <ModalInput type="date" name="seriesEndDate" id="seriesEndDateTrainModalForm" value={currentTrainingData.seriesEndDate} onChange={handleFormChange} />
+                  
+                  {/*
+                  <ModalLabel htmlFor="endTimeSeriesTrainModalForm">Hora de Fim da Série (HH:MM)*</ModalLabel>
+                  <ModalInput type="time" name="endTimeSeries" id="endTimeSeriesTrainModalForm" value={currentTrainingData.endTimeSeries} onChange={handleFormChange} required={currentTrainingData.isRecurring} />
+                  */}
+                  <p style={{fontSize: '0.8rem', color: theme.colors.textMuted}}>
+                    A hora de início e duração definidas acima serão usadas para todas as ocorrências da série.
+                    A hora de fim da série será calculada automaticamente.
+                  </p>
+              </>
+          )}
               <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
                 <ModalButton type="submit" primary disabled={formLoading}>

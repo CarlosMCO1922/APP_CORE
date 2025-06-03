@@ -247,8 +247,8 @@ export const adminPromoteClientFromWaitlistService = async (trainingId, userIdTo
  */
 export const createTrainingSeriesService = async (seriesData, token) => {
   if (!token) throw new Error('Token não fornecido para criar série de treinos.');
-  // O backend monta trainingSeriesRoutes em '/training-series' (sem /api global antes para este exemplo)
-  const url = `${API_URL}/training-series`; 
+  // O backend montou trainingSeriesRoutes em '/training-series'
+  const url = `${API_URL}/training-series`; // Ajusta se o teu prefixo global de API for diferente (ex: /api/training-series)
 
   console.log('Frontend Service: Criando série de treinos. URL:', url, 'Payload:', seriesData);
   const response = await fetch(url, {
@@ -260,21 +260,17 @@ export const createTrainingSeriesService = async (seriesData, token) => {
     body: JSON.stringify(seriesData),
   });
 
-  const responseText = await response.text();
-  let data;
-  try {
-    data = JSON.parse(responseText);
-  } catch (e) {
-    console.error("Falha ao fazer parse da resposta JSON de createTrainingSeriesService:", e);
-    console.error("Resposta recebida (texto):", responseText);
-    throw new Error(`Resposta do servidor para criar série não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
-  }
-
+  // Tratamento de resposta mais robusto
   if (!response.ok) {
-    console.error('Erro na resposta de createTrainingSeriesService (status não OK):', data);
-    throw new Error(data.message || `Erro ao criar série de treinos. Status: ${response.status}`);
+    let errorData;
+    try {
+      errorData = await response.json();
+    } catch (e) {
+      throw new Error(`Erro HTTP ${response.status} ao criar série. Resposta não é JSON.`);
+    }
+    throw new Error(errorData.message || `Erro ${response.status} ao criar série de treinos.`);
   }
-  return data;
+  return response.json(); // Espera-se { message, series, instancesCreatedCount }
 };
 
 /**
@@ -308,34 +304,34 @@ export const getActiveTrainingSeriesForClientService = async (token) => {
  */
 export const createSeriesSubscriptionService = async (subscriptionData, token) => {
   if (!token) throw new Error('Token não fornecido para criar subscrição em série.');
-  // subscriptionData = { trainingSeriesId, clientSubscriptionStartDate?, clientSubscriptionEndDate? }
-  // Assumindo que o endpoint no backend é POST /training-series/subscriptions
-  const url = `${API_URL}/training-series/subscriptions`; 
+  // subscriptionData = { trainingSeriesId, clientSubscriptionEndDate?, clientSubscriptionStartDate? }
+
+  // Verifica qual rota está implementada no teu backend para esta ação.
+  // Opção 1: Se for em trainingSeriesRoutes.js -> /training-series/subscriptions
+  const url = `${API_URL}/training-series/subscriptions`;
+  // Opção 2: Se for em trainingRoutes.js -> /trainings/${subscriptionData.trainingSeriesId}/subscribe-recurring
+  // const url = `${API_URL}/trainings/${subscriptionData.trainingSeriesId}/subscribe-recurring`;
+
   console.log('Frontend Service: Criando subscrição em série. URL:', url, 'Payload:', subscriptionData);
-  
   const response = await fetch(url, {
      method: 'POST',
-     headers: { 
+     headers: {
        'Content-Type': 'application/json',
        'Authorization': `Bearer ${token}`
      },
-     body: JSON.stringify(subscriptionData),
+     body: JSON.stringify(subscriptionData), // trainingSeriesId e clientSubscriptionEndDate
   });
-  
-  const responseText = await response.text();
-  let data;
-  try {
-    data = JSON.parse(responseText);
-  } catch (e) {
-     console.error("Falha ao parsear JSON de createSeriesSubscriptionService", e);
-     console.error("Resposta (texto):", responseText);
-     throw new Error(`Resposta do servidor para criar subscrição não é JSON. Status: ${response.status}`);
-  }
- 
+
   if (!response.ok) {
-    throw new Error(data.message || 'Erro ao inscrever-se na série de treinos.');
+    let errorData;
+    try {
+      errorData = await response.json();
+    } catch(e) {
+      throw new Error(`Erro HTTP ${response.status} ao subscrever série. Resposta não é JSON.`);
+    }
+    throw new Error(errorData.message || `Erro ${response.status} ao inscrever-se na série de treinos.`);
   }
-  return data;
+  return response.json(); // Espera-se { message, subscription, bookingsCreatedCount, bookingsSkippedCount }
 };
 
 // TODO: Adicionar mais serviços para:
