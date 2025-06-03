@@ -898,26 +898,43 @@ const CalendarPage = () => {
   };
 
   const handleOpenSubscribeToSeriesModal = (trainingResource) => {
-    if (!trainingResource || !trainingResource.trainingSeriesId) return;
+    if (!trainingResource || !trainingResource.trainingSeriesId) {
+        console.error("Este treino não parece pertencer a uma série ou falta trainingSeriesId.");
+        setPageError("Este treino não pode ser subscrito como série.");
+        return;
+    }
 
-    // A data de fim da série pode vir de trainingResource.seriesDetails.seriesEndDate se fizeste um include no backend
-    // ou de trainingResource.series.seriesEndDate se a associação 'series' for populada.
-    // Como fallback, podemos usar a data do próprio treino como um palpite inicial para o utilizador ajustar.
-    // O ideal é ter a data de fim real da série.
-    const seriesActualEndDate = trainingResource.series?.seriesEndDate || trainingResource.date; // Melhorar se possível
+    // Verifica se os detalhes da série foram incluídos pelo backend
+    if (!trainingResource.series || !trainingResource.series.seriesStartDate || !trainingResource.series.seriesEndDate) {
+        console.error("Detalhes da série (seriesStartDate, seriesEndDate) não encontrados no objeto do treino:", trainingResource);
+        setPageError("Detalhes da série incompletos. Tente recarregar a página ou contacte o suporte.");
+        // Poderias aqui tentar buscar os detalhes da série com uma chamada API extra como fallback,
+        // mas idealmente, eles viriam com o 'getAllTrainings'.
+        return;
+    }
+
+    const seriesDetails = trainingResource.series;
 
     setSelectedSeriesDetailsForSubscription({
-        id: trainingResource.trainingSeriesId,
-        name: trainingResource.name, // Ou um nome mais específico da série se disponível
-        seriesEndDate: seriesActualEndDate, // Data final da série
-        // Adiciona aqui outros detalhes da série que queiras mostrar no modal
-        dayOfWeek: new Date(trainingResource.date).getDay(), // Para informar o cliente
-        time: trainingResource.time.substring(0,5),
+        id: trainingResource.trainingSeriesId, // ou seriesDetails.id, devem ser iguais
+        name: seriesDetails.name || trainingResource.name, // Dá prioridade ao nome da série
+        seriesStartDate: seriesDetails.seriesStartDate,    // VEM DA SÉRIE!
+        seriesEndDate: seriesDetails.seriesEndDate,        // VEM DA SÉRIE!
+        dayOfWeek: seriesDetails.dayOfWeek !== null && seriesDetails.dayOfWeek !== undefined 
+                   ? seriesDetails.dayOfWeek 
+                   : new Date(trainingResource.date + 'T00:00:00').getDay(), // Fallback para dia da instância se não vier da série (ajustado para evitar invalid date)
+        time: seriesDetails.startTime ? seriesDetails.startTime.substring(0,5) : trainingResource.time.substring(0,5),
+        recurrenceType: seriesDetails.recurrenceType || 'weekly', // Para informação no modal
     });
-    setSeriesSubscriptionEndDate(''); // Limpa para o user preencher ou podes pré-preencher
+
+    // Pré-preenche a data de fim da subscrição com a data de fim da série, se existir
+    setSeriesSubscriptionEndDate(seriesDetails.seriesEndDate || '');
     setSeriesSubscriptionError('');
-    setPageError(''); setPageSuccessMessage('');
-    setShowEventModal(false); // Fecha o modal de detalhes do evento
+    setPageError(''); 
+    setPageSuccessMessage('');
+
+    // Fechar o modal de detalhes do evento e abrir o de subscrição
+    if (typeof setShowEventModal === 'function') setShowEventModal(false); // Adiciona verificação se a função existe
     setShowSubscribeSeriesModal(true);
 };
 
@@ -1171,11 +1188,16 @@ const handleCloseSubscribeSeriesModal = () => {
                 <ModalLabel htmlFor="seriesSubEndDate">Quero participar na série até à data (inclusive):*</ModalLabel>
                 <ModalInput
                   type="date"
-                  id="seriesSubEndDate"
+                  id="seriesSubEndDateCalendar"
                   value={seriesSubscriptionEndDate}
                   onChange={(e) => setSeriesSubscriptionEndDate(e.target.value)}
-                  min={moment.max(moment(), moment(selectedEvent.resource.seriesStartDate || selectedEvent.start)).format('YYYY-MM-DD')} // Não antes de hoje ou do início da série
-                  max={selectedEvent.resource.seriesEndDate || undefined} // Não depois do fim da série
+                  // A data mínima para subscrição é hoje ou o início da série, o que for mais tarde.
+                  min={moment.max(
+                        moment(), // Hoje
+                        moment(selectedSeriesDetailsForSubscription.seriesStartDate) // Início da série
+                      ).format('YYYY-MM-DD')}
+                  // A data máxima é o fim da série.
+                  max={selectedSeriesDetailsForSubscription.seriesEndDate || undefined}
                   required
                 />
                 <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop:'5px'}}>

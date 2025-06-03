@@ -115,6 +115,11 @@ const getAllTrainings = async (req, res) => {
           attributes: ['id', 'firstName', 'lastName', 'email'],
           through: { attributes: [] },
         },
+        {
+          model: db.TrainingSeries,
+          as: 'series', // Este é o alias definido na associação em Training.js
+          attributes: ['id', 'name', 'seriesStartDate', 'seriesEndDate', 'dayOfWeek', 'startTime', 'endTime', 'recurrenceType'] // Campos que podem ser úteis
+        },
       ],
       order: [['date', 'ASC'], ['time', 'ASC']],
     });
