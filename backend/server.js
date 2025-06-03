@@ -6,7 +6,9 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 require('dotenv').config();
-app.use(cors()); 
+app.use(cors({
+  origin: 'https://app-core-frontend-wdvl.onrender.com'
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
