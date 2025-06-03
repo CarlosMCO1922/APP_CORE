@@ -838,7 +838,7 @@ export const subscribeToRecurringTrainingService = async (masterTrainingId, clie
   return data; // Espera-se { message }
 };
 
-module.exports = {
+/*module.exports = {
   createTraining,
   getAllTrainings,
   getTrainingById,
@@ -859,3 +859,4 @@ module.exports = {
   adminGetTodayTrainingsCount,
   adminGetCurrentWeekSignups
 };
+*/
