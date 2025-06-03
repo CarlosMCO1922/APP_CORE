@@ -268,7 +268,7 @@ const ModalContent = styled.div`
   max-height: 90vh; overflow-y: auto;
   border-top: 3px solid ${({ theme }) => theme.colors.primary};
 `;
-const EventModalTitle = styled.h2`
+const ModalTitle = styled.h2`
   color: ${({ theme }) => theme.colors.primary};
   margin-top: 0; margin-bottom: 20px;
   font-size: clamp(1.4rem, 3.5vw, 1.7rem);
@@ -290,7 +290,7 @@ const ModalDetail = styled.p`
     font-size: 1.1em; margin-top: 4px;
   }
 `;
-const EventModalActions = styled.div`
+const ModalActions = styled.div`
   display: flex; flex-direction: column; gap: 10px;
   margin-top: 25px; padding-top: 20px;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
