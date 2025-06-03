@@ -302,15 +302,20 @@ export const getActiveTrainingSeriesForClientService = async (token) => {
 /**
  * Cliente inscreve-se numa série de treinos.
  */
+/**
+ * Cliente inscreve-se numa série de treinos.
+ * @param {object} subscriptionData - Deve conter { trainingSeriesId, clientSubscriptionEndDate }
+ * @param {string} token - Token de autenticação do cliente.
+ * @returns {Promise<object>} - A resposta da API.
+ */
 export const createSeriesSubscriptionService = async (subscriptionData, token) => {
   if (!token) throw new Error('Token não fornecido para criar subscrição em série.');
-  // subscriptionData = { trainingSeriesId, clientSubscriptionEndDate?, clientSubscriptionStartDate? }
+  if (!subscriptionData || !subscriptionData.trainingSeriesId || !subscriptionData.clientSubscriptionEndDate) {
+    throw new Error('Dados insuficientes para subscrição: trainingSeriesId e clientSubscriptionEndDate são obrigatórios.');
+  }
 
-  // Verifica qual rota está implementada no teu backend para esta ação.
-  // Opção 1: Se for em trainingSeriesRoutes.js -> /training-series/subscriptions
+  // Endpoint correto conforme backend/routes/trainingSeriesRoutes.js
   const url = `${API_URL}/training-series/subscriptions`;
-  // Opção 2: Se for em trainingRoutes.js -> /trainings/${subscriptionData.trainingSeriesId}/subscribe-recurring
-  // const url = `${API_URL}/trainings/${subscriptionData.trainingSeriesId}/subscribe-recurring`;
 
   console.log('Frontend Service: Criando subscrição em série. URL:', url, 'Payload:', subscriptionData);
   const response = await fetch(url, {
@@ -319,20 +324,26 @@ export const createSeriesSubscriptionService = async (subscriptionData, token) =
        'Content-Type': 'application/json',
        'Authorization': `Bearer ${token}`
      },
-     body: JSON.stringify(subscriptionData), // trainingSeriesId e clientSubscriptionEndDate
+     body: JSON.stringify(subscriptionData),
   });
 
+  // Tratamento de resposta mais robusto
   if (!response.ok) {
     let errorData;
+    const responseText = await response.text(); // Lê o corpo da resposta como texto primeiro
     try {
-      errorData = await response.json();
+      errorData = JSON.parse(responseText);
     } catch(e) {
-      throw new Error(`Erro HTTP ${response.status} ao subscrever série. Resposta não é JSON.`);
+      // Se não for JSON, lança um erro com o texto da resposta (ou parte dele)
+      console.error("Resposta do servidor não é JSON:", responseText);
+      throw new Error(`Erro HTTP ${response.status} ao subscrever série. Resposta: ${responseText.substring(0, 200)}...`);
     }
     throw new Error(errorData.message || `Erro ${response.status} ao inscrever-se na série de treinos.`);
   }
   return response.json(); // Espera-se { message, subscription, bookingsCreatedCount, bookingsSkippedCount }
 };
+
+
 
 // TODO: Adicionar mais serviços para:
 // - Admin: getAllTrainingSeriesAdminService (listar todas as séries), atualizar série, apagar série

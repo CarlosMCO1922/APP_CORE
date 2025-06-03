@@ -573,6 +573,7 @@ const CalendarPage = () => {
   const [showAdminCreateAppointmentModal, setShowAdminCreateAppointmentModal] = useState(false);
   const [adminAppointmentFormData, setAdminAppointmentFormData] = useState(initialAdminAppointmentFormState);
   const [adminAppointmentFormLoading, setAdminAppointmentFormLoading] = useState(false);
+  const [selectedSeriesDetailsForSubscription, setSelectedSeriesDetailsForSubscription] = useState(null);
   const [adminAppointmentModalError, setAdminAppointmentModalError] = useState('');
   const [adminStaffListForAppointment, setAdminStaffListForAppointment] = useState([]);
   const [adminUserListForAppointment, setAdminUserListForAppointment] = useState([]);
@@ -896,27 +897,36 @@ const CalendarPage = () => {
     }
   };
 
-  const handleOpenSubscribeToSeriesModal = () => {
-    if (!selectedEvent || !selectedEvent.resource.trainingSeriesId) return;
-    
-    // Tenta buscar a seriesEndDate da instância ou da série completa, se disponível
-    // O teu evento no calendário (selectedEvent.resource) pode já ter a série completa via include do backend,
-    // ou podes precisar buscar os detalhes da série TrainingSeries separadamente se não os tiveres.
-    // Por agora, vou assumir que tens acesso a series.seriesEndDate de alguma forma.
-    // Se não, precisarias buscar os detalhes da TrainingSeries pelo selectedEvent.resource.trainingSeriesId.
-    const seriesEndDate = selectedEvent.resource.seriesDetails?.seriesEndDate || selectedEvent.resource.seriesEndDate || ''; // Ajusta conforme os teus dados
-    
-    setSeriesSubscriptionEndDate(seriesEndDate); // Preenche com o fim da série como default
-    setSeriesSubscriptionError('');
-    setPageError(''); setPageSuccessMessage(''); // Limpa mensagens da página
-    setShowSubscribeSeriesModal(true);
-  };
+  const handleOpenSubscribeToSeriesModal = (trainingResource) => {
+    if (!trainingResource || !trainingResource.trainingSeriesId) return;
 
-  const handleCloseSubscribeSeriesModal = () => {
+    // A data de fim da série pode vir de trainingResource.seriesDetails.seriesEndDate se fizeste um include no backend
+    // ou de trainingResource.series.seriesEndDate se a associação 'series' for populada.
+    // Como fallback, podemos usar a data do próprio treino como um palpite inicial para o utilizador ajustar.
+    // O ideal é ter a data de fim real da série.
+    const seriesActualEndDate = trainingResource.series?.seriesEndDate || trainingResource.date; // Melhorar se possível
+
+    setSelectedSeriesDetailsForSubscription({
+        id: trainingResource.trainingSeriesId,
+        name: trainingResource.name, // Ou um nome mais específico da série se disponível
+        seriesEndDate: seriesActualEndDate, // Data final da série
+        // Adiciona aqui outros detalhes da série que queiras mostrar no modal
+        dayOfWeek: new Date(trainingResource.date).getDay(), // Para informar o cliente
+        time: trainingResource.time.substring(0,5),
+    });
+    setSeriesSubscriptionEndDate(''); // Limpa para o user preencher ou podes pré-preencher
+    setSeriesSubscriptionError('');
+    setPageError(''); setPageSuccessMessage('');
+    setShowEventModal(false); // Fecha o modal de detalhes do evento
+    setShowSubscribeSeriesModal(true);
+};
+
+const handleCloseSubscribeSeriesModal = () => {
     setShowSubscribeSeriesModal(false);
+    setSelectedSeriesDetailsForSubscription(null);
     setSeriesSubscriptionEndDate('');
     setSeriesSubscriptionError('');
-  };
+};
 
   const handleSeriesSubscriptionSubmit = async (e) => {
     e.preventDefault(); // Se for um formulário
@@ -1038,6 +1048,16 @@ const CalendarPage = () => {
             <ModalActions>
               <ModalButton onClick={handleCloseEventModal} secondary>Fechar</ModalButton>
               {isClient && selectedEvent.type === 'training' && (myBookedTrainingIds.has(selectedEvent.id) ? <ModalButton onClick={handleCancelTrainingBooking} disabled={actionLoading} danger> {actionLoading ? 'Aguarde...' : 'Cancelar Inscrição'} </ModalButton> : (selectedEvent.capacity - (selectedEvent.participantsCount ?? selectedEvent.participants?.length ?? 0)) > 0 && <ModalButton onClick={handleBookSelectedTraining} disabled={actionLoading} primary> {actionLoading ? 'Aguarde...' : 'Inscrever-me'} </ModalButton>)}
+              {isClient && selectedEvent.type === 'training' && selectedEvent.trainingSeriesId && !myBookedTrainingIds.has(selectedEvent.id) && (
+            <ModalButton
+                onClick={() => handleOpenSubscribeToSeriesModal(selectedEvent)}
+                disabled={actionLoading} // ou isSubscribingRecurring
+                primary // ou um estilo diferente
+                style={{ backgroundColor: theme.colors.success, marginTop: '10px' }} // Exemplo de cor diferente
+              >
+                <FaRedo style={{ marginRight: '8px' }} /> Inscrever Semanalmente (Série)
+            </ModalButton>
+            )}
               {isClient && selectedEvent.type === 'appointment' && (myBookedAppointmentIds.has(selectedEvent.id) ? <ModalButton onClick={handleCancelAppointmentBooking} disabled={actionLoading} danger> {actionLoading ? 'Aguarde...' : 'Cancelar Consulta'} </ModalButton> : selectedEvent.status === 'disponível' && !selectedEvent.userId && <ModalButton onClick={handleBookSelectedAppointment} disabled={actionLoading} primary> {actionLoading ? 'Aguarde...' : 'Marcar Consulta'} </ModalButton>)}
               {isAdminOrStaff && (<ModalButton onClick={handleAdminManageEvent} primary>Gerir Evento</ModalButton>)}
             </ModalActions>
@@ -1237,7 +1257,70 @@ const CalendarPage = () => {
                   </ModalContent>
               </ModalOverlay>
           )}
+          {showSubscribeSeriesModal && selectedSeriesDetailsForSubscription && (
+            <ModalOverlay onClick={handleCloseSubscribeSeriesModal}>
+              <ModalContent onClick={e => e.stopPropagation()}>
+                <CloseButton onClick={handleCloseSubscribeSeriesModal}><FaTimes /></CloseButton>
+                <ModalTitle>Inscrever na Série: {selectedSeriesDetailsForSubscription.name.split(' - ')[0]}</ModalTitle>
 
+                <ModalDetail>
+                  Este treino repete-se todas as <strong>{moment(selectedSeriesDetailsForSubscription.date).locale('pt').format('dddd')}s</strong> às <strong>{selectedSeriesDetailsForSubscription.time}</strong>.
+                </ModalDetail>
+                <ModalDetail>
+                  A série termina em: <strong>{selectedSeriesDetailsForSubscription.seriesEndDate ? new Date(selectedSeriesDetailsForSubscription.seriesEndDate).toLocaleDateString('pt-PT') : 'N/A'}</strong>.
+                </ModalDetail>
+
+                {seriesSubscriptionError && <ModalErrorText>{seriesSubscriptionError}</ModalErrorText>}
+
+                <ModalForm onSubmit={async (e) => { // Adaptação da lógica de submit
+                  e.preventDefault();
+                  if (!selectedSeriesDetailsForSubscription?.id || !seriesSubscriptionEndDate) {
+                    setSeriesSubscriptionError("Por favor, selecione uma data de fim para a subscrição.");
+                    return;
+                  }
+                  setIsSubscribingRecurring(true);
+                  setSeriesSubscriptionError(''); setPageError(''); setPageSuccessMessage('');
+
+                  try {
+                    const subscriptionPayload = {
+                      trainingSeriesId: selectedSeriesDetailsForSubscription.id,
+                      clientSubscriptionEndDate: seriesSubscriptionEndDate,
+                    };
+                    const result = await createSeriesSubscriptionService(subscriptionPayload, authState.token);
+                    setPageSuccessMessage(result.message || "Inscrição na série realizada com sucesso! As suas aulas foram adicionadas ao calendário.");
+                    fetchPageData(); // Re-busca todos os eventos
+                    handleCloseSubscribeSeriesModal();
+                  } catch (err) {
+                    setSeriesSubscriptionError(err.message || "Falha ao subscrever a série.");
+                  } finally {
+                    setIsSubscribingRecurring(false);
+                  }
+                }}>
+                  <ModalLabel htmlFor="seriesSubEndDateCalendar">Quero participar nesta série até à data (inclusive):*</ModalLabel>
+                  <ModalInput
+                    type="date"
+                    id="seriesSubEndDateCalendar"
+                    value={seriesSubscriptionEndDate}
+                    onChange={(e) => setSeriesSubscriptionEndDate(e.target.value)}
+                    min={moment().format('YYYY-MM-DD')} // Não antes de hoje
+                    max={selectedSeriesDetailsForSubscription.seriesEndDate || undefined} // Não depois do fim da série
+                    required
+                  />
+                  <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop:'5px'}}>
+                    A sua inscrição será para todas as aulas desta série que ocorram até à data selecionada.
+                  </p>
+                  <ModalActions>
+                    <ModalButton type="button" secondary onClick={handleCloseSubscribeSeriesModal} disabled={isSubscribingRecurring}>
+                      Cancelar
+                    </ModalButton>
+                    <ModalButton type="submit" primary disabled={isSubscribingRecurring}>
+                      {isSubscribingRecurring ? 'A Inscrever...' : 'Confirmar Inscrição na Série'}
+                    </ModalButton>
+                  </ModalActions>
+                </ModalForm>
+              </ModalContent>
+            </ModalOverlay>
+          )}
     </PageContainer>
   );
 };
