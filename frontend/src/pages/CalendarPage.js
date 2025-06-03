@@ -9,6 +9,7 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import moment from 'moment';
 import { theme } from '../theme'; // Assume que tem um theme.js exportando o tema
 
 import { useAuth } from '../context/AuthContext';
@@ -922,7 +923,7 @@ const CalendarPage = () => {
       setSeriesSubscriptionError("Por favor, selecione uma data de fim para a subscrição.");
       return;
     }
-    setFormLoading(true); // Ou um estado de loading específico para este modal
+    setIsSubscribingRecurring(true); // Ou um estado de loading específico para este modal
     setSeriesSubscriptionError(''); setPageError(''); setPageSuccessMessage('');
 
     try {
@@ -941,7 +942,7 @@ const CalendarPage = () => {
     } catch (err) {
       setSeriesSubscriptionError(err.message || "Falha ao subscrever a série.");
     } finally {
-      setFormLoading(false);
+      setIsSubscribingRecurring(false);
     }
   };
 
@@ -1145,7 +1146,7 @@ const CalendarPage = () => {
               <ModalTitle>Inscrever na Série: {selectedEvent.title}</ModalTitle>
               {seriesSubscriptionError && <ModalErrorText>{seriesSubscriptionError}</ModalErrorText>}
               
-              <ModalForm onSubmit={handleSeriesSubscriptionSubmit}>
+              <RequestModalForm onSubmit={handleSeriesSubscriptionSubmit}>
                 <ModalLabel htmlFor="seriesSubEndDate">Quero participar na série até à data (inclusive):*</ModalLabel>
                 <ModalInput
                   type="date"
@@ -1160,14 +1161,14 @@ const CalendarPage = () => {
                   A sua inscrição será para todas as aulas desta série que ocorram até à data selecionada.
                 </p>
                 <ModalActions>
-                  <ModalButton type="button" secondary onClick={handleCloseSubscribeSeriesModal} disabled={formLoading}>
+                  <ModalButton type="button" secondary onClick={handleCloseSubscribeSeriesModal} disabled={isSubscribingRecurring}>
                     Cancelar
                   </ModalButton>
                   <ModalButton type="submit" primary disabled={formLoading}>
-                    {formLoading ? 'A Subscrever...' : 'Confirmar Inscrição na Série'}
+                    {isSubscribingRecurring ? 'A Subscrever...' : 'Confirmar Inscrição na Série'}
                   </ModalButton>
                 </ModalActions>
-              </ModalForm>
+              </RequestModalForm>
             </ModalContent>
           </ModalOverlay>
         )}
