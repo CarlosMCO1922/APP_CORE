@@ -71,7 +71,11 @@ exports.createSeriesSubscription = async (req, res) => {
                     [Op.gte]: effectiveSubStartDate,
                     [Op.lte]: effectiveSubEndDate,
                 },
-                status: 'scheduled', // Apenas inscreve em aulas agendadas
+                isGeneratedInstance: true,
+                date: {
+                    [Op.gte]: moment().format('YYYY-MM-DD'), // A partir de hoje
+                    [Op.lte]: effectiveSubEndDate,
+                },
             },
             // attributes: ['id', 'capacity'], // Podes precisar de mais atributos se o addParticipant os usar
             transaction
