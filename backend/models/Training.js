@@ -48,28 +48,6 @@ module.exports = (sequelize) => {
     isGeneratedInstance: { // Flag para identificar facilmente instâncias geradas
         type: DataTypes.BOOLEAN,
         defaultValue: false,
-    },
-    isRecurringMaster: { // Se este é o treino "molde" para uma recorrência
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      allowNull: false,
-    },
-    recurrenceType: { // Por agora, podemos focar-nos em 'weekly'
-      type: DataTypes.ENUM('weekly', 'daily', 'monthly'), // Começaremos com 'weekly'
-      allowNull: true, // Só é preenchido se isRecurringMaster = true
-    },
-    recurrenceEndDate: { // Até quando a série de treinos se repete
-      type: DataTypes.DATEONLY,
-      allowNull: true, // Só é preenchido se isRecurringMaster = true
-    },
-    parentRecurringTrainingId: { // Para instâncias geradas, aponta para o ID do Training mestre
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'trainings', // Auto-referência à tabela 'trainings'
-        key: 'id',
-      },
-      onDelete: 'CASCADE', // Se o mestre for apagado, as instâncias também
     }
   }, {
     tableName: 'trainings',
@@ -112,15 +90,6 @@ module.exports = (sequelize) => {
     Training.belongsTo(models.TrainingSeries, {
       foreignKey: 'trainingSeriesId',
       as: 'series',
-    });
-
-    Training.belongsTo(models.Training, { // Um treino instância pertence a um treino mestre
-      foreignKey: 'parentRecurringTrainingId',
-      as: 'masterTraining',
-    });
-    Training.hasMany(models.Training, { // Um treino mestre tem muitas instâncias
-      foreignKey: 'parentRecurringTrainingId',
-      as: 'recurringInstances',
     });
     // A associação Staff.hasMany(models.Training, ...) já deve estar no Staff.js
   };
