@@ -627,7 +627,7 @@ const AdminManageTrainingsPage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setPageError("A tua mensagem de erro aqui"); setModalError(''); setError(''); setSuccessMessage('');
+    setPageError("A tua mensagem de erro aqui");
 
     if (currentTrainingData.isRecurring) {
         // Lógica para criar SÉRIE DE TREINOS

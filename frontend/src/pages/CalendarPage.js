@@ -580,6 +580,7 @@ const CalendarPage = () => {
   const [showSubscribeSeriesModal, setShowSubscribeSeriesModal] = useState(false);
   const [seriesSubscriptionEndDate, setSeriesSubscriptionEndDate] = useState('');
   const [seriesSubscriptionError, setSeriesSubscriptionError] = useState('');
+  const [isSubscribingRecurring, setIsSubscribingRecurring] = useState(false);
   
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -1164,7 +1165,7 @@ const CalendarPage = () => {
                   <ModalButton type="button" secondary onClick={handleCloseSubscribeSeriesModal} disabled={isSubscribingRecurring}>
                     Cancelar
                   </ModalButton>
-                  <ModalButton type="submit" primary disabled={formLoading}>
+                  <ModalButton type="submit" primary disabled={isSubscribingRecurring}>
                     {isSubscribingRecurring ? 'A Subscrever...' : 'Confirmar Inscrição na Série'}
                   </ModalButton>
                 </ModalActions>
