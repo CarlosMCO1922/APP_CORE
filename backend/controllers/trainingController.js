@@ -1,8 +1,8 @@
 // backend/controllers/trainingController.js
-const { Op } = require('sequelize'); // Importação direta de Op
-const db = require('../models');
-const { startOfWeek, endOfWeek, format } = require('date-fns');
-const { _internalCreateNotification } = require('./notificationController');
+import { Op } from 'sequelize';
+import db from '../models/index.js'; // Or simply '../models' if your setup resolves it, but explicit .js or /index.js is safer for ESM
+import { startOfWeek, endOfWeek, format } from 'date-fns';
+import { _internalCreateNotification } from './notificationController.js'; 
 
 // @desc    Criar um novo treino
 // @route   POST /api/trainings
