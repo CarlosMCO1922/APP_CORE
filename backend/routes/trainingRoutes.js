@@ -11,11 +11,10 @@ router.post('/', protect, isAdminStaff, trainingController.createTraining);
 router.get('/:id', protect, trainingController.getTrainingById);
 router.post('/:id/book', protect, isClientUser, trainingController.bookTraining);
 router.delete('/:id/book', protect, isClientUser, trainingController.cancelTrainingBooking);
-router.post('/', protect, isAdminStaff, trainingController.createTraining);
 router.put('/:id', protect, isAdminStaff, trainingController.updateTraining);
 router.delete('/:id', protect, isAdminStaff, trainingController.deleteTraining);
 
-router.post('/:masterTrainingId/subscribe-recurring', /*protect, isClientUser,*/ trainingController.subscribeToRecurringTraining);
+router.post('/:masterTrainingId/subscribe-recurring', /* protect, isClientUser, */ trainingController.subscribeToRecurringTrainingService);
 
 router.post(
     '/:trainingId/admin-book-client',

@@ -314,6 +314,44 @@ const CloseButton = styled.button`
   &:hover { color: #fff; transform: scale(1.1) rotate(90deg); }
 `;
 
+const ActionButton = styled.button`
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  background-color: ${props => {
+    if (props.danger) return props.theme.colors.error;
+    if (props.secondary) return props.theme.colors.buttonSecondaryBg;
+    // Add other variants if used by ModalButton
+    return props.theme.colors.primary;
+  }};
+  color: ${props => (props.danger || props.secondary) ? 'white' : props.theme.colors.textDark};
+
+  &:hover:not(:disabled) {
+    opacity: 0.85;
+    transform: translateY(-1px);
+  }
+  &:disabled {
+    background-color: #404040;
+    color: #777;
+    cursor: not-allowed;
+  }
+`;
+
+const ModalButton = styled(ActionButton)` /* Existing definition */
+  font-size: 0.9rem; 
+  padding: 10px 18px;
+  gap: 6px;
+  width: 100%;
+  @media (min-width: 480px) { width: auto; }
+`;
+
 const RequestModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
 const RequestModalLabel = styled.label` font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 3px; display: block; font-weight: 500;`;
 const RequestModalInput = styled.input` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
