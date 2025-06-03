@@ -18,9 +18,10 @@ import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
 import {
     FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft,
-    FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus, FaLevelUpAlt
+    FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus, FaLevelUpAlt, FaRedoAlt
 } from 'react-icons/fa';
 import { theme } from '../../theme';
+import moment from 'moment';
 
 // --- Styled Components (Completos) ---
 const PageContainer = styled.div`
@@ -491,10 +492,11 @@ const WaitlistSectionTitle = styled.h4`
 
 
 const initialTrainingFormState = {
-  name: '', description: '', date: '', time: '',
-  capacity: 10, instructorId: '', durationMinutes: 45, isRecurringMaster: false,
-  recurrenceType: 'weekly', 
-  recurrenceEndDate: '',
+name: '', description: '', date: '', time: '12:00', // Default time
+capacity: 10, instructorId: '', durationMinutes: 45,
+isRecurringMaster: false,
+recurrenceType: 'weekly',
+recurrenceEndDate: '',
 };
 
 const AdminManageTrainingsPage = () => {

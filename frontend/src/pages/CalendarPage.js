@@ -22,9 +22,9 @@ import {
 } from '../services/trainingService';
 import {
     getAllAppointments,
-    bookAppointment as bookAppointmentService,
-    cancelAppointmentBooking as cancelAppointmentBookingService,
     clientRequestNewAppointment,
+    bookAppointment as bookAppointmentService, 
+    cancelAppointmentBooking as cancelAppointmentBookingService, 
     adminCreateAppointment
 } from '../services/appointmentService';
 import { getAllStaffForSelection, adminGetAllStaff } from '../services/staffService';
@@ -33,7 +33,7 @@ import { adminGetAllUsers } from '../services/userService';
 import {
     FaArrowLeft, FaTimes, FaUsers, FaUserMd, FaExternalLinkAlt,
     FaCalendarPlus, FaInfoCircle, FaCalendarDay, FaClock, FaUserCircle, FaStickyNote,
-    FaDumbbell
+    FaDumbbell, FaRedo
 } from 'react-icons/fa';
 
 const locales = { 'pt-BR': ptBR };
@@ -270,7 +270,7 @@ const ModalContent = styled.div`
   max-height: 90vh; overflow-y: auto;
   border-top: 3px solid ${({ theme }) => theme.colors.primary};
 `;
-const ModalTitle = styled.h2`
+const EventModalTitle = styled.h2`
   color: ${({ theme }) => theme.colors.primary};
   margin-top: 0; margin-bottom: 20px;
   font-size: clamp(1.4rem, 3.5vw, 1.7rem);
@@ -292,13 +292,13 @@ const ModalDetail = styled.p`
     font-size: 1.1em; margin-top: 4px;
   }
 `;
-const ModalActions = styled.div`
+const EventModalActions = styled.div`
   display: flex; flex-direction: column; gap: 10px;
   margin-top: 25px; padding-top: 20px;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
   @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
 `;
-const ModalButton = styled.button`
+const EventModalButton = styled.button`
   background-color: ${props => props.danger ? props.theme.colors.error : (props.primary ? props.theme.colors.primary : props.theme.colors.buttonSecondaryBg)};
   color: ${props => props.danger ? 'white' : (props.primary ? props.theme.colors.textDark : props.theme.colors.textMain)};
   padding: 10px 18px; border-radius: ${({ theme }) => theme.borderRadius};
@@ -437,6 +437,31 @@ const AdminModalTextarea = styled.textarea` padding: 10px 14px; background-color
 const AdminModalSelect = styled.select` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
 const AdminModalButton = styled(ModalButton)``;
 
+const SubscriptionFormGroup = styled.div`
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'};
+`;
+const SubscriptionLabel = styled(ModalLabel)``; // Reutilizar ModalLabel
+const SubscriptionInput = styled(ModalInput)``; // Reutilizar ModalInput
+const SubscriptionButton = styled(EventModalButton)` // Reutilizar EventModalButton
+  width: 100%;
+  margin-top: 10px;
+  &.subscribe { // Classe para dar estilo específico ao botão de subscrever
+    background-color: ${({ theme }) => theme.colors.success};
+    color: white;
+     &:hover:not(:disabled) {
+        background-color: ${({ theme }) => theme.colors.successDark || '#5cb85c' } ;
+     }
+  }
+`;
+const SubscriptionMessageText = styled.p`
+    font-size: 0.85rem; text-align: center; padding: 8px; margin-top: 10px;
+    border-radius: ${({theme}) => theme.borderRadius}; border-width: 1px; border-style: solid;
+    &.success { color: ${({ theme }) => theme.colors.success}; background-color: ${({ theme }) => theme.colors.successBg}; border-color: ${({ theme }) => theme.colors.success};}
+    &.error { color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border-color: ${({ theme }) => theme.colors.error};}
+`;
+
 
 const CustomEventComponent = ({ event }) => (
   <EventComponentStyled title={event.title + (event.resource.type === 'training' ? ` (${(event.resource.participantsCount ?? event.resource.participants?.length ?? 0)}/${event.resource.capacity})` : '')}>
@@ -489,6 +514,12 @@ const CalendarPage = () => {
   const [adminAppointmentModalError, setAdminAppointmentModalError] = useState('');
   const [adminStaffListForAppointment, setAdminStaffListForAppointment] = useState([]);
   const [adminUserListForAppointment, setAdminUserListForAppointment] = useState([]);
+
+  const [showRecurringOptionsModal, setShowRecurringOptionsModal] = useState(false); // Renomeado para clareza
+  const [clientRecurringEndDate, setClientRecurringEndDate] = useState('');
+  const [recurringSubscriptionMessage, setRecurringSubscriptionMessage] = useState({type: '', text: ''});
+  const [isSubscribingRecurring, setIsSubscribingRecurring] = useState(false);
+
 
   const [actionLoading, setActionLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -812,34 +843,34 @@ const CalendarPage = () => {
     }
   };
 
-  const handleSubscribeToRecurring = async () => {
-    if (!selectedEvent || !clientRecurringEndDate) {
-      setRecurringSubscriptionMessage({type: 'error', text: 'Por favor, selecione uma data de fim para a sua inscrição.'});
+  const handleSubscribeToRecurring = async (e) => {
+    e.preventDefault(); 
+    if (!selectedEvent || !clientRecurringEndDate || !selectedEvent.isRecurringMaster) {
+      setRecurringSubscriptionMessage({type: 'error', text: 'Informação do treino ou data de fim em falta.'});
       return;
     }
-    if (new Date(clientRecurringEndDate) > new Date(selectedEvent.recurrenceEndDate)) {
-      setRecurringSubscriptionMessage({type: 'error', text: 'A sua data de fim não pode ser posterior ao fim da série de treinos.'});
+    if (moment(clientRecurringEndDate).isAfter(moment(selectedEvent.recurrenceEndDate))) {
+      setRecurringSubscriptionMessage({type: 'error', text: `A sua data de fim não pode ser posterior a ${moment(selectedEvent.recurrenceEndDate).format('L')} (fim da série).`});
       return;
     }
-    if (new Date(clientRecurringEndDate) < new Date(selectedEvent.date)) {
-      setRecurringSubscriptionMessage({type: 'error', text: 'A sua data de fim não pode ser anterior ao início do treino.'});
-      return;
+     if (moment(clientRecurringEndDate).isBefore(moment(selectedEvent.date))) {
+     setRecurringSubscriptionMessage({type: 'error', text: 'A sua data de fim não pode ser anterior ao início do treino.'});
+     return;
    }
-    setIsSubscribingRecurring(true);
-   setRecurringSubscriptionMessage({type: '', text: ''});
-   try {
-     const result = await subscribeToRecurringTrainingService(selectedEvent.id, clientRecurringEndDate, authState.token);
-     setRecurringSubscriptionMessage({type: 'success', text: result.message || 'Inscrição recorrente realizada com sucesso!'});
-     fetchPageData(); // Rebuscar todos os eventos para atualizar o calendário e bookings
-     // Opcional: Fechar todos os modais após um tempo ou deixar o utilizador fechar
-     // setTimeout(() => {
-     //   handleCloseEventModal(); 
-     // }, 3000);
-   } catch (err) {
-     setRecurringSubscriptionMessage({type: 'error', text: err.message || 'Falha ao realizar inscrição recorrente.'});
-   } finally {
-     setIsSubscribingRecurring(false);
-   }
+
+    setIsSubscribingRecurring(true); // Corrigido para setIsSubscribingRecurring
+    setRecurringSubscriptionMessage({type: '', text: ''});
+    setPageSuccessMessage(''); setPageError(''); 
+    try {
+      const result = await subscribeToRecurringTrainingService(selectedEvent.id, clientRecurringEndDate, authState.token);
+      setRecurringSubscriptionMessage({type: 'success', text: result.message || 'Inscrição recorrente realizada com sucesso!'});
+      fetchPageData(); 
+      setShowRecurringOptionsModal(false); // Corrigido para setShowRecurringOptionsModal
+    } catch (err) {
+      setRecurringSubscriptionMessage({type: 'error', text: err.message || 'Falha na inscrição recorrente.'});
+    } finally {
+      setIsSubscribingRecurring(false); // Corrigido para setIsSubscribingRecurring
+    }
  };
 
   if (loading) return <PageContainer><LoadingText>A carregar calendário...</LoadingText></PageContainer>;

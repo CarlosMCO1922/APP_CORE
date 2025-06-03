@@ -1,486 +1,861 @@
 // backend/controllers/trainingController.js
+const { Op } = require('sequelize'); // Para operadores como "greater than or equal"
 const db = require('../models');
-const { Op } = require('sequelize');
-const moment = require('moment'); // Para manipulação de datas
-const { format, startOfWeek, endOfWeek } = require('date-fns');
+const { startOfWeek, endOfWeek, format } = require('date-fns');
 const { _internalCreateNotification } = require('./notificationController');
 
-// --- Função Auxiliar para Gerar Instâncias Recorrentes ---
-const generateRecurringInstances = async (masterTraining, transaction) => {
-  if (!masterTraining.isRecurringMaster || !masterTraining.recurrenceType || !masterTraining.recurrenceEndDate) {
-    console.log(`[generateRecurringInstances] Treino ID ${masterTraining.id} não é mestre recorrente ou faltam dados de recorrência.`);
-    return [];
-  }
-
-  const instancesToCreate = [];
-  // A data do masterTraining é a primeira instância, já existe.
-  // Começamos a gerar a partir da próxima ocorrência teórica.
-  let currentDate = moment(masterTraining.date).clone(); 
-  const finalRecurrenceEndDate = moment(masterTraining.recurrenceEndDate);
-
-  // Apagar instâncias futuras existentes (EXCETO o próprio mestre se ele for uma instância válida)
-  // que não tenham bookings para este mestre, para evitar duplicados ao atualizar.
-  // Instâncias com bookings devem ser tratadas com mais cuidado (ex: notificar, não apagar).
-  // Por simplicidade inicial, vamos apagar as que ainda não têm bookings.
-  const existingInstances = await db.Training.findAll({
-    where: {
-      parentRecurringTrainingId: masterTraining.id,
-      date: { [Op.gt]: masterTraining.date } // Apenas instâncias futuras em relação à data do mestre
-    },
-    include: [{ model: db.User, as: 'participants', attributes: ['id'] }],
-    transaction
-  });
-
-  const instancesToDelete = existingInstances.filter(inst => (!inst.participants || inst.participants.length === 0));
-  if (instancesToDelete.length > 0) {
-    await db.Training.destroy({
-      where: {
-        id: { [Op.in]: instancesToDelete.map(inst => inst.id) }
-      },
-      transaction
-    });
-    console.log(`[generateRecurringInstances] ${instancesToDelete.length} instâncias futuras sem bookings foram apagadas para o mestre ID ${masterTraining.id}.`);
-  }
-  
-  // Determinar a data da próxima instância a ser criada
-  if (masterTraining.recurrenceType === 'weekly') {
-    currentDate.add(1, 'week');
-  } else if (masterTraining.recurrenceType === 'daily') {
-    currentDate.add(1, 'day');
-  } // Adicionar 'monthly' se necessário
-
-  while (currentDate.isSameOrBefore(finalRecurrenceEndDate)) {
-    if (masterTraining.recurrenceType === 'weekly') {
-      // Para semanal, a data já avança de semana em semana. O dia da semana é o mesmo do mestre.
-      // Se currentDate.day() não for o mesmo que moment(masterTraining.date).day(), algo está errado com a lógica de incremento.
-      // No entanto, ao fazer .add(1, 'week'), o dia da semana mantém-se.
-    } else if (masterTraining.recurrenceType === 'daily') {
-      // Para diário, todas as datas são válidas
-    } 
-    // Adicionar lógica para 'monthly' se necessário (ex: mesmo dia do mês, ou Xª Y-feira do mês)
-
-    // Só cria se ainda não existir uma instância (seja mestre ou gerada) com esta data e hora para este instrutor
-    // Ou se a instância existente que foi mantida (com bookings) não coincide com esta data exata.
-    // Esta verificação previne recriar uma instância que foi mantida porque tinha bookings.
-    const conflictingInstanceCheck = await db.Training.findOne({
-        where: {
-            instructorId: masterTraining.instructorId,
-            date: currentDate.format('YYYY-MM-DD'),
-            time: masterTraining.time,
-            // Se a instância for parte de outra série OU um treino único no mesmo horário
-            [Op.or]: [
-                { parentRecurringTrainingId: { [Op.ne]: masterTraining.id } }, // Não é uma instância DESTE mestre
-                { parentRecurringTrainingId: null, isRecurringMaster: false }  // É um treino único
-            ]
-        },
-        transaction
-    });
-    // E também verificar se esta instância específica (mesmo pai, mesma data) já não existe (caso tenha sido mantida)
-    const thisExactInstanceExists = existingInstances.some(inst => 
-        moment(inst.date).isSame(currentDate, 'day') && 
-        inst.time === masterTraining.time
-    );
-
-
-    if (!conflictingInstanceCheck && !thisExactInstanceExists) {
-        instancesToCreate.push({
-            name: `${masterTraining.name}`, // Manter o nome do mestre para as instâncias
-            description: masterTraining.description,
-            date: currentDate.format('YYYY-MM-DD'),
-            time: masterTraining.time,
-            durationMinutes: masterTraining.durationMinutes,
-            capacity: masterTraining.capacity,
-            instructorId: masterTraining.instructorId,
-            status: 'scheduled',
-            isRecurringMaster: false,
-            parentRecurringTrainingId: masterTraining.id,
-            isGeneratedInstance: true,
-            // workoutPlanId: masterTraining.workoutPlanId, // Se tiver
-        });
-    }
-
-    if (masterTraining.recurrenceType === 'weekly') {
-      currentDate.add(1, 'week');
-    } else if (masterTraining.recurrenceType === 'daily') {
-      currentDate.add(1, 'day');
-    }
-    // Adicionar incremento para 'monthly'
-  }
-
-  if (instancesToCreate.length > 0) {
-    const created = await db.Training.bulkCreate(instancesToCreate, { transaction });
-    console.log(`[generateRecurringInstances] ${created.length} novas instâncias geradas para o mestre ID ${masterTraining.id}.`);
-    return created;
-  }
-  return [];
-};
-
-// @desc    Admin cria um novo treino (pode ser recorrente)
+// @desc    Criar um novo treino
 // @route   POST /api/trainings
 // @access  Privado (Admin Staff)
-exports.createTraining = async (req, res) => {
-  const { 
-    name, description, date, time, capacity, instructorId, durationMinutes,
-    isRecurringMaster, recurrenceType, recurrenceEndDate 
-  } = req.body;
+const createTraining = async (req, res) => {
+  const { name, description, date, time, capacity, instructorId } = req.body;
 
-  if (!name || !date || !time || capacity === undefined || instructorId === undefined || durationMinutes === undefined) {
-    return res.status(400).json({ message: 'Campos obrigatórios em falta (nome, data, hora, capacidade, instrutor, duração).' });
+  // Validação básica de entrada
+  if (!name || !date || !time || !capacity || !instructorId) {
+    return res.status(400).json({ message: 'Por favor, forneça nome, data, hora, capacidade e ID do instrutor.' });
   }
-  if (isRecurringMaster && (!recurrenceType || !recurrenceEndDate)) {
-    return res.status(400).json({ message: 'Para treinos recorrentes, tipo e data de fim da recorrência são obrigatórios.' });
+  if (isNaN(parseInt(capacity)) || parseInt(capacity) <= 0) {
+    return res.status(400).json({ message: 'A capacidade deve ser um número positivo.' });
   }
-  if (isRecurringMaster && recurrenceType !== 'weekly') { // POR AGORA SÓ SEMANAL
-    return res.status(400).json({ message: 'De momento, apenas recorrência semanal é suportada.' });
-  }
-  if (isRecurringMaster && moment(recurrenceEndDate).isBefore(date)) {
-    return res.status(400).json({ message: 'A data de fim da recorrência não pode ser anterior à data de início do treino mestre.' });
+  if (isNaN(parseInt(instructorId))) {
+      return res.status(400).json({ message: 'O ID do instrutor deve ser um número.' });
   }
 
-
-  const transaction = await db.sequelize.transaction();
   try {
-    const instructor = await db.Staff.findByPk(parseInt(instructorId), { transaction });
-    if (!instructor || !['trainer', 'admin', 'physiotherapist'].includes(instructor.role)) { // Adicionado physiotherapist se puderem ser instrutores
-      await transaction.rollback();
-      return res.status(400).json({ message: 'Instrutor inválido ou não encontrado.' });
+    // Verificar se o instrutor (Staff) existe
+    const instructor = await db.Staff.findByPk(instructorId);
+    if (!instructor) {
+      return res.status(404).json({ message: 'Instrutor não encontrado.' });
+    }
+    // Opcional: Verificar se o role do instrutor é 'trainer' ou 'admin'
+    if (!['trainer', 'admin'].includes(instructor.role)) {
+        return res.status(400).json({ message: 'O ID fornecido não pertence a um instrutor ou administrador válido.' });
     }
 
-    const masterTraining = await db.Training.create({
-      name, description, date, time, 
-      durationMinutes: parseInt(durationMinutes),
-      capacity: parseInt(capacity), 
+    const newTraining = await db.Training.create({
+      name,
+      description,
+      date,
+      time,
+      capacity: parseInt(capacity),
       instructorId: parseInt(instructorId),
-      isRecurringMaster: !!isRecurringMaster,
-      recurrenceType: isRecurringMaster ? recurrenceType : null,
-      recurrenceEndDate: isRecurringMaster ? recurrenceEndDate : null,
-      parentRecurringTrainingId: null, 
-      status: 'scheduled',
-      isGeneratedInstance: false, 
-    }, { transaction });
-
-    let generatedInstances = [];
-    if (masterTraining.isRecurringMaster) {
-      generatedInstances = await generateRecurringInstances(masterTraining, transaction);
-    }
-    
-    if (masterTraining.instructorId) {
-        _internalCreateNotification({
-            recipientStaffId: masterTraining.instructorId,
-            message: `Foi-lhe atribuído um novo treino ${masterTraining.isRecurringMaster ? 'recorrente (mestre)' : ''}: "${masterTraining.name}" com início a ${format(new Date(masterTraining.date), 'dd/MM/yyyy')} às ${masterTraining.time.substring(0,5)}.`,
-            type: 'NEW_TRAINING_ASSIGNED',
-            relatedResourceId: masterTraining.id,
-            relatedResourceType: 'training',
-            link: `/admin/calendario-geral` 
-        });
-    }
-
-    await transaction.commit();
-    res.status(201).json({ 
-        message: `Treino ${masterTraining.isRecurringMaster ? `mestre e ${generatedInstances.length} instâncias recorrentes criados` : 'criado'} com sucesso!`,
-        training: masterTraining,
-        instancesGeneratedCount: generatedInstances.length
     });
 
-  } catch (error) {
-    await transaction.rollback();
-    console.error('Erro ao criar treino:', error);
-    if (error.name === 'SequelizeValidationError') {
-        return res.status(400).json({ message: 'Erro de validação', errors: error.errors.map(e => e.message) });
+    if (newTraining.instructorId) {
+      _internalCreateNotification({
+        recipientStaffId: newTraining.instructorId,
+        message: `Foi-lhe atribuído um novo treino: "${newTraining.name}" no dia ${format(new Date(newTraining.date), 'dd/MM/yyyy')} às ${newTraining.time.substring(0,5)}.`,
+        type: 'NEW_TRAINING_ASSIGNED',
+        relatedResourceId: newTraining.id,
+        relatedResourceType: 'training',
+        link: `/calendario` // Ou um link específico para o treino no painel do staff
+      });
     }
-    res.status(500).json({ message: 'Erro interno do servidor ao criar o treino.', errorDetails: error.message });
+
+    res.status(201).json(newTraining);
+  } catch (error) {
+    console.error('Erro ao criar treino:', error);
+    // Verificar erros de validação do Sequelize
+    if (error.name === 'SequelizeValidationError') {
+        const messages = error.errors.map(e => e.message);
+        return res.status(400).json({ message: 'Erro de validação', errors: messages });
+    }
+    res.status(500).json({ message: 'Erro interno do servidor ao criar o treino.', error: error.message });
   }
 };
 
-// @desc    Admin atualiza um treino
+// @desc    Listar todos os treinos disponíveis
+// @route   GET /api/trainings
+// @access  Privado (Qualquer utilizador autenticado)
+const getAllTrainings = async (req, res) => {
+  try {
+    const { instructorId, dateFrom, dateTo, nameSearch } = req.query;
+    const whereClause = {};
+
+    // VALIDAÇÃO E APLICAÇÃO DOS FILTROS
+    if (instructorId) {
+      const parsedInstructorId = parseInt(instructorId, 10);
+      if (!isNaN(parsedInstructorId)) { // Só aplica o filtro se for um número válido
+        whereClause.instructorId = parsedInstructorId;
+      } else if (instructorId !== '') { // Se não for vazio e não for número, pode ser um erro de input
+        console.warn(`getAllTrainings: instructorId inválido recebido: ${instructorId}`);
+        // Poderia retornar um erro 400 aqui se quisesse ser mais estrito
+      }
+      // Se instructorId for uma string vazia, não adicionamos ao whereClause,
+      // o que significa "todos os instrutores"
+    }
+
+    if (dateFrom && dateTo) {
+      // Adicionar validação de formato de data se necessário (ex: com date-fns isValid)
+      whereClause.date = { [Op.between]: [dateFrom, dateTo] };
+    } else if (dateFrom) {
+      whereClause.date = { [Op.gte]: dateFrom };
+    } else if (dateTo) {
+      whereClause.date = { [Op.lte]: dateTo };
+    }
+
+    if (nameSearch && typeof nameSearch === 'string' && nameSearch.trim() !== '') {
+      whereClause.name = { [Op.iLike]: `%${nameSearch.trim()}%` }; // Usar iLike para case-insensitive (PostgreSQL)
+                                                              // Para SQLite, Op.like é case-insensitive por padrão
+    }
+
+    console.log('Aplicando filtros para treinos:', whereClause); // Log para depuração
+
+    const trainings = await db.Training.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: db.Staff,
+          as: 'instructor',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'role'],
+        },
+        {
+          model: db.User,
+          as: 'participants',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          through: { attributes: [] },
+        },
+      ],
+      order: [['date', 'ASC'], ['time', 'ASC']],
+    });
+
+    const trainingsWithParticipantCount = trainings.map(training => {
+        const trainingJSON = training.toJSON();
+        return {
+            ...trainingJSON,
+            participantsCount: trainingJSON.participants ? trainingJSON.participants.length : 0,
+        };
+    });
+
+    res.status(200).json(trainingsWithParticipantCount);
+  } catch (error) {
+    console.error('Erro detalhado ao listar treinos:', error); // Log mais detalhado do erro
+    res.status(500).json({ message: 'Erro interno do servidor ao listar os treinos.', errorDetails: error.message });
+  }
+};
+
+// @desc    Obter detalhes de um treino específico
+// @route   GET /api/trainings/:id
+// @access  Público/Utilizadores autenticados
+const getTrainingById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const training = await db.Training.findByPk(id, {
+      include: [
+        {
+          model: db.Staff,
+          as: 'instructor',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'role'],
+        },
+        {
+          model: db.User,
+          as: 'participants',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          through: { attributes: [] },
+        },
+      ],
+    });
+
+    if (!training) {
+      return res.status(404).json({ message: 'Treino não encontrado.' });
+    }
+    
+    const trainingJSON = training.toJSON();
+    const response = {
+        ...trainingJSON,
+        participantsCount: trainingJSON.participants ? trainingJSON.participants.length : 0,
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Erro ao obter detalhes do treino:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao obter detalhes do treino.', error: error.message });
+  }
+};
+
+// @desc    Atualizar um treino
 // @route   PUT /api/trainings/:id
 // @access  Privado (Admin Staff)
-exports.updateTraining = async (req, res) => {
-  const trainingId = parseInt(req.params.id, 10);
-  const { 
-    name, description, date, time, capacity, instructorId, durationMinutes,
-    isRecurringMaster, recurrenceType, recurrenceEndDate 
-  } = req.body;
+const updateTraining = async (req, res) => {
+  const { id } = req.params;
+  const { name, description, date, time, capacity, instructorId } = req.body;
 
-  // Validações
-  if (isRecurringMaster && (!recurrenceType || !recurrenceEndDate)) {
-    return res.status(400).json({ message: 'Para treinos recorrentes, tipo e data de fim da recorrência são obrigatórios.' });
-  }
-   if (isRecurringMaster && recurrenceType !== 'weekly') { // POR AGORA SÓ SEMANAL
-    return res.status(400).json({ message: 'De momento, apenas recorrência semanal é suportada.' });
-  }
-  if (isRecurringMaster && moment(recurrenceEndDate).isBefore(date)) {
-    return res.status(400).json({ message: 'A data de fim da recorrência não pode ser anterior à data de início do treino mestre.' });
-  }
-
-  const transaction = await db.sequelize.transaction();
   try {
-    const trainingToUpdate = await db.Training.findByPk(trainingId, { transaction });
-    if (!trainingToUpdate) {
-      await transaction.rollback();
+    const training = await db.Training.findByPk(id);
+    if (!training) {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    // Se este treino é uma instância gerada, não permitir alterá-lo para ser um mestre.
-    // A alteração de instâncias deve ser feita através do mestre.
-    if (trainingToUpdate.parentRecurringTrainingId && isRecurringMaster) {
-        await transaction.rollback();
-        return res.status(400).json({ message: 'Não pode transformar uma instância gerada num novo treino mestre. Edite o treino mestre original ou crie um novo.' });
-    }
-    // Se este é uma instância, permitir apenas alterações limitadas (ex: status, notas específicas da instância - não implementado aqui)
-    // Por agora, se for instância, não permitir grandes alterações.
-    if (trainingToUpdate.parentRecurringTrainingId && !trainingToUpdate.isRecurringMaster) {
-        // Poderia permitir alterar o status, por exemplo.
-        // Mas campos como data, hora, instrutor, capacidade vêm do mestre.
-        // Para simplificar, vamos focar na edição do mestre.
-        // Se quiser editar uma instância individualmente, ela deveria "desligar-se" da série.
-        console.warn(`Tentativa de editar instância ID ${trainingId} diretamente. Esta funcionalidade pode precisar de mais lógica.`);
-        // Vamos permitir edições, mas o admin deve estar ciente.
-    }
-
-
-    // Atualizar campos do treino
-    if (name !== undefined) trainingToUpdate.name = name;
-    if (description !== undefined) trainingToUpdate.description = description;
-    if (date !== undefined) trainingToUpdate.date = date;
-    if (time !== undefined) trainingToUpdate.time = time;
-    if (capacity !== undefined) trainingToUpdate.capacity = parseInt(capacity);
-    if (durationMinutes !== undefined) trainingToUpdate.durationMinutes = parseInt(durationMinutes);
-    if (instructorId !== undefined) {
-        const instructor = await db.Staff.findByPk(parseInt(instructorId), {transaction});
-        if (!instructor || !['trainer', 'admin', 'physiotherapist'].includes(instructor.role)) {
-             await transaction.rollback();
-            return res.status(400).json({ message: 'Instrutor inválido para atualização.' });
+    // Atualizar campos se fornecidos
+    if (name) training.name = name;
+    if (description) training.description = description;
+    if (date) training.date = date;
+    if (time) training.time = time;
+    if (capacity) {
+        if (isNaN(parseInt(capacity)) || parseInt(capacity) <= 0) {
+            return res.status(400).json({ message: 'A capacidade deve ser um número positivo.' });
         }
-        trainingToUpdate.instructorId = parseInt(instructorId);
+        training.capacity = parseInt(capacity);
     }
-
-    const oldIsRecurringMaster = trainingToUpdate.isRecurringMaster;
-    trainingToUpdate.isRecurringMaster = !!isRecurringMaster;
-
-    if (trainingToUpdate.isRecurringMaster) {
-      trainingToUpdate.recurrenceType = recurrenceType;
-      trainingToUpdate.recurrenceEndDate = recurrenceEndDate;
-      // Se está a ser marcado como mestre, garantir que não tem pai
-      trainingToUpdate.parentRecurringTrainingId = null; 
-      trainingToUpdate.isGeneratedInstance = false;
-    } else {
-      // Se deixou de ser mestre, limpar campos de recorrência
-      // E se não for uma instância gerada (parentRecurringTrainingId é null), continua como treino único
-      trainingToUpdate.recurrenceType = null;
-      trainingToUpdate.recurrenceEndDate = null;
-    }
-
-    await trainingToUpdate.save({ transaction });
-
-    let generatedInstances = [];
-    // Se o treino é/tornou-se um mestre recorrente, apaga instâncias futuras (sem bookings) e regenera.
-    // Se deixou de ser recorrente (era mestre e agora isRecurringMaster=false), apaga todas as instâncias filhas futuras.
-    if (trainingToUpdate.isRecurringMaster) {
-      generatedInstances = await generateRecurringInstances(trainingToUpdate, transaction);
-    } else if (oldIsRecurringMaster && !trainingToUpdate.isRecurringMaster) { 
-      // Era mestre, mas deixou de ser. Apagar futuras instâncias filhas (sem bookings).
-      // Esta lógica está dentro de generateRecurringInstances, mas precisa de uma chamada se isRecurringMaster for false
-      // para garantir a limpeza se ele *deixou* de ser mestre.
-       const existingChildInstances = await db.Training.findAll({
-            where: {
-                parentRecurringTrainingId: trainingToUpdate.id,
-                date: { [Op.gt]: trainingToUpdate.date } 
-            },
-            include: [{ model: db.User, as: 'participants', attributes: ['id'] }],
-            transaction
-        });
-        const childInstancesToDelete = existingChildInstances.filter(inst => (!inst.participants || inst.participants.length === 0));
-        if (childInstancesToDelete.length > 0) {
-            await db.Training.destroy({
-                where: { id: { [Op.in]: childInstancesToDelete.map(inst => inst.id) }},
-                transaction
-            });
-             console.log(`[updateTraining] ${childInstancesToDelete.length} instâncias futuras do ex-mestre ID ${trainingToUpdate.id} foram apagadas.`);
+    if (instructorId) {
+        if (isNaN(parseInt(instructorId))) {
+            return res.status(400).json({ message: 'O ID do instrutor deve ser um número.' });
         }
+        const instructor = await db.Staff.findByPk(parseInt(instructorId));
+        if (!instructor) {
+            return res.status(404).json({ message: 'Instrutor não encontrado para atualização.' });
+        }
+        if (!['trainer', 'admin'].includes(instructor.role)) {
+            return res.status(400).json({ message: 'O ID fornecido não pertence a um instrutor ou administrador válido.' });
+        }
+        training.instructorId = parseInt(instructorId);
     }
 
-
-    await transaction.commit();
-    res.status(200).json({
-        message: 'Treino atualizado com sucesso!',
-        training: trainingToUpdate,
-        instancesAffectedCount: generatedInstances.length
-    });
-
+    await training.save();
+    res.status(200).json(training);
   } catch (error) {
-    await transaction.rollback();
     console.error('Erro ao atualizar treino:', error);
     if (error.name === 'SequelizeValidationError') {
-        return res.status(400).json({ message: 'Erro de validação', errors: error.errors.map(e => e.message) });
+        const messages = error.errors.map(e => e.message);
+        return res.status(400).json({ message: 'Erro de validação', errors: messages });
     }
-    res.status(500).json({ message: 'Erro interno do servidor ao atualizar o treino.', errorDetails: error.message });
+    res.status(500).json({ message: 'Erro interno do servidor ao atualizar o treino.', error: error.message });
   }
 };
 
-// @desc    Cliente inscreve-se de forma recorrente num treino mestre
-// @route   POST /api/trainings/:masterTrainingId/subscribe-recurring
+// @desc    Eliminar um treino
+// @route   DELETE /api/trainings/:id
+// @access  Privado (Admin Staff)
+const deleteTraining = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const training = await db.Training.findByPk(id);
+    if (!training) {
+      return res.status(404).json({ message: 'Treino não encontrado.' });
+    }
+
+    // O Sequelize trata da eliminação em cascata das associações na tabela UserTrainings
+    // se configurado corretamente (onDelete: 'CASCADE'), ou podemos remover manualmente.
+    // Por defeito, as associações belongsToMany não têm onDelete: 'CASCADE' automaticamente.
+    // Vamos remover as associações manualmente para garantir.
+    await training.setParticipants([]); // Remove todas as associações com User
+
+    await training.destroy();
+    res.status(200).json({ message: 'Treino eliminado com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao eliminar treino:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao eliminar o treino.', error: error.message });
+  }
+};
+
+// @desc    Cliente (User) inscreve-se num treino
+// @route   POST /api/trainings/:id/book
 // @access  Privado (Cliente)
-exports.subscribeToRecurringTraining = async (req, res) => {
-    const masterTrainingId = parseInt(req.params.masterTrainingId, 10);
-    const clientId = req.user.id; 
-    const { clientSubscriptionEndDate } = req.body;
+const bookTraining = async (req, res) => {
+  const trainingId = req.params.id;
+  const userId = req.user.id;
 
-    if (isNaN(masterTrainingId)) {
-        return res.status(400).json({ message: "ID do treino mestre inválido." });
-    }
-    if (!clientSubscriptionEndDate) {
-        return res.status(400).json({ message: "Data de fim da subscrição recorrente é obrigatória." });
+  try {
+    const training = await db.Training.findByPk(trainingId, {
+        include: [{ model: db.User, as: 'participants' }]
+    });
+    if (!training) {
+      return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    const transaction = await db.sequelize.transaction();
+    const user = await db.User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilizador não encontrado.' });
+    }
+
+    const isAlreadyBooked = await training.hasParticipant(user);
+    if (isAlreadyBooked) {
+      return res.status(400).json({ message: 'Já estás inscrito neste treino.' });
+    }
+
+    const participantsCount = training.participants ? training.participants.length : 0;
+    if (participantsCount >= training.capacity) {
+      // TREINO CHEIO - LÓGICA DA LISTA DE ESPERA
+      const alreadyOnWaitlist = await db.TrainingWaitlist.findOne({
+        where: { trainingId: training.id, userId: user.id, status: 'PENDING' }
+      });
+
+      if (alreadyOnWaitlist) {
+        return res.status(400).json({ message: 'Treino cheio. Já estás na lista de espera.' });
+      }
+
+      await db.TrainingWaitlist.create({
+        trainingId: training.id,
+        userId: user.id,
+        status: 'PENDING'
+        // addedAt será gerado automaticamente (createdAt)
+      });
+
+      _internalCreateNotification({
+        recipientUserId: userId,
+        message: `O treino "${training.name}" está cheio. Foste adicionado à lista de espera. Serás notificado se surgir uma vaga.`,
+        type: 'TRAINING_WAITLIST_ADDED_CLIENT',
+        relatedResourceId: training.id,
+        relatedResourceType: 'training',
+        link: `/calendario`
+      });
+
+      return res.status(202).json({ // 202 Accepted pode ser mais apropriado aqui
+        message: 'Treino cheio. Foste adicionado à lista de espera.'
+      });
+    }
+
+    await training.addParticipant(user);
+
+    _internalCreateNotification({ /* ... (notificação de sucesso como estava) ... */ });
+    if (training.instructorId) {
+      _internalCreateNotification({ /* ... (notificação para instrutor como estava) ... */ });
+    }
+
+    res.status(200).json({ message: 'Inscrição no treino realizada com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao inscrever no treino:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao inscrever no treino.', errorDetails: error.message });
+  }
+};
+
+// @desc    Cliente (User) cancela a inscrição num treino
+// @route   DELETE /api/trainings/:id/book
+// @access  Privado (Cliente)
+const cancelTrainingBooking = async (req, res) => {
+  const trainingId = req.params.id;
+  const userId = req.user.id;
+
+  try {
+    const training = await db.Training.findByPk(trainingId);
+    if (!training) { /* ... (como estava) ... */ }
+    const user = await db.User.findByPk(userId);
+    if (!user) { /* ... (como estava) ... */ }
+    const isBooked = await training.hasParticipant(user);
+    if (!isBooked) { /* ... (como estava) ... */ }
+
+    await training.removeParticipant(user);
+    _internalCreateNotification({ /* ... (notificação de cancelamento para cliente como estava) ... */ });
+
+    // LÓGICA DA LISTA DE ESPERA: Vaga abriu
+    const waitlistEntries = await db.TrainingWaitlist.findAll({
+      where: { trainingId: training.id, status: 'PENDING' },
+      order: [['createdAt', 'ASC']], // Mais antigo primeiro
+      include: [{ model: db.User, as: 'user', attributes: ['id', 'firstName', 'email'] }]
+    });
+
+    if (waitlistEntries.length > 0) {
+      const firstInWaitlist = waitlistEntries[0];
+
+      // Opção: Notificar o primeiro da lista
+      _internalCreateNotification({
+        recipientUserId: firstInWaitlist.userId,
+        message: `Boas notícias! Abriu uma vaga no treino "<span class="math-inline">\{training\.name\}" \(</span>{format(new Date(training.date), 'dd/MM/yyyy')}) para o qual estavas na lista de espera. Inscreve-te já!`,
+        type: 'TRAINING_SPOT_AVAILABLE_CLIENT',
+        relatedResourceId: training.id,
+        relatedResourceType: 'training',
+        link: `/calendario` // ou link direto para o treino
+      });
+      // Mudar status na lista de espera (opcional)
+      // firstInWaitlist.status = 'NOTIFIED';
+      // firstInWaitlist.notifiedAt = new Date();
+      // await firstInWaitlist.save();
+
+      // Notificar Admin/Instrutor
+      _internalCreateNotification({
+        recipientStaffId: training.instructorId, // Ou um adminId fixo
+        message: `Uma vaga abriu no treino "${training.name}". ${firstInWaitlist.user.firstName} (primeiro na lista de espera) foi notificado.`,
+        type: 'TRAINING_SPOT_OPENED_STAFF_WAITLIST',
+        relatedResourceId: training.id,
+        relatedResourceType: 'training',
+        link: `/admin/trainings/${training.id}/manage-waitlist` // Futura página de gestão da lista de espera
+      });
+    } else if (training.instructorId) { // Se não há lista de espera, mas notifica o instrutor sobre a vaga.
+        const currentParticipants = await training.countParticipants();
+        _internalCreateNotification({ /* ... (notificação de vaga aberta para instrutor como estava) ... */ });
+    }
+
+    res.status(200).json({ message: 'Inscrição no treino cancelada com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao cancelar inscrição no treino:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao cancelar inscrição.', errorDetails: error.message });
+  }
+};
+
+// @desc    Admin obtém o número de inscrições em treinos na semana atual
+// @route   GET /api/trainings/stats/current-week-signups
+// @access  Privado (Admin Staff)
+const getCurrentWeekSignups = async (req, res) => {
+  try {
+    const today = new Date();
+    // Considera a semana começando na Segunda-feira (weekStartsOn: 1)
+    const startDate = startOfWeek(today, { weekStartsOn: 1 });
+    const endDate = endOfWeek(today, { weekStartsOn: 1 });
+
+    const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+    const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+
+    const trainingsThisWeek = await db.Training.findAll({
+      attributes: ['id'],
+      where: {
+        date: {
+          [Op.gte]: formattedStartDate,
+          [Op.lte]: formattedEndDate,
+        },
+      },
+    });
+
+    if (trainingsThisWeek.length === 0) {
+      return res.status(200).json({ currentWeekSignups: 0 });
+    }
+
+    const trainingIdsThisWeek = trainingsThisWeek.map(t => t.id);
+    const signupCount = await db.sequelize.models.UserTrainings.count({
+      where: {
+        trainingId: {
+          [Op.in]: trainingIdsThisWeek,
+        },
+      },
+    });
+
+    res.status(200).json({ currentWeekSignups: signupCount || 0 });
+  } catch (error) {
+    console.error('Erro ao obter contagem de inscrições da semana:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
+// @desc    Admin obtém o número de treinos agendados para hoje
+// @route   GET /api/trainings/stats/today-count
+// @access  Privado (Admin Staff)
+const getTodayTrainingsCount = async (req, res) => {
+  try {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const count = await db.Training.count({
+      where: {
+        date: today,
+      },
+    });
+    res.status(200).json({ todayTrainingsCount: count || 0 });
+  } catch (error) {
+    console.error('Erro ao obter contagem de treinos de hoje:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
+// @desc    Admin inscreve um cliente específico num treino
+// @route   POST /trainings/:trainingId/admin-book-client
+// @access  Privado (Admin Staff)
+const adminBookClientForTraining = async (req, res) => {
+  const { trainingId } = req.params;
+  const { userId } = req.body; // userId do cliente a ser inscrito
+
+  if (!userId) {
+    return res.status(400).json({ message: 'ID do Utilizador (cliente) é obrigatório.' });
+  }
+
+  try {
+    const training = await db.Training.findByPk(trainingId, {
+      include: [{ model: db.User, as: 'participants' }]
+    });
+    if (!training) {
+      return res.status(404).json({ message: 'Treino não encontrado.' });
+    }
+
+    const userToBook = await db.User.findByPk(userId);
+    if (!userToBook) {
+      return res.status(404).json({ message: 'Utilizador (cliente) a ser inscrito não encontrado.' });
+    }
+    if (userToBook.isAdmin) { // Assumindo que User.isAdmin distingue clientes de staff/admins
+        return res.status(400).json({ message: 'Não é possível inscrever um administrador ou membro da equipa como participante através desta função.' });
+    }
+
+
+    const isAlreadyBooked = await training.hasParticipant(userToBook);
+    if (isAlreadyBooked) {
+      return res.status(400).json({ message: `O cliente ${userToBook.firstName} já está inscrito neste treino.` });
+    }
+
+    const participantsCount = training.participants ? training.participants.length : 0;
+    if (participantsCount >= training.capacity) {
+      return res.status(400).json({ message: 'Este treino já atingiu a capacidade máxima.' });
+    }
+
+    await training.addParticipant(userToBook);
+
+    // Notificar o cliente (opcional, mas bom)
+    _internalCreateNotification({
+      recipientUserId: userToBook.id,
+      message: `Foi inscrito no treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}) por um administrador.`,
+      type: 'TRAINING_BOOKED_BY_ADMIN_CLIENT',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/calendario`
+    });
+
+    // Notificar o instrutor (opcional, se diferente do admin que fez a ação)
+    if (training.instructorId && training.instructorId !== req.staff.id) {
+         _internalCreateNotification({
+            recipientStaffId: training.instructorId,
+            message: `Cliente ${userToBook.firstName} ${userToBook.lastName} foi inscrito no seu treino "${training.name}" por um admin. Vagas: ${training.capacity - (participantsCount + 1)}.`,
+            type: 'CLIENT_BOOKED_BY_ADMIN_STAFF',
+            relatedResourceId: training.id,
+            relatedResourceType: 'training',
+            link: `/admin/calendario-geral`
+        });
+    }
+
+    // Retornar o treino atualizado com a lista de participantes
+    const updatedTraining = await db.Training.findByPk(trainingId, {
+        include: [{ model: db.User, as: 'participants', attributes: ['id', 'firstName', 'lastName', 'email'] }]
+    });
+    const trainingJSON = updatedTraining.toJSON();
+    const response = {
+        ...trainingJSON,
+        participantsCount: trainingJSON.participants ? trainingJSON.participants.length : 0,
+    };
+
+    res.status(200).json({ message: `Cliente ${userToBook.firstName} inscrito com sucesso!`, training: response });
+
+  } catch (error) {
+    console.error('Erro (admin) ao inscrever cliente no treino:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
+// @desc    Admin cancela a inscrição de um cliente específico num treino
+// @route   DELETE /trainings/:trainingId/admin-cancel-booking/:userId
+// @access  Privado (Admin Staff)
+const adminCancelClientBooking = async (req, res) => {
+    const { trainingId, userId: userIdToCancel } = req.params; // userId aqui é o do cliente a ser cancelado
+
     try {
-        const masterTraining = await db.Training.findOne({
-            where: { id: masterTrainingId, isRecurringMaster: true },
-            transaction
+        const training = await db.Training.findByPk(trainingId);
+        if (!training) { /* ... (como estava) ... */ }
+        const userToCancel = await db.User.findByPk(userIdToCancel);
+        if (!userToCancel) { /* ... (como estava) ... */ }
+        const isBooked = await training.hasParticipant(userToCancel);
+        if (!isBooked) { /* ... (como estava) ... */ }
+
+        await training.removeParticipant(userToCancel);
+        _internalCreateNotification({ /* ... (notificação de cancelamento para cliente como estava) ... */ });
+
+        // LÓGICA DA LISTA DE ESPERA (similar à de clientCancelTrainingBooking)
+        const waitlistEntries = await db.TrainingWaitlist.findAll({
+            where: { trainingId: training.id, status: 'PENDING' },
+            order: [['createdAt', 'ASC']],
+            include: [{ model: db.User, as: 'user', attributes: ['id', 'firstName', 'email'] }]
         });
 
-        if (!masterTraining) {
-            await transaction.rollback();
-            return res.status(404).json({ message: 'Treino mestre recorrente não encontrado ou não é um treino mestre.' });
-        }
-
-        // Data de fim da subscrição do cliente não pode ser depois da data de fim da série
-        const subEndDateMoment = moment(clientSubscriptionEndDate);
-        const seriesEndDateMoment = moment(masterTraining.recurrenceEndDate);
-        if (subEndDateMoment.isAfter(seriesEndDateMoment)) {
-            await transaction.rollback();
-            return res.status(400).json({ message: `A sua subscrição não pode terminar depois de ${seriesEndDateMoment.format('DD/MM/YYYY')} (fim da série).` });
-        }
-
-        // Data de início da subscrição: a partir da data do treino mestre ou hoje (o que for mais tarde),
-        // mas não antes da data de início do treino mestre.
-        const subStartDateMoment = moment.max(moment(), moment(masterTraining.date));
-        
-        if (subEndDateMoment.isBefore(subStartDateMoment)) {
-            await transaction.rollback();
-            return res.status(400).json({ message: 'Período de subscrição inválido (data de fim anterior ao início efetivo).' });
-        }
-        
-        // Encontrar todas as instâncias futuras (incluindo o mestre se aplicável e futuro) dentro do período
-        const instancesToBook = await db.Training.findAll({
-            where: {
-                [Op.or]: [
-                    { id: masterTraining.id }, 
-                    { parentRecurringTrainingId: masterTraining.id }
-                ],
-                date: {
-                    [Op.gte]: subStartDateMoment.format('YYYY-MM-DD'),
-                    [Op.lte]: subEndDateMoment.format('YYYY-MM-DD')
-                },
-                status: 'scheduled'
-            },
-            include: [{ model: db.User, as: 'participants', attributes: ['id']}],
-            order: [['date', 'ASC'], ['time', 'ASC']], // Processar por ordem cronológica
-            transaction
-        });
-
-        if (instancesToBook.length === 0) {
-            await transaction.rollback();
-            return res.status(404).json({ message: 'Nenhuma aula encontrada para este treino recorrente no período selecionado.' });
-        }
-
-        const bookingsToCreate = [];
-        let bookingsSkippedDueToCapacity = 0;
-        let alreadyBookedCount = 0;
-
-        for (const instance of instancesToBook) {
-            // Verificar se o cliente já está inscrito nesta instância específica
-            const existingBooking = await db.Booking.findOne({
-                where: {
-                    //clientId: clientId, // Adapte para o nome do campo no seu modelo Booking
-                    userId: clientId, // Assumindo que Booking usa userId
-                    trainingId: instance.id,
-                    status: { [Op.ne]: 'cancelled' } // Não contar bookings cancelados
-                },
-                transaction
+        if (waitlistEntries.length > 0) {
+            const firstInWaitlist = waitlistEntries[0];
+            _internalCreateNotification({
+                recipientUserId: firstInWaitlist.userId,
+                message: `Boas notícias! Abriu uma vaga no treino "<span class="math-inline">\{training\.name\}" \(</span>{format(new Date(training.date), 'dd/MM/yyyy')}) para o qual estavas na lista de espera. Um admin tratou disto. Inscreve-te já!`,
+                type: 'TRAINING_SPOT_AVAILABLE_CLIENT',
+                relatedResourceId: training.id,
+                relatedResourceType: 'training',
+                link: `/calendario`
             });
-
-            if (existingBooking) {
-                alreadyBookedCount++;
-                continue; 
+            // Notificar Admin/Instrutor que despoletou o cancelamento (ou outro admin/instrutor)
+            if (training.instructorId) { // Pode querer notificar o instrutor do treino
+                 _internalCreateNotification({
+                    recipientStaffId: training.instructorId,
+                    message: `Uma vaga abriu no treino "${training.name}" após cancelamento de ${userToCancel.firstName}. ${firstInWaitlist.user.firstName} (lista de espera) foi notificado.`,
+                    type: 'TRAINING_SPOT_OPENED_STAFF_WAITLIST',
+                    relatedResourceId: training.id,
+                    relatedResourceType: 'training',
+                    link: `/admin/trainings/${training.id}/manage-waitlist`
+                });
             }
-
-            // Contar participantes atuais da instância
-            const participantsCount = await db.Booking.count({
-                where: { 
-                    trainingId: instance.id,
-                    status: { [Op.ne]: 'cancelled' }
-                },
-                transaction
-            });
-
-            if (instance.capacity !== null && participantsCount >= instance.capacity) {
-                bookingsSkippedDueToCapacity++;
-                console.warn(`Capacidade esgotada para treino ID ${instance.id} em ${instance.date}. User ${clientId} não inscrito.`);
-                continue; 
-            }
-
-            bookingsToCreate.push({
-                //clientId: clientId, // Adapte se o seu modelo Booking usa clientId
-                userId: clientId,   // Assumindo que Booking usa userId
-                trainingId: instance.id,
-                bookingDate: moment().toISOString(), // Data/hora da criação do booking
-                status: 'confirmed', 
-            });
-        }
-        
-        if (bookingsToCreate.length > 0) {
-            await db.Booking.bulkCreate(bookingsToCreate, { transaction });
-        }
-        
-        await transaction.commit();
-        
-        let message = `Inscrição recorrente processada! ${bookingsToCreate.length} nova(s) aula(s) agendada(s).`;
-        if (alreadyBookedCount > 0) message += ` Já estava inscrito em ${alreadyBookedCount} aula(s) deste período.`;
-        if (bookingsSkippedDueToCapacity > 0) message += ` ${bookingsSkippedDueToCapacity} aula(s) foram puladas por falta de capacidade.`;
-        if (bookingsToCreate.length === 0 && alreadyBookedCount === 0 && bookingsSkippedDueToCapacity === 0 && instancesToBook.length > 0) {
-             message = 'Nenhuma nova aula foi agendada (verifique se já estava inscrito em todas ou se não há vagas).';
-        } else if (bookingsToCreate.length === 0 && alreadyBookedCount > 0 && bookingsSkippedDueToCapacity === 0) {
-            message = `Já estava inscrito em todas as ${alreadyBookedCount} aulas disponíveis neste período. Nenhuma nova inscrição foi feita.`;
+        } else if (training.instructorId && training.instructorId !== req.staff.id) {
+             const currentParticipants = await training.countParticipants();
+             _internalCreateNotification({ /* ... (notificação de vaga aberta para instrutor como estava) ... */ });
         }
 
-
-        res.status(200).json({ message });
+        const updatedTraining = await db.Training.findByPk(trainingId, { /* ... (include como estava) ... */ });
+        // ... (resto da resposta como estava)
+        res.status(200).json({ message: `Inscrição do cliente ${userToCancel.firstName} cancelada com sucesso!`, training: updatedTraining.toJSON() });
 
     } catch (error) {
-        await transaction.rollback();
-        console.error("Erro ao subscrever treino recorrente:", error);
-        res.status(500).json({ message: 'Erro interno do servidor ao processar subscrição recorrente.', errorDetails: error.message });
+        console.error('Erro (admin) ao cancelar inscrição do cliente:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
     }
 };
 
-// --- Manter as suas outras funções: getAllTrainings, getTrainingById, deleteTraining, bookTraining (para instância única), etc. ---
-// Adicionei as modificadas acima. Certifique-se de que as outras estão corretas e exportadas.
-// As funções como `adminBookClientForTraining` e `adminCancelClientBooking` funcionarão em instâncias individuais,
-// sejam elas únicas ou geradas por recorrência.
+// @desc    Admin obtém a lista de espera para um treino específico
+// @route   GET /api/trainings/:trainingId/waitlist
+// @access  Privado (Admin Staff)
+const adminGetTrainingWaitlist = async (req, res) => {
+  const { trainingId } = req.params;
+  try {
+    const training = await db.Training.findByPk(trainingId);
+    if (!training) {
+      return res.status(404).json({ message: "Treino não encontrado." });
+    }
 
-// Re-exportar todas as funções, incluindo as modificadas e as novas
-module.exports = {
-  createTraining, // Modificada
-  getAllTrainings: exports.getAllTrainings || require('./trainingController').getAllTrainings, // Mantendo a sua existente, se diferente
-  getTrainingById: exports.getTrainingById || require('./trainingController').getTrainingById,
-  updateTraining, // Modificada
-  deleteTraining: exports.deleteTraining || require('./trainingController').deleteTraining,
-  bookTraining: exports.bookTraining || require('./trainingController').bookTraining,
-  cancelTrainingBooking: exports.cancelTrainingBooking || require('./trainingController').cancelTrainingBooking,
-  getCurrentWeekSignups: exports.getCurrentWeekSignups || require('./trainingController').getCurrentWeekSignups,
-  getTodayTrainingsCount: exports.getTodayTrainingsCount || require('./trainingController').getTodayTrainingsCount,
-  adminBookClientForTraining: exports.adminBookClientForTraining || require('./trainingController').adminBookClientForTraining,
-  adminCancelClientBooking: exports.adminCancelClientBooking || require('./trainingController').adminCancelClientBooking,
-  adminGetTrainingWaitlist: exports.adminGetTrainingWaitlist || require('./trainingController').adminGetTrainingWaitlist,
-  adminPromoteFromWaitlist: exports.adminPromoteFromWaitlist || require('./trainingController').adminPromoteFromWaitlist,
-  subscribeToRecurringTraining, // Nova
+    const waitlistEntries = await db.TrainingWaitlist.findAll({
+      where: { trainingId: training.id, status: 'PENDING' }, // Mostrar apenas os pendentes
+      include: [
+        { model: db.User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] }
+      ],
+      order: [['createdAt', 'ASC']], // Mais antigo primeiro
+    });
+    res.status(200).json(waitlistEntries);
+  } catch (error) {
+    console.error(`Erro ao buscar lista de espera para treino ID ${trainingId}:`, error);
+    res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
+  }
 };
 
-// Se as funções acima com "exports." ou "require" não forem as suas, substitua-as pelas suas funções existentes
-// do trainingController.js que me enviou, e apenas adicione/modifique as novas.
-// Por exemplo, se a sua `getAllTrainings` original está correta, mantenha-a e apenas adicione as novas no export.
-// O código que me enviou para trainingController já tinha a maioria destas.
-// A forma mais simples é COPIAR as funções createTraining, updateTraining e subscribeToRecurringTraining
-// para o seu ficheiro trainingController.js existente e adicionar subscribeToRecurringTraining aos exports.
+// @desc    Admin promove um cliente da lista de espera para o treino
+// @route   POST /api/trainings/:trainingId/waitlist/promote
+// @access  Privado (Admin Staff)
+const adminPromoteFromWaitlist = async (req, res) => {
+  const { trainingId } = req.params;
+  const { userId, waitlistEntryId } = req.body; // Admin envia o userId do cliente a promover
+                                            // ou o ID da entrada na lista de espera
+
+  if (!userId && !waitlistEntryId) {
+    return res.status(400).json({ message: "ID do utilizador ou ID da entrada na lista de espera é obrigatório." });
+  }
+
+  try {
+    const training = await db.Training.findByPk(trainingId, {
+      include: [{ model: db.User, as: 'participants' }]
+    });
+    if (!training) {
+      return res.status(404).json({ message: "Treino não encontrado." });
+    }
+
+    const participantsCount = training.participants ? training.participants.length : 0;
+    if (participantsCount >= training.capacity) {
+      return res.status(400).json({ message: "Treino já está na capacidade máxima. Cancele uma inscrição primeiro." });
+    }
+
+    let waitlistEntry;
+    if (waitlistEntryId) {
+        waitlistEntry = await db.TrainingWaitlist.findByPk(waitlistEntryId);
+    } else { // userId foi fornecido
+        waitlistEntry = await db.TrainingWaitlist.findOne({
+            where: { trainingId: training.id, userId: userId, status: 'PENDING' }
+        });
+    }
+
+    if (!waitlistEntry || waitlistEntry.trainingId !== training.id) {
+      return res.status(404).json({ message: "Entrada na lista de espera não encontrada para este treino e utilizador, ou não está pendente." });
+    }
+
+    const userToPromote = await db.User.findByPk(waitlistEntry.userId);
+    if (!userToPromote) {
+        // Isto não deveria acontecer se a entrada na lista de espera for válida
+        await waitlistEntry.destroy(); // Limpar entrada órfã
+        return res.status(404).json({ message: "Utilizador da lista de espera não encontrado."});
+    }
+
+    // Adicionar ao treino
+    await training.addParticipant(userToPromote);
+    // Mudar status ou remover da lista de espera
+    waitlistEntry.status = 'BOOKED'; // Ou await waitlistEntry.destroy();
+    await waitlistEntry.save();
+
+    _internalCreateNotification({
+      recipientUserId: userToPromote.id,
+      message: `Boas notícias! Foste promovido da lista de espera e estás agora inscrito no treino "<span class="math-inline">\{training\.name\}" \(</span>{format(new Date(training.date), 'dd/MM/yyyy')}).`,
+      type: 'TRAINING_PROMOTED_FROM_WAITLIST_CLIENT',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/calendario`
+    });
+    _internalCreateNotification({
+      recipientStaffId: req.staff.id, // Notificar o admin que fez a ação
+      message: `Promoveste <span class="math-inline">\{userToPromote\.firstName\} da lista de espera para o treino "</span>{training.name}".`,
+      type: 'ADMIN_PROMOTED_FROM_WAITLIST_STAFF',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/admin/trainings/${training.id}/manage-waitlist`
+    });
+
+
+    res.status(200).json({ message: `Cliente ${userToPromote.firstName} promovido da lista de espera com sucesso!`});
+
+  } catch (error) {
+    console.error('Erro ao promover cliente da lista de espera:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
+  }
+};
+
+export const adminGetCurrentWeekSignups = async (token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/stats/current-week-signups`, { 
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar inscrições da semana.');
+    return data;
+  } catch (error) { console.error("Erro em adminGetCurrentWeekSignups:", error); throw error; }
+};
+
+export const adminGetTodayTrainingsCount = async (token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/stats/today-count`, { 
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar contagem de treinos de hoje.');
+    return data;
+  } catch (error) { console.error("Erro em adminGetTodayTrainingsCount:", error); throw error; }
+};
+
+export const adminBookClientForTrainingService = async (trainingId, userId, token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!trainingId || !userId) throw new Error('ID do Treino e ID do Utilizador são obrigatórios.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/${trainingId}/admin-book-client`, { 
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ userId: userId }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao inscrever cliente no treino.');
+    return data;
+  } catch (error) {
+    console.error("Erro em adminBookClientForTrainingService:", error);
+    throw error;
+  }
+};
+
+export const adminCancelClientBookingService = async (trainingId, userId, token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!trainingId || !userId) throw new Error('ID do Treino e ID do Utilizador são obrigatórios.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/${trainingId}/admin-cancel-booking/${userId}`, { 
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json', 
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao cancelar inscrição do cliente no treino.');
+    return data; 
+  } catch (error) {
+    console.error("Erro em adminCancelClientBookingService:", error);
+    throw error;
+  }
+};
+
+export const adminGetTrainingWaitlistService = async (trainingId, token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!trainingId) throw new Error('ID do Treino não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/${trainingId}/waitlist`, { 
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar lista de espera do treino.');
+    return data; 
+  } catch (error) {
+    console.error(`Erro em adminGetTrainingWaitlistService para trainingId ${trainingId}:`, error);
+    throw error;
+  }
+};
+
+export const adminPromoteClientFromWaitlistService = async (trainingId, userIdToPromote, token, waitlistEntryId = null) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!trainingId) throw new Error('ID do Treino não fornecido.');
+  if (!userIdToPromote && !waitlistEntryId) throw new Error('ID do Utilizador ou ID da Entrada na Lista de Espera é obrigatório.');
+
+  const body = {};
+  if (userIdToPromote) body.userId = userIdToPromote;
+  if (waitlistEntryId) body.waitlistEntryId = waitlistEntryId;
+
+  try {
+    const response = await fetch(`${API_URL}/trainings/${trainingId}/waitlist/promote`, { 
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao promover cliente da lista de espera.');
+    return data;
+  } catch (error) {
+    console.error(`Erro em adminPromoteClientFromWaitlistService para trainingId ${trainingId}:`, error);
+    throw error;
+  }
+};
+
+
+// --- NOVA FUNÇÃO PARA CLIENTE SE INSCREVER DE FORMA RECORRENTE ---
+/**
+ * Cliente inscreve-se de forma recorrente num treino mestre.
+ * @param {number} masterTrainingId - ID do treino mestre.
+ * @param {string} clientSubscriptionEndDate - Data até quando o cliente quer a subscrição.
+ * @param {string} token - Token do cliente.
+ * @returns {Promise<object>} - Resposta da API.
+ */
+export const subscribeToRecurringTrainingService = async (masterTrainingId, clientSubscriptionEndDate, token) => {
+  if (!token) throw new Error('Token não fornecido para subscrição recorrente.');
+  if (!masterTrainingId || !clientSubscriptionEndDate) {
+    throw new Error('ID do treino mestre e data de fim da subscrição são obrigatórios.');
+  }
+  
+  // O endpoint no backend é POST /trainings/:masterTrainingId/subscribe-recurring
+  const url = `${API_URL}/trainings/${masterTrainingId}/subscribe-recurring`; 
+
+  console.log('Frontend Service: Subscrevendo recorrente. URL:', url, 'Payload:', { clientSubscriptionEndDate });
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ clientSubscriptionEndDate }),
+  });
+
+  const responseText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    console.error("Falha ao fazer parse da resposta JSON de subscribeToRecurringTrainingService:", e);
+    console.error("Resposta recebida (texto):", responseText);
+    throw new Error(`Resposta do servidor para subscrição recorrente não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
+  }
+
+  if (!response.ok) {
+    console.error('Erro na resposta de subscribeToRecurringTrainingService (status não OK):', data);
+    throw new Error(data.message || `Erro ao processar inscrição recorrente. Status: ${response.status}`);
+  }
+  return data; // Espera-se { message }
+};
+
+module.exports = {
+  createTraining,
+  getAllTrainings,
+  getTrainingById,
+  updateTraining,
+  deleteTraining,
+  bookTraining,
+  cancelTrainingBooking,
+  getCurrentWeekSignups,
+  getTodayTrainingsCount,
+  adminBookClientForTraining,
+  adminCancelClientBooking,
+  adminGetTrainingWaitlist,
+  adminPromoteFromWaitlist,
+  subscribeToRecurringTrainingService,
+  adminGetTrainingWaitlistService,
+  adminCancelClientBookingService,
+  adminBookClientForTrainingService,
+  adminGetTodayTrainingsCount,
+  adminGetCurrentWeekSignups
+};
