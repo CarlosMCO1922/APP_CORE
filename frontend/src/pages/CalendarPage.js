@@ -1272,7 +1272,7 @@ const handleCloseSubscribeSeriesModal = () => {
 
                 {seriesSubscriptionError && <ModalErrorText>{seriesSubscriptionError}</ModalErrorText>}
 
-                <ModalForm onSubmit={async (e) => { // Adaptação da lógica de submit
+                <RequestModalForm onSubmit={async (e) => { // Adaptação da lógica de submit
                   e.preventDefault();
                   if (!selectedSeriesDetailsForSubscription?.id || !seriesSubscriptionEndDate) {
                     setSeriesSubscriptionError("Por favor, selecione uma data de fim para a subscrição.");
@@ -1317,7 +1317,7 @@ const handleCloseSubscribeSeriesModal = () => {
                       {isSubscribingRecurring ? 'A Inscrever...' : 'Confirmar Inscrição na Série'}
                     </ModalButton>
                   </ModalActions>
-                </ModalForm>
+                </RequestModalForm>
               </ModalContent>
             </ModalOverlay>
           )}
