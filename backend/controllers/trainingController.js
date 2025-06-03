@@ -1,5 +1,6 @@
 // backend/controllers/trainingController.js
-const { Op } = require('sequelize'); // Para operadores como "greater than or equal"
+const sequelize = require('sequelize');
+const { Op } = sequelize; // Para operadores como "greater than or equal"
 const db = require('../models');
 const { startOfWeek, endOfWeek, format } = require('date-fns');
 const { _internalCreateNotification } = require('./notificationController');
