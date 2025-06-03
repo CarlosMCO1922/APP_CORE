@@ -1,8 +1,8 @@
 // backend/controllers/trainingController.js
-import { Op } from 'sequelize';
-import db from '../models/index.js'; // Or simply '../models' if your setup resolves it, but explicit .js or /index.js is safer for ESM
-import { startOfWeek, endOfWeek, format } from 'date-fns';
-import { _internalCreateNotification } from './notificationController.js'; 
+const { Op } = require('sequelize'); // Importação direta de Op
+const db = require('../models');
+const { startOfWeek, endOfWeek, format } = require('date-fns');
+const { _internalCreateNotification } = require('./notificationController');
 
 // @desc    Criar um novo treino
 // @route   POST /api/trainings
@@ -685,7 +685,7 @@ const adminPromoteFromWaitlist = async (req, res) => {
   }
 };
 
-export const adminGetCurrentWeekSignups = async (token) => {
+const adminGetCurrentWeekSignups = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
     const response = await fetch(`${API_URL}/trainings/stats/current-week-signups`, { 
@@ -697,7 +697,7 @@ export const adminGetCurrentWeekSignups = async (token) => {
   } catch (error) { console.error("Erro em adminGetCurrentWeekSignups:", error); throw error; }
 };
 
-export const adminGetTodayTrainingsCount = async (token) => {
+const adminGetTodayTrainingsCount = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
     const response = await fetch(`${API_URL}/trainings/stats/today-count`, { 
@@ -709,7 +709,7 @@ export const adminGetTodayTrainingsCount = async (token) => {
   } catch (error) { console.error("Erro em adminGetTodayTrainingsCount:", error); throw error; }
 };
 
-export const adminBookClientForTrainingService = async (trainingId, userId, token) => {
+const adminBookClientForTrainingService = async (trainingId, userId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId || !userId) throw new Error('ID do Treino e ID do Utilizador são obrigatórios.');
   try {
@@ -730,7 +730,7 @@ export const adminBookClientForTrainingService = async (trainingId, userId, toke
   }
 };
 
-export const adminCancelClientBookingService = async (trainingId, userId, token) => {
+const adminCancelClientBookingService = async (trainingId, userId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId || !userId) throw new Error('ID do Treino e ID do Utilizador são obrigatórios.');
   try {
@@ -750,7 +750,7 @@ export const adminCancelClientBookingService = async (trainingId, userId, token)
   }
 };
 
-export const adminGetTrainingWaitlistService = async (trainingId, token) => {
+const adminGetTrainingWaitlistService = async (trainingId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido.');
   try {
@@ -766,7 +766,7 @@ export const adminGetTrainingWaitlistService = async (trainingId, token) => {
   }
 };
 
-export const adminPromoteClientFromWaitlistService = async (trainingId, userIdToPromote, token, waitlistEntryId = null) => {
+const adminPromoteClientFromWaitlistService = async (trainingId, userIdToPromote, token, waitlistEntryId = null) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido.');
   if (!userIdToPromote && !waitlistEntryId) throw new Error('ID do Utilizador ou ID da Entrada na Lista de Espera é obrigatório.');
@@ -802,7 +802,7 @@ export const adminPromoteClientFromWaitlistService = async (trainingId, userIdTo
  * @param {string} token - Token do cliente.
  * @returns {Promise<object>} - Resposta da API.
  */
-export const subscribeToRecurringTrainingService = async (masterTrainingId, clientSubscriptionEndDate, token) => {
+const subscribeToRecurringTrainingService = async (masterTrainingId, clientSubscriptionEndDate, token) => {
   if (!token) throw new Error('Token não fornecido para subscrição recorrente.');
   if (!masterTrainingId || !clientSubscriptionEndDate) {
     throw new Error('ID do treino mestre e data de fim da subscrição são obrigatórios.');
@@ -838,7 +838,7 @@ export const subscribeToRecurringTrainingService = async (masterTrainingId, clie
   return data; // Espera-se { message }
 };
 
-/*module.exports = {
+module.exports = {
   createTraining,
   getAllTrainings,
   getTrainingById,
@@ -859,4 +859,3 @@ export const subscribeToRecurringTrainingService = async (masterTrainingId, clie
   adminGetTodayTrainingsCount,
   adminGetCurrentWeekSignups
 };
-*/
