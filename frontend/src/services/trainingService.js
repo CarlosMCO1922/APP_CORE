@@ -338,6 +338,29 @@ export const createSeriesSubscriptionService = async (subscriptionData, token) =
   return data;
 };
 
+export const subscribeToRecurringTrainingService = async (masterTrainingId, clientSubscriptionEndDate, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!masterTrainingId || !clientSubscriptionEndDate) throw new Error('Dados insuficientes para subscrição recorrente.');
+
+  const url = `<span class="math-inline">\{API\_URL\}/trainings/</span>{masterTrainingId}/subscribe-recurring`; // Sem /api, conforme a sua estrutura
+  const payload = { clientSubscriptionEndDate };
+
+  console.log('Frontend Service: Subscrevendo recorrente. URL:', url, 'Payload:', payload);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json(); // Backend retorna JSON com mensagem
+  if (!response.ok) {
+    throw new Error(data.message || 'Erro ao processar inscrição recorrente.');
+  }
+  return data;
+};
+
 // TODO: Adicionar mais serviços para:
 // - Admin: getAllTrainingSeriesAdminService (listar todas as séries), atualizar série, apagar série
 // - Cliente: listar suas subscrições, cancelar subscrição

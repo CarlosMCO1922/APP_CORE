@@ -492,7 +492,9 @@ const WaitlistSectionTitle = styled.h4`
 
 const initialTrainingFormState = {
   name: '', description: '', date: '', time: '',
-  capacity: 10, instructorId: '', durationMinutes: 45,
+  capacity: 10, instructorId: '', durationMinutes: 45, isRecurringMaster: false,
+  recurrenceType: 'weekly', 
+  recurrenceEndDate: '',
 };
 
 const AdminManageTrainingsPage = () => {
@@ -604,6 +606,9 @@ const AdminManageTrainingsPage = () => {
       capacity: training.capacity,
       instructorId: training.instructorId || (training.instructor?.id || ''),
       durationMinutes: training.durationMinutes || 45,
+      isRecurringMaster: training.isRecurringMaster || false,
+      recurrenceType: training.recurrenceType || 'weekly',
+      recurrenceEndDate: training.recurrenceEndDate || '',
     });
     setCurrentTrainingId(training.id); setModalError(''); setSuccessMessage(''); setShowModal(true);
   };
@@ -614,9 +619,22 @@ const AdminManageTrainingsPage = () => {
   };
 
   const handleFormChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value , type, checked} = e.target;
     setCurrentTrainingData(prev => ({ ...prev, [name]: value }));
+
+    if (name === "isRecurringMaster") {
+      setCurrentTrainingData(prev => ({ 
+        ...prev, 
+      isRecurringMaster: checked,
+        // Se desmarcar, limpar campos de recorrência
+        recurrenceType: checked ? prev.recurrenceType : 'weekly', 
+        recurrenceEndDate: checked ? prev.recurrenceEndDate : ''
+          }));
+    } else {
+      setCurrentTrainingData(prev => ({ ...prev, [name]: value }));
+    }
   };
+
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -627,7 +645,26 @@ const AdminManageTrainingsPage = () => {
       instructorId: parseInt(currentTrainingData.instructorId, 10),
       durationMinutes: parseInt(currentTrainingData.durationMinutes, 10),
       time: currentTrainingData.time.length === 5 ? `${currentTrainingData.time}:00` : currentTrainingData.time,
+      isRecurringMaster: currentTrainingData.isRecurringMaster,
     };
+
+    if (dataToSend.isRecurringMaster) {
+       if (!currentTrainingData.recurrenceType || !currentTrainingData.recurrenceEndDate) {
+         setModalError("Para treinos recorrentes, o tipo e a data de fim da recorrência são obrigatórios.");
+         setFormLoading(false); return;
+       }
+       if (new Date(currentTrainingData.recurrenceEndDate) < new Date(dataToSend.date)) {
+          setModalError("A data de fim da recorrência não pode ser anterior à data de início do treino.");
+          setFormLoading(false); return;
+       }
+       dataToSend.recurrenceType = currentTrainingData.recurrenceType;
+       dataToSend.recurrenceEndDate = currentTrainingData.recurrenceEndDate;
+    } else {
+        // Garantir que não envia dados de recorrência se não for recorrente
+        delete dataToSend.recurrenceType;
+        delete dataToSend.recurrenceEndDate;
+    }
+
 
     if (isNaN(dataToSend.capacity) || dataToSend.capacity <= 0) {
         setModalError("Capacidade deve ser um número positivo.");
@@ -919,6 +956,45 @@ const AdminManageTrainingsPage = () => {
                   <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName} ({instr.role})</option>
                 ))}
               </ModalSelect>
+              {/* Checkbox e campos de Recorrência */}
+               <ModalLabel htmlFor="isRecurringMasterTrainModalForm" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', cursor: 'pointer' }}>
+                 <ModalInput 
+                   type="checkbox" 
+                   name="isRecurringMaster" 
+                   id="isRecurringMasterTrainModalForm"
+                   checked={!!currentTrainingData.isRecurringMaster} 
+                   onChange={handleFormChange} 
+                   style={{width: 'auto', marginRight: '5px'}}
+                 /> 
+                 Tornar este treino recorrente?
+               </ModalLabel>
+
+              {currentTrainingData.isRecurringMaster && (
+                <>
+                  <ModalLabel htmlFor="recurrenceTypeTrainModalForm">Repetir*</ModalLabel>
+                  <ModalSelect 
+                    name="recurrenceType" 
+                    id="recurrenceTypeTrainModalForm" 
+                    value={currentTrainingData.recurrenceType} 
+                    onChange={handleFormChange}
+                  >
+                    <option value="weekly">Semanalmente</option>
+                    {/* <option value="daily">Diariamente</option> */}
+                    {/* <option value="monthly">Mensalmente</option> */}
+                  </ModalSelect>
+
+                  <ModalLabel htmlFor="recurrenceEndDateTrainModalForm">Repetir Até (Data Fim da Recorrência)*</ModalLabel>
+                  <ModalInput 
+                    type="date" 
+                    name="recurrenceEndDate" 
+                    id="recurrenceEndDateTrainModalForm"
+                    value={currentTrainingData.recurrenceEndDate} 
+                    onChange={handleFormChange} 
+                    min={currentTrainingData.date} // Não pode terminar antes da data do treino mestre
+                    required // Obrigatório se isRecurringMaster for true
+                  />
+                </>
+              )}
               <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
                 <ModalButton type="submit" primary disabled={formLoading}>

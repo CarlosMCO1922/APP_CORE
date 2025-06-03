@@ -9,6 +9,8 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import moment from 'moment';
+import { subscribeToRecurringTrainingService } from '../services/trainingService';
 import { theme } from '../theme'; // Assume que tem um theme.js exportando o tema
 
 import { useAuth } from '../context/AuthContext';
@@ -575,8 +577,8 @@ const CalendarPage = () => {
 
   useEffect(() => { fetchPageData(); }, [fetchPageData]);
 
-  const handleSelectEvent = (event) => { setSelectedEvent(event.resource); setShowEventModal(true); setPageSuccessMessage(''); setPageError(''); };
-  const handleCloseEventModal = () => { setShowEventModal(false); setSelectedEvent(null); };
+  const handleSelectEvent = (event) => { setSelectedEvent(event.resource); setShowEventModal(true); setPageSuccessMessage(''); setPageError(''); setShowRecurringOptionsModal(false); setClientRecurringEndDate(''); setRecurringSubscriptionMessage({type: '', text: ''}); };
+  const handleCloseEventModal = () => { setShowEventModal(false); setSelectedEvent(null); setShowRecurringOptionsModal(false);};
 
   const handleSelectSlot = useCallback((slotInfo) => {
     setPageError(''); setPageSuccessMessage('');
@@ -801,6 +803,45 @@ const CalendarPage = () => {
     }
   };
 
+  const handleOpenRecurringSubscriptionOptions = () => {
+    if (selectedEvent && selectedEvent.isRecurringMaster && selectedEvent.recurrenceEndDate) {
+      // Define a data de fim default para o cliente como a data de fim da série
+      setClientRecurringEndDate(selectedEvent.recurrenceEndDate); 
+      setShowRecurringOptionsModal(true); // Mostra os inputs de data para subscrição recorrente
+      setRecurringSubscriptionMessage({type:'', text:''}); // Limpa mensagem anterior
+    }
+  };
+
+  const handleSubscribeToRecurring = async () => {
+    if (!selectedEvent || !clientRecurringEndDate) {
+      setRecurringSubscriptionMessage({type: 'error', text: 'Por favor, selecione uma data de fim para a sua inscrição.'});
+      return;
+    }
+    if (new Date(clientRecurringEndDate) > new Date(selectedEvent.recurrenceEndDate)) {
+      setRecurringSubscriptionMessage({type: 'error', text: 'A sua data de fim não pode ser posterior ao fim da série de treinos.'});
+      return;
+    }
+    if (new Date(clientRecurringEndDate) < new Date(selectedEvent.date)) {
+      setRecurringSubscriptionMessage({type: 'error', text: 'A sua data de fim não pode ser anterior ao início do treino.'});
+      return;
+   }
+    setIsSubscribingRecurring(true);
+   setRecurringSubscriptionMessage({type: '', text: ''});
+   try {
+     const result = await subscribeToRecurringTrainingService(selectedEvent.id, clientRecurringEndDate, authState.token);
+     setRecurringSubscriptionMessage({type: 'success', text: result.message || 'Inscrição recorrente realizada com sucesso!'});
+     fetchPageData(); // Rebuscar todos os eventos para atualizar o calendário e bookings
+     // Opcional: Fechar todos os modais após um tempo ou deixar o utilizador fechar
+     // setTimeout(() => {
+     //   handleCloseEventModal(); 
+     // }, 3000);
+   } catch (err) {
+     setRecurringSubscriptionMessage({type: 'error', text: err.message || 'Falha ao realizar inscrição recorrente.'});
+   } finally {
+     setIsSubscribingRecurring(false);
+   }
+ };
+
   if (loading) return <PageContainer><LoadingText>A carregar calendário...</LoadingText></PageContainer>;
 
   return (
@@ -888,6 +929,55 @@ const CalendarPage = () => {
               <ModalDetail><span>Status:</span> {selectedEvent.status?.replace(/_/g, ' ')}</ModalDetail>
               <ModalDetail><span><FaStickyNote /> Notas:</span> {selectedEvent.notes || "N/A"}</ModalDetail>
             </>)}
+
+            {/* Lógica para Inscrição Recorrente (apenas para clientes e se o treino for mestre recorrente) */}
+           {isClient && selectedEvent.type === 'training' && selectedEvent.isRecurringMaster && (
+             <div style={{marginTop: '15px', paddingTop: '15px', borderTop: `1px solid ${theme.colors.cardBorder}`}}>
+               <h4 style={{color: theme.colors.primary, marginBottom: '10px'}}>Inscrição Recorrente Semanal</h4>
+               <p style={{fontSize: '0.85rem', color: theme.colors.textMuted}}>
+                 Este treino repete-se semanalmente todas as {moment(selectedEvent.date).format('dddd')}s às {selectedEvent.time.substring(0,5)} até {moment(selectedEvent.recurrenceEndDate).format('L')}.
+               </p>
+               {!showRecurringOptionsModal && (
+                 <ModalButton 
+                   onClick={handleOpenRecurringSubscriptionOptions} 
+                   style={{width: '100%', backgroundColor: theme.colors.success, color: 'white'}} // Botão destacado
+                 >
+                   Inscrever Semanalmente
+                 </ModalButton>
+               )}
+               {showRecurringOptionsModal && (
+                 <div>
+                   <ModalLabel htmlFor="clientRecurringEndDate">Quero manter a inscrição semanal até (inclusive):</ModalLabel>
+                   <ModalInput 
+                     type="date" 
+                     id="clientRecurringEndDate"
+                     value={clientRecurringEndDate}
+                     onChange={(e) => setClientRecurringEndDate(e.target.value)}
+                     min={moment(selectedEvent.date).format('YYYY-MM-DD')} // Não antes do início do treino mestre
+                     max={selectedEvent.recurrenceEndDate} // Não depois do fim da série
+                     required 
+                   />
+                   <ModalButton 
+                     onClick={handleSubscribeToRecurring} 
+                     disabled={isSubscribingRecurring || !clientRecurringEndDate}
+                     primary 
+                     style={{width: '100%', marginTop: '10px'}}
+                   >
+                     {isSubscribingRecurring ? 'A Inscrever...' : 'Confirmar Inscrição Semanal'}
+                   </ModalButton>
+                 </div>
+               )}
+               {recurringSubscriptionMessage.text && (
+                 <p style={{
+                     fontSize: '0.85rem', 
+                     color: recurringSubscriptionMessage.type === 'error' ? theme.colors.error : theme.colors.success,
+                     marginTop: '10px', textAlign: 'center'
+                 }}>
+                     {recurringSubscriptionMessage.text}
+                 </p>
+               )}
+             </div>
+           )}
 
             <ModalActions>
               <ModalButton onClick={handleCloseEventModal} secondary>Fechar</ModalButton>
