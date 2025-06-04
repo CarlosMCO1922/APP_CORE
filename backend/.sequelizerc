@@ -1,0 +1,9 @@
+// .sequelizerc
+const path = require('path');
+
+module.exports = {
+  'config': path.resolve('config', 'config.js'), // Vamos criar este config.js para o CLI
+  'models-path': path.resolve('models'),
+  'seeders-path': path.resolve('seeders'),     // Mesmo que não uses agora, é bom ter
+  'migrations-path': path.resolve('migrations')
+};
