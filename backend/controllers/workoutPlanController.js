@@ -7,7 +7,7 @@ const { Op } = require('sequelize');
 // @access  Privado (Admin Staff)
 const createWorkoutPlan = async (req, res) => {
   const { trainingId } = req.params;
-  const { name, order, notes } = req.body;
+  const { name, order, notes, isVisible} = req.body;
 
   if (!name || order === undefined) {
     return res.status(400).json({ message: 'Nome e ordem do plano de treino são obrigatórios.' });
@@ -19,12 +19,16 @@ const createWorkoutPlan = async (req, res) => {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    const newWorkoutPlan = await db.WorkoutPlan.create({
+    const newWorkoutPlanData = await db.WorkoutPlan.create({
       trainingId,
       name,
       order,
       notes,
     });
+    if (isVisible !== undefined) { // Só adiciona se for explicitamente enviado
+        newWorkoutPlanData.isVisible = !!isVisible; // Converte para booleano
+    }
+    const newWorkoutPlan = await db.WorkoutPlan.create(newWorkoutPlanData);
     res.status(201).json(newWorkoutPlan);
   } catch (error) {
     console.error('Erro (admin) ao criar plano de treino:', error);
@@ -103,7 +107,7 @@ const getWorkoutPlansForTraining = async (req, res) => {
 // @access  Privado (Admin Staff)
 const updateWorkoutPlan = async (req, res) => {
   const { planId } = req.params;
-  const { name, order, notes } = req.body;
+  const { name, order, notes, isVisible} = req.body;
 
   try {
     const workoutPlan = await db.WorkoutPlan.findByPk(planId);
@@ -120,6 +124,9 @@ const updateWorkoutPlan = async (req, res) => {
     if (name !== undefined) workoutPlan.name = name;
     if (order !== undefined) workoutPlan.order = order;
     if (notes !== undefined) workoutPlan.notes = notes;
+    if (isVisible !== undefined) { // Permite atualizar o campo isVisible
+      workoutPlan.isVisible = !!isVisible; // Converte para booleano
+    }
 
     await workoutPlan.save();
     res.status(200).json(workoutPlan);
@@ -155,9 +162,68 @@ const deleteWorkoutPlan = async (req, res) => {
   }
 };
 
+// @desc    Lista planos de treino visíveis para clientes (com pesquisa)
+// @route   GET /api/workout-plans/visible
+// @access  Privado (Cliente ou qualquer autenticado)
+const getVisibleWorkoutPlans = async (req, res) => {
+  const { searchTerm, muscleGroup, createdByStaffId } = req.query; // Exemplos de filtros
+  const whereClause = {
+    isVisible: true, // APENAS PLANOS VISÍVEIS
+  };
+
+  if (searchTerm) {
+    whereClause[Op.or] = [
+      { name: { [Op.iLike]: `%${searchTerm}%` } },
+      { notes: { [Op.iLike]: `%${searchTerm}%` } },
+      // Para pesquisar por nome de exercício dentro do plano, a query fica mais complexa,
+      // envolvendo um include e where no include. Simplificaremos por agora.
+    ];
+  }
+
+  // Filtro por grupo muscular exigiria um JOIN com Exercícios através de WorkoutPlanExercise
+  // Para simplificar, vamos omitir este filtro por agora ou considerar uma forma mais simples
+  // Se 'muscleGroup' fosse um campo no próprio WorkoutPlan, seria mais fácil.
+
+  // Filtro por quem criou (se WorkoutPlan tiver um campo creatorStaffId)
+  // if (createdByStaffId) {
+  //   whereClause.creatorStaffId = createdByStaffId;
+  // }
+
+  try {
+    const workoutPlans = await db.WorkoutPlan.findAll({
+      where: whereClause,
+      order: [['name', 'ASC']], // Ou por data de criação, etc.
+      include: [
+        {
+          model: db.WorkoutPlanExercise,
+          as: 'planExercises',
+          include: [
+            {
+              model: db.Exercise,
+              as: 'exerciseDetails',
+              attributes: ['id', 'name', 'muscleGroup'] // Adiciona os atributos que queres mostrar
+            }
+          ]
+        },
+        // Opcional: incluir o instrutor que criou o treino original (se relevante)
+        // {
+        //   model: db.Training,
+        //   as: 'trainingSession',
+        //   include: [{ model: db.Staff, as: 'instructor', attributes: ['id', 'firstName', 'lastName'] }]
+        // }
+      ]
+    });
+    res.status(200).json(workoutPlans);
+  } catch (error) {
+    console.error('Erro ao listar planos de treino visíveis:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
+  }
+};
+
 module.exports = {
   createWorkoutPlan,
   getWorkoutPlansForTraining,
   updateWorkoutPlan,
   deleteWorkoutPlan,
+  getVisibleWorkoutPlans,
 };

@@ -37,5 +37,11 @@ router.get('/:planId/exercises', protect, workoutPlanExerciseController.getExerc
 router.put('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.updateExerciseInWorkoutPlan);
 // Remover um exercício específico de um plano
 router.delete('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.removeExerciseFromWorkoutPlan);
+// Rota para CLIENTES listarem/pesquisarem planos visíveis
+router.get(
+  '/visible', // GET /api/workout-plans/visible
+  protect,    // Qualquer utilizador autenticado (ou isClientUser se for só para clientes)
+  workoutPlanController.getVisibleWorkoutPlans // Nova função no controlador
+);
 
 module.exports = router;

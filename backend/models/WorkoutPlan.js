@@ -21,6 +21,12 @@ module.exports = (sequelize) => {
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    isVisible: { // NOVO CAMPO
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false, // Ou true, conforme a tua preferência inicial
+      comment: 'Indica se o plano de treino é visível para os clientes na biblioteca de planos.'
+    },
     // trainingId será adicionado via associação
   }, {
     tableName: 'workout_plans',

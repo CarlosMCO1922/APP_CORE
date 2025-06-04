@@ -521,6 +521,16 @@ function AdminManageWorkoutPlansPage() {
                   {planFormLoading ? 'A guardar...' : (isEditingPlan ? 'Guardar Alterações' : 'Criar Plano')}
                 </ModalButton>
               </ModalActions>
+              <div>
+                <ModalLabel htmlFor="planIsVisible">Visível para Clientes?</ModalLabel>
+                <ModalCheckbox
+                  type="checkbox"
+                  name="isVisible"
+                  id="planIsVisible"
+                  checked={currentPlanData.isVisible || false} // Garante que é um booleano
+                  onChange={(e) => setCurrentPlanData(prev => ({ ...prev, isVisible: e.target.checked }))}
+                />
+              </div>
             </ModalForm>
           </ModalContent>
         </ModalOverlay>
