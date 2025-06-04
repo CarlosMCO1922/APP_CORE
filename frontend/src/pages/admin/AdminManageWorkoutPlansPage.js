@@ -166,6 +166,28 @@ const CloseButton = styled.button`
   line-height: 1; padding: 0;
   &:hover { color: #fff; }
 `;
+
+const ModalCheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 10px; // Ajusta conforme necessário
+  margin-bottom: 15px; // Ajusta conforme necessário
+  gap: 8px;
+`;
+
+const ModalCheckbox = styled.input`
+  width: auto;
+  height: auto;
+  accent-color: ${({ theme }) => theme.colors.primary};
+  transform: scale(1.3); // Opcional, para o tornar mais visível
+  cursor: pointer;
+
+  &:focus {
+    outline: 2px solid ${({ theme }) => theme.colors.primary}80;
+    outline-offset: 2px;
+  }
+`;
+
 const NoItemsText = styled.p` font-size: 0.95rem; color: #888; text-align: center; padding: 15px 0; font-style: italic; `;
 
 const initialWorkoutPlanForm = { name: '', order: 0, notes: '' };
@@ -521,16 +543,18 @@ function AdminManageWorkoutPlansPage() {
                   {planFormLoading ? 'A guardar...' : (isEditingPlan ? 'Guardar Alterações' : 'Criar Plano')}
                 </ModalButton>
               </ModalActions>
-              <div>
-                <ModalLabel htmlFor="planIsVisible">Visível para Clientes?</ModalLabel>
+              <ModalCheckboxContainer>
                 <ModalCheckbox
                   type="checkbox"
                   name="isVisible"
                   id="planIsVisible"
-                  checked={currentPlanData.isVisible || false} // Garante que é um booleano
+                  checked={currentPlanData.isVisible || false}
                   onChange={(e) => setCurrentPlanData(prev => ({ ...prev, isVisible: e.target.checked }))}
                 />
-              </div>
+                <ModalLabel htmlFor="planIsVisible" style={{ marginBottom: 0, cursor: 'pointer' }}>
+                  Visível para Clientes
+                </ModalLabel>
+              </ModalCheckboxContainer>
             </ModalForm>
           </ModalContent>
         </ModalOverlay>
