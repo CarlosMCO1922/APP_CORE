@@ -76,7 +76,7 @@ module.exports = (sequelize) => {
     });*/
 
     Training.belongsToMany(models.WorkoutPlan, {
-      through: 'TrainingWorkoutPlans', // Mesmo nome da tabela de junção
+      through: models.TrainingWorkoutPlan,
       foreignKey: 'trainingId',
       otherKey: 'workoutPlanId',
       as: 'workoutPlans'
