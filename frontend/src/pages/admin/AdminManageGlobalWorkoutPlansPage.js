@@ -108,6 +108,18 @@ const ModalCheckbox = styled.input`
   }
 `;
 
+const BackLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.primary};
+  text-decoration: none;
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 const TableWrapper = styled.div`
   width: 100%;
   overflow-x: auto;
