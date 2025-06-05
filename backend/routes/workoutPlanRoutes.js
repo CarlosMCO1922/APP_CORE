@@ -25,18 +25,18 @@ const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddl
 // Atualizar um plano de treino específico
 //router.put('/:planId', protect, isAdminStaff, workoutPlanController.updateWorkoutPlan);
 // Eliminar um plano de treino específico
-router.delete('/:planId', protect, isAdminStaff, workoutPlanController.deleteWorkoutPlan);
+//router.delete('/:planId', protect, isAdminStaff, workoutPlanController.deleteWorkoutPlan);
 
 // Rotas para Exercícios dentro de um Plano de Treino (WorkoutPlanExercise)
 // Adicionar exercício a um plano
-router.post('/:planId/exercises', protect, isAdminStaff, workoutPlanExerciseController.addExerciseToWorkoutPlan);
+router.post('/:planId/exercises', protect, isAdminStaff, workoutPlanExerciseController.addExerciseToGlobalWorkoutPlan);
 // Listar exercícios de um plano
-router.get('/:planId/exercises', protect, workoutPlanExerciseController.getExercisesForWorkoutPlan); // Proteger para cliente/staff poder ver também
+router.get('/:planId/exercises', protect, workoutPlanExerciseController.getExercisesForGlobalWorkoutPlan); // Proteger para cliente/staff poder ver também
 
 // Atualizar um exercício específico num plano
-router.put('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.updateExerciseInWorkoutPlan);
+router.put('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.updateExerciseInGlobalWorkoutPlan);
 // Remover um exercício específico de um plano
-router.delete('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.removeExerciseFromWorkoutPlan);
+router.delete('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.removeExerciseFromGlobalWorkoutPlan);
 // Rota para CLIENTES listarem/pesquisarem planos visíveis
 router.get(
   '/visible', // GET /api/workout-plans/visible
