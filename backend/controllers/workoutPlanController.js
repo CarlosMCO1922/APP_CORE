@@ -226,7 +226,10 @@ const getWorkoutPlansForTraining = async (req, res) => {
         include: [{ model: db.Exercise, as: 'exerciseDetails' }]
       }],
       joinTableAttributes: ['orderInTraining'], // Para ter acesso a TrainingWorkoutPlans.orderInTraining
-      order: [db.sequelize.literal(`"${db.TrainingWorkoutPlan.name}"."orderInTraining"`), 'ASC']
+      order: [
+        db.sequelize.literal(`"${db.TrainingWorkoutPlan.name}"."orderInTraining"`), 
+        ['order','ASC']
+      ]
     });
     res.status(200).json(associatedPlans);
   } catch (error) {
