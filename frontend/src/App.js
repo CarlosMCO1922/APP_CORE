@@ -25,7 +25,9 @@ import AdminManageWorkoutPlansPage from './pages/admin/AdminManageWorkoutPlansPa
 import AdminManageExercisesPage from './pages/admin/AdminManageExercisesPage';
 import ClientTrainingPlanPage from './pages/ClientTrainingPlanPage';
 import ClientProgressPage from './pages/ClientProgressPage';
-import AdminTrainingSeriesPage from './pages/admin/AdminTrainingSeriesPage'; // Verifique se este import já existe; se não, adicione.
+import AdminTrainingSeriesPage from './pages/admin/AdminTrainingSeriesPage';
+import AdminManageGlobalWorkoutPlansPage from './pages/admin/AdminManageGlobalWorkoutPlansPage';
+
 
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
@@ -113,6 +115,7 @@ function App() {
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
               <Route path="/admin/users/:userId/details" element={<AdminUserDetailsPage />} /> 
               <Route path='/admin/training-series' element={<AdminTrainingSeriesPage />} /> 
+              <Route path="/admin/manage-global-plans" element={<AdminManageGlobalWorkoutPlansPage />} />
             </Route>
 
             {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}

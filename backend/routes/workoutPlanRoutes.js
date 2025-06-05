@@ -44,4 +44,57 @@ router.get(
   workoutPlanController.getVisibleWorkoutPlans // Nova função no controlador
 );
 
+// Rotas para Admin gerir Planos de Treino "Modelo" / Globais
+router.post(
+  '/global', // POST /api/workout-plans/global
+  protect,
+  isAdminStaff,
+  workoutPlanController.createGlobalWorkoutPlan
+);
+router.get(
+  '/global', // GET /api/workout-plans/global
+  protect,
+  isAdminStaff,
+  workoutPlanController.getAllGlobalWorkoutPlans
+);
+router.get(
+  '/global/:planId', // GET /api/workout-plans/global/:planId
+  protect,
+  isAdminStaff,
+  workoutPlanController.getGlobalWorkoutPlanById
+);
+router.put(
+  '/global/:planId', // PUT /api/workout-plans/global/:planId
+  protect,
+  isAdminStaff,
+  workoutPlanController.updateGlobalWorkoutPlan
+);
+router.delete(
+  '/global/:planId', // DELETE /api/workout-plans/global/:planId
+  protect,
+  isAdminStaff,
+  workoutPlanController.deleteGlobalWorkoutPlan
+);
+
+// Rotas para associar/desassociar planos de treinos específicos
+router.post(
+  '/:planId/assign-to-training/:trainingId',
+  protect,
+  isAdminStaff,
+  workoutPlanController.assignPlanToTraining
+);
+router.delete(
+  '/:planId/remove-from-training/:trainingId',
+  protect,
+  isAdminStaff,
+  workoutPlanController.removePlanFromTraining
+);
+
+// A rota GET /api/workout-plans/visible (para clientes) que já discutimos continua válida
+router.get(
+  '/visible',
+  protect, // Acesso para clientes
+  workoutPlanController.getVisibleWorkoutPlans // Função que criaste para listar planos com isVisible: true
+);
+
 module.exports = router;

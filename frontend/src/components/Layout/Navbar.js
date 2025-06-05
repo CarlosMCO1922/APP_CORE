@@ -491,6 +491,7 @@ function Navbar() {
         <DropdownLink to="/admin/manage-appointments" onClick={handleNavigateAndCloseMenus}><FaCalendarCheck /> Consultas</DropdownLink>
         <DropdownLink to="/admin/manage-payments" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
         <DropdownLink to="/admin/manage-exercises" onClick={handleNavigateAndCloseMenus}><FaListOl /> Exercícios Base</DropdownLink>
+        <DropdownLink to="/admin/manage-global-plans" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Planos de Treino Modelo</DropdownLink>
       </DropdownContent>
     </DropdownContainer>
   );

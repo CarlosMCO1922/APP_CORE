@@ -296,6 +296,10 @@ const AdminDashboardPage = () => {
           <h2><FaCreditCard />Gerir Pagamentos</h2>
           <p>Registar e acompanhar pagamentos dos clientes.</p>
         </AdminNavLinkCard>
+        <AdminNavLinkCard to="/admin/manage-global-plans">
+          <h2><FaCreditCard />Gerir Planos de treino</h2>
+          <p>Criar, visualizar, editar e eliminar planos de treino.</p>
+        </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/manage-exercises">
           <h2><FaRunning />Gerir Exercícios Base</h2>
           <p>Criar e editar os exercícios disponíveis para os planos.</p>
