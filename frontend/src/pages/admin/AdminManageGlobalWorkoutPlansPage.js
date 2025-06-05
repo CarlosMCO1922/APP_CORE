@@ -108,6 +108,58 @@ const ModalCheckbox = styled.input`
   }
 `;
 
+const TableWrapper = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+  border-radius: ${({ theme }) => theme.borderRadius || '8px'};
+  box-shadow: ${({ theme }) => theme.boxShadow || '0 2px 10px rgba(0,0,0,0.2)'};
+  background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
+`;
+
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  th, td {
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder || '#383838'};
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 0.9rem;
+    vertical-align: middle;
+  }
+  th {
+    background-color: #303030; /* Um pouco mais escuro que o cardBackground */
+    color: ${({ theme }) => theme.colors.primary};
+    font-weight: 600;
+  }
+  tbody tr:hover {
+    background-color: ${({ theme }) => theme.colors.cardBackgroundHover || '#2a2a2a'};
+  }
+`;
+
+const ActionButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.primary};
+  cursor: pointer;
+  margin: 0 5px;
+  font-size: 1rem; // Ou o tamanho que preferires
+  padding: 5px;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #fff; // Ou uma cor de hover do tema
+  }
+
+  &.delete {
+    color: ${({ theme }) => theme.colors.error};
+    &:hover {
+      color: ${({ theme }) => theme.colors.error}; // Uma variação mais escura ou clara
+      opacity: 0.8;
+    }
+  }
+`;
+
 const ExercisesInSection = styled.div` margin-top: 15px; padding-top: 15px; border-top: 1px solid #4A4A4A; `;
 const ExerciseEntry = styled.div` background-color: #383838; padding: 10px; border-radius: 6px; margin-bottom:10px; display: flex; justify-content: space-between; align-items: flex-start;`;
 const ExerciseFieldsGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px;`;

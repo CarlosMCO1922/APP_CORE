@@ -44,12 +44,12 @@ router.get(
 );
 
 // --- Rotas para Planos de Treino (WorkoutPlan) aninhadas sob um Treino específico ---
-router.post(
-  '/:trainingId/workout-plans',
+/*router.post(
+  '/:trainingId/workout-plans', 
   protect,
   isAdminStaff,
   workoutPlanController.createWorkoutPlan
-);
+);*/
 router.get(
   '/:trainingId/workout-plans',
   protect, // Permissão verificada no controlador
