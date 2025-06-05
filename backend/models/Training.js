@@ -93,7 +93,7 @@ module.exports = (sequelize) => {
       as: 'clientPerformances', // training.getClientPerformances()
       onDelete: 'CASCADE',
     });
-    
+
     Training.belongsTo(models.TrainingSeries, {
       foreignKey: 'trainingSeriesId',
       as: 'series',
