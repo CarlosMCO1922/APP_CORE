@@ -35,12 +35,19 @@ module.exports = (sequelize) => {
 
   WorkoutPlan.associate = (models) => {
     // Um WorkoutPlan (parcial) pertence a UM Training
-    WorkoutPlan.belongsTo(models.Training, {
+    /*WorkoutPlan.belongsTo(models.Training, {
       foreignKey: {
         name: 'trainingId',
         allowNull: false,
       },
       as: 'trainingSession', // Um plano pertence a uma sessão de treino
+    });*/
+
+    WorkoutPlan.belongsToMany(models.Training, {
+      through: 'TrainingWorkoutPlans', // Nome da nova tabela de junção
+      foreignKey: 'workoutPlanId',
+      otherKey: 'trainingId',
+      as: 'trainingSessions'
     });
 
     // Um WorkoutPlan tem muitos WorkoutPlanExercises (detalhes dos exercícios neste plano)

@@ -69,10 +69,17 @@ module.exports = (sequelize) => {
       as: 'instructor',
     });
 
-    Training.hasMany(models.WorkoutPlan, {
+    /*Training.hasMany(models.WorkoutPlan, {
       foreignKey: 'trainingId',
       as: 'workoutPlans', // training.getWorkoutPlans()
       onDelete: 'CASCADE', // Se o treino for apagado, os seus planos também
+    });*/
+
+    Training.belongsToMany(models.WorkoutPlan, {
+      through: 'TrainingWorkoutPlans', // Mesmo nome da tabela de junção
+      foreignKey: 'trainingId',
+      otherKey: 'workoutPlanId',
+      as: 'workoutPlans'
     });
 
     Training.hasMany(models.TrainingWaitlist, {
