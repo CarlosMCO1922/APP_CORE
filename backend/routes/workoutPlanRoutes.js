@@ -29,14 +29,14 @@ const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddl
 
 // Rotas para Exercícios dentro de um Plano de Treino (WorkoutPlanExercise)
 // Adicionar exercício a um plano
-router.post('/:planId/exercises', protect, isAdminStaff, workoutPlanExerciseController.addExerciseToGlobalWorkoutPlan);
+router.post('/:planId/exercises', protect, isAdminStaff, workoutPlanExerciseController.addExerciseToWorkoutPlan);
 // Listar exercícios de um plano
-router.get('/:planId/exercises', protect, workoutPlanExerciseController.getExercisesForGlobalWorkoutPlan); // Proteger para cliente/staff poder ver também
+router.get('/:planId/exercises', protect, workoutPlanExerciseController.getExercisesForWorkoutPlan); // Proteger para cliente/staff poder ver também
 
 // Atualizar um exercício específico num plano
-router.put('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.updateExerciseInGlobalWorkoutPlan);
+router.put('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.updateExerciseInWorkoutPlan);
 // Remover um exercício específico de um plano
-router.delete('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.removeExerciseFromGlobalWorkoutPlan);
+router.delete('/exercises/:planExerciseId', protect, isAdminStaff, workoutPlanExerciseController.removeExerciseFromWorkoutPlan);
 // Rota para CLIENTES listarem/pesquisarem planos visíveis
 router.get(
   '/visible', // GET /api/workout-plans/visible
