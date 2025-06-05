@@ -25,12 +25,18 @@ module.exports = (sequelize, DataTypes) => {
     },
     // NOVO CAMPO E AJUSTE EM dayOfWeek
     recurrenceType: {
-      type: DataTypes.ENUM('daily', 'weekly', 'monthly'),
+      type: DataTypes.STRING, // ALTERADO DE ENUM PARA STRING
       allowNull: false,
       defaultValue: 'weekly',
-      comment: 'Tipo de recorrência: diária, semanal, mensal',
+      comment: 'Tipo de recorrência: diária, semanal, mensal (controlado pela aplicação)',
+      validate: { // Adiciona validação a nível de aplicação
+        isIn: {
+          args: [['daily', 'weekly', 'monthly']],
+          msg: "Valor inválido para recurrenceType. Deve ser 'daily', 'weekly', ou 'monthly'."
+        }
+      }
     },
-    dayOfWeek: { // MODIFICADO
+    dayOfWeek: {
       type: DataTypes.INTEGER, // 0 (Dom) a 6 (Sáb)
       allowNull: true, // Nulo se recurrenceType for 'daily', ou para alguns tipos de 'monthly'
       comment: 'Dia da semana (0-Dom, 1-Seg, ...), relevante para semanal/mensal',
