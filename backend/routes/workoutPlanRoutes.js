@@ -23,7 +23,7 @@ const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddl
 // POST /api/workout-plans (Criar um plano - precisaria de trainingId no body)
 
 // Atualizar um plano de treino específico
-router.put('/:planId', protect, isAdminStaff, workoutPlanController.updateWorkoutPlan);
+//router.put('/:planId', protect, isAdminStaff, workoutPlanController.updateWorkoutPlan);
 // Eliminar um plano de treino específico
 router.delete('/:planId', protect, isAdminStaff, workoutPlanController.deleteWorkoutPlan);
 
