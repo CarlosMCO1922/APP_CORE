@@ -19,7 +19,7 @@ import {
 import { theme } from '../theme';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
-// --- Styled Components ---
+// --- Styled Components (mantidos como estavam) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -323,23 +323,6 @@ const ModalOverlayStyled = styled.div`
   z-index: 1050; padding: 20px;
 `;
 
-const ModalLabel = styled.label`
-  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: 4px; display: block; font-weight: 500;
-`;
-
-
-
-const ModalInput = styled.input`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
-  width: 100%;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
-`;
-
 const ModalContentStyled = styled.div`
   background-color: ${({ theme }) => theme.colors.modalBg || '#2A2A2A'};
   padding: clamp(20px, 3vw, 30px);
@@ -448,6 +431,22 @@ const ModalActions = styled.div`
   gap: 10px;
 `;
 
+const ModalLabel = styled.label`
+  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 4px; display: block; font-weight: 500;
+`;
+
+
+const ModalInput = styled.input`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+
 const StatisticsSection = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: clamp(15px, 3vw, 25px);
@@ -525,7 +524,6 @@ const ChartMetricSelectorContainer = styled.div`
   }
 `;
 
-// -- NOVOS STYLED COMPONENTS PARA OS FILTROS --
 const FilterGroup = styled.div`
   display: flex;
   flex-direction: column;
@@ -567,9 +565,7 @@ const FilterButton = styled.button`
     opacity: 0.9;
   }
 `;
-// --- Fim dos Styled Components ---
 
-// Função de cálculo movida para fora para ser pura
 const calculateAggregateStats = (performanceLogs, workoutPlans, allPlanExercises) => {
     if (!performanceLogs || Object.keys(performanceLogs).length === 0) {
         return null;
@@ -581,7 +577,7 @@ const calculateAggregateStats = (performanceLogs, workoutPlans, allPlanExercises
     const exerciseWeights = {};
     const exerciseLoggedCount = {};
     let distinctExercisesPrescribed = 0;
-    let totalVolume = 0;
+    let totalVolume = 0; 
 
     const prescribedExerciseIds = new Set();
     (allPlanExercises || []).forEach(planEx => prescribedExerciseIds.add(planEx.id));
@@ -662,6 +658,7 @@ const ClientProgressPage = () => {
     const [statsEndDate, setStatsEndDate] = useState('');
 
     const [chartMetric, setChartMetric] = useState('performedWeight');
+    const [loadingStatistics, setLoadingStatistics] = useState(false); // <<< ADICIONADO AQUI
 
     const fetchBookedTrainings = useCallback(async () => {
         if (authState.token && !globalPlanId) {
@@ -755,7 +752,7 @@ const ClientProgressPage = () => {
         if (statsStartDate && statsEndDate) {
             const start = new Date(statsStartDate);
             const end = new Date(statsEndDate);
-            end.setHours(23, 59, 59, 999);
+            end.setHours(23, 59, 59, 999); 
 
             logsForStats = logsForStats.filter(log => {
                 const logDate = new Date(log.performedAt);
@@ -778,6 +775,13 @@ const ClientProgressPage = () => {
         return calculateAggregateStats(filteredLogsByExerciseId, workoutPlans, allPlanExercisesFromPlans);
 
     }, [performanceLogs, statsStartDate, statsEndDate, workoutPlans]);
+
+    const handlePerformanceInputChange = (planExerciseId, field, value) => { // <<< ADICIONADO AQUI
+      setCurrentPerformanceInputs(prev => ({
+        ...prev,
+        [planExerciseId]: { ...(prev[planExerciseId] || {}), [field]: value }
+      }));
+    };
 
     const handleLogPerformance = async (planExerciseId, workoutPlanId) => {
       const inputs = currentPerformanceInputs[planExerciseId];
@@ -1084,11 +1088,11 @@ const ClientProgressPage = () => {
                             </div>
                         </>
                         )}
-                        <ModalActions style={{marginTop: '20px', paddingTop: '15px', borderTop: `1px solid ${theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}`}}>
+                         <ModalActions style={{marginTop: '20px', paddingTop: '15px', borderTop: `1px solid ${theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}`}}>
                             <SelectTrainingButton onClick={handleCloseFullHistoryModal} style={{backgroundColor: theme.colors.buttonSecondaryBg || '#6c757d', color: theme.colors.textMain}}>
                                 Fechar
                             </SelectTrainingButton>
-                        </ModalActions>
+                         </ModalActions>
                     </ModalContentStyled>
                 </ModalOverlayStyled>
             )}
