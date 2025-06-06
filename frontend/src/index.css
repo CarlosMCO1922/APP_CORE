@@ -18,3 +18,97 @@ code {
 * {
   box-sizing: border-box;
 }
+
+/* --- Estilos para o React Calendar --- */
+.react-calendar {
+  width: 100%;
+  max-width: 400px; /* Ajusta conforme necessário */
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  line-height: 1.125em;
+}
+
+.react-calendar__navigation {
+  display: flex;
+  height: 44px;
+  margin-bottom: 1em;
+}
+
+.react-calendar__navigation button {
+  min-width: 44px;
+  background: none;
+  border: 0;
+  color: #D4AF37; /* Cor Primária */
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.react-calendar__navigation button:disabled {
+  color: #4A4A4A; /* Cor Desativada */
+}
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background-color: #252525; /* Fundo do Card */
+}
+
+.react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 0.75em;
+  color: #a0a0a0; /* Cor de Texto Muted */
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  padding: 0.5em;
+}
+
+.react-calendar__month-view__days__day--weekend {
+  color: #D4AF37; /* Cor Primária */
+}
+.react-calendar__month-view__days__day--neighboringMonth {
+  color: #4A4A4A; /* Cor Desativada */
+}
+
+.react-calendar__tile {
+  max-width: 100%;
+  padding: 12px 6.6667px;
+  background: none;
+  text-align: center;
+  line-height: 16px;
+  font-size: 0.9rem;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  color: #E0E0E0; /* Cor de Texto Principal */
+  cursor: pointer;
+}
+
+.react-calendar__tile:disabled {
+  background-color: transparent;
+  color: #4A4A4A;
+  cursor: default;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background-color: #252525; /* Fundo do Card */
+}
+
+.react-calendar__tile--now {
+  background: rgba(212, 175, 55, 0.2); /* Fundo do Dia Atual */
+  border: 2px solid #D4AF37;
+}
+
+.react-calendar__tile--hasActive {
+  background: #D4AF37;
+  color: #1A1A1A;
+}
+
+.react-calendar__tile--active {
+  background: #D4AF37 !important;
+  color: #1A1A1A !important;
+  font-weight: bold;
+}
+
+/* --- Fim dos Estilos para o React Calendar --- */

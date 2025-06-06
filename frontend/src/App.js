@@ -14,6 +14,8 @@ import SettingsPage from './pages/SettingsPage';
 import MyPaymentsPage from './pages/MyPaymentsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ExploreWorkoutPlansPage from './pages/ExploreWorkoutPlansPage';
+import BookingServiceSelectionPage from './pages/BookingServiceSelectionPage';
+import BookingCalendarPage from './pages/BookingCalendarPage';
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
 import AdminUserDetailsPage from './pages/admin/AdminUserDetailsPage';
@@ -91,7 +93,8 @@ function App() {
               <Route path="/meu-progresso" element={<ClientProgressPage />} />
               <Route path="/explorar-planos" element={<ExploreWorkoutPlansPage />} />
               <Route path="/meu-progresso/usar-plano/:globalPlanId" element={<ClientProgressPage />} />
-
+              <Route path="/calendario" element={<BookingServiceSelectionPage />} />
+              <Route path="/agendar" element={<BookingCalendarPage />} />
             </Route>
 
             {/* Rotas de Staff/Admin */}
