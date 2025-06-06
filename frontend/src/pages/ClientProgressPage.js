@@ -1,5 +1,5 @@
 // src/pages/ClientProgressPage.js
-import React, { useEffect, useState, useCallback, useMemo} from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -19,28 +19,13 @@ import {
 import { theme } from '../theme';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
-// --- Styled Components (com as definições em falta adicionadas) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
   min-height: 100vh;
   padding: 25px clamp(15px, 4vw, 40px);
   font-family: ${({ theme }) => theme.fonts.main};
-`;
-
-const ModalLabel = styled.label`
-  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
-  margin-bottom: 4px; display: block; font-weight: 500;
-`;
-
-const ModalInput = styled.input`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
-  width: 100%;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
 `;
 
 const HeaderContainer = styled.div`
@@ -338,6 +323,23 @@ const ModalOverlayStyled = styled.div`
   z-index: 1050; padding: 20px;
 `;
 
+const ModalLabel = styled.label`
+  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 4px; display: block; font-weight: 500;
+`;
+
+
+
+const ModalInput = styled.input`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+
 const ModalContentStyled = styled.div`
   background-color: ${({ theme }) => theme.colors.modalBg || '#2A2A2A'};
   padding: clamp(20px, 3vw, 30px);
@@ -567,28 +569,71 @@ const FilterButton = styled.button`
 `;
 // --- Fim dos Styled Components ---
 
-
-const calculateAggregateStats = (performanceLogs) => {
-  if (!performanceLogs || Object.keys(performanceLogs).length === 0) return null;
-
-  let totalSetsLogged = 0;
-  let totalRepsLogged = 0;
-  let totalDurationLoggedSeconds = 0;
-  let totalVolume = 0;
-
-  Object.values(performanceLogs).flat().forEach(log => {
-    totalSetsLogged++;
-    if (log.performedReps) totalRepsLogged += log.performedReps;
-    if (log.performedDurationSeconds) totalDurationLoggedSeconds += log.performedDurationSeconds;
-    if (log.performedReps && log.performedWeight) {
-      totalVolume += (log.performedReps * log.performedWeight);
+// Função de cálculo movida para fora para ser pura
+const calculateAggregateStats = (performanceLogs, workoutPlans, allPlanExercises) => {
+    if (!performanceLogs || Object.keys(performanceLogs).length === 0) {
+        return null;
     }
-  });
 
-  return { totalSetsLogged, totalRepsLogged, totalDurationLoggedSeconds, totalVolume: parseFloat(totalVolume.toFixed(2)) };
+    let totalSetsLogged = 0;
+    let totalRepsLogged = 0;
+    let totalDurationLoggedSeconds = 0;
+    const exerciseWeights = {};
+    const exerciseLoggedCount = {};
+    let distinctExercisesPrescribed = 0;
+    let totalVolume = 0;
+
+    const prescribedExerciseIds = new Set();
+    (allPlanExercises || []).forEach(planEx => prescribedExerciseIds.add(planEx.id));
+    distinctExercisesPrescribed = prescribedExerciseIds.size;
+
+    Object.values(performanceLogs).flat().forEach(log => {
+        totalSetsLogged++;
+        if (log.performedReps) totalRepsLogged += log.performedReps;
+        if (log.performedDurationSeconds) totalDurationLoggedSeconds += log.performedDurationSeconds;
+
+        if (log.performedReps && log.performedWeight) {
+            totalVolume += (log.performedReps * log.performedWeight);
+        }
+
+        if (log.performedWeight && log.planExerciseId) {
+            const exName = (allPlanExercises || []).find(pe => pe.id === log.planExerciseId)?.exerciseDetails?.name || 'Exercício Desconhecido';
+            if (!exerciseWeights[log.planExerciseId]) {
+                exerciseWeights[log.planExerciseId] = { sum: 0, count: 0, name: exName };
+            }
+            exerciseWeights[log.planExerciseId].sum += log.performedWeight;
+            exerciseWeights[log.planExerciseId].count++;
+        }
+        if(log.planExerciseId) {
+            exerciseLoggedCount[log.planExerciseId] = (exerciseLoggedCount[log.planExerciseId] || 0) + 1;
+        }
+    });
+
+    const averageWeights = {};
+    for (const planExId in exerciseWeights) {
+        const data = exerciseWeights[planExId];
+        if (data.count > 0) {
+            averageWeights[data.name] = data.sum / data.count;
+        }
+    }
+
+    const exercisesAttempted = Object.keys(exerciseLoggedCount).length;
+    let consistency = 0;
+    if (distinctExercisesPrescribed > 0) {
+        consistency = (exercisesAttempted / distinctExercisesPrescribed) * 100;
+    }
+
+    return {
+        totalSetsLogged,
+        totalRepsLogged,
+        totalDurationLoggedSeconds,
+        averageWeights,
+        exercisesAttempted,
+        distinctExercisesPrescribed,
+        consistency: parseFloat(consistency.toFixed(1)),
+        totalVolume: parseFloat(totalVolume.toFixed(2)),
+    };
 };
-
-// --- Componente Principal ---
 
 const ClientProgressPage = () => {
     const { authState } = useAuth();
@@ -710,7 +755,7 @@ const ClientProgressPage = () => {
         if (statsStartDate && statsEndDate) {
             const start = new Date(statsStartDate);
             const end = new Date(statsEndDate);
-            end.setHours(23, 59, 59, 999); 
+            end.setHours(23, 59, 59, 999);
 
             logsForStats = logsForStats.filter(log => {
                 const logDate = new Date(log.performedAt);
@@ -819,267 +864,236 @@ const ClientProgressPage = () => {
 
     const hasActiveSelection = selectedTraining || globalPlanId;
 
-  if (loadingTrainings) return <PageContainer><LoadingText>A carregar seus treinos...</LoadingText></PageContainer>;
+    if (loadingTrainings) {
+        return <PageContainer><LoadingText>A carregar seus treinos...</LoadingText></PageContainer>;
+    }
 
-  return (
-    <PageContainer>
-      <BackLink to="/dashboard"><FaArrowLeft /> Voltar ao Painel</BackLink>
-      <HeaderContainer>
-        <Title><FaClipboardList /> Registar Progresso Pessoal</Title>
-      </HeaderContainer>
+    return (
+        <PageContainer>
+            <BackLink to="/dashboard"><FaArrowLeft /> Voltar ao Painel</BackLink>
+            <HeaderContainer>
+                <Title><FaClipboardList /> Registar Progresso Pessoal</Title>
+            </HeaderContainer>
 
-      {error && <ErrorText>{error}</ErrorText>}
-      {successMessage && <PageSuccessMessage>{successMessage}</PageSuccessMessage>}
+            {error && <ErrorText>{error}</ErrorText>}
+            {successMessage && <PageSuccessMessage>{successMessage}</PageSuccessMessage>}
 
-      {!hasActiveSelection ? (
-        <>
-          <SectionTitle>Selecione um Treino Agendado</SectionTitle>
-          {myTrainings.length > 0 ? (
-            <TrainingSelectorGrid>
-              {myTrainings.map(training => (
-                <TrainingCard key={training.id} onClick={() => setSelectedTraining(training.id)}>
-                  <h3>{training.name}</h3>
-                  <p>Data: {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time ? training.time.substring(0, 5) : 'N/A'}</p>
-                  <SelectTrainingButton onClick={(e) => { e.stopPropagation(); setSelectedTraining(training.id); }}>
-                    Registar/Ver Progresso
-                  </SelectTrainingButton>
-                </TrainingCard>
-              ))}
-            </TrainingSelectorGrid>
-          ) : (
-            <EmptyText>Não está inscrito em nenhum treino.</EmptyText>
-          )}
-          <SectionTitle>Ou escolha um Plano Livre</SectionTitle>
-          <SelectTrainingButton as={Link} to="/explorar-planos" style={{ textDecoration: 'none', display: 'inline-block', width: 'auto' }}>
-            Explorar Planos de Treino
-          </SelectTrainingButton>
-        </>
-      ) : (
-        <>
-          <SectionTitle>A Registar para: {selectedTrainingName}</SectionTitle>
-          <SelectTrainingButton onClick={clearSelection} style={{ marginBottom: '20px', backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain }}>
-            {globalPlanId ? 'Voltar à Seleção' : 'Mudar Treino'}
-          </SelectTrainingButton>
-
-          {loadingPlansAndProgress && <LoadingText>A carregar plano e progresso...</LoadingText>}
-          {!loadingPlansAndProgress && workoutPlans.length === 0 && <EmptyText>Este item não tem um plano de treino definido.</EmptyText>}
-          
-          {/* A Lógica de Estatísticas e a renderização dos planos e exercícios permanece a mesma */}
-          {/* ... (todo o JSX de estatísticas e de WorkoutPlanDisplay que já tinhas) ... */}
-           {loadingStatistics && !loadingPlansAndProgress && <LoadingText>A calcular estatísticas...</LoadingText>}
-          {!loadingStatistics && trainingStatistics && workoutPlans.length > 0 && (
-            <StatisticsSection>
-              <h3><FaChartBar /> Estatísticas do Treino</h3>
-              <StatsGrid>
-                <StatCard>
-                  <h4><FaClipboardList /> Séries Registadas</h4>
-                  <p>{trainingStatistics.totalSetsLogged}</p>
-                </StatCard>
-                <StatCard>
-                  <h4><FaRunning /> Repetições Totais</h4>
-                  <p>{trainingStatistics.totalRepsLogged}</p>
-                </StatCard>
-                <StatCard>
-                  <h4><FaDumbbell /> Volume Total Treinado</h4>
-                  <p>{trainingStatistics.totalVolume} kg</p>
-                </StatCard>
-                <StatCard>
-                  <h4><FaStopwatch /> Duração Total (Exercícios)</h4>
-                  <p>{Math.floor(trainingStatistics.totalDurationLoggedSeconds / 60)}m {trainingStatistics.totalDurationLoggedSeconds % 60}s</p>
-                </StatCard>
-              </StatsGrid>
-              <h3><FaChartBar /> Estatísticas de Desempenho</h3>
-                        
-                        {/* NOVO: Filtro de Data */}
-                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
-                            <FilterGroup>
-                                <ModalLabel htmlFor="statsStartDate">De:</ModalLabel>
-                                <ModalInput type="date" id="statsStartDate" value={statsStartDate} onChange={e => setStatsStartDate(e.target.value)} />
-                            </FilterGroup>
-                            <FilterGroup>
-                                <ModalLabel htmlFor="statsEndDate">Até:</ModalLabel>
-                                <ModalInput type="date" id="statsEndDate" value={statsEndDate} onChange={e => setStatsEndDate(e.target.value)} />
-                            </FilterGroup>
-                            <FilterButton small secondary onClick={() => { setStatsStartDate(''); setStatsEndDate(''); }}>Limpar Filtro</FilterButton>
-                        </div>
-                        
-                        {loadingStatistics && <LoadingText>A calcular estatísticas...</LoadingText>}
-                        {!loadingStatistics && trainingStatistics && (
-                            <StatsGrid>
-                                {/* ... (os StatCard como estavam antes, eles agora usam o estado recalculado) ... */}
-                            </StatsGrid>
-                        )}
-                        {!loadingStatistics && !trainingStatistics && (
-                            <EmptyText>Não há dados de desempenho no período selecionado para exibir estatísticas.</EmptyText>
-                        )}
-            </StatisticsSection>
-          )}
-
-          {workoutPlans.map(plan => (
-            <WorkoutPlanDisplay key={plan.id}>
-              {/* ... (resto do JSX para renderizar o plano e os exercícios) ... */}
-               <h3>Plano: {plan.name} {plan.order !== undefined ? `(Bloco: ${plan.order + 1})` : ''}</h3>
-              {plan.notes && <p><i>Notas do Plano: {plan.notes}</i></p>}
-              {(plan.planExercises || []).sort((a,b) => a.order - b.order).map(planEx => (
-                <ExerciseLogItem key={planEx.id}>
-                  <ExerciseName>{planEx.exerciseDetails?.name || 'Exercício Desconhecido'}</ExerciseName>
-                  <PrescribedDetails>
-                    Prescrito:
-                    {planEx.sets ? ` Séries: ${planEx.sets}` : ''}
-                    {planEx.reps ? ` Reps: ${planEx.reps}` : ''}
-                    {planEx.durationSeconds ? ` Duração: ${planEx.durationSeconds}s` : ''}
-                    {planEx.restSeconds !== null ? ` Descanso: ${planEx.restSeconds}s` : ''}
-                    {planEx.notes && ` (Notas Instrutor: ${planEx.notes})`}
-                  </PrescribedDetails>
-
-                  <LogInputGroup>
-                    <div>
-                      <LogLabel htmlFor={`reps-${planEx.id}`}>Reps Feitas</LogLabel>
-                      <LogInput type="number" id={`reps-${planEx.id}`} placeholder="Ex: 10"
-                        value={currentPerformanceInputs[planEx.id]?.performedReps || ''}
-                        onChange={e => handlePerformanceInputChange(planEx.id, 'performedReps', e.target.value)} />
-                    </div>
-                    <div>
-                      <LogLabel htmlFor={`weight-${planEx.id}`}>Peso (kg)</LogLabel>
-                      <LogInput type="number" step="0.01" id={`weight-${planEx.id}`} placeholder="Ex: 50.5"
-                        value={currentPerformanceInputs[planEx.id]?.performedWeight || ''}
-                        onChange={e => handlePerformanceInputChange(planEx.id, 'performedWeight', e.target.value)} />
-                    </div>
-                    <div>
-                      <LogLabel htmlFor={`duration-${planEx.id}`}>Duração (s)</LogLabel>
-                      <LogInput type="number" id={`duration-${planEx.id}`} placeholder="Ex: 60"
-                        value={currentPerformanceInputs[planEx.id]?.performedDurationSeconds || ''}
-                        onChange={e => handlePerformanceInputChange(planEx.id, 'performedDurationSeconds', e.target.value)} />
-                    </div>
-                  </LogInputGroup>
-                  <div>
-                    <LogLabel htmlFor={`notes-${planEx.id}`}>Notas Pessoais</LogLabel>
-                    <LogTextarea id={`notes-${planEx.id}`} placeholder="Como se sentiu, observações..."
-                      value={currentPerformanceInputs[planEx.id]?.notes || ''}
-                      onChange={e => handlePerformanceInputChange(planEx.id, 'notes', e.target.value)} />
-                  </div>
-                  <LogButton onClick={() => handleLogPerformance(planEx.id, plan.id)}>
-                    <FaSave /> Registar Desempenho
-                  </LogButton>
-
-                  {performanceLogs[planEx.id] && performanceLogs[planEx.id].length > 0 && (
-                    <div style={{marginTop: '15px'}}>
-                        <h5 style={{fontSize: '0.9rem', color: theme.colors.textMuted, marginBottom: '5px'}}>Seu Histórico (Mais Recentes):</h5>
-                        {performanceLogs[planEx.id]
-                            .slice(0,3) 
-                            .map(log => (
-                                <PerformanceHistoryItem key={log.id}>
-                                    <span className="log-details">
-                                        {new Date(log.performedAt).toLocaleDateString('pt-PT')}:
-                                        {log.performedReps !== null ? ` Reps: ${log.performedReps}` : ''}
-                                        {log.performedWeight !== null ? ` Peso: ${log.performedWeight}kg` : ''}
-                                        {log.performedDurationSeconds !== null ? ` Duração: ${log.performedDurationSeconds}s` : ''}
-                                        {log.notes && ` (Notas: ${log.notes})`}
-                                    </span>
-                                    <DeleteIcon 
-                                        onClick={() => handleDeletePerformanceLog(log.id, planEx.id)}
-                                        title="Eliminar este registo"
-                                    />
-                                </PerformanceHistoryItem>
+            {!hasActiveSelection ? (
+                 <>
+                    <SectionTitle>Selecione um Treino Agendado</SectionTitle>
+                    {myTrainings.length > 0 ? (
+                        <TrainingSelectorGrid>
+                        {myTrainings.map(training => (
+                            <TrainingCard key={training.id} onClick={() => setSelectedTraining(training.id)}>
+                            <h3>{training.name}</h3>
+                            <p>Data: {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time ? training.time.substring(0, 5) : 'N/A'}</p>
+                            <SelectTrainingButton onClick={(e) => { e.stopPropagation(); setSelectedTraining(training.id); }}>
+                                Registar/Ver Progresso
+                            </SelectTrainingButton>
+                            </TrainingCard>
                         ))}
-                        <ViewHistoryButton onClick={() => handleOpenFullHistoryModal(planEx)}>
-                            <FaHistory /> Ver Histórico Completo
-                        </ViewHistoryButton>
-                    </div>
-                  )}
-                  {(!performanceLogs[planEx.id] || performanceLogs[planEx.id].length === 0) && (
-                     <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop: '10px'}}>Ainda não há registos para este exercício.</p>
-                  )}
-                </ExerciseLogItem>
-              ))}
-            </WorkoutPlanDisplay>
-          ))}
-        </>
-      )}
+                        </TrainingSelectorGrid>
+                    ) : (<EmptyText>Não está inscrito em nenhum treino.</EmptyText>)}
+                    <SectionTitle>Ou escolha um Plano Livre</SectionTitle>
+                    <SelectTrainingButton as={Link} to="/explorar-planos" style={{ textDecoration: 'none', display: 'inline-block', width: 'auto' }}>
+                        Explorar Planos de Treino
+                    </SelectTrainingButton>
+                </>
+            ) : (
+                <>
+                    <SectionTitle>A Registar para: {selectedTrainingName}</SectionTitle>
+                    <SelectTrainingButton onClick={clearSelection} style={{ marginBottom: '20px', backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain }}>
+                        Mudar Treino/Plano
+                    </SelectTrainingButton>
 
-      {showFullHistoryModal && selectedExerciseForHistory && (
-        <ModalOverlayStyled onClick={handleCloseFullHistoryModal}>
-          <ModalContentStyled onClick={(e) => e.stopPropagation()}>
-            <ModalHeaderStyled>
-              <ModalTitleStyled><FaHistory /> Histórico Completo: {selectedExerciseForHistory.name}</ModalTitleStyled>
-              <CloseModalButtonStyled onClick={handleCloseFullHistoryModal}><FaTimes /></CloseModalButtonStyled>
-            </ModalHeaderStyled>
+                    {loadingPlansAndProgress ? <LoadingText>A carregar plano e progresso...</LoadingText> : (
+                        <>
+                            {workoutPlans.length === 0 && <EmptyText>Este item não tem um plano de treino definido.</EmptyText>}
+                            
+                            <StatisticsSection>
+                                <h3><FaChartBar /> Estatísticas de Desempenho</h3>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', marginBottom: '20px', flexWrap: 'wrap' }}>
+                                    <FilterGroup>
+                                        <FilterLabel htmlFor="statsStartDate">De:</FilterLabel>
+                                        <FilterInput type="date" id="statsStartDate" value={statsStartDate} onChange={e => setStatsStartDate(e.target.value)} />
+                                    </FilterGroup>
+                                    <FilterGroup>
+                                        <FilterLabel htmlFor="statsEndDate">Até:</FilterLabel>
+                                        <FilterInput type="date" id="statsEndDate" value={statsEndDate} onChange={e => setStatsEndDate(e.target.value)} />
+                                    </FilterGroup>
+                                    <FilterButton secondary onClick={() => { setStatsStartDate(''); setStatsEndDate(''); }}>Limpar Filtro</FilterButton>
+                                </div>
+                                
+                                {loadingPlansAndProgress ? <LoadingText>A calcular...</LoadingText> : !trainingStatistics ? (
+                                    <EmptyText>Não há dados de desempenho no período selecionado para exibir estatísticas.</EmptyText>
+                                ) : (
+                                    <StatsGrid>
+                                        <StatCard><h4 style={{display: 'flex', alignItems: 'center'}}><FaClipboardList style={{marginRight: '8px'}}/> Séries Registadas</h4><p>{trainingStatistics.totalSetsLogged}</p></StatCard>
+                                        <StatCard><h4 style={{display: 'flex', alignItems: 'center'}}><FaRunning style={{marginRight: '8px'}} /> Repetições Totais</h4><p>{trainingStatistics.totalRepsLogged}</p></StatCard>
+                                        <StatCard><h4 style={{display: 'flex', alignItems: 'center'}}><FaDumbbell style={{marginRight: '8px'}} /> Volume Total</h4><p>{trainingStatistics.totalVolume} kg</p></StatCard>
+                                        <StatCard><h4 style={{display: 'flex', alignItems: 'center'}}><FaStopwatch style={{marginRight: '8px'}} /> Duração Total</h4><p>{Math.floor(trainingStatistics.totalDurationLoggedSeconds / 60)}m {trainingStatistics.totalDurationLoggedSeconds % 60}s</p></StatCard>
+                                        {trainingStatistics.consistency !== undefined && 
+                                            <StatCard>
+                                                <h4 style={{display: 'flex', alignItems: 'center'}}><FaCalendarCheck style={{marginRight: '8px'}}/> Consistência</h4>
+                                                <p>{trainingStatistics.exercisesAttempted} de {trainingStatistics.distinctExercisesPrescribed} ({trainingStatistics.consistency}%)</p>
+                                            </StatCard>
+                                        }
+                                    </StatsGrid>
+                                )}
+                            </StatisticsSection>
 
-            {loadingFullHistory && <LoadingText>A carregar histórico...</LoadingText>}
-            {fullHistoryError && <ErrorText>{fullHistoryError}</ErrorText>}
-
-            {!loadingFullHistory && !fullHistoryError && fullHistoryLogs.length > 0 && (
-              <>
-                <FullHistoryTableContainer>
-                  <FullHistoryTable>
-                    <thead>
-                      <tr>
-                        <th>Data</th>
-                        <th>Reps</th>
-                        <th>Peso (kg)</th>
-                        <th>Duração (s)</th>
-                        <th>Notas</th>
-                        <th>Ações</th> 
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {fullHistoryLogs.map(log => ( 
-                        <tr key={log.id}>
-                          <td>{new Date(log.performedAt).toLocaleDateString('pt-PT')}</td>
-                          <td>{log.performedReps ?? '-'}</td>
-                          <td>{log.performedWeight ?? '-'}</td>
-                          <td>{log.performedDurationSeconds ?? '-'}</td>
-                          <td>{log.notes ? <span className="notes">{log.notes}</span> : '-'}</td>
-                          <td> 
-                            <DeleteIcon
-                                onClick={() => handleDeletePerformanceLog(log.id, selectedExerciseForHistory.id)}
-                                title="Eliminar este registo"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </FullHistoryTable>
-                </FullHistoryTableContainer>
-
-                <div style={{ marginTop: '25px', borderTop: `1px solid ${theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}`, paddingTop: '15px' }}>
-                    <h4 style={{color: theme.colors.primary, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FaChartLine /> Gráfico de Progressão
-                    </h4>
-                    <ChartMetricSelectorContainer>
-                        <label htmlFor="chartMetricSelectModal">Visualizar Métrica:</label>
-                        <select 
-                            id="chartMetricSelectModal" 
-                            value={chartMetric} 
-                            onChange={(e) => setChartMetric(e.target.value)}
-                        >
-                            <option value="performedWeight">Peso Levantado</option>
-                            <option value="performedReps">Repetições</option>
-                            <option value="volume">Volume (Reps x Peso)</option>
-                            <option value="performedDurationSeconds">Duração (s)</option>
-                        </select>
-                    </ChartMetricSelectorContainer>
-                    <ExerciseProgressChart 
-                        historyLogs={fullHistoryLogs} 
-                        metric={chartMetric} 
-                        theme={theme} 
-                    />
-                </div>
-              </>
+                            {workoutPlans.map(plan => (
+                                <WorkoutPlanDisplay key={plan.id}>
+                                  <h3>Plano: {plan.name} {plan.order !== undefined ? `(Bloco: ${plan.order + 1})` : ''}</h3>
+                                  {plan.notes && <p><i>Notas do Plano: {plan.notes}</i></p>}
+                                  {(plan.planExercises || []).sort((a, b) => a.order - b.order).map(planEx => (
+                                      <ExerciseLogItem key={planEx.id}>
+                                          <ExerciseName>{planEx.exerciseDetails?.name || 'Exercício Desconhecido'}</ExerciseName>
+                                          <PrescribedDetails>
+                                            Prescrito:
+                                            {planEx.sets ? ` Séries: ${planEx.sets}` : ''}
+                                            {planEx.reps ? ` Reps: ${planEx.reps}` : ''}
+                                            {planEx.durationSeconds ? ` Duração: ${planEx.durationSeconds}s` : ''}
+                                            {planEx.restSeconds !== null ? ` Descanso: ${planEx.restSeconds}s` : ''}
+                                            {planEx.notes && ` (Notas Instrutor: ${planEx.notes})`}
+                                          </PrescribedDetails>
+                                          <LogInputGroup>
+                                            <div>
+                                              <LogLabel htmlFor={`reps-${planEx.id}`}>Reps Feitas</LogLabel>
+                                              <LogInput type="number" id={`reps-${planEx.id}`} placeholder="Ex: 10"
+                                                value={currentPerformanceInputs[planEx.id]?.performedReps || ''}
+                                                onChange={e => handlePerformanceInputChange(planEx.id, 'performedReps', e.target.value)} />
+                                            </div>
+                                            <div>
+                                              <LogLabel htmlFor={`weight-${planEx.id}`}>Peso (kg)</LogLabel>
+                                              <LogInput type="number" step="0.01" id={`weight-${planEx.id}`} placeholder="Ex: 50.5"
+                                                value={currentPerformanceInputs[planEx.id]?.performedWeight || ''}
+                                                onChange={e => handlePerformanceInputChange(planEx.id, 'performedWeight', e.target.value)} />
+                                            </div>
+                                            <div>
+                                              <LogLabel htmlFor={`duration-${planEx.id}`}>Duração (s)</LogLabel>
+                                              <LogInput type="number" id={`duration-${planEx.id}`} placeholder="Ex: 60"
+                                                value={currentPerformanceInputs[planEx.id]?.performedDurationSeconds || ''}
+                                                onChange={e => handlePerformanceInputChange(planEx.id, 'performedDurationSeconds', e.target.value)} />
+                                            </div>
+                                          </LogInputGroup>
+                                          <div>
+                                            <LogLabel htmlFor={`notes-${planEx.id}`}>Notas Pessoais</LogLabel>
+                                            <LogTextarea id={`notes-${planEx.id}`} placeholder="Como se sentiu, observações..."
+                                              value={currentPerformanceInputs[planEx.id]?.notes || ''}
+                                              onChange={e => handlePerformanceInputChange(planEx.id, 'notes', e.target.value)} />
+                                          </div>
+                                          <LogButton onClick={() => handleLogPerformance(planEx.id, plan.id)}>
+                                            <FaSave /> Registar Desempenho
+                                          </LogButton>
+                                          {performanceLogs[planEx.id] && performanceLogs[planEx.id].length > 0 && (
+                                            <div style={{marginTop: '15px'}}>
+                                                <h5 style={{fontSize: '0.9rem', color: theme.colors.textMuted, marginBottom: '5px'}}>Seu Histórico (Mais Recentes):</h5>
+                                                {performanceLogs[planEx.id].slice(0,3).map(log => (
+                                                    <PerformanceHistoryItem key={log.id}>
+                                                        <span className="log-details">
+                                                            {new Date(log.performedAt).toLocaleDateString('pt-PT')}:
+                                                            {log.performedReps !== null ? ` Reps: ${log.performedReps}` : ''}
+                                                            {log.performedWeight !== null ? ` Peso: ${log.performedWeight}kg` : ''}
+                                                            {log.performedDurationSeconds !== null ? ` Duração: ${log.performedDurationSeconds}s` : ''}
+                                                            {log.notes && ` (Notas: ${log.notes})`}
+                                                        </span>
+                                                        <DeleteIcon onClick={() => handleDeletePerformanceLog(log.id, planEx.id)} title="Eliminar este registo"/>
+                                                    </PerformanceHistoryItem>
+                                                ))}
+                                                <ViewHistoryButton onClick={() => handleOpenFullHistoryModal(planEx)}>
+                                                    <FaHistory /> Ver Histórico Completo
+                                                </ViewHistoryButton>
+                                            </div>
+                                          )}
+                                          {(!performanceLogs[planEx.id] || performanceLogs[planEx.id].length === 0) && (
+                                             <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop: '10px'}}>Ainda não há registos para este exercício.</p>
+                                          )}
+                                      </ExerciseLogItem>
+                                  ))}
+                                </WorkoutPlanDisplay>
+                            ))}
+                        </>
+                    )}
+                </>
             )}
-             <ModalActions style={{marginTop: '20px', paddingTop: '15px', borderTop: `1px solid ${theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}`}}>
-                <SelectTrainingButton 
-                    onClick={handleCloseFullHistoryModal}
-                    style={{backgroundColor: theme.colors.buttonSecondaryBg || '#6c757d', color: theme.colors.textMain}}
-                >
-                    Fechar
-                </SelectTrainingButton>
-             </ModalActions>
-          </ModalContentStyled>
-        </ModalOverlayStyled>
-      )}
-    </PageContainer>
-  );
+
+            {showFullHistoryModal && selectedExerciseForHistory && (
+                <ModalOverlayStyled onClick={handleCloseFullHistoryModal}>
+                    <ModalContentStyled onClick={(e) => e.stopPropagation()}>
+                        <ModalHeaderStyled>
+                        <ModalTitleStyled><FaHistory /> Histórico Completo: {selectedExerciseForHistory.name}</ModalTitleStyled>
+                        <CloseModalButtonStyled onClick={handleCloseFullHistoryModal}><FaTimes /></CloseModalButtonStyled>
+                        </ModalHeaderStyled>
+
+                        {loadingFullHistory ? <LoadingText>A carregar histórico...</LoadingText> : fullHistoryError ? <ErrorText>{fullHistoryError}</ErrorText> : fullHistoryLogs.length === 0 ? (
+                        <EmptyText>Nenhum registo de desempenho encontrado para este exercício.</EmptyText>
+                        ) : (
+                        <>
+                            <FullHistoryTableContainer>
+                            <FullHistoryTable>
+                                <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Reps</th>
+                                    <th>Peso (kg)</th>
+                                    <th>Duração (s)</th>
+                                    <th>Notas</th>
+                                    <th>Ações</th> 
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {fullHistoryLogs.map(log => ( 
+                                    <tr key={log.id}>
+                                    <td>{new Date(log.performedAt).toLocaleDateString('pt-PT')}</td>
+                                    <td>{log.performedReps ?? '-'}</td>
+                                    <td>{log.performedWeight ?? '-'}</td>
+                                    <td>{log.performedDurationSeconds ?? '-'}</td>
+                                    <td>{log.notes ? <span className="notes">{log.notes}</span> : '-'}</td>
+                                    <td> 
+                                        <DeleteIcon onClick={() => handleDeletePerformanceLog(log.id, selectedExerciseForHistory.id)} title="Eliminar este registo"/>
+                                    </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </FullHistoryTable>
+                            </FullHistoryTableContainer>
+
+                            <div style={{ marginTop: '25px', borderTop: `1px solid ${theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}`, paddingTop: '15px' }}>
+                                <h4 style={{color: theme.colors.primary, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <FaChartLine /> Gráfico de Progressão
+                                </h4>
+                                <ChartMetricSelectorContainer>
+                                    <label htmlFor="chartMetricSelectModal">Visualizar Métrica:</label>
+                                    <select 
+                                        id="chartMetricSelectModal" 
+                                        value={chartMetric} 
+                                        onChange={(e) => setChartMetric(e.target.value)}
+                                    >
+                                        <option value="performedWeight">Peso Levantado</option>
+                                        <option value="performedReps">Repetições</option>
+                                        <option value="volume">Volume (Reps x Peso)</option>
+                                        <option value="performedDurationSeconds">Duração (s)</option>
+                                    </select>
+                                </ChartMetricSelectorContainer>
+                                <ExerciseProgressChart 
+                                    historyLogs={fullHistoryLogs} 
+                                    metric={chartMetric} 
+                                    theme={theme} 
+                                />
+                            </div>
+                        </>
+                        )}
+                        <ModalActions style={{marginTop: '20px', paddingTop: '15px', borderTop: `1px solid ${theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'}`}}>
+                            <SelectTrainingButton onClick={handleCloseFullHistoryModal} style={{backgroundColor: theme.colors.buttonSecondaryBg || '#6c757d', color: theme.colors.textMain}}>
+                                Fechar
+                            </SelectTrainingButton>
+                        </ModalActions>
+                    </ModalContentStyled>
+                </ModalOverlayStyled>
+            )}
+        </PageContainer>
+    );
 };
 
 export default ClientProgressPage;
