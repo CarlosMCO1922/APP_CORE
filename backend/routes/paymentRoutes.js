@@ -39,10 +39,10 @@ router.patch(
 
 // Admin elimina um pagamento (NOVA ROTA ADICIONADA SE FALTAR)
 router.delete(
-    '/:paymentId', // Assumindo que a rota para eliminar é DELETE /payments/:paymentId
+    '/:paymentId', 
     protect,
     isAdminStaff,
-    paymentController.adminDeletePayment // Garante que esta função existe no controller
+    paymentController.adminDeletePayment 
 );
 
 
@@ -62,12 +62,12 @@ router.get(
     paymentController.clientGetMyPendingPayments
 );
 
-// Cliente "aceita" um pagamento pendente (LEGADO - para pagamentos não-Stripe)
+// Cliente "aceita" um pagamento pendente 
 router.patch(
-    '/:paymentId/accept', // Endpoint para aceitar pagamento não-Stripe
+    '/:paymentId/accept', 
     protect,
     isClientUser,
-    paymentController.clientAcceptPayment // Deve ser clientAcceptNonStripePayment no controller
+    paymentController.clientAcceptPayment 
 );
 
 // Cliente cria uma intenção de pagamento Stripe
@@ -81,7 +81,7 @@ router.post(
 // Webhook do Stripe
 router.post(
   '/stripe-webhook',
-  express.raw({type: 'application/json'}), // Middleware para obter o raw body para este endpoint
+  express.raw({type: 'application/json'}),
   paymentController.stripeWebhookHandler
 );
 

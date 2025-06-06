@@ -10,44 +10,43 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'users', // Nome da tabela 'users'
+        model: 'users', 
         key: 'id',
       },
       onDelete: 'CASCADE',
     },
-    trainingId: { // O treino específico onde o plano foi realizado
+    trainingId: { 
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'trainings', // Nome da tabela 'trainings'
+        model: 'trainings',
         key: 'id',
       },
       onDelete: 'SET NULL',
     },
-    workoutPlanId: { // O plano de treino dentro do treino
+    workoutPlanId: { 
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'workout_plans', // Nome da tabela 'workout_plans' (verifique o nome real da sua tabela)
+        model: 'workout_plans', 
         key: 'id',
       },
       onDelete: 'CASCADE',
     },
-    planExerciseId: { // O exercício específico do WorkoutPlanExercise
+    planExerciseId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'workout_plan_exercises', // Nome da tabela 'workout_plan_exercises' (verifique o nome real)
-        key: 'id',
+        model: 'workout_plan_exercises', 
       },
       onDelete: 'CASCADE',
     },
-    performedAt: { // Data em que o exercício foi realizado/logado
+    performedAt: { 
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       allowNull: false,
     },
-    setNumber: { // Número da série, se estiver a registar por série (opcional)
+    setNumber: { 
       type: DataTypes.INTEGER,
       allowNull: true,
     },
@@ -56,14 +55,14 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
     },
     performedWeight: {
-      type: DataTypes.DECIMAL(10, 2), // Ex: 100.50
+      type: DataTypes.DECIMAL(10, 2), 
       allowNull: true,
     },
     performedDurationSeconds: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    notes: { // Notas do cliente sobre esta performance específica
+    notes: { 
       type: DataTypes.TEXT,
       allowNull: true,
     },
@@ -87,7 +86,7 @@ module.exports = (sequelize, DataTypes) => {
     });
     ClientExercisePerformance.belongsTo(models.WorkoutPlanExercise, {
       foreignKey: 'planExerciseId',
-      as: 'planExerciseDetails', // Para aceder aos detalhes do exercício no plano
+      as: 'planExerciseDetails', 
     });
   };
 

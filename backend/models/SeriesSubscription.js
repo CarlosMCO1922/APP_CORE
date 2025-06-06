@@ -6,11 +6,11 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true,
     },
-    userId: { // ID do cliente que se inscreve
+    userId: { 
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'users', // Nome da tabela de Users
+        model: 'users', 
         key: 'id',
       },
     },
@@ -18,29 +18,28 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'TrainingSeries', // Nome da tabela TrainingSeries
+        model: 'TrainingSeries', 
         key: 'id',
       },
     },
-    clientSubscriptionStartDate: { // Data de início da subscrição do cliente
+    clientSubscriptionStartDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-    clientSubscriptionEndDate: { // Data de fim da subscrição do cliente
+    clientSubscriptionEndDate: { 
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-    isActive: { // Para desativar uma subscrição sem a apagar
+    isActive: { 
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
   }, {
-    // Evitar que um utilizador se inscreva múltiplas vezes na mesma série ativamente
     indexes: [
         {
             unique: true,
             fields: ['userId', 'trainingSeriesId'],
-            where: { isActive: true } // Apenas uma subscrição ativa por utilizador por série
+            where: { isActive: true } 
         }
     ]
   });

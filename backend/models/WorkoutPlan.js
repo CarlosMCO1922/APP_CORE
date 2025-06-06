@@ -8,11 +8,11 @@ module.exports = (sequelize) => {
       primaryKey: true,
       autoIncrement: true,
     },
-    name: { // Nome do plano parcial, ex: "Aquecimento", "Circuito A", "Alongamentos"
+    name: {
       type: DataTypes.STRING,
       allowNull: false, 
     },
-    order: { // Para ordenar os múltiplos planos dentro de um Training
+    order: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
@@ -21,45 +21,35 @@ module.exports = (sequelize) => {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    isVisible: { // NOVO CAMPO
+    isVisible: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: false, // Ou true, conforme a tua preferência inicial
+      defaultValue: false, 
       comment: 'Indica se o plano de treino é visível para os clientes na biblioteca de planos.'
     },
-    // trainingId será adicionado via associação
   }, {
     tableName: 'workout_plans',
     timestamps: true,
   });
 
   WorkoutPlan.associate = (models) => {
-    // Um WorkoutPlan (parcial) pertence a UM Training
-    /*WorkoutPlan.belongsTo(models.Training, {
-      foreignKey: {
-        name: 'trainingId',
-        allowNull: false,
-      },
-      as: 'trainingSession', // Um plano pertence a uma sessão de treino
-    });*/
 
     WorkoutPlan.belongsToMany(models.Training, {
-      through: models.TrainingWorkoutPlan, // Nome da nova tabela de junção
+      through: models.TrainingWorkoutPlan,
       foreignKey: 'workoutPlanId',
       otherKey: 'trainingId',
       as: 'trainingSessions'
     });
 
-    // Um WorkoutPlan tem muitos WorkoutPlanExercises (detalhes dos exercícios neste plano)
     WorkoutPlan.hasMany(models.WorkoutPlanExercise, {
       foreignKey: 'workoutPlanId',
-      as: 'planExercises', // workoutPlan.getPlanExercises()
+      as: 'planExercises', 
       onDelete: 'CASCADE', 
     });
 
     WorkoutPlan.hasMany(models.ClientExercisePerformance, {
       foreignKey: 'workoutPlanId',
-      as: 'clientPerformances', // workoutPlan.getClientPerformances()
+      as: 'clientPerformances', 
       onDelete: 'CASCADE',
     });
   };

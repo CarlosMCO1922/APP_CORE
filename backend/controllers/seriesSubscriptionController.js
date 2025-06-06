@@ -7,8 +7,8 @@ exports.createSeriesSubscription = async (req, res) => {
     const clientId = req.user.id;
     const {
         trainingSeriesId,
-        clientSubscriptionStartDate, // Opcional
-        clientSubscriptionEndDate    // Obrigatório para o cliente definir até quando quer
+        clientSubscriptionStartDate, 
+        clientSubscriptionEndDate   
     } = req.body;
 
     if (!trainingSeriesId || !clientSubscriptionEndDate) {
@@ -30,7 +30,7 @@ exports.createSeriesSubscription = async (req, res) => {
             return res.status(404).json({ message: 'Utilizador cliente não encontrado.' });
         }
 
-        // Datas efetivas da subscrição do cliente, respeitando os limites da série e a data de início do cliente (se fornecida)
+        
         const effectiveSubStartDate = moment.max(
             moment(series.seriesStartDate),
             clientSubscriptionStartDate ? moment(clientSubscriptionStartDate) : moment(series.seriesStartDate) // Usa início da série se cliente não especificar
@@ -73,11 +73,10 @@ exports.createSeriesSubscription = async (req, res) => {
                 },
                 isGeneratedInstance: true,
                 date: {
-                    [Op.gte]: moment().format('YYYY-MM-DD'), // A partir de hoje
+                    [Op.gte]: moment().format('YYYY-MM-DD'), // A partir do dia atual
                     [Op.lte]: effectiveSubEndDate,
                 },
             },
-            // attributes: ['id', 'capacity'], // Podes precisar de mais atributos se o addParticipant os usar
             transaction
         });
 
@@ -92,7 +91,6 @@ exports.createSeriesSubscription = async (req, res) => {
                 console.warn(`Capacidade esgotada para treino ID ${instance.id} na data ${instance.date}. User ${clientId} não inscrito nesta instância da série.`);
                 continue;
             }
-            // Cria a entrada na tabela de junção UserTrainings
             await instance.addParticipant(clientUser, { transaction });
             bookingsSuccessful++;
         }

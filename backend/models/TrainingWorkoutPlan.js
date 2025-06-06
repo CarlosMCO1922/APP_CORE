@@ -11,30 +11,21 @@ module.exports = (sequelize) => {
     trainingId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: { model: 'trainings', key: 'id' }, // Garante que 'trainings' é o nome correto da tua tabela Training
+      references: { model: 'trainings', key: 'id' }, 
     },
     workoutPlanId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: { model: 'workout_plans', key: 'id' }, // Garante que 'workout_plans' é o nome correto
+      references: { model: 'workout_plans', key: 'id' },
     },
-    orderInTraining: { // A COLUNA QUE ESTÁ A FALTAR
+    orderInTraining: { 
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
     }
   }, {
-    tableName: 'TrainingWorkoutPlans', // Define explicitamente o nome da tabela
-    timestamps: false, // Geralmente não precisamos de timestamps numa tabela de junção simples
-    // Garante que não há conflito de nome se o Sequelize tentar criar com outro nome
+    tableName: 'TrainingWorkoutPlans', 
+    timestamps: false,
   });
-
-  // Não são necessárias associações aqui se os modelos Training e WorkoutPlan já
-  // definem a belongsToMany relationship usando este modelo como 'through'.
-  // TrainingWorkoutPlan.associate = (models) => {
-  //   // TrainingWorkoutPlan.belongsTo(models.Training, { foreignKey: 'trainingId' });
-  //   // TrainingWorkoutPlan.belongsTo(models.WorkoutPlan, { foreignKey: 'workoutPlanId' });
-  // };
-
   return TrainingWorkoutPlan;
 };

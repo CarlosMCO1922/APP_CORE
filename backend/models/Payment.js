@@ -29,8 +29,8 @@ module.exports = (sequelize) => {
       type: DataTypes.ENUM(
         'treino_aula_avulso',
         'mensalidade_treino',
-        'consulta_fisioterapia', // Pagamento total de uma consulta já realizada
-        'sinal_consulta',       // NOVO: Pagamento do sinal de 20%
+        'consulta_fisioterapia', 
+        'sinal_consulta',       
         'outro'
       ),
       allowNull: false,
@@ -45,15 +45,15 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: 'pendente',
     },
-    relatedResourceId: { // ID da consulta, treino, etc.
+    relatedResourceId: { 
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    relatedResourceType: { // 'appointment', 'training_booking', etc.
+    relatedResourceType: { 
       type: DataTypes.STRING,
       allowNull: true,
     }
-    // userId e staffId são adicionados via associações
+    
   }, {
     tableName: 'payments',
     timestamps: true,
@@ -67,7 +67,6 @@ module.exports = (sequelize) => {
       },
       as: 'client',
     });
-    // models.User.hasMany(Payment, ...) no User.js
 
     Payment.belongsTo(models.Staff, {
       foreignKey: {
@@ -76,7 +75,6 @@ module.exports = (sequelize) => {
       },
       as: 'registeredBy',
     });
-    // models.Staff.hasMany(Payment, ...) no Staff.js
   };
 
   return Payment;

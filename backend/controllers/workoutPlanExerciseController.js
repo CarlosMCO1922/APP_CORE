@@ -2,9 +2,7 @@
 const db = require('../models');
 const { Op } = require('sequelize');
 
-// @desc    Admin adiciona um exercício a um plano de treino
-// @route   POST /api/trainings/workout-plans/:planId/exercises
-// @access  Privado (Admin Staff)
+
 const addExerciseToWorkoutPlan = async (req, res) => {
   const { planId } = req.params;
   const { exerciseId, sets, reps, durationSeconds, restSeconds, order, notes } = req.body;
@@ -44,16 +42,14 @@ const addExerciseToWorkoutPlan = async (req, res) => {
   }
 };
 
-// @desc    Admin (ou cliente/staff com acesso ao plano) lista exercícios de um plano de treino
-// @route   GET /api/trainings/workout-plans/:planId/exercises
-// @access  Privado (Ver lógica no getWorkoutPlansForTraining para acesso ao plano pai)
+
 const getExercisesForWorkoutPlan = async (req, res) => {
   const { planId } = req.params;
   try {
     const workoutPlan = await db.WorkoutPlan.findByPk(planId, {
       include: [{
         model: db.Training,
-        as: 'trainingSession' // Para verificar permissões do treino pai
+        as: 'trainingSession'
       }]
     });
 
@@ -61,7 +57,6 @@ const getExercisesForWorkoutPlan = async (req, res) => {
       return res.status(404).json({ message: 'Plano de treino não encontrado.' });
     }
     
-    // Lógica de permissão similar à getWorkoutPlansForTraining, verificando acesso ao treino pai
     const training = workoutPlan.trainingSession;
     let canView = false;
     if (req.staff && req.staff.role === 'admin') {
@@ -89,9 +84,7 @@ const getExercisesForWorkoutPlan = async (req, res) => {
   }
 };
 
-// @desc    Admin atualiza um exercício num plano de treino
-// @route   PUT /api/trainings/workout-plans/exercises/:planExerciseId
-// @access  Privado (Admin Staff)
+
 const updateExerciseInWorkoutPlan = async (req, res) => {
   const { planExerciseId } = req.params;
   const { sets, reps, durationSeconds, restSeconds, order, notes, exerciseId } = req.body;
@@ -101,8 +94,6 @@ const updateExerciseInWorkoutPlan = async (req, res) => {
     if (!planExercise) {
       return res.status(404).json({ message: 'Exercício do plano não encontrado.' });
     }
-
-    // Opcional: Verificar permissões sobre o plano/treino pai
 
     if (exerciseId !== undefined) {
         const baseExercise = await db.Exercise.findByPk(exerciseId);
@@ -127,9 +118,7 @@ const updateExerciseInWorkoutPlan = async (req, res) => {
   }
 };
 
-// @desc    Admin remove um exercício de um plano de treino
-// @route   DELETE /api/trainings/workout-plans/exercises/:planExerciseId
-// @access  Privado (Admin Staff)
+
 const removeExerciseFromWorkoutPlan = async (req, res) => {
   const { planExerciseId } = req.params;
   try {
@@ -137,8 +126,6 @@ const removeExerciseFromWorkoutPlan = async (req, res) => {
     if (!planExercise) {
       return res.status(404).json({ message: 'Exercício do plano não encontrado.' });
     }
-
-    // Opcional: Verificar permissões
 
     await planExercise.destroy();
     res.status(200).json({ message: 'Exercício removido do plano com sucesso.' });

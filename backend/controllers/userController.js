@@ -1,13 +1,9 @@
 // backend/controllers/userController.js
 const db = require('../models');
 const { hashPassword } = require('../utils/passwordUtils');
-const { Op } = require('sequelize'); // Necessário para Op.ne
+const { Op } = require('sequelize'); 
 
-// --- Funções para Clientes (já existentes) ---
-
-// @desc    Obter perfil do utilizador autenticado
-// @route   GET /api/users/me
-// @access  Privado (requer token de cliente)
+// --- Funções para Clientes ---
 const getMe = async (req, res) => {
   if (!req.user) {
     return res.status(404).json({ message: 'Utilizador não encontrado ou não autenticado corretamente.' });
@@ -15,9 +11,7 @@ const getMe = async (req, res) => {
   res.status(200).json(req.user);
 };
 
-// @desc    Atualizar perfil do utilizador autenticado
-// @route   PUT /api/users/me
-// @access  Privado (requer token de cliente)
+
 const updateMe = async (req, res) => {
   if (!req.user) {
     return res.status(404).json({ message: 'Utilizador não encontrado ou não autenticado corretamente.' });
@@ -63,9 +57,7 @@ const updateMe = async (req, res) => {
   }
 };
 
-// @desc    Obter as marcações (treinos e consultas) do utilizador autenticado
-// @route   GET /api/users/me/bookings
-// @access  Privado (requer token de cliente)
+
 const getMyBookings = async (req, res) => {
   if (!req.user) {
     return res.status(404).json({ message: 'Utilizador não encontrado ou não autenticado corretamente.' });
@@ -112,15 +104,11 @@ const getMyBookings = async (req, res) => {
 };
 
 
-// --- Funções para ADMINISTRAÇÃO de Utilizadores (Clientes) ---
-
-// @desc    Admin lista todos os utilizadores (clientes)
-// @route   GET /api/users
-// @access  Privado (Admin Staff)
+// --- Funções para ADMINISTRAÇÃO de Utilizadores ---
 const getAllUsersAsAdmin = async (req, res) => {
   try {
     const users = await db.User.findAll({
-      attributes: { exclude: ['password'] }, // Excluir passwords
+      attributes: { exclude: ['password'] },
       order: [['lastName', 'ASC'], ['firstName', 'ASC']],
     });
     res.status(200).json(users);
@@ -130,15 +118,13 @@ const getAllUsersAsAdmin = async (req, res) => {
   }
 };
 
-// @desc    Admin obtém detalhes de um utilizador específico
-// @route   GET /api/users/:id
-// @access  Privado (Admin Staff)
+
 const getUserByIdAsAdmin = async (req, res) => {
   const { id } = req.params;
   try {
     const user = await db.User.findByPk(id, {
       attributes: { exclude: ['password'] },
-      include: [ // Incluir treinos e consultas para uma visão completa do admin
+      include: [ 
         {
           model: db.Training,
           as: 'trainings',
@@ -164,9 +150,7 @@ const getUserByIdAsAdmin = async (req, res) => {
   }
 };
 
-// @desc    Admin cria um novo utilizador (cliente)
-// @route   POST /api/users
-// @access  Privado (Admin Staff)
+
 const createUserAsAdmin = async (req, res) => {
   const { firstName, lastName, email, password, isAdmin } = req.body;
 
@@ -190,7 +174,7 @@ const createUserAsAdmin = async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      isAdmin: isAdmin || false, // Admin pode definir se o novo user é admin (do tipo User)
+      isAdmin: isAdmin || false, 
     });
 
     const { password: _, ...userResponse } = newUser.get({ plain: true });
@@ -205,9 +189,7 @@ const createUserAsAdmin = async (req, res) => {
   }
 };
 
-// @desc    Admin atualiza um utilizador (cliente)
-// @route   PUT /api/users/:id
-// @access  Privado (Admin Staff)
+
 const updateUserAsAdmin = async (req, res) => {
   const { id } = req.params;
   const { firstName, lastName, email, password, isAdmin } = req.body;
@@ -251,9 +233,7 @@ const updateUserAsAdmin = async (req, res) => {
   }
 };
 
-// @desc    Admin elimina um utilizador (cliente)
-// @route   DELETE /api/users/:id
-// @access  Privado (Admin Staff)
+
 const deleteUserAsAdmin = async (req, res) => {
   const { id } = req.params;
   try {
@@ -261,22 +241,8 @@ const deleteUserAsAdmin = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Utilizador não encontrado.' });
     }
-
-    // O que fazer com as associações (UserTrainings, Appointments)?
-    // O Sequelize, por defeito, não faz CASCADE em belongsToMany.
-    // As FKs em Appointment para userId podem ser SET NULL se assim definidas no modelo.
-
-    // Remover associações de treinos
-    await user.setTrainings([]); // Remove todas as inscrições em treinos
-
-    // Para consultas, se a FK `userId` em `Appointment` for definida com `onDelete: 'SET NULL'`,
-    // o Sequelize pode tratar disso. Caso contrário, precisamos de o fazer manualmente.
-    // Vamos assumir que queremos desassociar (SET NULL) ou eliminar as consultas do user.
-    // Por agora, vamos apenas desassociar (o que significa que as consultas ficam sem cliente).
+    await user.setTrainings([]); 
     await db.Appointment.update({ userId: null, status: 'disponível' }, { where: { userId: id } });
-    // Se quiséssemos eliminar as consultas do utilizador:
-    // await db.Appointment.destroy({ where: { userId: id } });
-
     await user.destroy();
     res.status(200).json({ message: 'Utilizador eliminado com sucesso.' });
   } catch (error) {
@@ -285,9 +251,7 @@ const deleteUserAsAdmin = async (req, res) => {
   }
 };
 
-// @desc    Admin obtém todos os treinos de um utilizador específico
-// @route   GET /api/users/:userId/trainings
-// @access  Privado (Admin Staff)
+
 const adminGetUserTrainings = async (req, res) => {
   const { userId } = req.params;
   try {
@@ -301,8 +265,8 @@ const adminGetUserTrainings = async (req, res) => {
         {
           model: db.User,
           as: 'participants',
-          where: { id: userId }, // Filtra para incluir apenas este utilizador nos participantes
-          attributes: [], // Não precisamos dos atributos do User aqui, já temos o user
+          where: { id: userId }, 
+          attributes: [], 
           through: { attributes: [] }
         },
         {
@@ -314,14 +278,13 @@ const adminGetUserTrainings = async (req, res) => {
       order: [['date', 'DESC'], ['time', 'DESC']],
     });
 
-    // Adicionar contagem de participantes totais a cada treino (opcional, mas útil)
+   
     const trainingsWithDetails = await Promise.all(trainings.map(async (training) => {
         const trainingJSON = training.toJSON();
         const totalParticipants = await training.countParticipants();
         return {
             ...trainingJSON,
-            participantsCount: totalParticipants, // Adiciona a contagem total de participantes no treino
-                                                 // Não apenas o user que estamos a filtrar
+            participantsCount: totalParticipants, 
         };
     }));
 
@@ -333,9 +296,7 @@ const adminGetUserTrainings = async (req, res) => {
   }
 };
 
-// @desc    Admin obtém todas as consultas de um utilizador específico
-// @route   GET /api/users/:userId/appointments
-// @access  Privado (Admin Staff)
+
 const adminGetUserAppointments = async (req, res) => {
   const { userId } = req.params;
   try {
@@ -349,16 +310,9 @@ const adminGetUserAppointments = async (req, res) => {
       include: [
         {
           model: db.Staff,
-          as: 'professional', // O alias que você definiu para Staff em Appointment
+          as: 'professional', 
           attributes: ['id', 'firstName', 'lastName', 'role'],
         },
-        // O cliente já é o 'user', não precisamos de incluir novamente se o where é userId
-        // Mas se quiser outros detalhes do cliente que não estejam no User.findByPk:
-        // {
-        //   model: db.User,
-        //   as: 'client',
-        //   attributes: ['id', 'firstName', 'lastName', 'email']
-        // }
       ],
       order: [['date', 'DESC'], ['time', 'DESC']],
     });
@@ -374,7 +328,6 @@ module.exports = {
   getMe,
   updateMe,
   getMyBookings,
-  // Funções Admin
   getAllUsersAsAdmin,
   getUserByIdAsAdmin,
   createUserAsAdmin,

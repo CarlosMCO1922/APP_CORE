@@ -38,26 +38,25 @@ module.exports = (sequelize) => {
   });
 
   User.associate = (models) => {
-    // Um User pode estar inscrito em vários Trainings
     User.belongsToMany(models.Training, {
-      through: 'UserTrainings', // Nome da tabela de junção
-      foreignKey: 'userId',    // Chave estrangeira em UserTrainings que referencia User
-      otherKey: 'trainingId',  // Chave estrangeira em UserTrainings que referencia Training
+      through: 'UserTrainings', 
+      foreignKey: 'userId',    
+      otherKey: 'trainingId',  
       as: 'trainings',
     });
-    // Um User pode ter várias Appointments (consultas)
+    
     User.hasMany(models.Appointment, {
-      foreignKey: 'userId', // Chave estrangeira em Appointment que referencia User
+      foreignKey: 'userId', 
       as: 'appointments',
     });
     User.hasMany(models.TrainingWaitlist, {
       foreignKey: 'userId',
-      as: 'waitlistEntries', // user.getWaitlistEntries()
-      onDelete: 'CASCADE', // Se o user for apagado, as suas entradas na lista de espera são apagadas
+      as: 'waitlistEntries', 
+      onDelete: 'CASCADE', 
     });
     User.hasMany(models.ClientExercisePerformance, {
       foreignKey: 'userId',
-      as: 'exercisePerformances', // user.getExercisePerformances()
+      as: 'exercisePerformances', 
       onDelete: 'CASCADE',
 });
   };

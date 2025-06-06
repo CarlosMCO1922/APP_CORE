@@ -1,15 +1,15 @@
 // backend/controllers/paymentController.js
 const db = require('../models');
 const { Op } = require('sequelize');
-// const { format } = require('date-fns'); // Removido se não for usado diretamente aqui. Se for, mantenha.
-require('dotenv').config(); // Garante que as variáveis de ambiente são carregadas
 
-// Inicializa o Stripe com a tua chave secreta
+require('dotenv').config(); 
+
+// Inicializa o Stripe 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { _internalCreateNotification } = require('./notificationController');
 const { startOfMonth, endOfMonth, format } = require('date-fns');
 
-// --- Funções do Administrador (EXISTENTES - MANTÊM-SE) ---
+// --- Funções do Administrador ---
 const adminCreatePayment = async (req, res) => {
   const { userId, amount, paymentDate, referenceMonth, category, description, status, relatedResourceId, relatedResourceType } = req.body;
   const staffId = req.staff.id;
@@ -40,7 +40,7 @@ const adminCreatePayment = async (req, res) => {
       relatedResourceType: relatedResourceType || null,
     });
 
-    // Opcional: Notificar cliente se um pagamento pendente foi criado para ele pelo admin
+    
     if (newPayment.status === 'pendente' && newPayment.userId) {
       _internalCreateNotification({
         recipientUserId: newPayment.userId,
@@ -95,17 +95,12 @@ const adminGetAllPayments = async (req, res) => {
 };
 
 const adminGetTotalPaid = async (req, res) => {
-  // startDate e endDate podem ser passados como query params
-  // Ex: /api/payments/total-paid?startDate=2025-05-01&endDate=2025-05-31
   const { startDate, endDate } = req.query;
-
   const whereClause = {
     status: 'pago',
   };
-
   if (startDate && endDate) {
-    // Validar as datas seria uma boa prática aqui
-    whereClause.paymentDate = { // Assumindo que 'paymentDate' é a data em que o pagamento foi efetivado
+    whereClause.paymentDate = { 
       [Op.gte]: startDate,
       [Op.lte]: endDate,
     };
@@ -114,7 +109,6 @@ const adminGetTotalPaid = async (req, res) => {
   } else if (endDate) {
     whereClause.paymentDate = { [Op.lte]: endDate };
   }
-  // Se não houver startDate nem endDate, calcula o total geral
 
   try {
     const totalPaid = await db.Payment.sum('amount', {
@@ -170,7 +164,7 @@ const adminUpdatePaymentStatus = async (req, res) => {
                     type: 'APPOINTMENT_CONFIRMED_CLIENT',
                     relatedResourceId: appointment.id,
                     relatedResourceType: 'appointment',
-                    link: `/calendario` // ou link para detalhes da consulta
+                    link: `/calendario` 
                 });
             }
 
@@ -204,7 +198,7 @@ const adminDeletePayment = async (req, res) => {
 };
 
 
-// --- Funções do Cliente (EXISTENTES - `clientGetMyPayments` MANTÉM-SE) ---
+// --- Funções do Cliente ---
 const clientGetMyPayments = async (req, res) => {
   const userId = req.user.id;
   try {
@@ -222,21 +216,19 @@ const clientGetMyPayments = async (req, res) => {
   }
 };
 
-// @desc    Cliente lista os seus próprios pagamentos PENDENTES
-// @route   GET /api/payments/my-payments/pending
-// @access  Privado (Cliente)
+
 const clientGetMyPendingPayments = async (req, res) => {
   const userId = req.user.id;
   try {
     const pendingPayments = await db.Payment.findAll({
       where: {
         userId: userId,
-        status: 'pendente', // Apenas pagamentos com status 'pendente'
+        status: 'pendente', 
       },
       include: [
          { model: db.Staff, as: 'registeredBy', attributes: ['firstName', 'lastName'] },
       ],
-      order: [['paymentDate', 'ASC'], ['createdAt', 'ASC']], // Mais antigos primeiro
+      order: [['paymentDate', 'ASC'], ['createdAt', 'ASC']], 
     });
     res.status(200).json(pendingPayments);
   } catch (error) {
@@ -271,7 +263,7 @@ const createStripePaymentIntent = async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: 'eur',
-      payment_method_types: ['card', 'multibanco'], // ALTERADO/ADICIONADO 'multibanco' AQUI
+      payment_method_types: ['card', 'multibanco'], 
       metadata: {
         internalPaymentId: payment.id,
         userId: userId,
@@ -306,10 +298,7 @@ const clientAcceptNonStripePayment = async (req, res) => {
     if (payment.userId !== userId) return res.status(403).json({ message: 'Não tem permissão.' });
     if (payment.status !== 'pendente') return res.status(400).json({ message: `Pagamento não pendente.` });
     
-    // Esta verificação pode ser ajustada ou removida se esta rota for apenas para casos não-Stripe
-    // if (payment.category === 'sinal_consulta' /*ou outras categorias pagáveis via Stripe*/) {
-    //     // return res.status(400).json({ message: 'Este tipo de pagamento deve ser processado via gateway.'});
-    // }
+
 
     payment.status = 'pago';
     await payment.save();

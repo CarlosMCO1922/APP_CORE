@@ -19,17 +19,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'staff', // Nome da tabela staff (confirma se é 'staff' ou 'Users' para instrutores)
+        model: 'staff', 
         key: 'id',
       },
     },
-    // NOVO CAMPO E AJUSTE EM dayOfWeek
     recurrenceType: {
-      type: DataTypes.STRING, // ALTERADO DE ENUM PARA STRING
+      type: DataTypes.STRING, 
       allowNull: false,
       defaultValue: 'weekly',
       comment: 'Tipo de recorrência: diária, semanal, mensal (controlado pela aplicação)',
-      validate: { // Adiciona validação a nível de aplicação
+      validate: { 
         isIn: {
           args: [['daily', 'weekly', 'monthly']],
           msg: "Valor inválido para recurrenceType. Deve ser 'daily', 'weekly', ou 'monthly'."
@@ -37,15 +36,15 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     dayOfWeek: {
-      type: DataTypes.INTEGER, // 0 (Dom) a 6 (Sáb)
-      allowNull: true, // Nulo se recurrenceType for 'daily', ou para alguns tipos de 'monthly'
+      type: DataTypes.INTEGER, 
+      allowNull: true, 
       comment: 'Dia da semana (0-Dom, 1-Seg, ...), relevante para semanal/mensal',
     },
-    startTime: { // Ex: "18:00:00"
+    startTime: { 
       type: DataTypes.TIME,
       allowNull: false,
     },
-    endTime: { // Ex: "19:00:00"
+    endTime: { 
       type: DataTypes.TIME,
       allowNull: false,
     },
@@ -66,15 +65,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    // OPCIONAL: Adicionar um workoutPlanId global para a série
-    // workoutPlanId: {
-    //   type: DataTypes.INTEGER,
-    //   allowNull: true,
-    //   references: {
-    //     model: 'workout_plans', // Confirma o nome da tua tabela
-    //     key: 'id',
-    //   },
-    // },
   });
 
   TrainingSeries.associate = (models) => {
@@ -83,13 +73,10 @@ module.exports = (sequelize, DataTypes) => {
       as: 'instances',
       onDelete: 'CASCADE',
     });
-    TrainingSeries.belongsTo(models.Staff, { // Confirma se o modelo de instrutor é 'Staff'
+    TrainingSeries.belongsTo(models.Staff, { 
       as: 'instructor',
       foreignKey: 'instructorId'
     });
-    // if (models.WorkoutPlan && TrainingSeries.rawAttributes.workoutPlanId) { // Se adicionares workoutPlanId
-    //   TrainingSeries.belongsTo(models.WorkoutPlan, { as: 'workoutPlan', foreignKey: 'workoutPlanId' });
-    // }
     TrainingSeries.hasMany(models.SeriesSubscription, {
         foreignKey: 'trainingSeriesId',
         as: 'subscriptions'

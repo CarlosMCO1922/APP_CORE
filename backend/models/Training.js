@@ -20,13 +20,13 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     time: {
-      type: DataTypes.TIME, // Formato HH:MM:SS
+      type: DataTypes.TIME, 
       allowNull: false,
     },
-    durationMinutes: { // Duração do treino em minutos
+    durationMinutes: { 
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 45, // Duração padrão de 45 minutos para treinos
+      defaultValue: 45, 
     },
     capacity: {
       type: DataTypes.INTEGER,
@@ -38,14 +38,14 @@ module.exports = (sequelize) => {
     },
     trainingSeriesId: {
       type: DataTypes.INTEGER,
-      allowNull: true, // Permite treinos únicos que não pertencem a uma série
+      allowNull: true,
       references: {
-        model: 'TrainingSeries', // Nome da tabela TrainingSeries
+        model: 'TrainingSeries', 
         key: 'id',
       },
-      onDelete: 'CASCADE', // Se a série for apagada, as instâncias também são (ou SET NULL, dependendo da lógica)
+      onDelete: 'CASCADE', 
     },
-    isGeneratedInstance: { // Flag para identificar facilmente instâncias geradas
+    isGeneratedInstance: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     }
@@ -59,21 +59,15 @@ module.exports = (sequelize) => {
       through: 'UserTrainings',
       foreignKey: 'trainingId',
       otherKey: 'userId',
-      as: 'participants', // Adicionado alias para clareza
+      as: 'participants', 
     });
-    // A associação User.belongsToMany(models.Training, ...) já deve estar no User.js
+    
 
     Training.belongsTo(models.Staff, {
       foreignKey: 'instructorId',
       allowNull: false,
       as: 'instructor',
     });
-
-    /*Training.hasMany(models.WorkoutPlan, {
-      foreignKey: 'trainingId',
-      as: 'workoutPlans', // training.getWorkoutPlans()
-      onDelete: 'CASCADE', // Se o treino for apagado, os seus planos também
-    });*/
 
     Training.belongsToMany(models.WorkoutPlan, {
       through: models.TrainingWorkoutPlan,
@@ -84,13 +78,13 @@ module.exports = (sequelize) => {
 
     Training.hasMany(models.TrainingWaitlist, {
       foreignKey: 'trainingId',
-      as: 'waitlistEntries', // training.getWaitlistEntries()
-      onDelete: 'CASCADE', // Se o treino for apagado, todas as suas entradas na lista de espera são apagadas
+      as: 'waitlistEntries', 
+      onDelete: 'CASCADE', 
     });
 
     Training.hasMany(models.ClientExercisePerformance, {
       foreignKey: 'trainingId',
-      as: 'clientPerformances', // training.getClientPerformances()
+      as: 'clientPerformances', 
       onDelete: 'CASCADE',
     });
 
@@ -98,7 +92,6 @@ module.exports = (sequelize) => {
       foreignKey: 'trainingSeriesId',
       as: 'series',
     });
-    // A associação Staff.hasMany(models.Training, ...) já deve estar no Staff.js
   };
 
   return Training;

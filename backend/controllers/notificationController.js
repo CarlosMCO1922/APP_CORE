@@ -2,11 +2,9 @@
 const db = require('../models');
 const { Op } = require('sequelize');
 
-// Função HELPER para criar notificações (a ser chamada por outros controllers)
-// Esta função NÃO é um endpoint de API, é para uso interno no backend.
+
 const createNotification = async (data) => {
-  // data = { recipientUserId, recipientStaffId, message, type, relatedResourceId, relatedResourceType, link }
-  try {
+    try {
     if (!data.recipientUserId && !data.recipientStaffId) {
       console.warn("Tentativa de criar notificação sem destinatário (User ou Staff).");
       return null;
@@ -20,13 +18,11 @@ const createNotification = async (data) => {
     return notification;
   } catch (error) {
     console.error('Erro ao criar notificação interna:', error);
-    return null; // Não quebrar a operação principal se a notificação falhar
+    return null; 
   }
 };
 
-// @desc    Obter as notificações do utilizador autenticado
-// @route   GET /api/notifications/my-notifications
-// @access  Privado (User ou Staff)
+
 const getMyNotifications = async (req, res) => {
   const recipientId = req.user ? req.user.id : (req.staff ? req.staff.id : null);
   const recipientType = req.user ? 'user' : (req.staff ? 'staff' : null);
@@ -35,12 +31,12 @@ const getMyNotifications = async (req, res) => {
     return res.status(401).json({ message: 'Utilizador não autenticado.' });
   }
 
-  const { limit = 15, offset = 0, status } = req.query; // status pode ser 'read', 'unread', ou omitido para todos
+  const { limit = 15, offset = 0, status } = req.query; 
   const whereClause = {};
 
   if (recipientType === 'user') {
     whereClause.recipientUserId = recipientId;
-  } else { // staff
+  } else { 
     whereClause.recipientStaffId = recipientId;
   }
 
@@ -60,7 +56,7 @@ const getMyNotifications = async (req, res) => {
 
     const unreadCount = await db.Notification.count({
         where: {
-            ...whereClause, // Mantém o filtro de destinatário
+            ...whereClause, 
             isRead: false
         }
     });
@@ -78,9 +74,7 @@ const getMyNotifications = async (req, res) => {
   }
 };
 
-// @desc    Marcar uma notificação como lida
-// @route   PATCH /api/notifications/:notificationId/read
-// @access  Privado (User ou Staff)
+
 const markAsRead = async (req, res) => {
   const { notificationId } = req.params;
   const recipientId = req.user ? req.user.id : (req.staff ? req.staff.id : null);
@@ -116,9 +110,7 @@ const markAsRead = async (req, res) => {
   }
 };
 
-// @desc    Marcar todas as notificações como lidas para o utilizador
-// @route   PATCH /api/notifications/mark-all-as-read
-// @access  Privado (User ou Staff)
+
 const markAllAsRead = async (req, res) => {
   const recipientId = req.user ? req.user.id : (req.staff ? req.staff.id : null);
   const recipientType = req.user ? 'user' : (req.staff ? 'staff' : null);
@@ -147,9 +139,5 @@ module.exports = {
   getMyNotifications,
   markAsRead,
   markAllAsRead,
-  // Exportar createNotification para ser usado por outros controllers
-  // Não é um endpoint, mas uma função helper.
-  // Outra forma seria ter um `notificationService` no backend. Por agora, exportamos daqui.
-  // Atenção: isto não cria um endpoint /api/notifications/create, é para uso interno.
   _internalCreateNotification: createNotification
 };

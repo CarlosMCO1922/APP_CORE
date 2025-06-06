@@ -5,7 +5,7 @@ const {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
   getMyPerformanceHistoryForExercise,
-  deletePerformanceLog // <<< IMPORTAR A NOVA FUNÇÃO
+  deletePerformanceLog 
 } = require('../controllers/progressController');
 const { protect, isClientUser } = require('../middleware/authMiddleware');
 
@@ -20,6 +20,5 @@ router.get('/my-exercise-history/:planExerciseId', getMyPerformanceHistoryForExe
 // --- NOVA ROTA PARA ELIMINAR ---
 router.delete('/log/:logId', deletePerformanceLog);
 
-// TODO: router.put('/log/:performanceId', updateExercisePerformance); // Se quiser implementar atualização
 
 module.exports = router;

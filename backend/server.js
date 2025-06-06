@@ -33,14 +33,12 @@ app.get('/', (req, res) => {
   res.send('Servidor CORE a funcionar!');
 });
 
-// Para as rotas que precisam de JSON parseado, adiciona o middleware individualmente:
 app.use('/auth', express.json(), authRoutes);
 app.use('/users', express.json(), userRoutes);
 app.use('/trainings', express.json(), trainingRoutes);
 app.use('/appointments', express.json(), appointmentRoutes);
 app.use('/staff', express.json(), staffRoutes);
-// paymentRoutes já lida com express.raw para o webhook e pode usar express.json() internamente para outras sub-rotas se necessário
-app.use('/payments', paymentRoutes); // Não adicionar express.json() globalmente aqui
+app.use('/payments', paymentRoutes); 
 app.use('/exercises', express.json(), exerciseRoutes);
 app.use('/workout-plans', express.json(), workoutPlanRoutes);
 app.use('/notifications', notificationRoutes);

@@ -1,5 +1,5 @@
 // backend/controllers/authController.js
-const db = require('../models'); // Aceder aos modelos User e Staff através do db.User e db.Staff
+const db = require('../models'); 
 const { hashPassword, comparePassword } = require('../utils/passwordUtils');
 const { generateToken } = require('../utils/tokenUtils');
 
@@ -26,10 +26,8 @@ const registerUser = async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      // isAdmin será false por defeito, conforme definido no modelo
     });
 
-    // Não enviar a password de volta
     const userResponse = {
       id: newUser.id,
       firstName: newUser.firstName,
@@ -63,16 +61,16 @@ const loginUser = async (req, res) => {
     const payload = {
       id: user.id,
       email: user.email,
-      firstName: user.firstName, // Adicionado para conveniência no frontend
-      role: 'user', // Identifica o tipo de conta
-      isAdmin: user.isAdmin, // Se o utilizador tem permissões de admin (conforme o teu modelo User)
+      firstName: user.firstName, 
+      role: 'user', 
+      isAdmin: user.isAdmin, 
     };
     const token = generateToken(payload);
 
     res.status(200).json({
       message: 'Login bem-sucedido!',
       token,
-      user: { // Enviar alguns dados do utilizador para o frontend
+      user: { 
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -87,7 +85,6 @@ const loginUser = async (req, res) => {
 };
 
 // Registo de um novo Membro da Equipa (Staff)
-// NOTA: Idealmente, esta rota deve ser protegida e acessível apenas por um admin existente.
 const registerStaff = async (req, res) => {
   const { firstName, lastName, email, password, role } = req.body;
 
@@ -116,7 +113,7 @@ const registerStaff = async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      role: role || 'employee', // 'employee' por defeito se não for especificado
+      role: role || 'employee', 
     });
 
     const staffResponse = {
@@ -152,15 +149,15 @@ const loginStaff = async (req, res) => {
     const payload = {
       id: staffMember.id,
       email: staffMember.email,
-      firstName: staffMember.firstName, // Adicionado para conveniência no frontend
-      role: staffMember.role, // 'admin', 'trainer', 'physiotherapist', etc.
+      firstName: staffMember.firstName, 
+      role: staffMember.role, 
     };
     const token = generateToken(payload);
 
     res.status(200).json({
       message: 'Login de funcionário bem-sucedido!',
       token,
-      staff: { // Enviar alguns dados do funcionário para o frontend
+      staff: { 
         id: staffMember.id,
         firstName: staffMember.firstName,
         lastName: staffMember.lastName,

@@ -2,9 +2,6 @@
 const db = require('../models');
 const { Op } = require('sequelize');
 
-// @desc    Admin cria um novo exercício
-// @route   POST /exercises 
-// @access  Privado (Admin Staff)
 const createExercise = async (req, res) => {
   const { name, description, imageUrl, videoUrl, muscleGroup } = req.body;
 
@@ -35,18 +32,16 @@ const createExercise = async (req, res) => {
   }
 };
 
-// @desc    Lista todos os exercícios (com filtros opcionais)
-// @route   GET /exercises
-// @access  Privado (Qualquer utilizador autenticado pode ver, para seleção)
+
 const getAllExercises = async (req, res) => {
-  const { muscleGroup, name } = req.query; // Filtros opcionais
+  const { muscleGroup, name } = req.query; 
   const whereClause = {};
 
   if (muscleGroup) {
-    whereClause.muscleGroup = { [Op.iLike]: `%${muscleGroup}%` }; // Case-insensitive like
+    whereClause.muscleGroup = { [Op.iLike]: `%${muscleGroup}%` }; 
   }
   if (name) {
-    whereClause.name = { [Op.iLike]: `%${name}%` }; // Case-insensitive like
+    whereClause.name = { [Op.iLike]: `%${name}%` }; 
   }
 
   try {
@@ -61,9 +56,7 @@ const getAllExercises = async (req, res) => {
   }
 };
 
-// @desc    Obtém um exercício por ID
-// @route   GET /exercises/:id
-// @access  Privado (Qualquer utilizador autenticado)
+
 const getExerciseById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -78,9 +71,7 @@ const getExerciseById = async (req, res) => {
   }
 };
 
-// @desc    Admin atualiza um exercício
-// @route   PUT /exercises/:id
-// @access  Privado (Admin Staff)
+
 const updateExercise = async (req, res) => {
   const { id } = req.params;
   const { name, description, imageUrl, videoUrl, muscleGroup } = req.body;
@@ -99,7 +90,7 @@ const updateExercise = async (req, res) => {
       exercise.name = name;
     }
 
-    // Permite atualizar campos para null ou string vazia se o modelo permitir (allowNull: true)
+
     if (description !== undefined) exercise.description = description;
     if (imageUrl !== undefined) exercise.imageUrl = imageUrl;
     if (videoUrl !== undefined) exercise.videoUrl = videoUrl;
@@ -116,9 +107,7 @@ const updateExercise = async (req, res) => {
   }
 };
 
-// @desc    Admin elimina um exercício
-// @route   DELETE /exercises/:id
-// @access  Privado (Admin Staff)
+
 const deleteExercise = async (req, res) => {
   const { id } = req.params;
   try {

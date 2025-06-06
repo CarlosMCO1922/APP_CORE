@@ -11,32 +11,30 @@ module.exports = (sequelize) => {
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true, // Para evitar exercícios duplicados com o mesmo nome
+      unique: true, 
     },
     description: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
     imageUrl: {
-      type: DataTypes.STRING, // URL para uma imagem
+      type: DataTypes.STRING, 
       allowNull: true,
     },
     videoUrl: {
-      type: DataTypes.STRING, // URL para um vídeo (ex: YouTube, Vimeo)
+      type: DataTypes.STRING, 
       allowNull: true,
     },
     muscleGroup: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-    // Podes adicionar mais campos como 'equipmentNeeded', 'difficultyLevel', etc.
   }, {
     tableName: 'exercises',
     timestamps: true,
   });
 
   Exercise.associate = (models) => {
-    // Um exercício pode estar em muitos WorkoutPlanExercises
     Exercise.hasMany(models.WorkoutPlanExercise, {
       foreignKey: 'exerciseId',
       as: 'planInstances',

@@ -50,7 +50,7 @@ module.exports = (sequelize) => {
 
     WorkoutPlanExercise.hasMany(models.ClientExercisePerformance, {
       foreignKey: 'planExerciseId',
-      as: 'clientPerformances', // workoutPlanExercise.getClientPerformances()
+      as: 'clientPerformances',
       onDelete: 'CASCADE',
     });
   };

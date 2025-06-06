@@ -1,12 +1,10 @@
 // backend/controllers/trainingController.js
-const { Op } = require('sequelize'); // Importação direta de Op
+const { Op } = require('sequelize'); 
 const db = require('../models');
 const { startOfWeek, endOfWeek, format } = require('date-fns');
 const { _internalCreateNotification } = require('./notificationController');
 
-// @desc    Criar um novo treino
-// @route   POST /api/trainings
-// @access  Privado (Admin Staff)
+
 const createTraining = async (req, res) => {
   const { name, description, date, time, capacity, instructorId } = req.body;
 
@@ -27,7 +25,6 @@ const createTraining = async (req, res) => {
     if (!instructor) {
       return res.status(404).json({ message: 'Instrutor não encontrado.' });
     }
-    // Opcional: Verificar se o role do instrutor é 'trainer' ou 'admin'
     if (!['trainer', 'admin'].includes(instructor.role)) {
         return res.status(400).json({ message: 'O ID fornecido não pertence a um instrutor ou administrador válido.' });
     }
@@ -48,7 +45,7 @@ const createTraining = async (req, res) => {
         type: 'NEW_TRAINING_ASSIGNED',
         relatedResourceId: newTraining.id,
         relatedResourceType: 'training',
-        link: `/calendario` // Ou um link específico para o treino no painel do staff
+        link: `/calendario` 
       });
     }
 
@@ -64,29 +61,24 @@ const createTraining = async (req, res) => {
   }
 };
 
-// @desc    Listar todos os treinos disponíveis
-// @route   GET /api/trainings
-// @access  Privado (Qualquer utilizador autenticado)
+
 const getAllTrainings = async (req, res) => {
   try {
     const { instructorId, dateFrom, dateTo, nameSearch } = req.query;
     const whereClause = {};
 
-    // VALIDAÇÃO E APLICAÇÃO DOS FILTROS
     if (instructorId) {
       const parsedInstructorId = parseInt(instructorId, 10);
       if (!isNaN(parsedInstructorId)) { // Só aplica o filtro se for um número válido
         whereClause.instructorId = parsedInstructorId;
       } else if (instructorId !== '') { // Se não for vazio e não for número, pode ser um erro de input
         console.warn(`getAllTrainings: instructorId inválido recebido: ${instructorId}`);
-        // Poderia retornar um erro 400 aqui se quisesse ser mais estrito
+       
       }
-      // Se instructorId for uma string vazia, não adicionamos ao whereClause,
-      // o que significa "todos os instrutores"
+      
     }
 
     if (dateFrom && dateTo) {
-      // Adicionar validação de formato de data se necessário (ex: com date-fns isValid)
       whereClause.date = { [Op.between]: [dateFrom, dateTo] };
     } else if (dateFrom) {
       whereClause.date = { [Op.gte]: dateFrom };
@@ -95,11 +87,10 @@ const getAllTrainings = async (req, res) => {
     }
 
     if (nameSearch && typeof nameSearch === 'string' && nameSearch.trim() !== '') {
-      whereClause.name = { [Op.iLike]: `%${nameSearch.trim()}%` }; // Usar iLike para case-insensitive (PostgreSQL)
-                                                              // Para SQLite, Op.like é case-insensitive por padrão
+      whereClause.name = { [Op.iLike]: `%${nameSearch.trim()}%` }; 
     }
 
-    console.log('Aplicando filtros para treinos:', whereClause); // Log para depuração
+    console.log('Aplicando filtros para treinos:', whereClause); 
 
     const trainings = await db.Training.findAll({
       where: whereClause,
@@ -117,7 +108,7 @@ const getAllTrainings = async (req, res) => {
         },
         {
           model: db.TrainingSeries,
-          as: 'series', // Este é o alias definido na associação em Training.js
+          as: 'series', 
           attributes: ['id', 'name', 'seriesStartDate', 'seriesEndDate', 'dayOfWeek', 'startTime', 'endTime', 'recurrenceType'] // Campos que podem ser úteis
         },
       ],
@@ -134,14 +125,12 @@ const getAllTrainings = async (req, res) => {
 
     res.status(200).json(trainingsWithParticipantCount);
   } catch (error) {
-    console.error('Erro detalhado ao listar treinos:', error); // Log mais detalhado do erro
+    console.error('Erro detalhado ao listar treinos:', error); 
     res.status(500).json({ message: 'Erro interno do servidor ao listar os treinos.', errorDetails: error.message });
   }
 };
 
-// @desc    Obter detalhes de um treino específico
-// @route   GET /api/trainings/:id
-// @access  Público/Utilizadores autenticados
+
 const getTrainingById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -178,9 +167,7 @@ const getTrainingById = async (req, res) => {
   }
 };
 
-// @desc    Atualizar um treino
-// @route   PUT /api/trainings/:id
-// @access  Privado (Admin Staff)
+
 const updateTraining = async (req, res) => {
   const { id } = req.params;
   const { name, description, date, time, capacity, instructorId } = req.body;
@@ -191,7 +178,7 @@ const updateTraining = async (req, res) => {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    // Atualizar campos se fornecidos
+    
     if (name) training.name = name;
     if (description) training.description = description;
     if (date) training.date = date;
@@ -228,9 +215,7 @@ const updateTraining = async (req, res) => {
   }
 };
 
-// @desc    Eliminar um treino
-// @route   DELETE /api/trainings/:id
-// @access  Privado (Admin Staff)
+
 const deleteTraining = async (req, res) => {
   const { id } = req.params;
   try {
@@ -239,11 +224,8 @@ const deleteTraining = async (req, res) => {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    // O Sequelize trata da eliminação em cascata das associações na tabela UserTrainings
-    // se configurado corretamente (onDelete: 'CASCADE'), ou podemos remover manualmente.
-    // Por defeito, as associações belongsToMany não têm onDelete: 'CASCADE' automaticamente.
-    // Vamos remover as associações manualmente para garantir.
-    await training.setParticipants([]); // Remove todas as associações com User
+    
+    await training.setParticipants([]); 
 
     await training.destroy();
     res.status(200).json({ message: 'Treino eliminado com sucesso.' });
@@ -253,9 +235,7 @@ const deleteTraining = async (req, res) => {
   }
 };
 
-// @desc    Cliente (User) inscreve-se num treino
-// @route   POST /api/trainings/:id/book
-// @access  Privado (Cliente)
+
 const bookTraining = async (req, res) => {
   const trainingId = req.params.id;
   const userId = req.user.id;
@@ -280,7 +260,6 @@ const bookTraining = async (req, res) => {
 
     const participantsCount = training.participants ? training.participants.length : 0;
     if (participantsCount >= training.capacity) {
-      // TREINO CHEIO - LÓGICA DA LISTA DE ESPERA
       const alreadyOnWaitlist = await db.TrainingWaitlist.findOne({
         where: { trainingId: training.id, userId: user.id, status: 'PENDING' }
       });
@@ -293,7 +272,6 @@ const bookTraining = async (req, res) => {
         trainingId: training.id,
         userId: user.id,
         status: 'PENDING'
-        // addedAt será gerado automaticamente (createdAt)
       });
 
       _internalCreateNotification({
@@ -305,16 +283,26 @@ const bookTraining = async (req, res) => {
         link: `/calendario`
       });
 
-      return res.status(202).json({ // 202 Accepted pode ser mais apropriado aqui
+      return res.status(202).json({ 
         message: 'Treino cheio. Foste adicionado à lista de espera.'
       });
     }
 
     await training.addParticipant(user);
 
-    _internalCreateNotification({ /* ... (notificação de sucesso como estava) ... */ });
+    _internalCreateNotification({ recipientUserId: userId,
+      message: `Inscrição no treino "${training.name}" realizada com sucesso!`,
+      type: 'TRAINING_BOOKING_SUCCESS',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: `/calendario` });
     if (training.instructorId) {
-      _internalCreateNotification({ /* ... (notificação para instrutor como estava) ... */ });
+      _internalCreateNotification({ recipientStaffId: training.instructorId,
+        message: `${user.firstName} ${user.lastName} inscreveu-se no seu treino "${training.name}".`,
+        type: 'TRAINING_NEW_PARTICIPANT',
+        relatedResourceId: training.id,
+        relatedResourceType: 'training',
+        link: `/admin/calendario-geral` });
     }
 
     res.status(200).json({ message: 'Inscrição no treino realizada com sucesso!' });
@@ -324,60 +312,62 @@ const bookTraining = async (req, res) => {
   }
 };
 
-// @desc    Cliente (User) cancela a inscrição num treino
-// @route   DELETE /api/trainings/:id/book
-// @access  Privado (Cliente)
 const cancelTrainingBooking = async (req, res) => {
   const trainingId = req.params.id;
   const userId = req.user.id;
 
   try {
     const training = await db.Training.findByPk(trainingId);
-    if (!training) { /* ... (como estava) ... */ }
+    if (!training) { return res.status(404).json({ message: 'Treino não encontrado.' }); }
     const user = await db.User.findByPk(userId);
-    if (!user) { /* ... (como estava) ... */ }
+    if (!user) { return res.status(404).json({ message: 'Utilizador não encontrado.' }); }
     const isBooked = await training.hasParticipant(user);
-    if (!isBooked) { /* ... (como estava) ... */ }
+    if (!isBooked) { return res.status(400).json({ message: 'Não estás inscrito neste treino.' }); }
 
     await training.removeParticipant(user);
-    _internalCreateNotification({ /* ... (notificação de cancelamento para cliente como estava) ... */ });
+    _internalCreateNotification({  recipientUserId: userId,
+      message: `A sua inscrição no treino "${training.name}" foi cancelada.`,
+      type: 'TRAINING_CANCELLED_CLIENT',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: '/calendario' });
 
-    // LÓGICA DA LISTA DE ESPERA: Vaga abriu
+    // LÓGICA DA LISTA DE ESPERA
     const waitlistEntries = await db.TrainingWaitlist.findAll({
       where: { trainingId: training.id, status: 'PENDING' },
-      order: [['createdAt', 'ASC']], // Mais antigo primeiro
+      order: [['createdAt', 'ASC']], 
       include: [{ model: db.User, as: 'user', attributes: ['id', 'firstName', 'email'] }]
     });
 
     if (waitlistEntries.length > 0) {
       const firstInWaitlist = waitlistEntries[0];
 
-      // Opção: Notificar o primeiro da lista
       _internalCreateNotification({
         recipientUserId: firstInWaitlist.userId,
         message: `Boas notícias! Abriu uma vaga no treino "<span class="math-inline">\{training\.name\}" \(</span>{format(new Date(training.date), 'dd/MM/yyyy')}) para o qual estavas na lista de espera. Inscreve-te já!`,
         type: 'TRAINING_SPOT_AVAILABLE_CLIENT',
         relatedResourceId: training.id,
         relatedResourceType: 'training',
-        link: `/calendario` // ou link direto para o treino
+        link: `/calendario` 
       });
-      // Mudar status na lista de espera (opcional)
-      // firstInWaitlist.status = 'NOTIFIED';
-      // firstInWaitlist.notifiedAt = new Date();
-      // await firstInWaitlist.save();
 
       // Notificar Admin/Instrutor
       _internalCreateNotification({
-        recipientStaffId: training.instructorId, // Ou um adminId fixo
+        recipientStaffId: training.instructorId, 
         message: `Uma vaga abriu no treino "${training.name}". ${firstInWaitlist.user.firstName} (primeiro na lista de espera) foi notificado.`,
         type: 'TRAINING_SPOT_OPENED_STAFF_WAITLIST',
         relatedResourceId: training.id,
         relatedResourceType: 'training',
-        link: `/admin/trainings/${training.id}/manage-waitlist` // Futura página de gestão da lista de espera
+        link: `/admin/trainings/${training.id}/manage-waitlist` 
       });
-    } else if (training.instructorId) { // Se não há lista de espera, mas notifica o instrutor sobre a vaga.
+    } else if (training.instructorId) { 
         const currentParticipants = await training.countParticipants();
-        _internalCreateNotification({ /* ... (notificação de vaga aberta para instrutor como estava) ... */ });
+        _internalCreateNotification({ recipientStaffId: training.instructorId,
+            message: `Uma vaga abriu no seu treino "${training.name}". Vagas restantes: ${training.capacity - currentParticipants}.`,
+            type: 'TRAINING_SPOT_OPENED_STAFF',
+            relatedResourceId: training.id,
+            relatedResourceType: 'training',
+            link: `/admin/calendario-geral` });
     }
 
     res.status(200).json({ message: 'Inscrição no treino cancelada com sucesso!' });
@@ -387,13 +377,10 @@ const cancelTrainingBooking = async (req, res) => {
   }
 };
 
-// @desc    Admin obtém o número de inscrições em treinos na semana atual
-// @route   GET /api/trainings/stats/current-week-signups
-// @access  Privado (Admin Staff)
+
 const getCurrentWeekSignups = async (req, res) => {
   try {
     const today = new Date();
-    // Considera a semana começando na Segunda-feira (weekStartsOn: 1)
     const startDate = startOfWeek(today, { weekStartsOn: 1 });
     const endDate = endOfWeek(today, { weekStartsOn: 1 });
 
@@ -430,9 +417,7 @@ const getCurrentWeekSignups = async (req, res) => {
   }
 };
 
-// @desc    Admin obtém o número de treinos agendados para hoje
-// @route   GET /api/trainings/stats/today-count
-// @access  Privado (Admin Staff)
+
 const getTodayTrainingsCount = async (req, res) => {
   try {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -448,12 +433,10 @@ const getTodayTrainingsCount = async (req, res) => {
   }
 };
 
-// @desc    Admin inscreve um cliente específico num treino
-// @route   POST /trainings/:trainingId/admin-book-client
-// @access  Privado (Admin Staff)
+
 const adminBookClientForTraining = async (req, res) => {
   const { trainingId } = req.params;
-  const { userId } = req.body; // userId do cliente a ser inscrito
+  const { userId } = req.body; 
 
   if (!userId) {
     return res.status(400).json({ message: 'ID do Utilizador (cliente) é obrigatório.' });
@@ -471,7 +454,7 @@ const adminBookClientForTraining = async (req, res) => {
     if (!userToBook) {
       return res.status(404).json({ message: 'Utilizador (cliente) a ser inscrito não encontrado.' });
     }
-    if (userToBook.isAdmin) { // Assumindo que User.isAdmin distingue clientes de staff/admins
+    if (userToBook.isAdmin) { 
         return res.status(400).json({ message: 'Não é possível inscrever um administrador ou membro da equipa como participante através desta função.' });
     }
 
@@ -488,7 +471,7 @@ const adminBookClientForTraining = async (req, res) => {
 
     await training.addParticipant(userToBook);
 
-    // Notificar o cliente (opcional, mas bom)
+    // Notificar o cliente 
     _internalCreateNotification({
       recipientUserId: userToBook.id,
       message: `Foi inscrito no treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}) por um administrador.`,
@@ -498,7 +481,7 @@ const adminBookClientForTraining = async (req, res) => {
       link: `/calendario`
     });
 
-    // Notificar o instrutor (opcional, se diferente do admin que fez a ação)
+    // Notificar o instrutor 
     if (training.instructorId && training.instructorId !== req.staff.id) {
          _internalCreateNotification({
             recipientStaffId: training.instructorId,
@@ -510,7 +493,7 @@ const adminBookClientForTraining = async (req, res) => {
         });
     }
 
-    // Retornar o treino atualizado com a lista de participantes
+    
     const updatedTraining = await db.Training.findByPk(trainingId, {
         include: [{ model: db.User, as: 'participants', attributes: ['id', 'firstName', 'lastName', 'email'] }]
     });
@@ -528,24 +511,27 @@ const adminBookClientForTraining = async (req, res) => {
   }
 };
 
-// @desc    Admin cancela a inscrição de um cliente específico num treino
-// @route   DELETE /trainings/:trainingId/admin-cancel-booking/:userId
-// @access  Privado (Admin Staff)
+
 const adminCancelClientBooking = async (req, res) => {
-    const { trainingId, userId: userIdToCancel } = req.params; // userId aqui é o do cliente a ser cancelado
+    const { trainingId, userId: userIdToCancel } = req.params; 
 
     try {
         const training = await db.Training.findByPk(trainingId);
-        if (!training) { /* ... (como estava) ... */ }
+        if (!training) { return res.status(404).json({ message: 'Treino não encontrado.' }); }
         const userToCancel = await db.User.findByPk(userIdToCancel);
-        if (!userToCancel) { /* ... (como estava) ... */ }
+        if (!userToCancel) { return res.status(404).json({ message: 'Utilizador a cancelar não encontrado.' }); }
         const isBooked = await training.hasParticipant(userToCancel);
-        if (!isBooked) { /* ... (como estava) ... */ }
+        if (!isBooked) { return res.status(400).json({ message: `O cliente ${userToCancel.firstName} não está inscrito neste treino.` });}
 
         await training.removeParticipant(userToCancel);
-        _internalCreateNotification({ /* ... (notificação de cancelamento para cliente como estava) ... */ });
+        _internalCreateNotification({ recipientUserId: userToCancel.id,
+            message: `A sua inscrição no treino "${training.name}" foi cancelada por um administrador.`,
+            type: 'TRAINING_CANCELLED_BY_ADMIN_CLIENT',
+            relatedResourceId: training.id,
+            relatedResourceType: 'training',
+            link: `/calendario` });
 
-        // LÓGICA DA LISTA DE ESPERA (similar à de clientCancelTrainingBooking)
+        // LÓGICA DA LISTA DE ESPERA 
         const waitlistEntries = await db.TrainingWaitlist.findAll({
             where: { trainingId: training.id, status: 'PENDING' },
             order: [['createdAt', 'ASC']],
@@ -562,8 +548,7 @@ const adminCancelClientBooking = async (req, res) => {
                 relatedResourceType: 'training',
                 link: `/calendario`
             });
-            // Notificar Admin/Instrutor que despoletou o cancelamento (ou outro admin/instrutor)
-            if (training.instructorId) { // Pode querer notificar o instrutor do treino
+            if (training.instructorId) { 
                  _internalCreateNotification({
                     recipientStaffId: training.instructorId,
                     message: `Uma vaga abriu no treino "${training.name}" após cancelamento de ${userToCancel.firstName}. ${firstInWaitlist.user.firstName} (lista de espera) foi notificado.`,
@@ -575,11 +560,17 @@ const adminCancelClientBooking = async (req, res) => {
             }
         } else if (training.instructorId && training.instructorId !== req.staff.id) {
              const currentParticipants = await training.countParticipants();
-             _internalCreateNotification({ /* ... (notificação de vaga aberta para instrutor como estava) ... */ });
+             _internalCreateNotification({ recipientStaffId: training.instructorId,
+                message: `Uma vaga abriu no seu treino "${training.name}" após um cancelamento. Vagas restantes: ${training.capacity - currentParticipants}.`,
+                type: 'TRAINING_SPOT_OPENED_STAFF',
+                relatedResourceId: training.id,
+                relatedResourceType: 'training',
+                link: `/admin/calendario-geral` });
         }
 
-        const updatedTraining = await db.Training.findByPk(trainingId, { /* ... (include como estava) ... */ });
-        // ... (resto da resposta como estava)
+        const updatedTraining = await db.Training.findByPk(trainingId, { include: [{ model: db.User, as: 'participants', attributes: ['id', 'firstName', 'lastName', 'email'] }] });
+        const trainingJSON = updatedTraining.toJSON();
+        const response = { ...trainingJSON, participantsCount: trainingJSON.participants.length };
         res.status(200).json({ message: `Inscrição do cliente ${userToCancel.firstName} cancelada com sucesso!`, training: updatedTraining.toJSON() });
 
     } catch (error) {
@@ -588,9 +579,7 @@ const adminCancelClientBooking = async (req, res) => {
     }
 };
 
-// @desc    Admin obtém a lista de espera para um treino específico
-// @route   GET /api/trainings/:trainingId/waitlist
-// @access  Privado (Admin Staff)
+
 const adminGetTrainingWaitlist = async (req, res) => {
   const { trainingId } = req.params;
   try {
@@ -600,11 +589,11 @@ const adminGetTrainingWaitlist = async (req, res) => {
     }
 
     const waitlistEntries = await db.TrainingWaitlist.findAll({
-      where: { trainingId: training.id, status: 'PENDING' }, // Mostrar apenas os pendentes
+      where: { trainingId: training.id, status: 'PENDING' }, 
       include: [
         { model: db.User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] }
       ],
-      order: [['createdAt', 'ASC']], // Mais antigo primeiro
+      order: [['createdAt', 'ASC']], 
     });
     res.status(200).json(waitlistEntries);
   } catch (error) {
@@ -613,14 +602,10 @@ const adminGetTrainingWaitlist = async (req, res) => {
   }
 };
 
-// @desc    Admin promove um cliente da lista de espera para o treino
-// @route   POST /api/trainings/:trainingId/waitlist/promote
-// @access  Privado (Admin Staff)
+
 const adminPromoteFromWaitlist = async (req, res) => {
   const { trainingId } = req.params;
-  const { userId, waitlistEntryId } = req.body; // Admin envia o userId do cliente a promover
-                                            // ou o ID da entrada na lista de espera
-
+  const { userId, waitlistEntryId } = req.body; 
   if (!userId && !waitlistEntryId) {
     return res.status(400).json({ message: "ID do utilizador ou ID da entrada na lista de espera é obrigatório." });
   }
@@ -641,7 +626,7 @@ const adminPromoteFromWaitlist = async (req, res) => {
     let waitlistEntry;
     if (waitlistEntryId) {
         waitlistEntry = await db.TrainingWaitlist.findByPk(waitlistEntryId);
-    } else { // userId foi fornecido
+    } else { 
         waitlistEntry = await db.TrainingWaitlist.findOne({
             where: { trainingId: training.id, userId: userId, status: 'PENDING' }
         });
@@ -653,15 +638,13 @@ const adminPromoteFromWaitlist = async (req, res) => {
 
     const userToPromote = await db.User.findByPk(waitlistEntry.userId);
     if (!userToPromote) {
-        // Isto não deveria acontecer se a entrada na lista de espera for válida
-        await waitlistEntry.destroy(); // Limpar entrada órfã
+        await waitlistEntry.destroy(); 
         return res.status(404).json({ message: "Utilizador da lista de espera não encontrado."});
     }
 
     // Adicionar ao treino
     await training.addParticipant(userToPromote);
-    // Mudar status ou remover da lista de espera
-    waitlistEntry.status = 'BOOKED'; // Ou await waitlistEntry.destroy();
+    waitlistEntry.status = 'BOOKED'; 
     await waitlistEntry.save();
 
     _internalCreateNotification({
@@ -673,7 +656,7 @@ const adminPromoteFromWaitlist = async (req, res) => {
       link: `/calendario`
     });
     _internalCreateNotification({
-      recipientStaffId: req.staff.id, // Notificar o admin que fez a ação
+      recipientStaffId: req.staff.id, 
       message: `Promoveste <span class="math-inline">\{userToPromote\.firstName\} da lista de espera para o treino "</span>{training.name}".`,
       type: 'ADMIN_PROMOTED_FROM_WAITLIST_STAFF',
       relatedResourceId: training.id,
@@ -799,21 +782,14 @@ const adminPromoteClientFromWaitlistService = async (trainingId, userIdToPromote
 };
 
 
-// --- NOVA FUNÇÃO PARA CLIENTE SE INSCREVER DE FORMA RECORRENTE ---
-/**
- * Cliente inscreve-se de forma recorrente num treino mestre.
- * @param {number} masterTrainingId - ID do treino mestre.
- * @param {string} clientSubscriptionEndDate - Data até quando o cliente quer a subscrição.
- * @param {string} token - Token do cliente.
- * @returns {Promise<object>} - Resposta da API.
- */
+
+
 const subscribeToRecurringTrainingService = async (masterTrainingId, clientSubscriptionEndDate, token) => {
   if (!token) throw new Error('Token não fornecido para subscrição recorrente.');
   if (!masterTrainingId || !clientSubscriptionEndDate) {
     throw new Error('ID do treino mestre e data de fim da subscrição são obrigatórios.');
   }
   
-  // O endpoint no backend é POST /trainings/:masterTrainingId/subscribe-recurring
   const url = `${API_URL}/trainings/${masterTrainingId}/subscribe-recurring`; 
 
   console.log('Frontend Service: Subscrevendo recorrente. URL:', url, 'Payload:', { clientSubscriptionEndDate });
@@ -840,7 +816,7 @@ const subscribeToRecurringTrainingService = async (masterTrainingId, clientSubsc
     console.error('Erro na resposta de subscribeToRecurringTrainingService (status não OK):', data);
     throw new Error(data.message || `Erro ao processar inscrição recorrente. Status: ${response.status}`);
   }
-  return data; // Espera-se { message }
+  return data;
 };
 
 module.exports = {

@@ -3,10 +3,6 @@ const db = require('../models');
 const { Op } = require('sequelize');
 
 // --- Funções para ADMIN gerir Planos de Treino "Modelo" / Globais ---
-
-// @desc    Admin cria um novo plano de treino "modelo" (global)
-// @route   POST /api/workout-plans/global
-// @access  Privado (Admin Staff)
 const createGlobalWorkoutPlan = async (req, res) => {
   const { name, notes, isVisible, exercises } = req.body;
 
@@ -24,7 +20,7 @@ const createGlobalWorkoutPlan = async (req, res) => {
 
     if (exercises && exercises.length > 0) {
       const planExercisesData = exercises.map(ex => ({
-        ...ex, // Contém exerciseId, order, sets, reps, etc.
+        ...ex, 
         workoutPlanId: newWorkoutPlan.id,
       }));
       await db.WorkoutPlanExercise.bulkCreate(planExercisesData, { transaction, validate: true });
@@ -46,9 +42,7 @@ const createGlobalWorkoutPlan = async (req, res) => {
   }
 };
 
-// @desc    Admin lista todos os planos de treino "modelo" (globais)
-// @route   GET /api/workout-plans/global
-// @access  Privado (Admin Staff)
+
 const getAllGlobalWorkoutPlans = async (req, res) => {
   try {
     const workoutPlans = await db.WorkoutPlan.findAll({
@@ -66,9 +60,7 @@ const getAllGlobalWorkoutPlans = async (req, res) => {
   }
 };
 
-// @desc    Admin obtém um plano de treino "modelo" (global) por ID
-// @route   GET /api/workout-plans/global/:planId
-// @access  Privado (Admin Staff)
+
 const getGlobalWorkoutPlanById = async (req, res) => {
     const { planId } = req.params;
     try {
@@ -90,9 +82,7 @@ const getGlobalWorkoutPlanById = async (req, res) => {
     }
 };
 
-// @desc    Admin atualiza um plano de treino "modelo" (global)
-// @route   PUT /api/workout-plans/global/:planId
-// @access  Privado (Admin Staff)
+
 const updateGlobalWorkoutPlan = async (req, res) => {
   const { planId } = req.params;
   const { name, notes, isVisible, exercises } = req.body;
@@ -138,9 +128,7 @@ const updateGlobalWorkoutPlan = async (req, res) => {
   }
 };
 
-// @desc    Admin elimina um plano de treino "modelo" (global)
-// @route   DELETE /api/workout-plans/global/:planId
-// @access  Privado (Admin Staff)
+
 const deleteGlobalWorkoutPlan = async (req, res) => {
   const { planId } = req.params;
   const transaction = await db.sequelize.transaction();
@@ -151,7 +139,6 @@ const deleteGlobalWorkoutPlan = async (req, res) => {
       return res.status(404).json({ message: 'Plano de treino global não encontrado.' });
     }
     await db.TrainingWorkoutPlan.destroy({ where: { workoutPlanId: planId }, transaction });
-    // WorkoutPlanExercises são apagados em cascata se onDelete: 'CASCADE' estiver no modelo WorkoutPlan para a associação hasMany planExercises
     await workoutPlan.destroy({ transaction });
     await transaction.commit();
     res.status(200).json({ message: 'Plano de treino global e suas associações eliminados com sucesso.' });
@@ -225,7 +212,7 @@ const getWorkoutPlansForTraining = async (req, res) => {
         model: db.WorkoutPlanExercise, as: 'planExercises', order: [['order', 'ASC']],
         include: [{ model: db.Exercise, as: 'exerciseDetails' }]
       }],
-      joinTableAttributes: ['orderInTraining'], // Para ter acesso a TrainingWorkoutPlans.orderInTraining
+      joinTableAttributes: ['orderInTraining'],
       order: [
         db.sequelize.literal(`"${db.TrainingWorkoutPlan.name}"."orderInTraining"`), 
         ['order','ASC']
@@ -300,7 +287,7 @@ const getExercisesForGlobalWorkoutPlan = async (req, res) => {
 };
 
 const updateExerciseInGlobalWorkoutPlan = async (req, res) => {
-  const { planExerciseId } = req.params; // Este é o ID do WorkoutPlanExercise
+  const { planExerciseId } = req.params;
   const { sets, reps, durationSeconds, restSeconds, order, notes, exerciseId } = req.body;
   try {
     const planExercise = await db.WorkoutPlanExercise.findByPk(parseInt(planExerciseId));
@@ -329,7 +316,7 @@ const updateExerciseInGlobalWorkoutPlan = async (req, res) => {
 };
 
 const removeExerciseFromGlobalWorkoutPlan = async (req, res) => {
-  const { planExerciseId } = req.params; // ID do WorkoutPlanExercise
+  const { planExerciseId } = req.params; 
   try {
     const planExercise = await db.WorkoutPlanExercise.findByPk(parseInt(planExerciseId));
     if (!planExercise) return res.status(404).json({ message: 'Exercício do plano não encontrado.' });
@@ -341,16 +328,14 @@ const removeExerciseFromGlobalWorkoutPlan = async (req, res) => {
   }
 };
 
-// @desc    Cliente obtém um plano de treino "modelo" (global) por ID, se estiver visível
-// @route   GET /api/workout-plans/visible/:planId
-// @access  Privado (Qualquer utilizador autenticado)
+
 const getVisibleGlobalWorkoutPlanByIdForClient = async (req, res) => {
     const { planId } = req.params;
     try {
         const workoutPlan = await db.WorkoutPlan.findOne({
             where: {
                 id: parseInt(planId),
-                isVisible: true // Garante que só os planos visíveis são retornados
+                isVisible: true 
             },
             include: [{
                 model: db.WorkoutPlanExercise,

@@ -29,11 +29,7 @@ Object.keys(db).forEach(modelName => {
   }
 });
 
-// As associações hasMany para TrainingWaitlist nos modelos User e Training
-// já foram definidas dentro dos seus respetivos ficheiros de modelo (User.js, Training.js)
-// e serão chamadas pelo loop Object.keys(db) acima.
 
-// Mantém as associações explícitas para Notification se ainda as tiver aqui.
 if (db.User && db.Notification && !db.User.associations.notifications) {
     db.User.hasMany(db.Notification, {
         foreignKey: 'recipientUserId',

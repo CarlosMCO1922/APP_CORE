@@ -13,7 +13,7 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     time: {
-      type: DataTypes.TIME, // Formato HH:MM:SS
+      type: DataTypes.TIME, 
       allowNull: false,
     },
     durationMinutes: {
@@ -28,37 +28,27 @@ module.exports = (sequelize) => {
     status: {
       type: DataTypes.ENUM(
         'disponível',
-        'agendada', // Cliente marcou ou admin/staff criou para cliente, aguarda sinal
-        'confirmada', // Sinal pago, consulta confirmada
+        'agendada', 
+        'confirmada', 
         'concluída',
         'cancelada_pelo_cliente',
         'cancelada_pelo_staff',
         'não_compareceu',
-        'pendente_aprovacao_staff', // Cliente solicitou, aguarda aprovação do staff
+        'pendente_aprovacao_staff', 
         'rejeitada_pelo_staff'
       ),
       defaultValue: 'disponível',
       allowNull: false,
     },
-    totalCost: { // Custo total da consulta
+    totalCost: { 
       type: DataTypes.DECIMAL(10, 2),
-      allowNull: true, // Pode ser null para horários 'disponível' ou se ainda não definido
+      allowNull: true, 
     },
-    signalPaid: { // Sinal de 20% foi pago?
+    signalPaid: { 
       type: DataTypes.BOOLEAN,
       defaultValue: false,
       allowNull: false,
     },
-    // paymentForSignalId: { // Opcional: se quiseres uma FK direta para o pagamento do sinal
-    //   type: DataTypes.INTEGER,
-    //   allowNull: true,
-    //   references: {
-    //     model: 'payments', // Nome da tabela de pagamentos
-    //     key: 'id'
-    //   },
-    //   onUpdate: 'CASCADE',
-    //   onDelete: 'SET NULL' // Ou 'RESTRICT' se não quiser apagar consulta se tiver pagamento
-    // }
   }, {
     tableName: 'appointments',
     timestamps: true,
@@ -74,12 +64,6 @@ module.exports = (sequelize) => {
       allowNull: false,
       as: 'professional',
     });
-
-    // Se usares paymentForSignalId:
-    // Appointment.belongsTo(models.Payment, {
-    //   foreignKey: 'paymentForSignalId',
-    //   as: 'signalPaymentInfo' // Nome diferente para evitar conflito com 'payments' em User
-    // });
   };
 
   return Appointment;

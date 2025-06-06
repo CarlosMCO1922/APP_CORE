@@ -1,21 +1,21 @@
 // backend/controllers/trainingSeriesController.js
 const db = require('../models');
-const moment = require('moment'); // Certifica-te que tens 'moment' instalado
+const moment = require('moment'); 
 
 exports.createTrainingSeries = async (req, res) => {
     const {
         name,
         description,
         instructorId,
-        recurrenceType, // NOVO
-        dayOfWeek,      // AGORA PODE SER NULL
+        recurrenceType, 
+        dayOfWeek,      
         startTime,
         endTime,
         seriesStartDate,
         seriesEndDate,
         capacity,
         location,
-        // workoutPlanId // OPCIONAL
+
     } = req.body;
 
     // Validações
@@ -47,7 +47,6 @@ exports.createTrainingSeries = async (req, res) => {
             seriesEndDate,
             capacity: capacity ? parseInt(capacity) : 10,
             location,
-            // workoutPlanId: workoutPlanId ? parseInt(workoutPlanId) : null,
         }, { transaction });
 
         const instancesToCreate = [];
@@ -65,8 +64,6 @@ exports.createTrainingSeries = async (req, res) => {
                     createInstanceToday = true;
                 }
             } else if (newSeries.recurrenceType === 'monthly') {
-                // Lógica para mensal: Exemplo - mesmo dia do mês
-                // Se dayOfWeek também for relevante para mensal (ex: 1ª Segunda-feira do mês), ajusta aqui.
                 if (currentDate.date() === moment(newSeries.seriesStartDate).date()) {
                      createInstanceToday = true;
                 }
@@ -83,7 +80,6 @@ exports.createTrainingSeries = async (req, res) => {
                     capacity: newSeries.capacity,
                     location: newSeries.location,
                     status: 'scheduled',
-                    // workoutPlanId: newSeries.workoutPlanId, // Se for usar
                     trainingSeriesId: newSeries.id,
                     isGeneratedInstance: true,
                 });
@@ -113,5 +109,3 @@ exports.createTrainingSeries = async (req, res) => {
     }
 };
 
-// Adiciona outras funções do controller se existirem (listar, atualizar, apagar séries)...
-// exports.getAllTrainingSeries = async (req, res) => { ... };

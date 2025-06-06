@@ -3,9 +3,6 @@ const db = require('../models');
 const { hashPassword } = require('../utils/passwordUtils');
 const { Op } = require('sequelize');
 
-// @desc    Admin cria um novo funcionário (Staff)
-// @route   POST /api/staff
-// @access  Privado (Admin Staff)
 const createStaffMember = async (req, res) => {
   const { firstName, lastName, email, password, role } = req.body;
 
@@ -38,7 +35,6 @@ const createStaffMember = async (req, res) => {
       role,
     });
 
-    // Não enviar a password de volta
     const { password: _, ...staffResponse } = newStaffMember.get({ plain: true });
     res.status(201).json(staffResponse);
 
@@ -52,13 +48,11 @@ const createStaffMember = async (req, res) => {
   }
 };
 
-// @desc    Admin lista todos os funcionários
-// @route   GET /api/staff
-// @access  Privado (Admin Staff)
+
 const getAllStaffMembers = async (req, res) => {
   try {
     const staffMembers = await db.Staff.findAll({
-      attributes: { exclude: ['password'] }, // Excluir passwords da lista
+      attributes: { exclude: ['password'] }, 
       order: [['lastName', 'ASC'], ['firstName', 'ASC']],
     });
     res.status(200).json(staffMembers);
@@ -68,9 +62,7 @@ const getAllStaffMembers = async (req, res) => {
   }
 };
 
-// @desc    Admin obtém detalhes de um funcionário específico
-// @route   GET /api/staff/:id
-// @access  Privado (Admin Staff)
+
 const getStaffMemberById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -88,12 +80,10 @@ const getStaffMemberById = async (req, res) => {
   }
 };
 
-// @desc    Admin atualiza um funcionário
-// @route   PUT /api/staff/:id
-// @access  Privado (Admin Staff)
+
 const updateStaffMember = async (req, res) => {
   const { id } = req.params;
-  const { firstName, lastName, email, role, password } = req.body; // Password é opcional na atualização
+  const { firstName, lastName, email, role, password } = req.body; 
 
   try {
     const staffMember = await db.Staff.findByPk(id);
@@ -123,7 +113,7 @@ const updateStaffMember = async (req, res) => {
       staffMember.email = email;
     }
 
-    if (password) { // Se uma nova password for fornecida
+    if (password) { 
       staffMember.password = await hashPassword(password);
     }
 
@@ -141,13 +131,11 @@ const updateStaffMember = async (req, res) => {
   }
 };
 
-// @desc    Admin elimina um funcionário
-// @route   DELETE /api/staff/:id
-// @access  Privado (Admin Staff)
+
 const deleteStaffMember = async (req, res) => {
   const { id } = req.params;
 
-  // Proteção: Não permitir que um admin se auto-elimine através desta rota simples
+  
   if (req.staff && parseInt(req.staff.id) === parseInt(id)) {
       return res.status(400).json({ message: 'Não pode eliminar a sua própria conta de administrador através desta rota.' });
   }
@@ -158,11 +146,6 @@ const deleteStaffMember = async (req, res) => {
       return res.status(404).json({ message: 'Funcionário não encontrado.' });
     }
 
-    // O que fazer com Treinos/Consultas associados a este Staff?
-    // 1. Impedir a eliminação se houver associações ativas.
-    // 2. Definir instructorId/staffId como null (SET NULL) - requer que as FKs permitam null.
-    // 3. Eliminar em cascata (CASCADE) - perigoso, pode apagar dados de treinos/consultas.
-    // Por agora, vamos verificar e impedir se houver associações.
     const trainingsCount = await db.Training.count({ where: { instructorId: id } });
     if (trainingsCount > 0) {
       return res.status(400).json({ message: `Não é possível eliminar. Este funcionário está associado a ${trainingsCount} treino(s). Reatribua ou elimine os treinos primeiro.` });
@@ -189,7 +172,7 @@ const getProfessionals = async (req, res) => {
           [Op.or]: ['trainer', 'physiotherapist', 'admin'] // Admin também pode ser um profissional
         }
       },
-      attributes: ['id', 'firstName', 'lastName', 'email', 'role'], // Campos relevantes
+      attributes: ['id', 'firstName', 'lastName', 'email', 'role'], 
       order: [['firstName', 'ASC'], ['lastName', 'ASC']],
     });
     res.status(200).json(professionals);

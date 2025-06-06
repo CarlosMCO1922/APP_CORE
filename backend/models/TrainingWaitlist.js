@@ -12,35 +12,33 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'trainings', // Nome da tabela 'trainings'
+        model: 'trainings',
         key: 'id',
       },
-      onDelete: 'CASCADE', // Se o treino for apagado, as entradas na lista de espera também
+      onDelete: 'CASCADE', 
     },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'users', // Nome da tabela 'users'
+        model: 'users', 
         key: 'id',
       },
-      onDelete: 'CASCADE', // Se o utilizador for apagado, remove-o da lista de espera
+      onDelete: 'CASCADE', 
     },
     status: {
       type: DataTypes.ENUM('PENDING', 'NOTIFIED', 'BOOKED', 'EXPIRED', 'CANCELLED_BY_USER'),
       defaultValue: 'PENDING',
       allowNull: false,
     },
-    notifiedAt: { // Data em que o utilizador foi notificado de uma vaga
+    notifiedAt: { 
       type: DataTypes.DATE,
       allowNull: true,
     },
-    // createdAt (addedAt) e updatedAt são adicionados automaticamente pelo Sequelize
   }, {
     tableName: 'training_waitlists',
     timestamps: true,
     indexes: [
-      // Índice para garantir que um utilizador só pode estar uma vez na lista de espera de um treino
       {
         unique: true,
         fields: ['trainingId', 'userId']
