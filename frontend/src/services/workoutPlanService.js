@@ -131,24 +131,60 @@ export const adminGetGlobalWorkoutPlanById = async (planId, token) => {
   } catch (error) { console.error("Erro em adminGetGlobalWorkoutPlanById:", error); throw error; }
 };
 
+/**
+ * CLIENTE: Busca os detalhes de um plano de treino global específico que está marcado como visível.
+ * @param {string} planId - O ID do plano de treino global.
+ * @param {string} token - O token de autenticação do cliente.
+ * @returns {Promise<object>} O objeto do plano de treino.
+ */
 export const getGlobalWorkoutPlanByIdClient = async (planId, token) => {
   if (!token) throw new Error('Token não fornecido.');
   if (!planId) throw new Error('ID do Plano não fornecido.');
-  // Usa o endpoint de admin que já existe, pois um cliente pode querer ver os detalhes
-  // de um plano visível antes de o usar.
-  const url = `<span class="math-inline">\{API\_URL\}/workout\-plans/global/</span>{planId}`; 
-
   try {
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    // Chama a nova rota que criámos no backend
+    const response = await fetch(`${API_URL}/workout-plans/visible/${planId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.message || 'Erro ao buscar detalhes do plano global.');
+      throw new Error(data.message || 'Erro ao carregar os detalhes do plano de treino.');
     }
-    return data; // Retorna um único plano com seus exercícios
+    return data;
   } catch (error) {
     console.error("Erro em getGlobalWorkoutPlanByIdClient:", error);
+    throw error;
+  }
+};
+
+
+/**
+ * CLIENTE: Busca todos os planos de treino globais que estão marcados como visíveis.
+ * @param {string} token - O token de autenticação do cliente.
+ * @param {string} searchTerm - O termo de pesquisa opcional.
+ * @returns {Promise<Array>} Um array de planos de treino visíveis.
+ */
+export const getVisibleWorkoutPlansService = async (token, searchTerm = '') => {
+  if (!token) throw new Error('Token não fornecido.');
+  try {
+    const queryParams = new URLSearchParams();
+    if (searchTerm) {
+      queryParams.append('name', searchTerm);
+    }
+    
+    const response = await fetch(`${API_URL}/workout-plans/visible?${queryParams.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao carregar os planos de treino visíveis.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro em getVisibleWorkoutPlansService:", error);
     throw error;
   }
 };
@@ -207,24 +243,6 @@ export const adminRemovePlanFromTraining = async (planId, trainingId, token) => 
     if (!response.ok) throw new Error(data.message || 'Erro ao remover associação do plano ao treino.');
     return data;
   } catch (error) { console.error("Erro em adminRemovePlanFromTraining:", error); throw error; }
-};
-
-
-// --- Função para CLIENTES listarem planos visíveis (já definida antes) ---
-export const getVisibleWorkoutPlansService = async (token, searchTerm = '') => {
-  if (!token) throw new Error('Token não fornecido.');
-  try {
-    let url = `${API_URL}/workout-plans/visible`;
-    if (searchTerm) {
-      url += `?searchTerm=${encodeURIComponent(searchTerm)}`;
-    }
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao buscar planos de treino visíveis.');
-    return data;
-  } catch (error) { console.error("Erro em getVisibleWorkoutPlansService:", error); throw error; }
 };
 
 // --- Funções para gerir EXERCÍCIOS dentro de um plano "modelo" / global ---

@@ -341,6 +341,35 @@ const removeExerciseFromGlobalWorkoutPlan = async (req, res) => {
   }
 };
 
+// @desc    Cliente obtém um plano de treino "modelo" (global) por ID, se estiver visível
+// @route   GET /api/workout-plans/visible/:planId
+// @access  Privado (Qualquer utilizador autenticado)
+const getVisibleGlobalWorkoutPlanByIdForClient = async (req, res) => {
+    const { planId } = req.params;
+    try {
+        const workoutPlan = await db.WorkoutPlan.findOne({
+            where: {
+                id: parseInt(planId),
+                isVisible: true // Garante que só os planos visíveis são retornados
+            },
+            include: [{
+                model: db.WorkoutPlanExercise,
+                as: 'planExercises',
+                order: [['order', 'ASC']],
+                include: [{ model: db.Exercise, as: 'exerciseDetails' }]
+            }]
+        });
+
+        if (!workoutPlan) {
+            return res.status(404).json({ message: 'Plano de treino visível não encontrado com este ID.' });
+        }
+        res.status(200).json(workoutPlan);
+    } catch (error) {
+        console.error('Erro (cliente) ao buscar plano de treino global por ID:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+    }
+};
+
 module.exports = {
   createGlobalWorkoutPlan,
   getAllGlobalWorkoutPlans,
@@ -355,4 +384,5 @@ module.exports = {
   getExercisesForGlobalWorkoutPlan,
   updateExerciseInGlobalWorkoutPlan,
   removeExerciseFromGlobalWorkoutPlan,
+  getVisibleGlobalWorkoutPlanByIdForClient,
 };

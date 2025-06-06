@@ -12,6 +12,12 @@ router.get(
   workoutPlanController.getVisibleWorkoutPlans
 );
 
+router.get(
+  '/visible/:planId', // GET /api/workout-plans/visible/:planId
+  protect, // Acessível a qualquer utilizador autenticado
+  workoutPlanController.getVisibleGlobalWorkoutPlanByIdForClient
+);
+
 // --- Rotas para Admin gerir Planos de Treino "Modelo" / Globais ---
 router.post(
   '/global', // POST /api/workout-plans/global
