@@ -12,7 +12,8 @@ import RegisterPage from './pages/RegisterPage';
 import CalendarPage from './pages/CalendarPage';
 import SettingsPage from './pages/SettingsPage';
 import MyPaymentsPage from './pages/MyPaymentsPage';
-import NotificationsPage from './pages/NotificationsPage'; 
+import NotificationsPage from './pages/NotificationsPage';
+import ExploreWorkoutPlansPage from './pages/ExploreWorkoutPlansPage';
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
 import AdminUserDetailsPage from './pages/admin/AdminUserDetailsPage';
@@ -98,6 +99,9 @@ function App() {
               <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
               <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
               <Route path="/meu-progresso" element={<ClientProgressPage />} />
+              <Route path="/explorar-planos" element={<ExploreWorkoutPlansPage />} />
+              <Route path="/meu-progresso/usar-plano/:globalPlanId" element={<ClientProgressPage />} />
+              
             </Route>
 
             {/* Rotas de Staff/Admin */}

@@ -421,15 +421,20 @@ const AdminManageGlobalWorkoutPlansPage = () => {
             <ModalForm onSubmit={handleSavePlan}>
               <ModalLabel htmlFor="planName">Nome do Plano*</ModalLabel>
               <ModalInput type="text" name="name" id="planName" value={currentPlanData.name} onChange={handlePlanFormChange} required />
-              
               <ModalLabel htmlFor="planNotes">Notas do Plano</ModalLabel>
               <ModalTextarea name="notes" id="planNotes" value={currentPlanData.notes} onChange={handlePlanFormChange} />
-
               <ModalCheckboxContainer>
-                <ModalCheckbox type="checkbox" name="isVisible" id="planIsVisible" checked={currentPlanData.isVisible} onChange={handlePlanFormChange} />
-                <ModalLabel htmlFor="planIsVisible" style={{ marginBottom: 0, cursor: 'pointer' }}>Visível para Clientes na Biblioteca</ModalLabel>
+                <ModalCheckbox
+                  type="checkbox"
+                  name="isVisible"
+                  id="planIsVisible"
+                  checked={currentPlanData.isVisible || false}
+                  onChange={(e) => setCurrentPlanData(prev => ({ ...prev, isVisible: e.target.checked }))}
+                />
+                <ModalLabel htmlFor="planIsVisible" style={{ marginBottom: 0, cursor: 'pointer' }}>
+                  Visível para Clientes na Biblioteca de Planos
+                </ModalLabel>
               </ModalCheckboxContainer>
-
               <ExercisesInSection>
                 <h4 style={{color: theme.colors.primary, marginBottom: '10px'}}>Exercícios do Plano:</h4>
                 {currentPlanData.exercises.map((ex, index) => (

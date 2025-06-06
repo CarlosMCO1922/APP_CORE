@@ -17,12 +17,12 @@ module.exports = (sequelize, DataTypes) => {
     },
     trainingId: { // O treino específico onde o plano foi realizado
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'trainings', // Nome da tabela 'trainings'
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      onDelete: 'SET NULL',
     },
     workoutPlanId: { // O plano de treino dentro do treino
       type: DataTypes.INTEGER,

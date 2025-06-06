@@ -19,14 +19,14 @@ const logExercisePerformance = async (req, res) => {
     notes
   } = req.body;
 
-  if (!trainingId || !workoutPlanId || !planExerciseId || !performedAt) {
+  if (!workoutPlanId || !planExerciseId || !performedAt) {
     return res.status(400).json({ message: 'Campos obrigatórios em falta: trainingId, workoutPlanId, planExerciseId, performedAt.' });
   }
 
   try {
     const newPerformance = await db.ClientExercisePerformance.create({
       userId, // Certifique-se que este campo existe no seu modelo ClientExercisePerformance e corresponde ao ID do utilizador
-      trainingId: parseInt(trainingId),
+      trainingId: trainingId ? parseInt(trainingId) : null ,
       workoutPlanId: parseInt(workoutPlanId),
       planExerciseId: parseInt(planExerciseId),
       performedAt,

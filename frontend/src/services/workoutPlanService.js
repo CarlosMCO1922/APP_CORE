@@ -131,6 +131,28 @@ export const adminGetGlobalWorkoutPlanById = async (planId, token) => {
   } catch (error) { console.error("Erro em adminGetGlobalWorkoutPlanById:", error); throw error; }
 };
 
+export const getGlobalWorkoutPlanByIdClient = async (planId, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!planId) throw new Error('ID do Plano não fornecido.');
+  // Usa o endpoint de admin que já existe, pois um cliente pode querer ver os detalhes
+  // de um plano visível antes de o usar.
+  const url = `<span class="math-inline">\{API\_URL\}/workout\-plans/global/</span>{planId}`; 
+
+  try {
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao buscar detalhes do plano global.');
+    }
+    return data; // Retorna um único plano com seus exercícios
+  } catch (error) {
+    console.error("Erro em getGlobalWorkoutPlanByIdClient:", error);
+    throw error;
+  }
+};
+
 export const adminUpdateGlobalWorkoutPlan = async (planId, planData, token) => {
   if (!token) throw new Error('Token não fornecido.');
   try {
