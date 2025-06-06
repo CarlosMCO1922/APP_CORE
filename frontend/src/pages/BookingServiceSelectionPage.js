@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaUserMd, FaDumbbell, FaSpa, FaChevronDown, FaArrowLeft } from 'react-icons/fa';
 
-// --- Dados dos Serviços (Definidos aqui para implementação rápida) ---
+// --- Dados dos Serviços  ---
 const serviceData = [
   {
     category: 'Personal Training',
@@ -30,14 +30,12 @@ const serviceData = [
     category: 'Osteopatia',
     icon: <FaUserMd />,
     services: [
-      // Adicione serviços de Osteopatia aqui se aplicável
     ]
   },
   {
     category: 'Wellness',
     icon: <FaSpa />,
     services: [
-      // Adicione serviços de Wellness aqui se aplicável
     ]
   }
 ];

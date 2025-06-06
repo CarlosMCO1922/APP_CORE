@@ -86,7 +86,6 @@ function App() {
             {/* Rotas de Cliente */}
             <Route element={<ProtectedRoute allowedRoles={['user']} />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/calendario" element={<CalendarPage />} />
               <Route path="/definicoes" element={<SettingsPage />} />
               <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
               <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />

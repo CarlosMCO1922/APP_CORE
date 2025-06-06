@@ -173,7 +173,6 @@ const BookingCalendarPage = () => {
     }
   }, [authState.token]);
   
-  // Lógica para filtrar e encontrar dias disponíveis e slots para o dia selecionado
   useEffect(() => {
     if (allEvents.length > 0 && serviceType) {
       const filteredForService = allEvents.filter(event => event.type === serviceType);
@@ -206,7 +205,7 @@ const BookingCalendarPage = () => {
         await bookAppointmentService(event.id, authState.token);
       }
       alert('Marcação realizada com sucesso!');
-      navigate('/dashboard'); // Ou para uma página de confirmação
+      navigate('/dashboard'); 
     } catch (err) {
       alert(`Erro na marcação: ${err.message}`);
     }
@@ -215,7 +214,7 @@ const BookingCalendarPage = () => {
   const tileClassName = ({ date, view }) => {
     if (view === 'month') {
       if (availableDays.has(moment(date).format('YYYY-MM-DD'))) {
-        return 'has-slots'; // Classe para estilização customizada se necessário
+        return 'has-slots'; 
       }
     }
     return null;
