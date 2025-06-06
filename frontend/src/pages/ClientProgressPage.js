@@ -591,284 +591,235 @@ const calculateAggregateStats = (performanceLogs) => {
 // --- Componente Principal ---
 
 const ClientProgressPage = () => {
-  const { authState } = useAuth();
-  const navigate = useNavigate();
-  const { globalPlanId } = useParams(); // <- NOVO: Capturar ID da URL
+    const { authState } = useAuth();
+    const navigate = useNavigate();
+    const { globalPlanId } = useParams();
 
-  // Estados existentes
-  const [myTrainings, setMyTrainings] = useState([]);
-  const [selectedTraining, setSelectedTraining] = useState(null);
-  const [selectedTrainingName, setSelectedTrainingName] = useState('');
-  const [workoutPlans, setWorkoutPlans] = useState([]);
-  const [performanceLogs, setPerformanceLogs] = useState({});
-  const [currentPerformanceInputs, setCurrentPerformanceInputs] = useState({});
-  const [loadingTrainings, setLoadingTrainings] = useState(!globalPlanId);
-  const [loadingPlansAndProgress, setLoadingPlansAndProgress] = useState(!!globalPlanId);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [showFullHistoryModal, setShowFullHistoryModal] = useState(false);
-  const [selectedExerciseForHistory, setSelectedExerciseForHistory] = useState(null);
-  const [fullHistoryLogs, setFullHistoryLogs] = useState([]);
-  const [loadingFullHistory, setLoadingFullHistory] = useState(false);
-  const [fullHistoryError, setFullHistoryError] = useState('');
-  const  [setTrainingStatistics] = useState(null);
-  const [loadingStatistics, setLoadingStatistics] = useState(false);
-  const [chartMetric, setChartMetric] = useState('performedWeight');
-  const [statsStartDate, setStatsStartDate] = useState('');
-  const [statsEndDate, setStatsEndDate] = useState('');
+    const [myTrainings, setMyTrainings] = useState([]);
+    const [selectedTraining, setSelectedTraining] = useState(null);
+    const [selectedTrainingName, setSelectedTrainingName] = useState('');
+    const [workoutPlans, setWorkoutPlans] = useState([]);
+    const [performanceLogs, setPerformanceLogs] = useState({});
+    const [currentPerformanceInputs, setCurrentPerformanceInputs] = useState({});
 
-  const trainingStatistics = useMemo(() => {
+    const [loadingTrainings, setLoadingTrainings] = useState(!globalPlanId);
+    const [loadingPlansAndProgress, setLoadingPlansAndProgress] = useState(!!globalPlanId);
+    const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+
+    const [showFullHistoryModal, setShowFullHistoryModal] = useState(false);
+    const [selectedExerciseForHistory, setSelectedExerciseForHistory] = useState(null);
+    const [fullHistoryLogs, setFullHistoryLogs] = useState([]);
+    const [loadingFullHistory, setLoadingFullHistory] = useState(false);
+    const [fullHistoryError, setFullHistoryError] = useState('');
+
+    const [statsStartDate, setStatsStartDate] = useState('');
+    const [statsEndDate, setStatsEndDate] = useState('');
+
+    const [chartMetric, setChartMetric] = useState('performedWeight');
+
+    const fetchBookedTrainings = useCallback(async () => {
+        if (authState.token && !globalPlanId) {
+            setLoadingTrainings(true);
+            try {
+                const data = await getMyBookings(authState.token);
+                setMyTrainings(data.trainings || []);
+            } catch (err) {
+                setError('Falha ao buscar seus treinos inscritos: ' + err.message);
+            } finally {
+                setLoadingTrainings(false);
+            }
+        }
+    }, [authState.token, globalPlanId]);
+
+    useEffect(() => {
+        fetchBookedTrainings();
+    }, [fetchBookedTrainings]);
+    
+    useEffect(() => {
+        const fetchGlobalPlan = async () => {
+            if (globalPlanId && authState.token) {
+                setLoadingPlansAndProgress(true);
+                setError('');
+                try {
+                    const planData = await getGlobalWorkoutPlanByIdClient(globalPlanId, authState.token);
+                    setWorkoutPlans([planData]);
+                    setSelectedTrainingName(`Plano Livre: ${planData.name}`);
+                    setSelectedTraining(null);
+                    
+                    const allExercises = planData.planExercises || [];
+                    const performancePromises = allExercises.map(ex => 
+                        getMyPerformanceHistoryForExerciseService(ex.id, authState.token).catch(() => [])
+                    );
+                    const allPerformances = (await Promise.all(performancePromises)).flat();
+                    const logsByExercise = {};
+                    allPerformances.forEach(p => {
+                        if (!logsByExercise[p.planExerciseId]) logsByExercise[p.planExerciseId] = [];
+                        logsByExercise[p.planExerciseId].push(p);
+                    });
+                    setPerformanceLogs(logsByExercise);
+                } catch (err) {
+                    setError(err.message || "Não foi possível carregar os detalhes deste plano.");
+                } finally {
+                    setLoadingPlansAndProgress(false);
+                }
+            }
+        };
+        fetchGlobalPlan();
+    }, [globalPlanId, authState.token]);
+
+    useEffect(() => {
+        const fetchPlansForTraining = async () => {
+            if (selectedTraining && authState.token) {
+                setLoadingPlansAndProgress(true);
+                setError(''); setWorkoutPlans([]); setPerformanceLogs({});
+                const trainingDetails = myTrainings.find(t => t.id === selectedTraining);
+                if (trainingDetails) setSelectedTrainingName(trainingDetails.name);
+                try {
+                    const plansData = await getWorkoutPlansByTrainingId(selectedTraining, authState.token);
+                    setWorkoutPlans(plansData || []);
+                    if (plansData && plansData.length > 0) {
+                        const performancePromises = plansData.map(plan => 
+                            getMyPerformanceForWorkoutPlanService(selectedTraining, plan.id, authState.token).catch(() => [])
+                        );
+                        const performancesForAllPlans = (await Promise.all(performancePromises)).flat();
+                        const aggregatedLogs = {};
+                        performancesForAllPlans.forEach(p => {
+                            if (!aggregatedLogs[p.planExerciseId]) aggregatedLogs[p.planExerciseId] = [];
+                            aggregatedLogs[p.planExerciseId].push(p);
+                        });
+                        setPerformanceLogs(aggregatedLogs);
+                    }
+                } catch (err) {
+                    setError('Falha ao buscar planos ou progresso: ' + err.message);
+                } finally {
+                    setLoadingPlansAndProgress(false);
+                }
+            }
+        };
+        fetchPlansForTraining();
+    }, [selectedTraining, authState.token, myTrainings]);
+
+    const trainingStatistics = useMemo(() => {
         if (!performanceLogs || Object.keys(performanceLogs).length === 0) {
             return null;
         }
 
-        let logsToCalculate = Object.values(performanceLogs).flat();
+        let logsForStats = Object.values(performanceLogs).flat();
         
-        // Aplica o filtro de data se as datas estiverem definidas
         if (statsStartDate && statsEndDate) {
             const start = new Date(statsStartDate);
             const end = new Date(statsEndDate);
-            end.setHours(23, 59, 59, 999); // Garante que inclui o dia final completo
+            end.setHours(23, 59, 59, 999); 
 
-            logsToCalculate = logsToCalculate.filter(log => {
+            logsForStats = logsForStats.filter(log => {
                 const logDate = new Date(log.performedAt);
                 return logDate >= start && logDate <= end;
             });
         }
         
-        // Se após filtrar não houver logs, retorna null
-        if (logsToCalculate.length === 0) return null;
+        if (logsForStats.length === 0) return null;
 
-        // A função calculateAggregateStats agora recebe os logs já filtrados
-        // e os planExercises para calcular a consistência.
+        const filteredLogsByExerciseId = {};
+        logsForStats.forEach(log => {
+            if (!filteredLogsByExerciseId[log.planExerciseId]) {
+                filteredLogsByExerciseId[log.planExerciseId] = [];
+            }
+            filteredLogsByExerciseId[log.planExerciseId].push(log);
+        });
+
         const allPlanExercisesFromPlans = workoutPlans.reduce((acc, plan) => acc.concat(plan.planExercises || []), []);
-
-        // Ajuste para a função calculateAggregateStats. Vamos passar os logs filtrados.
-        // A função em si precisa ser ajustada para aceitar os logs como argumento.
-        const calculateStats = (logs) => {
-            let totalSetsLogged = 0;
-            let totalRepsLogged = 0;
-            let totalDurationLoggedSeconds = 0;
-            let totalVolume = 0;
-            // ... (o resto da lógica de cálculo como estava antes)
-            logs.forEach(log => {
-                totalSetsLogged++;
-                if (log.performedReps) totalRepsLogged += log.performedReps;
-                if (log.performedDurationSeconds) totalDurationLoggedSeconds += log.performedDurationSeconds;
-                if (log.performedReps && log.performedWeight) {
-                  totalVolume += (log.performedReps * log.performedWeight);
-                }
-            });
-            return { totalSetsLogged, totalRepsLogged, totalDurationLoggedSeconds, totalVolume: parseFloat(totalVolume.toFixed(2)) };
-        };
         
-        return calculateStats(logsToCalculate);
+        return calculateAggregateStats(filteredLogsByExerciseId, workoutPlans, allPlanExercisesFromPlans);
 
     }, [performanceLogs, statsStartDate, statsEndDate, workoutPlans]);
 
-  // --- Lógica de Carregamento de Dados ---
-
-  // Função para buscar treinos agendados (quando não há plano global)
-  const fetchBookedTrainings = useCallback(async () => {
-    if (authState.token) {
-      setLoadingTrainings(true);
-      try {
-        const data = await getMyBookings(authState.token);
-        setMyTrainings(data.trainings || []);
-      } catch (err) {
-        setError('Falha ao buscar seus treinos inscritos: ' + err.message);
-      } finally {
-        setLoadingTrainings(false);
+    const handleLogPerformance = async (planExerciseId, workoutPlanId) => {
+      const inputs = currentPerformanceInputs[planExerciseId];
+      if (!inputs || ((!inputs.performedReps) && (!inputs.performedWeight) && (!inputs.performedDurationSeconds) && (!inputs.notes || !inputs.notes.trim())) ) {
+        setError("Preencha pelo menos um campo de desempenho ou adicione notas.");
+        return;
       }
-    }
-  }, [authState.token]);
-
-  // Efeito para buscar treinos APENAS se não houver globalPlanId
-  useEffect(() => {
-    if (!globalPlanId) {
-      fetchBookedTrainings();
-    }
-  }, [globalPlanId, fetchBookedTrainings]);
-
-  // Efeito para buscar o plano global se um ID for fornecido na URL
-  useEffect(() => {
-    const fetchGlobalPlan = async () => {
-      if (globalPlanId && authState.token) {
-        setLoadingPlansAndProgress(true);
-        setError('');
-        try {
-          const planData = await getGlobalWorkoutPlanByIdClient(globalPlanId, authState.token);
-          setWorkoutPlans([planData]); // Envolve em array para manter consistência
-          setSelectedTrainingName(`Plano Livre: ${planData.name}`);
-          setSelectedTraining(null); // Garante que não há treino selecionado
-        } catch (err) {
-          setError(err.message || "Não foi possível carregar os detalhes deste plano.");
-        } finally {
-          setLoadingPlansAndProgress(false);
-        }
+      setError(''); setSuccessMessage('');
+      try {
+        const performanceData = {
+          trainingId: selectedTraining,
+          workoutPlanId: workoutPlanId,
+          planExerciseId: planExerciseId,
+          performedAt: new Date().toISOString(),
+          performedReps: inputs.performedReps ? parseInt(inputs.performedReps) : null,
+          performedWeight: inputs.performedWeight ? parseFloat(inputs.performedWeight) : null,
+          performedDurationSeconds: inputs.performedDurationSeconds ? parseInt(inputs.performedDurationSeconds) : null,
+          notes: inputs.notes || null,
+        };
+        const result = await logExercisePerformanceService(performanceData, authState.token);
+        setSuccessMessage("Desempenho registado!");
+        setPerformanceLogs(prev => {
+          const newLogs = { ...prev };
+          if (!newLogs[planExerciseId]) newLogs[planExerciseId] = [];
+          newLogs[planExerciseId].unshift(result.performance);
+          return newLogs;
+        });
+        setCurrentPerformanceInputs(prev => ({ ...prev, [planExerciseId]: {} }));
+      } catch (err) {
+        setError("Falha ao registar desempenho: " + err.message);
       }
     };
-    fetchGlobalPlan();
-  }, [globalPlanId, authState.token]);
-
-  // Efeito para buscar planos e progresso de um treino SELECIONADO
-  useEffect(() => {
-    if (selectedTraining && authState.token) {
-      setLoadingPlansAndProgress(true);
-      setError('');
-      setSuccessMessage('');
-      setWorkoutPlans([]);
-      setPerformanceLogs({});
-      setCurrentPerformanceInputs({});
-      setTrainingStatistics(null);
-      setLoadingStatistics(true);
-
-      const trainingDetails = myTrainings.find(t => t.id === selectedTraining);
-      if (trainingDetails) setSelectedTrainingName(trainingDetails.name);
-
-      getWorkoutPlansByTrainingId(selectedTraining, authState.token)
-        .then(async (plansData) => {
-          const plans = plansData || [];
-          setWorkoutPlans(plans);
-
-          if (plans.length > 0) {
-            const performancePromises = plans.map(plan =>
-              getMyPerformanceForWorkoutPlanService(selectedTraining, plan.id, authState.token)
-                .catch(err => {
-                  console.error(`Falha ao buscar performance para plano ${plan.id}:`, err);
-                  return [];
-                })
-            );
-            const performancesForAllPlans = (await Promise.all(performancePromises)).flat();
-            const aggregatedLogsByExercise = {};
-            
-            performancesForAllPlans.forEach(perf => {
-              if (!aggregatedLogsByExercise[perf.planExerciseId]) {
-                aggregatedLogsByExercise[perf.planExerciseId] = [];
-              }
-              if (!aggregatedLogsByExercise[perf.planExerciseId].find(p => p.id === perf.id)) {
-                aggregatedLogsByExercise[perf.planExerciseId].push(perf);
-              }
+    
+    const handleDeletePerformanceLog = async (logId, planExerciseId) => {
+        if (!window.confirm("Tem a certeza que quer eliminar este registo?")) return;
+        try {
+            await deleteExercisePerformanceLogService(logId, authState.token);
+            setSuccessMessage("Registo eliminado.");
+            setPerformanceLogs(prev => {
+                const newLogs = { ...prev };
+                if (newLogs[planExerciseId]) {
+                    newLogs[planExerciseId] = newLogs[planExerciseId].filter(log => log.id !== logId);
+                }
+                return newLogs;
             });
-            
-            for (const planExId in aggregatedLogsByExercise) {
-              aggregatedLogsByExercise[planExId].sort((a,b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime());
+            if(showFullHistoryModal) {
+              setFullHistoryLogs(prev => prev.filter(log => log.id !== logId));
             }
-            setPerformanceLogs(aggregatedLogsByExercise);
-            const stats = calculateAggregateStats(aggregatedLogsByExercise);
-            setTrainingStatistics(stats);
-          } else {
-            setPerformanceLogs({});
-            setTrainingStatistics(null);
-          }
-        })
-        .catch(err => {
-          setError('Falha ao buscar planos de treino ou progresso: ' + err.message);
-          setWorkoutPlans([]);
-          setPerformanceLogs({});
-          setTrainingStatistics(null);
-        })
-        .finally(() => {
-          setLoadingPlansAndProgress(false);
-          setLoadingStatistics(false);
-        });
-    } else if (!globalPlanId) { // Só limpa se não estivermos a ver um plano global
-      setWorkoutPlans([]);
-      setPerformanceLogs({});
-      setSelectedTrainingName('');
-      setTrainingStatistics(null);
-    }
-  }, [selectedTraining, authState.token, myTrainings, globalPlanId]);
+        } catch(err) {
+            setError("Falha ao eliminar registo: " + err.message);
+        }
+    };
 
+    const handleOpenFullHistoryModal = async (planExercise) => {
+        if (!planExercise?.id || !planExercise.exerciseDetails?.name) return;
+        setSelectedExerciseForHistory({ id: planExercise.id, name: planExercise.exerciseDetails.name });
+        setShowFullHistoryModal(true);
+        setLoadingFullHistory(true);
+        try {
+            const historyData = await getMyPerformanceHistoryForExerciseService(planExercise.id, authState.token);
+            setFullHistoryLogs(historyData || []);
+        } catch (err) {
+            setFullHistoryError(err.message || "Falha ao carregar histórico.");
+        } finally {
+            setLoadingFullHistory(false);
+        }
+    };
 
-  const handlePerformanceInputChange = (planExerciseId, field, value) => {
-    setCurrentPerformanceInputs(prev => ({
-      ...prev,
-      [planExerciseId]: { ...(prev[planExerciseId] || {}), [field]: value }
-    }));
-  };
-
-  const handleLogPerformance = async (planExerciseId, workoutPlanId) => {
-    const inputs = currentPerformanceInputs[planExerciseId];
-    if (!inputs || ((inputs.performedReps === undefined || inputs.performedReps === '') && (inputs.performedWeight === undefined || inputs.performedWeight === '') && (inputs.performedDurationSeconds === undefined || inputs.performedDurationSeconds === '') && (inputs.notes === undefined || inputs.notes.trim() === ''))) {
-      setError("Preencha pelo menos um campo de desempenho ou adicione notas.");
-      return;
-    }
-    setError(''); setSuccessMessage('');
-    try {
-      const performanceData = {
-        trainingId: selectedTraining, // Será null para planos globais, o backend aceita
-        workoutPlanId: workoutPlanId,
-        planExerciseId: planExerciseId,
-        performedAt: new Date().toISOString(),
-        performedReps: inputs.performedReps ? parseInt(inputs.performedReps) : null,
-        performedWeight: inputs.performedWeight ? parseFloat(inputs.performedWeight) : null,
-        performedDurationSeconds: inputs.performedDurationSeconds ? parseInt(inputs.performedDurationSeconds) : null,
-        notes: inputs.notes || null,
-      };
-      const result = await logExercisePerformanceService(performanceData, authState.token);
-      setSuccessMessage(result.message || "Desempenho registado!");
-      setPerformanceLogs(prevLogs => {
-        const newLogsForExercise = [result.performance, ...(prevLogs[planExerciseId] || [])].sort((a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime());
-        return { ...prevLogs, [planExerciseId]: newLogsForExercise };
-      });
-      setCurrentPerformanceInputs(prev => ({ ...prev, [planExerciseId]: {} }));
-    } catch (err) {
-      setError("Falha ao registar desempenho: " + err.message);
-    }
-  };
-
-  const handleDeletePerformanceLog = async (logIdToDelete, planExerciseId) => {
-    if (!window.confirm("Tem a certeza que quer eliminar este registo?")) return;
-    try {
-      await deleteExercisePerformanceLogService(logIdToDelete, authState.token);
-      setSuccessMessage("Registo de desempenho eliminado.");
-      const updatedLogs = { ...performanceLogs };
-      updatedLogs[planExerciseId] = updatedLogs[planExerciseId].filter(log => log.id !== logIdToDelete);
-      setPerformanceLogs(updatedLogs);
-      if (showFullHistoryModal) {
-        setFullHistoryLogs(prev => prev.filter(log => log.id !== logIdToDelete));
+    const handleCloseFullHistoryModal = () => {
+      setShowFullHistoryModal(false);
+      setSelectedExerciseForHistory(null);
+      setFullHistoryLogs([]);
+      setFullHistoryError('');
+      setChartMetric('performedWeight');
+    };
+    
+    const clearSelection = () => {
+      if (globalPlanId) {
+        navigate('/meu-progresso');
+      } else {
+        setSelectedTraining(null);
       }
-    } catch (err) {
-      setError("Falha ao eliminar registo: " + err.message);
-    }
-  };
-  
-  const handleOpenFullHistoryModal = async (planExercise) => {
-    if (!planExercise || !planExercise.id || !planExercise.exerciseDetails?.name) return;
-    setSelectedExerciseForHistory({ id: planExercise.id, name: planExercise.exerciseDetails.name });
-    setShowFullHistoryModal(true);
-    setLoadingFullHistory(true);
-    setFullHistoryError('');
-    try {
-      const historyData = await getMyPerformanceHistoryForExerciseService(planExercise.id, authState.token);
-      setFullHistoryLogs((historyData || []).sort((a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime()));
-    } catch (err) {
-      setFullHistoryError(err.message || "Falha ao carregar histórico completo.");
-    } finally {
-      setLoadingFullHistory(false);
-    }
-  };
+    };
 
-  const handleCloseFullHistoryModal = () => {
-    setShowFullHistoryModal(false);
-    setSelectedExerciseForHistory(null);
-    setFullHistoryLogs([]);
-    setFullHistoryError('');
-    setChartMetric('performedWeight');
-  };
+    const hasActiveSelection = selectedTraining || globalPlanId;
 
   if (loadingTrainings) return <PageContainer><LoadingText>A carregar seus treinos...</LoadingText></PageContainer>;
-  
-  const clearSelection = () => {
-      if (globalPlanId) {
-          navigate('/meu-progresso');
-      } else {
-          setSelectedTraining(null);
-      }
-  };
-
-  const hasActiveSelection = selectedTraining || globalPlanId;
 
   return (
     <PageContainer>
