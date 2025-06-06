@@ -9,12 +9,12 @@ import {
   FaUserTie, FaDumbbell, FaCalendarCheck, FaMoneyBillWave,
   FaCog, FaSignOutAlt, FaBars, FaTimes,
   FaBell, FaEnvelopeOpen, FaCheckDouble,
-  FaListOl, // Adicionado para "Exercícios Base"
-  FaCalendarPlus // <<< ADICIONADO AQUI para "Séries de Treinos"
+  FaListOl, 
+  FaCalendarPlus 
 } from 'react-icons/fa';
 import { theme } from '../../theme';
 
-// --- Styled Components (Como no seu ficheiro) ---
+// --- Styled Components ---
 const Nav = styled.nav`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 0.75rem 1.5rem;
@@ -382,7 +382,7 @@ function Navbar() {
     markNotificationAsRead,
     markAllNotificationsAsRead,
     isLoading: notificationsLoading,
-    totalNotifications // <<< ADICIONADO AQUI
+    totalNotifications 
   } = useNotifications();
 
   const navigate = useNavigate();
@@ -487,7 +487,7 @@ function Navbar() {
         <DropdownLink to="/admin/manage-users" onClick={handleNavigateAndCloseMenus}><FaUsers /> Clientes</DropdownLink>
         <DropdownLink to="/admin/manage-staff" onClick={handleNavigateAndCloseMenus}><FaUserTie /> Equipa</DropdownLink>
         <DropdownLink to="/admin/manage-trainings" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Treinos Individuais</DropdownLink>
-        <DropdownLink to="/admin/training-series" onClick={handleNavigateAndCloseMenus}><FaCalendarPlus /> Séries de Treinos</DropdownLink> {/* Ícone FaCalendarPlus já importado */}
+        <DropdownLink to="/admin/training-series" onClick={handleNavigateAndCloseMenus}><FaCalendarPlus /> Séries de Treinos</DropdownLink> 
         <DropdownLink to="/admin/manage-appointments" onClick={handleNavigateAndCloseMenus}><FaCalendarCheck /> Consultas</DropdownLink>
         <DropdownLink to="/admin/manage-payments" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
         <DropdownLink to="/admin/manage-exercises" onClick={handleNavigateAndCloseMenus}><FaListOl /> Exercícios Base</DropdownLink>
@@ -528,7 +528,6 @@ function Navbar() {
                     setIsMobileMenuOpen(false); 
                 }}
             >
-              {/* Usar totalNotifications aqui */}
               Ver todas as notificações ({totalNotifications}) 
             </ViewAllNotificationsLink>
         )}

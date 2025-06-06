@@ -10,7 +10,7 @@ import getDay from 'date-fns/getDay';
 import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import moment from 'moment';
-import { theme } from '../theme'; // Assume que tem um theme.js exportando o tema
+import { theme } from '../theme'; 
 
 import { useAuth } from '../context/AuthContext';
 import {
@@ -50,7 +50,7 @@ const initialAdminTrainingFormState = { name: '', description: '', date: '', tim
 const initialAdminAppointmentFormState = { date: '', time: '', staffId: '', userId: '', notes: '', status: 'disponível', durationMinutes: 60, totalCost: ''};
 const appointmentStatuses = [ 'disponível', 'agendada', 'confirmada', 'concluída', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'não_compareceu', 'pendente_aprovacao_staff', 'rejeitada_pelo_staff' ];
 
-// --- Styled Components (Completos) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -330,7 +330,6 @@ const ActionButton = styled.button`
   background-color: ${props => {
     if (props.danger) return props.theme.colors.error;
     if (props.secondary) return props.theme.colors.buttonSecondaryBg;
-    // Add other variants if used by ModalButton
     return props.theme.colors.primary;
   }};
   color: ${props => (props.danger || props.secondary) ? 'white' : props.theme.colors.textDark};
@@ -504,8 +503,8 @@ const SubscriptionFormGroup = styled.div`
   padding-top: 15px;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.1)'};
 `;
-const SubscriptionLabel = styled(ModalLabel)``; // Reutilizar ModalLabel
-const SubscriptionInput = styled(ModalInput)``; // Reutilizar ModalInput
+const SubscriptionLabel = styled(ModalLabel)``; 
+const SubscriptionInput = styled(ModalInput)``; 
 const SubscriptionButton = styled(EventModalButton)` // Reutilizar EventModalButton
   width: 100%;
   margin-top: 10px;
@@ -802,7 +801,7 @@ const CalendarPage = () => {
       padding: '3px 5px',
     };
     return { style };
-  }, [theme]); // Adicionando theme aqui para que eventStyleGetter não reclame de missing dependency
+  }, [theme]); 
 
   const tooltipAccessor = useCallback((event) => {
     const time = `${format(event.start, 'HH:mm')} - ${format(event.end, 'HH:mm')}`;
@@ -904,37 +903,34 @@ const CalendarPage = () => {
         return;
     }
 
-    // Verifica se os detalhes da série foram incluídos pelo backend
     if (!trainingResource.series || !trainingResource.series.seriesStartDate || !trainingResource.series.seriesEndDate) {
         console.error("Detalhes da série (seriesStartDate, seriesEndDate) não encontrados no objeto do treino:", trainingResource);
         setPageError("Detalhes da série incompletos. Tente recarregar a página ou contacte o suporte.");
-        // Poderias aqui tentar buscar os detalhes da série com uma chamada API extra como fallback,
-        // mas idealmente, eles viriam com o 'getAllTrainings'.
         return;
     }
 
     const seriesDetails = trainingResource.series;
 
     setSelectedSeriesDetailsForSubscription({
-        id: trainingResource.trainingSeriesId, // ou seriesDetails.id, devem ser iguais
-        name: seriesDetails.name || trainingResource.name, // Dá prioridade ao nome da série
-        seriesStartDate: seriesDetails.seriesStartDate,    // VEM DA SÉRIE!
-        seriesEndDate: seriesDetails.seriesEndDate,        // VEM DA SÉRIE!
+        id: trainingResource.trainingSeriesId, 
+        name: seriesDetails.name || trainingResource.name, 
+        seriesStartDate: seriesDetails.seriesStartDate,  
+        seriesEndDate: seriesDetails.seriesEndDate,        
         dayOfWeek: seriesDetails.dayOfWeek !== null && seriesDetails.dayOfWeek !== undefined 
                    ? seriesDetails.dayOfWeek 
-                   : new Date(trainingResource.date + 'T00:00:00').getDay(), // Fallback para dia da instância se não vier da série (ajustado para evitar invalid date)
+                   : new Date(trainingResource.date + 'T00:00:00').getDay(), 
         time: seriesDetails.startTime ? seriesDetails.startTime.substring(0,5) : trainingResource.time.substring(0,5),
-        recurrenceType: seriesDetails.recurrenceType || 'weekly', // Para informação no modal
+        recurrenceType: seriesDetails.recurrenceType || 'weekly', 
     });
 
-    // Pré-preenche a data de fim da subscrição com a data de fim da série, se existir
+    
     setSeriesSubscriptionEndDate(seriesDetails.seriesEndDate || '');
     setSeriesSubscriptionError('');
     setPageError(''); 
     setPageSuccessMessage('');
 
-    // Fechar o modal de detalhes do evento e abrir o de subscrição
-    if (typeof setShowEventModal === 'function') setShowEventModal(false); // Adiciona verificação se a função existe
+  
+    if (typeof setShowEventModal === 'function') setShowEventModal(false); 
     setShowSubscribeSeriesModal(true);
 };
 
@@ -946,12 +942,12 @@ const handleCloseSubscribeSeriesModal = () => {
 };
 
   const handleSeriesSubscriptionSubmit = async (e) => {
-    e.preventDefault(); // Se for um formulário
+    e.preventDefault(); 
     if (!selectedEvent?.resource.trainingSeriesId || !seriesSubscriptionEndDate) {
       setSeriesSubscriptionError("Por favor, selecione uma data de fim para a subscrição.");
       return;
     }
-    setIsSubscribingRecurring(true); // Ou um estado de loading específico para este modal
+    setIsSubscribingRecurring(true); 
     setSeriesSubscriptionError(''); setPageError(''); setPageSuccessMessage('');
 
     try {
@@ -959,14 +955,13 @@ const handleCloseSubscribeSeriesModal = () => {
         {
           trainingSeriesId: selectedEvent.resource.trainingSeriesId,
           clientSubscriptionEndDate: seriesSubscriptionEndDate,
-          // clientSubscriptionStartDate: // Opcional, se o cliente puder escolher. Senão, o backend trata.
         },
         authState.token
       );
       setPageSuccessMessage(result.message || "Inscrição na série realizada com sucesso! As suas aulas foram adicionadas ao calendário.");
-      fetchPageData(); // Re-busca todos os eventos
-      handleCloseSubscribeSeriesModal(); // Fecha este modal
-      handleCloseEventModal();      // Fecha o modal do evento original
+      fetchPageData(); 
+      handleCloseSubscribeSeriesModal(); 
+      handleCloseEventModal();      
     } catch (err) {
       setSeriesSubscriptionError(err.message || "Falha ao subscrever a série.");
     } finally {
@@ -1068,9 +1063,9 @@ const handleCloseSubscribeSeriesModal = () => {
               {isClient && selectedEvent.type === 'training' && selectedEvent.trainingSeriesId && !myBookedTrainingIds.has(selectedEvent.id) && (
             <ModalButton
                 onClick={() => handleOpenSubscribeToSeriesModal(selectedEvent)}
-                disabled={actionLoading} // ou isSubscribingRecurring
-                primary // ou um estilo diferente
-                style={{ backgroundColor: theme.colors.success, marginTop: '10px' }} // Exemplo de cor diferente
+                disabled={actionLoading} 
+                primary 
+                style={{ backgroundColor: theme.colors.success, marginTop: '10px' }} 
               >
                 <FaRedo style={{ marginRight: '8px' }} /> Inscrever Semanalmente (Série)
             </ModalButton>
@@ -1191,12 +1186,10 @@ const handleCloseSubscribeSeriesModal = () => {
                   id="seriesSubEndDateCalendar"
                   value={seriesSubscriptionEndDate}
                   onChange={(e) => setSeriesSubscriptionEndDate(e.target.value)}
-                  // A data mínima para subscrição é hoje ou o início da série, o que for mais tarde.
                   min={moment.max(
-                        moment(), // Hoje
-                        moment(selectedSeriesDetailsForSubscription.seriesStartDate) // Início da série
+                        moment(), 
+                        moment(selectedSeriesDetailsForSubscription.seriesStartDate) 
                       ).format('YYYY-MM-DD')}
-                  // A data máxima é o fim da série.
                   max={selectedSeriesDetailsForSubscription.seriesEndDate || undefined}
                   required
                 />
@@ -1294,7 +1287,7 @@ const handleCloseSubscribeSeriesModal = () => {
 
                 {seriesSubscriptionError && <ModalErrorText>{seriesSubscriptionError}</ModalErrorText>}
 
-                <RequestModalForm onSubmit={async (e) => { // Adaptação da lógica de submit
+                <RequestModalForm onSubmit={async (e) => { 
                   e.preventDefault();
                   if (!selectedSeriesDetailsForSubscription?.id || !seriesSubscriptionEndDate) {
                     setSeriesSubscriptionError("Por favor, selecione uma data de fim para a subscrição.");
@@ -1324,8 +1317,8 @@ const handleCloseSubscribeSeriesModal = () => {
                     id="seriesSubEndDateCalendar"
                     value={seriesSubscriptionEndDate}
                     onChange={(e) => setSeriesSubscriptionEndDate(e.target.value)}
-                    min={moment().format('YYYY-MM-DD')} // Não antes de hoje
-                    max={selectedSeriesDetailsForSubscription.seriesEndDate || undefined} // Não depois do fim da série
+                    min={moment().format('YYYY-MM-DD')}
+                    max={selectedSeriesDetailsForSubscription.seriesEndDate || undefined} 
                     required
                   />
                   <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop:'5px'}}>

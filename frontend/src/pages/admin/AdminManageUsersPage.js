@@ -10,9 +10,9 @@ import {
     adminDeleteUser
 } from '../../services/userService';
 import { FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes, FaEye, FaUserPlus } from 'react-icons/fa';
-import { theme } from '../../theme'; // Garanta que o theme está corretamente importado
+import { theme } from '../../theme'; 
 
-// --- Styled Components (Completos) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -161,8 +161,8 @@ const ActionButton = styled.button`
   
   background-color: ${props => {
     if (props.danger) return props.theme.colors.error;
-    if (props.details) return props.theme.colors.info || '#17a2b8'; // Cor para "Detalhes"
-    return props.theme.colors.buttonSecondaryBg; // Default para "Editar"
+    if (props.details) return props.theme.colors.info || '#17a2b8'; 
+    return props.theme.colors.buttonSecondaryBg;
   }};
   color: ${props => (props.danger ? 'white' : (props.details ? 'white' : props.theme.colors.textMain))};
 
@@ -370,7 +370,7 @@ const AdminManageUsersPage = () => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      password: '', // Não preencher password para edição
+      password: '',
       confirmPassword: '',
       isAdmin: user.isAdmin || false,
     });
@@ -418,7 +418,7 @@ const AdminManageUsersPage = () => {
       email: currentUserData.email,
       isAdmin: currentUserData.isAdmin,
     };
-    if (currentUserData.password) { // Só envia password se for preenchida
+    if (currentUserData.password) { 
       userData.password = currentUserData.password;
     }
 

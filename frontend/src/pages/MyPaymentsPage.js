@@ -3,14 +3,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-// Importa TODAS as funções necessárias
+
 import { clientGetMyPayments, createStripePaymentIntentForSignal, clientConfirmManualPayment } from '../services/paymentService';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 
-// --- Styled Components (Completos e com Correções de CSS) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${props => props.theme.colors.background};
   color: ${props => props.theme.colors.textMain};
@@ -337,7 +337,6 @@ const MyPaymentsPage = () => {
 
   const handleStripePaymentError = (errorMessage) => {
     console.error("Stripe Payment Error:", errorMessage);
-    // Opcional: Mostrar erro na página principal, mas já deve ser mostrado no form
   };
 
   const handleStripeRequiresAction = (paymentIntent) => {

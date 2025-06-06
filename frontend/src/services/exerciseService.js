@@ -1,10 +1,10 @@
 // src/services/exerciseService.js
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'; // Ou com /api se estiveres a usar
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'; 
 
 export const getAllExercises = async (token) => {
   if (!token) throw new Error('Token não fornecido para getAllExercises.');
   try {
-    const response = await fetch(`${API_URL}/exercises`, { // Endpoint: GET /exercises
+    const response = await fetch(`${API_URL}/exercises`, { 
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -23,7 +23,7 @@ export const getAllExercises = async (token) => {
 export const createExercise = async (exerciseData, token) => {
   if (!token) throw new Error('Token de administrador não fornecido para criar exercício.');
   try {
-    const response = await fetch(`${API_URL}/exercises`, { // Endpoint: POST /exercises
+    const response = await fetch(`${API_URL}/exercises`, { 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ export const createExercise = async (exerciseData, token) => {
 export const updateExercise = async (exerciseId, exerciseData, token) => {
   if (!token) throw new Error('Token de administrador não fornecido para atualizar exercício.');
   try {
-    const response = await fetch(`${API_URL}/exercises/${exerciseId}`, { // Endpoint: PUT /exercises/:id
+    const response = await fetch(`${API_URL}/exercises/${exerciseId}`, { 
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ export const updateExercise = async (exerciseId, exerciseData, token) => {
 export const deleteExercise = async (exerciseId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido para eliminar exercício.');
   try {
-    const response = await fetch(`${API_URL}/exercises/${exerciseId}`, { // Endpoint: DELETE /exercises/:id
+    const response = await fetch(`${API_URL}/exercises/${exerciseId}`, { 
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -75,11 +75,9 @@ export const deleteExercise = async (exerciseId, token) => {
     });
     const data = await response.json();
     if (!response.ok) {
-      // A tua API de delete retorna 400 se o exercício estiver em uso.
-      // A mensagem já vem no data.message.
       throw new Error(data.message || 'Erro ao eliminar exercício.');
     }
-    return data; // Deve conter a mensagem de sucesso
+    return data; 
   } catch (error) {
     console.error("Erro em deleteExercise:", error);
     throw error;

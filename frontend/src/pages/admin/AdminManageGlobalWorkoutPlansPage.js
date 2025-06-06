@@ -9,20 +9,19 @@ import {
     adminUpdateGlobalWorkoutPlan,
     adminDeleteGlobalWorkoutPlan,
     adminAssignPlanToTraining,
-    // Funções para gerir exercícios DENTRO de um plano global
     addExerciseToGlobalPlan,
     updateExerciseInGlobalPlan,
     removeExerciseFromGlobalPlan
 } from '../../services/workoutPlanService';
-import { getAllExercises } from '../../services/exerciseService'; // Para popular select de exercícios
-import { getAllTrainings } from '../../services/trainingService'; // Para popular select de treinos para associação
+import { getAllExercises } from '../../services/exerciseService'; 
+import { getAllTrainings } from '../../services/trainingService'; 
 import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
-    FaArrowLeft, FaTimes, FaSave, FaImage, FaVideo, FaEye // Adicionado FaEye
+    FaArrowLeft, FaTimes, FaSave, FaImage, FaVideo, FaEye 
 } from 'react-icons/fa';
 import { theme } from '../../theme';
 
-// --- Styled Components (Adapta e reutiliza da tua app) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   padding: 20px clamp(15px, 4vw, 40px);
   font-family: ${({ theme }) => theme.fonts.main};
@@ -182,8 +181,8 @@ const initialExerciseState = { exerciseId: '', order: 0, sets: '', reps: '', dur
 const AdminManageGlobalWorkoutPlansPage = () => {
   const { authState } = useAuth();
   const [plans, setPlans] = useState([]);
-  const [allExercises, setAllExercises] = useState([]); // Para o select de exercícios
-  const [allTrainings, setAllTrainings] = useState([]); // Para associar planos
+  const [allExercises, setAllExercises] = useState([]); 
+  const [allTrainings, setAllTrainings] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -205,8 +204,8 @@ const AdminManageGlobalWorkoutPlansPage = () => {
     try {
       const [plansData, exercisesData, trainingsData] = await Promise.all([
         adminGetAllGlobalWorkoutPlans(authState.token),
-        getAllExercises(authState.token), // Assumindo que admin pode ver todos para seleção
-        getAllTrainings(authState.token) // Para o modal de associação
+        getAllExercises(authState.token), 
+        getAllTrainings(authState.token)
       ]);
       setPlans(plansData || []);
       setAllExercises(exercisesData || []);
@@ -236,9 +235,9 @@ const AdminManageGlobalWorkoutPlansPage = () => {
       name: plan.name || '',
       notes: plan.notes || '',
       isVisible: plan.isVisible || false,
-      exercises: plan.planExercises ? plan.planExercises.map(ex => ({ // Mapeia para o formato do estado
-          id: ex.id, // ID do WorkoutPlanExercise
-          exerciseId: ex.exerciseDetails.id, // ID do Exercise base
+      exercises: plan.planExercises ? plan.planExercises.map(ex => ({ 
+          id: ex.id, 
+          exerciseId: ex.exerciseDetails.id, 
           order: ex.order,
           sets: ex.sets || '',
           reps: ex.reps || '',
@@ -293,7 +292,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
       name: currentPlanData.name,
       notes: currentPlanData.notes,
       isVisible: currentPlanData.isVisible,
-      exercises: currentPlanData.exercises.map(ex => ({ // Garante que envia apenas os campos necessários
+      exercises: currentPlanData.exercises.map(ex => ({
           exerciseId: ex.exerciseId,
           order: parseInt(ex.order) || 0,
           sets: ex.sets ? parseInt(ex.sets) : null,
@@ -323,7 +322,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
 
   const handleDeletePlan = async (planId) => {
     if (window.confirm('Tem a certeza que quer eliminar este plano de treino? Esta ação não pode ser desfeita.')) {
-      setLoading(true); // ou um loading específico para delete
+      setLoading(true); 
       setError(''); setSuccessMessage('');
       try {
         await adminDeleteGlobalWorkoutPlan(planId, authState.token);
@@ -355,7 +354,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
     try {
       await adminAssignPlanToTraining(planToAssign.id, selectedTrainingToAssign, parseInt(assignOrder) || 0, authState.token);
       setSuccessMessage(`Plano "${planToAssign.name}" associado ao treino ID ${selectedTrainingToAssign} com sucesso!`);
-      // Não precisa de fetchAllData() aqui, pois a lista de planos globais não muda.
+
       handleCloseModal();
     } catch (err) {
       setError(err.message || 'Erro ao associar plano ao treino.');

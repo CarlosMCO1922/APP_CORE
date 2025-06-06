@@ -4,9 +4,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetUserById, adminGetUserTrainingsService, adminGetUserAppointmentsService } from '../../services/userService';
-import { adminGetAllPayments } from '../../services/paymentService'; // Para buscar pagamentos
+import { adminGetAllPayments } from '../../services/paymentService'; 
 import { FaArrowLeft, FaUserCircle, FaDumbbell, FaCalendarCheck, FaEnvelope, FaIdCard, FaMoneyBillWave } from 'react-icons/fa';
-import { theme } from '../../theme'; // Garanta que tem o theme importado
+import { theme } from '../../theme'; 
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -97,8 +97,8 @@ const HistoryItem = styled.li`
   margin-bottom: 10px;
   border-left: 4px solid ${({ theme, itemType }) => {
     if (itemType === 'training') return theme.colors.primary;
-    if (itemType === 'appointment') return theme.colors.success || '#66BB6A'; // Adicionando fallback
-    if (itemType === 'payment') return theme.colors.info || '#00A9FF'; // Adicionando fallback
+    if (itemType === 'appointment') return theme.colors.success || '#66BB6A'; 
+    if (itemType === 'payment') return theme.colors.info || '#00A9FF'; 
     return theme.colors.textMuted;
   }};
   font-size: 0.9rem;
@@ -166,9 +166,9 @@ const AdminUserDetailsPage = () => {
           adminGetAllPayments({ userId: userId }, authState.token)
         ]);
         setUser(userData);
-        setUserTrainings(trainingsData || []); // Garantir que é array
-        setUserAppointments(appointmentsData || []); // Garantir que é array
-        setUserPayments(paymentsData || []); // Garantir que é array
+        setUserTrainings(trainingsData || []); 
+        setUserAppointments(appointmentsData || []); 
+        setUserPayments(paymentsData || []); 
 
       } catch (err) {
         console.error("Erro ao buscar detalhes do utilizador:", err);
@@ -206,7 +206,6 @@ const AdminUserDetailsPage = () => {
             <p><FaIdCard /> ID: {user.id} {user.isAdmin ? '(Perfil Admin App)' : '(Cliente)'}</p>
           </UserInfo>
         </UserHeader>
-        {/* Futuramente: Campo para Notas Internas aqui */}
       </UserDetailsCard>
 
       <SectionTitle><FaDumbbell /> Histórico de Treinos</SectionTitle>

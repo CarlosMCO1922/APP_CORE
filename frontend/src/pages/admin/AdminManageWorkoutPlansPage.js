@@ -433,15 +433,13 @@ function AdminManageWorkoutPlansPage() {
 
   const handleCloseMediaModal = () => {
     setShowMediaModal(false);
-    if (mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube') { // Verifica também se é youtube
+    if (mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube') { 
       const videoElement = document.getElementById('media-modal-video-iframe') || document.getElementById('media-modal-video');
-      // Para iframes do YouTube, a forma de parar programaticamente é mais complexa (requer API do YouTube Player)
-      // ou recarregar o src do iframe para "" o que pode ser feito aqui ao limpar mediaModalContent.src
       if (videoElement && videoElement.tagName === 'VIDEO') {
           videoElement.pause();
       }
     }
-    setMediaModalContent({ type: '', src: '', alt: '' }); // Limpa para parar o vídeo no iframe
+    setMediaModalContent({ type: '', src: '', alt: '' }); 
   };
 
   if (loading) return <PageContainer><LoadingText>A carregar detalhes do plano de treino...</LoadingText></PageContainer>;
@@ -499,7 +497,7 @@ function AdminManageWorkoutPlansPage() {
                       <ActionButton
                         small
                         secondary
-                        onClick={() => handleOpenMediaModal('video', item.exerciseDetails.videoUrl, item.exerciseDetails.name)} // O tipo 'video' será tratado no modal para ver se é YouTube
+                        onClick={() => handleOpenMediaModal('video', item.exerciseDetails.videoUrl, item.exerciseDetails.name)} 
                       >
                         Ver Vídeo
                       </ActionButton>
@@ -636,11 +634,10 @@ function AdminManageWorkoutPlansPage() {
             {(mediaModalContent.type === 'video') && (() => {
               const youtubeVideoId = getYouTubeVideoId(mediaModalContent.src);
               if (youtubeVideoId) {
-                // Renderiza iframe para YouTube
                 return (
                   <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', maxWidth: '100%', background: '#000' }}>
                     <iframe
-                      id="media-modal-video-iframe" // Adicionado ID para possível referência
+                      id="media-modal-video-iframe"
                       src={`https://www.youtube.com/watch?v=tXflBB70v-s${youtubeVideoId}?autoplay=1`}
                       title="YouTube video player"
                       frameBorder="0"
@@ -651,7 +648,6 @@ function AdminManageWorkoutPlansPage() {
                   </div>
                 );
               } else {
-                // Renderiza elemento <video> para links diretos
                 return (
                   <video
                     id="media-modal-video"

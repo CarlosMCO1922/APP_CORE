@@ -1,6 +1,6 @@
 // src/context/NotificationContext.js
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import { useAuth } from './AuthContext'; // Para aceder ao token e status de autenticação
+import { useAuth } from './AuthContext'; 
 import {
   getMyNotificationsService,
   markNotificationAsReadService,
@@ -27,15 +27,9 @@ export const NotificationProvider = ({ children }) => {
     setError('');
     try {
       const data = await getMyNotificationsService(authState.token, page, limit, status);
-      // Se for a primeira página de "todos" ou "não lidos", atualiza a lista principal e contagem.
-      // Se for uma página específica de "lidos" ou outra página de "não lidos", pode querer tratar diferente.
-      // Por simplicidade, se for a primeira página, atualiza tudo.
       if (page === 1) {
         setNotifications(data.notifications);
       } else {
-        // Para paginação, se quiser adicionar à lista existente (load more)
-        // setNotifications(prev => [...prev, ...data.notifications]);
-        // Ou substituir se for uma página diferente
         setNotifications(data.notifications);
       }
       setUnreadCount(data.unreadCount);
@@ -50,12 +44,10 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [authState.token]);
 
-  // Fetch inicial de notificações não lidas quando o utilizador está autenticado
   useEffect(() => {
     if (authState.isAuthenticated) {
-      fetchNotifications(1, 10, 'unread'); // Ou buscar todas e depois contar as não lidas no frontend
+      fetchNotifications(1, 10, 'unread');
     } else {
-      // Limpar notificações se o utilizador fizer logout
       setNotifications([]);
       setUnreadCount(0);
       setTotalNotifications(0);
@@ -77,7 +69,6 @@ export const NotificationProvider = ({ children }) => {
       setUnreadCount(prevCount => (prevCount > 0 ? prevCount - 1 : 0));
     } catch (err) {
       console.error("Erro ao marcar notificação como lida:", err);
-      // Pode querer mostrar um erro para o utilizador
     }
   };
 
@@ -89,7 +80,6 @@ export const NotificationProvider = ({ children }) => {
         prevNotifications.map(notif => ({ ...notif, isRead: true }))
       );
       setUnreadCount(0);
-      // Talvez re-fetch para garantir consistência se a lista mostrada for apenas não lidas
       fetchNotifications(1, 10, 'unread');
     } catch (err) {
       console.error("Erro ao marcar todas as notificações como lidas:", err);
@@ -107,7 +97,7 @@ export const NotificationProvider = ({ children }) => {
     fetchNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
-    refreshNotifications: () => fetchNotifications(1, 10, 'unread') // Exemplo de refresh
+    refreshNotifications: () => fetchNotifications(1, 10, 'unread') 
   };
 
   return (

@@ -36,9 +36,3 @@
     transform: rotate(360deg);
   }
 }
-
-/* Adiciona isto se a tua Navbar o usa, senão podes remover */
-/*.main-content-area {
-  /* padding-top: 60px; */ /* Exemplo: Se a navbar tiver altura fixa de 60px e for sticky */
-  /* O padding pode ser gerido pelos PageContainers individuais se preferires */
-/*}

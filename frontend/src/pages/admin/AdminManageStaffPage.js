@@ -1,7 +1,7 @@
 // src/pages/admin/AdminManageStaffPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import styled, { css } from 'styled-components'; // Adicionado css aqui
+import styled, { css } from 'styled-components'; 
 import { useAuth } from '../../context/AuthContext';
 import { adminGetAllStaff, adminDeleteStaff, adminCreateStaff, adminUpdateStaff } from '../../services/staffService';
 import { FaUserTie, FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
@@ -167,7 +167,6 @@ const ActionButton = styled.button`
   }
 `;
 
-// Definição base para mensagens, se quiser usar o helper css
 const MessageBaseStyles = css` 
   text-align: center;
   padding: 12px 18px;
@@ -201,7 +200,6 @@ const MessageText = styled.p`
   border-color: ${({ theme }) => theme.colors.success};
 `;
 
-// Modal Styled Components (agora definidos aqui)
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0,0,0,0.85); display: flex;
@@ -252,7 +250,7 @@ const ModalActions = styled.div`
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
   @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
 `;
-// Reutilizando ActionButton para ModalButton, mas pode ser definido separadamente se precisar de mais distinção
+
 const ModalButton = styled(ActionButton)` 
   font-size: 0.9rem; 
   padding: 10px 18px;
@@ -286,15 +284,15 @@ const AdminManageStaffPage = () => {
   const { authState } = useAuth();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(''); // Erro da página
-  const [successMessage, setSuccessMessage] = useState(''); // Mensagem de sucesso da página
+  const [error, setError] = useState(''); 
+  const [successMessage, setSuccessMessage] = useState(''); 
 
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentStaffData, setCurrentStaffData] = useState(initialStaffFormState);
   const [currentStaffId, setCurrentStaffId] = useState(null);
-  const [formLoading, setFormLoading] = useState(false); // Loading do formulário do modal
-  const [modalError, setModalError] = useState(''); // Erro específico do modal
+  const [formLoading, setFormLoading] = useState(false); 
+  const [modalError, setModalError] = useState(''); 
 
   const fetchStaff = useCallback(async () => {
     if (authState.token) {
@@ -341,13 +339,12 @@ const AdminManageStaffPage = () => {
     setFormLoading(true); setModalError(''); setError(''); setSuccessMessage('');
     const dataToSend = { ...currentStaffData };
 
-    if (isEditing && !dataToSend.password) { // Se está a editar e não forneceu password, remove do payload
+    if (isEditing && !dataToSend.password) {
       delete dataToSend.password;
     } else if (!isEditing && (!dataToSend.password || dataToSend.password.length < 6)) {
       setModalError("Password é obrigatória (mínimo 6 caracteres) para criar novo membro.");
       setFormLoading(false); return;
     } else if (isEditing && dataToSend.password && dataToSend.password.length < 6) {
-      // Se está a editar e forneceu password, ela tem de ter o tamanho mínimo
       setModalError("A nova password deve ter pelo menos 6 caracteres.");
       setFormLoading(false); return;
     }
@@ -388,7 +385,7 @@ const AdminManageStaffPage = () => {
     }
   };
   
-  if (loading && !showModal) { // Não mostrar loading da página se modal estiver aberto
+  if (loading && !showModal) {
     return <PageContainer><LoadingText>A carregar equipa...</LoadingText></PageContainer>;
   }
 

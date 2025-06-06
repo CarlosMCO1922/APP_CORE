@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { registerUserAPI } from '../services/authService'; // Certifica-te que o caminho está correto
+import { registerUserAPI } from '../services/authService'; 
 
-// --- Definição das Cores (mantidas como definiste) ---
+// --- Definição das Cores  ---
 const coreGold = '#D4AF37';
 const coreBlack = '#1A1A1A';
 const lightTextColor = '#E0E0E0';
@@ -183,7 +183,7 @@ const FooterText = styled.footer`
   }
 `;
 
-// A lógica da função RegisterPage (useState, handleSubmit, etc.) permanece a mesma
+
 function RegisterPage() {
   const [formData, setFormData] = useState({
     firstName: '',

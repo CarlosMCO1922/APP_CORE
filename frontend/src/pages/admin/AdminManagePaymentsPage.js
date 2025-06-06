@@ -314,7 +314,6 @@ const ModalActions = styled.div`
   @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
 `;
 
-// ModalButton agora é uma extensão de ActionButton com overrides
 const ModalButton = styled(ActionButton)`
   background-color: ${props => props.primary ? props.theme.colors.primary : props.theme.colors.buttonSecondaryBg};
   color: ${props => props.primary ? props.theme.colors.textDark : props.theme.colors.textMain};

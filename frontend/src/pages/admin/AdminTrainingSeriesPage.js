@@ -8,7 +8,7 @@ import { FaCalendarPlus, FaListAlt, FaArrowLeft } from 'react-icons/fa';
 import { theme } from '../../theme'; 
 import { Link } from 'react-router-dom';
 
-// --- Styled Components (Adapte ou reutilize os seus estilos globais/de outras páginas admin) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   padding: 25px clamp(15px, 4vw, 40px);
   max-width: 900px;
@@ -206,18 +206,11 @@ const AdminTrainingSeriesPage = () => {
       }
       try {
         setLoadingInstructors(true);
-        const data = await getAllStaffForSelection(authState.token); // Do seu staffService.js
-        // O endpoint /staff/professionals retorna { professionals: [...] }
-        // E cada profissional tem userDetails: { id, firstName, lastName } e também o role no objeto staff
+        const data = await getAllStaffForSelection(authState.token);
         const validInstructors = (data.professionals || [])
-            .filter(p => ['trainer', 'admin', 'physiotherapist'].includes(p.role)) // Ajuste os roles conforme necessário
+            .filter(p => ['trainer', 'admin', 'physiotherapist'].includes(p.role)) 
             .map(p => ({
-                // O backend TrainingSeries.instructorId espera o ID do Staff (ou User, dependendo da sua definição de FK)
-                // Se TrainingSeries.instructorId é o ID da tabela Staff, use p.id
-                // Se TrainingSeries.instructorId é o ID da tabela User, use p.userId
-                // Vou assumir que é o ID da tabela Staff, com base no nome "instructorId"
-                id: p.id, // Usar p.id (ID do Staff) se TrainingSeries.instructorId refere-se a Staff
-                // id: p.userId, // Usar p.userId se TrainingSeries.instructorId refere-se a User
+                id: p.id,
                 name: `${p.userDetails.firstName} ${p.userDetails.lastName} (${p.role})`
         }));
         setInstructors(validInstructors);
@@ -270,7 +263,7 @@ const AdminTrainingSeriesPage = () => {
     try {
       const payload = {
         ...seriesData,
-        instructorId: parseInt(seriesData.instructorId), // Certifique-se que isto é o ID que o backend espera (User ID ou Staff ID)
+        instructorId: parseInt(seriesData.instructorId), 
         dayOfWeek: parseInt(seriesData.dayOfWeek),
         capacity: capacityNum,
       };
@@ -290,8 +283,7 @@ const AdminTrainingSeriesPage = () => {
     }
   };
   
-  // Adicionar verificação de isAdmin do user (do AuthContext)
-  const isAdminUserCheck = authState.user?.role === 'admin'; // Ou authState.user?.isAdmin se tiver essa flag no objeto user do AuthContext
+  const isAdminUserCheck = authState.user?.role === 'admin'; 
 
   return (
     <PageContainer>
@@ -382,7 +374,6 @@ const AdminTrainingSeriesPage = () => {
         <FormSection style={{marginTop: '40px'}}>
             <Title as="h2" style={{fontSize: '1.5rem', borderBottom: 'none', marginBottom: '15px'}}><FaListAlt /> Séries de Treinos Programadas</Title>
             <p style={{color: theme.colors.textMuted}}><i>(A funcionalidade de listar e gerir séries existentes será implementada aqui no futuro.)</i></p>
-            {/* TODO: Implementar listagem de TrainingSeries aqui */}
         </FormSection>
       )}
     </PageContainer>

@@ -150,7 +150,7 @@ const SettingsPage = () => {
     email: '',
   });
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '', // Removido, não é usado para cliente atualizar password
+    currentPassword: '', 
     newPassword: '',
     confirmNewPassword: '',
   });
@@ -209,8 +209,6 @@ const SettingsPage = () => {
         if (passwordData.newPassword.length < 6) {
             throw new Error('A nova password deve ter pelo menos 6 caracteres.');
         }
-        // A API /api/users/me para clientes não deve exigir currentPassword
-        // Apenas envia a nova password se for preenchida
         dataToUpdate.password = passwordData.newPassword;
       }
 
@@ -223,18 +221,10 @@ const SettingsPage = () => {
           email: updatedUserResponse.user.email,
       });
       setPasswordData({currentPassword: '', newPassword: '', confirmNewPassword: ''});
-
-      // Atualiza os dados do utilizador no AuthContext para refletir na Navbar, etc.
-      // Supondo que o backend retorna o objeto user/staff completo após o update.
       const updatedAuthUser = { ...authState.user, ...updatedUserResponse.user };
       localStorage.setItem('userData', JSON.stringify(updatedAuthUser));
-      // Para forçar re-render do AuthContext e componentes dependentes:
-      // Chamar login novamente (se for robusto) ou ter uma função específica no AuthContext.
-      // Por agora, uma forma simples, mas que pode ter efeitos colaterais se login fizer mais que só setar estado:
       if (updatedUserResponse.user.email) {
           await refreshAuthData(updatedUserResponse.user.email, dataToUpdate.password || "dummyPassIfNotChanged", authState.role !== 'user');
-          // A password aqui pode ser problemática se não foi alterada. 
-          // Idealmente, o AuthContext teria um método tipo `updateAuthUserState(newUserData)`
       }
 
 
@@ -316,7 +306,7 @@ const SettingsPage = () => {
             id="confirmNewPassword"
             value={passwordData.confirmNewPassword} 
             onChange={handlePasswordChange} 
-            disabled={!passwordData.newPassword} /* Só habilita se newPassword tiver algo */
+            disabled={!passwordData.newPassword}
             autoComplete="new-password"
           />
         </FormGroup>

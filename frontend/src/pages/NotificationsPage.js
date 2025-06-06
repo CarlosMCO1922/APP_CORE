@@ -7,7 +7,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { FaBell, FaCheckDouble, FaArrowLeft, FaExternalLinkAlt, FaRegClock } from 'react-icons/fa';
 import { theme } from '../theme';
 
-// --- Styled Components (Completos) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -170,7 +170,6 @@ const NotificationsPage = () => {
   const {
     notifications,
     unreadCount,
-    // totalNotifications, // Não usado diretamente aqui, mas disponível no contexto
     currentPage,
     totalPages,
     isLoading,

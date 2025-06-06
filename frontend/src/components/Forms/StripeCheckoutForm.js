@@ -13,13 +13,13 @@ const StatusMessage = styled.p`
   color: ${props => {
     if (props.type === 'error') return props.theme.colors.error || '#FF6B6B';
     if (props.type === 'success') return props.theme.colors.success || '#66BB6A';
-    if (props.type === 'info') return props.theme.colors.textMuted || '#a0a0a0'; // Cor para 'info'
+    if (props.type === 'info') return props.theme.colors.textMuted || '#a0a0a0'; 
     return props.theme.colors.textMuted || '#a0a0a0';
   }};
   background-color: ${props => {
     if (props.type === 'error') return props.theme.colors.errorBg || 'rgba(255,107,107,0.1)';
     if (props.type === 'success') return props.theme.colors.successBg || 'rgba(102,187,106,0.15)';
-    if (props.type === 'info' && props.important) return '#3a3a3a'; // Fundo para info importante
+    if (props.type === 'info' && props.important) return '#3a3a3a'; 
     return 'transparent';
   }};
   border: 1px solid ${props => {
@@ -146,10 +146,6 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError, onRequiresActi
     setMultibancoNextAction(null); 
     setMessage("A processar o teu pagamento...");
     setMessageType('info');
-
-    // O return_url é crucial para redirecionamentos como 3D Secure ou outros fluxos
-    // Para Multibanco, o redirect: 'if_required' geralmente não redireciona,
-    // mas o return_url é necessário para o confirmPayment.
     const returnUrl = `${window.location.origin}/meus-pagamentos?payment_attempted=true&internal_payment_id=${paymentDetails?.id || 'unknown'}&payment_method_confirmed=true`;
 
     const { error, paymentIntent } = await stripe.confirmPayment({
@@ -180,7 +176,7 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError, onRequiresActi
       } else if (paymentIntent.status === 'processing') {
         setMessage("O seu pagamento está a ser processado. Serás notificado em breve.");
         setMessageType('info');
-        if (onSuccess) onSuccess(paymentIntent); // Notificar o pai que está processando
+        if (onSuccess) onSuccess(paymentIntent);
       } 
       else if (paymentIntent.status === 'requires_action' && paymentIntent.next_action?.type === 'multibanco_display_details') {
         setMessage("Referências Multibanco geradas. Por favor, usa os dados abaixo para completar o pagamento. O estado na página de 'Meus Pagamentos' será atualizado após a confirmação do pagamento.");
@@ -199,10 +195,6 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError, onRequiresActi
         if (onError) onError(`Status do pagamento: ${paymentIntent.status}. ${paymentIntent.last_payment_error?.message || ''}`);
       }
     } else if (!error) {
-        // Se não houve erro e não houve paymentIntent, provavelmente ocorreu um redirecionamento
-        // (ex: 3D Secure para cartão). A mensagem de "A processar..." cobre isto.
-        // O fluxo continuará no return_url.
-        // Esta mensagem pode não ser vista se o redirecionamento for rápido.
         setMessage("A redirecionar para passos adicionais de autenticação...");
         setMessageType('info');
     }
@@ -241,8 +233,6 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError, onRequiresActi
           </span>
         </SubmitButton>
       )}
-
-      {/* A mensagem de status geral, especialmente útil se houver erros ou para o estado inicial */}
       {message && (!multibancoNextAction || messageType === 'error') && (
         <StatusMessage id="payment-message" type={messageType} important={!!multibancoNextAction}>
           {message}

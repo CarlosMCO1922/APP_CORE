@@ -23,15 +23,14 @@ const ExerciseProgressChart = ({ historyLogs = [], metric = 'performedWeight', t
                     value = null;
             }
             return {
-                // Armazenar a data original para ordenação, e formatada para exibição
                 originalDate: new Date(log.performedAt),
                 date: new Date(log.performedAt).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit'}),
                 value: value,
-                notes: log.notes // Para exibir no Tooltip se desejar
+                notes: log.notes 
             };
         })
-        .filter(item => item.value !== null && item.value !== undefined) // Filtrar entradas sem valor para a métrica selecionada
-        .sort((a, b) => a.originalDate - b.originalDate); // Ordenar por data
+        .filter(item => item.value !== null && item.value !== undefined) 
+        .sort((a, b) => a.originalDate - b.originalDate);
 
     if (data.length === 0) {
         return <p style={{ color: theme?.colors?.textMuted || '#aaa', textAlign: 'center', padding: '20px' }}>Não há dados suficientes para exibir o gráfico para esta métrica.</p>;
@@ -66,10 +65,9 @@ const ExerciseProgressChart = ({ historyLogs = [], metric = 'performedWeight', t
             break;
     }
     
-    // Custom Tooltip
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
-            const entry = payload[0].payload; // Dados completos do ponto
+            const entry = payload[0].payload; 
             return (
             <div style={{ 
                 backgroundColor: theme?.colors?.cardBackground || '#333', 
@@ -89,14 +87,14 @@ const ExerciseProgressChart = ({ historyLogs = [], metric = 'performedWeight', t
 
     return (
         <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}> {/* Ajuste left margin */}
+            <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme?.colors?.cardBorderAlpha || "rgba(255,255,255,0.1)"} />
                 <XAxis 
                     dataKey="date" 
                     tick={{ fill: theme?.colors?.textMuted || '#aaa', fontSize: '0.75rem' }} 
                     angle={-30} 
                     textAnchor="end" 
-                    height={50} // Aumentar altura para acomodar texto inclinado
+                    height={50} 
                 />
                 <YAxis 
                     label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', fill: theme?.colors?.textMuted || '#aaa', fontSize: '0.85rem', dx: -5 }} 
@@ -105,9 +103,6 @@ const ExerciseProgressChart = ({ historyLogs = [], metric = 'performedWeight', t
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: '0.85rem', paddingTop: '10px' }} />
                 <Line type="monotone" dataKey="value" name={lineName} stroke={strokeColor} activeDot={{ r: 6 }} dot={{ r: 3 }} />
-                {/* Exemplo de linha de referência (ex: média), se tiver esses dados
-                <ReferenceLine y={mediaValor} label="Média" stroke="red" strokeDasharray="3 3" /> 
-                */}
             </LineChart>
         </ResponsiveContainer>
     );

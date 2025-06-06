@@ -228,7 +228,7 @@ const RespondButton = styled.button`
   }
 `;
 
-// Modal components (mantidos, mas com pequenos ajustes se necessário)
+// Modal components
 const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1050; padding:20px;`;
 const ModalContent = styled.div` background-color: #2C2C2C; padding: 30px 40px; border-radius: 10px; width: 100%; max-width: 450px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); position: relative; max-height: 90vh; overflow-y: auto; `;
 const ModalTitle = styled.h2` color: #D4AF37; margin-top: 0; margin-bottom: 25px; font-size: 1.6rem; text-align: center; `;
@@ -306,7 +306,7 @@ const StaffManageRequestsPage = () => {
   const handleCloseCostModal = () => {
     setShowCostModal(false);
     setCostModalError('');
-    setActionLoading(null); // Reset action loading state if modal is closed
+    setActionLoading(null);
   };
 
   const handleCostChange = (e) => {
@@ -330,16 +330,14 @@ const StaffManageRequestsPage = () => {
       setCostModalError(err.message || 'Falha ao aceitar o pedido. Verifique se há conflitos de horário.');
     } finally {
       setCostFormLoading(false);
-      // ActionLoading é resetado no handleCloseCostModal ou no finally do handleRespondToRequest
     }
   };
 
   const handleRespondToRequest = async (appointmentId, decision) => {
-    setActionLoading(appointmentId); // Indica que uma ação está em processamento para este pedido
+    setActionLoading(appointmentId);
     if (decision === 'accept') {
       handleOpenCostModal(appointmentId);
-      // setActionLoading(null) será chamado ao fechar ou submeter o modal de custo
-    } else { // Para 'reject'
+    } else {
       if (!window.confirm('Tens a certeza que queres REJEITAR este pedido de consulta?')) {
         setActionLoading(null);
         return;

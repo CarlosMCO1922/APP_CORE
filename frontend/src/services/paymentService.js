@@ -1,7 +1,6 @@
 // src/services/paymentService.js
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-// Funções de Admin (sem alterações)
 export const adminCreatePayment = async (paymentData, token) => {
   if (!token) throw new Error('Token de administrador não fornecido para adminCreatePayment.');
   try {
@@ -48,7 +47,7 @@ export const adminGetTotalPaid = async (token, dateRange = null) => {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar total pago.');
-    return data; // Espera-se { totalPaid: XXX }
+    return data; 
   } catch (error) { console.error("Erro em adminGetTotalPaid:", error); throw error; }
 };
 
@@ -106,7 +105,7 @@ export const clientGetMyPayments = async (token) => {
 export const clientGetMyPendingPaymentsService = async (token) => {
   if (!token) throw new Error('Token de cliente não fornecido para clientGetMyPendingPaymentsService.');
   try {
-    const response = await fetch(`${API_URL}/payments/my-payments/pending`, { // Usa o novo endpoint
+    const response = await fetch(`${API_URL}/payments/my-payments/pending`, { 
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
@@ -118,7 +117,7 @@ export const clientGetMyPendingPaymentsService = async (token) => {
   }
 };
 
-// Função para o cliente "aceitar" pagamentos (LEGADO - Usado agora como base para confirmação)
+// Função para o cliente "aceitar" pagamentos 
 export const clientAcceptPayment = async (paymentId, token) => {
   if (!token) throw new Error('Token de cliente não fornecido para clientAcceptPayment.');
   try {
@@ -132,27 +131,19 @@ export const clientAcceptPayment = async (paymentId, token) => {
   } catch (error) { console.error("Erro em clientAcceptPayment:", error); throw error; }
 };
 
-// =========================================================================
-// == NOVA FUNÇÃO (ou pode usar a clientAcceptPayment diretamente) ==
-// Função para o cliente confirmar pagamentos manuais (Mensalidades)
-// =========================================================================
 export const clientConfirmManualPayment = async (paymentId, token) => {
   if (!token) throw new Error('Token de cliente não fornecido para clientConfirmManualPayment.');
   try {
-    // Usa o endpoint /accept. Certifique-se que o backend (paymentController.js)
-    // tem a função `clientAcceptPayment` (ou similar) que lida com isto
-    // e muda o status para 'pago' ou 'confirmada'.
     const response = await fetch(`${API_URL}/payments/${paymentId}/accept`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      // Não precisa de body se o backend apenas muda o status
+
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao confirmar pagamento.');
     return data;
   } catch (error) { console.error("Erro em clientConfirmManualPayment:", error); throw error; }
 };
-// =========================================================================
 
 // Função para criar a intenção de pagamento Stripe
 export const createStripePaymentIntentForSignal = async (internalPaymentId, token) => {

@@ -24,7 +24,7 @@ import {
 import { theme } from '../../theme';
 import moment from 'moment';
 
-// --- Styled Components (Completos) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -495,10 +495,10 @@ const WaitlistSectionTitle = styled.h4`
 const initialTrainingFormState = {
   name: '', description: '', date: '', time: '',
   capacity: 10, instructorId: '', durationMinutes: 45,
-  isRecurring: false, // NOVO
-  recurrenceType: 'weekly', // NOVO
-  seriesStartDate: '', // NOVO
-  seriesEndDate: '', // NOVO
+  isRecurring: false, 
+  recurrenceType: 'weekly', 
+  seriesStartDate: '', 
+  seriesEndDate: '',
   dayOfWeek: '1',
 };
 
@@ -561,7 +561,7 @@ const AdminManageTrainingsPage = () => {
              setInstructors(staffDataResult.filter(staff => ['trainer', 'admin'].includes(staff.role)));
         }
         if (allUsers.length === 0 && Array.isArray(usersDataResult)) {
-            setAllUsers(usersDataResult.filter(u => !u.isAdmin && !u.isStaff)); // Assume-se que users da API geral não têm isStaff
+            setAllUsers(usersDataResult.filter(u => !u.isAdmin && !u.isStaff)); 
         }
 
       } catch (err) {
@@ -637,15 +637,13 @@ const AdminManageTrainingsPage = () => {
             instructorId: parseInt(currentTrainingData.instructorId),
             recurrenceType: currentTrainingData.recurrenceType,
             dayOfWeek: currentTrainingData.recurrenceType === 'weekly' ? parseInt(currentTrainingData.dayOfWeek) : null,
-            startTime: currentTrainingData.time, // Usar o time do "treino base" como startTime da série
+            startTime: currentTrainingData.time, 
             seriesStartDate: currentTrainingData.seriesStartDate,
             seriesEndDate: currentTrainingData.seriesEndDate,
             capacity: parseInt(currentTrainingData.capacity),
             location: currentTrainingData.location || '',
-            // workoutPlanId: currentTrainingData.workoutPlanId, // Se tiveres workoutPlanId associado
         };
 
-        // Calcular endTime para a série baseado na durationMinutes do "treino base"
         if (currentTrainingData.time && currentTrainingData.durationMinutes) {
             const [hours, minutes] = currentTrainingData.time.split(':').map(Number);
             const startMoment = moment().year(2000).month(0).date(1).hours(hours).minutes(minutes); // Data arbitrária para cálculo
@@ -671,7 +669,7 @@ const AdminManageTrainingsPage = () => {
         try {
             await createTrainingSeriesService(seriesPayload, authState.token);
             setSuccessMessage('Série de treinos recorrentes criada com sucesso!');
-            fetchPageData(activeFilters); // Rebusca a lista principal de treinos (que pode mostrar instâncias)
+            fetchPageData(activeFilters); 
             handleCloseModal();
         } catch (err) {
             setModalError(err.message || 'Falha ao criar série de treinos recorrentes.');
@@ -680,7 +678,6 @@ const AdminManageTrainingsPage = () => {
         }
 
     } else {
-        // Lógica existente para criar/atualizar TREINO ÚNICO
         const dataToSend = {
             name: currentTrainingData.name,
             description: currentTrainingData.description,
@@ -695,7 +692,7 @@ const AdminManageTrainingsPage = () => {
             setFormLoading(false); return;
         }
         try {
-            if (isEditing && currentTrainingId) { // Garante que currentTrainingId existe para edição
+            if (isEditing && currentTrainingId) { 
                 await adminUpdateTraining(currentTrainingId, dataToSend, authState.token);
                 setSuccessMessage('Treino atualizado com sucesso!');
             } else {
@@ -824,8 +821,6 @@ const AdminManageTrainingsPage = () => {
     try {
       const result = await adminPromoteClientFromWaitlistService(trainingId, userIdToPromote, authState.token, waitlistEntryId);
       setSuccessMessage(result.message || "Cliente promovido com sucesso!");
-
-      // Re-buscar lista de espera e detalhes do treino para atualizar tudo
       const [updatedTrainingData, updatedWaitlistData] = await Promise.all([
         getTrainingById(trainingId, authState.token),
         adminGetTrainingWaitlistService(trainingId, authState.token)
@@ -972,7 +967,7 @@ const AdminManageTrainingsPage = () => {
                   <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName} ({instr.role})</option>
                 ))}
               </ModalSelect>
-              {!isEditing || (isEditing && !currentTrainingData.isGeneratedInstance) ? ( // Verifica se currentTrainingData existe
+              {!isEditing || (isEditing && !currentTrainingData.isGeneratedInstance) ? ( 
               <>
                 <ModalLabel htmlFor="isRecurringTrainModalForm">Treino Recorrente?</ModalLabel>
                 <ModalInput
@@ -981,7 +976,7 @@ const AdminManageTrainingsPage = () => {
                   id="isRecurringTrainModalForm"
                   checked={currentTrainingData.isRecurring || false}
                   onChange={handleFormChange}
-                  disabled={isEditing} // Desabilitar alteração de recorrência na edição por simplicidade
+                  disabled={isEditing} 
                 />
               </>
           ) : (
@@ -989,7 +984,7 @@ const AdminManageTrainingsPage = () => {
           )}
 
 
-          {currentTrainingData.isRecurring && !isEditing && ( // Só mostra campos de série na criação de nova série
+          {currentTrainingData.isRecurring && !isEditing && ( 
               <>
                   <ModalLabel htmlFor="recurrenceTypeTrainModalForm">Repetir*</ModalLabel>
                   <ModalSelect name="recurrenceType" id="recurrenceTypeTrainModalForm" value={currentTrainingData.recurrenceType} onChange={handleFormChange}>
@@ -1012,18 +1007,12 @@ const AdminManageTrainingsPage = () => {
                           </ModalSelect>
                       </>
                   )}
-                  {/* Nota: Para 'monthly', podes precisar de lógica adicional no frontend se dayOfWeek for usado (ex: 1ª Seg do mês) */}
-
                   <ModalLabel htmlFor="seriesStartDateTrainModalForm">Data de Início da Série*</ModalLabel>
                   <ModalInput type="date" name="seriesStartDate" id="seriesStartDateTrainModalForm" value={currentTrainingData.seriesStartDate} onChange={handleFormChange} />
 
                   <ModalLabel htmlFor="seriesEndDateTrainModalForm">Data de Fim da Série*</ModalLabel>
                   <ModalInput type="date" name="seriesEndDate" id="seriesEndDateTrainModalForm" value={currentTrainingData.seriesEndDate} onChange={handleFormChange} />
-                  
-                  {/*
-                  <ModalLabel htmlFor="endTimeSeriesTrainModalForm">Hora de Fim da Série (HH:MM)*</ModalLabel>
-                  <ModalInput type="time" name="endTimeSeries" id="endTimeSeriesTrainModalForm" value={currentTrainingData.endTimeSeries} onChange={handleFormChange} required={currentTrainingData.isRecurring} />
-                  */}
+                
                   <p style={{fontSize: '0.8rem', color: theme.colors.textMuted}}>
                     A hora de início e duração definidas acima serão usadas para todas as ocorrências da série.
                     A hora de fim da série será calculada automaticamente.

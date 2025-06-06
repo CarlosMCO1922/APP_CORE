@@ -30,13 +30,12 @@ export const getAllAppointments = async (token, filters = {}) => {
   if (!token) throw new Error('Token não fornecido para getAllAppointments.');
   try {
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-    // Constrói a query string dos filtros
     const queryParams = new URLSearchParams();
     if (filters.staffId) queryParams.append('staffId', filters.staffId);
     if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
     if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
     if (filters.status) queryParams.append('status', filters.status);
-    if (filters.userId) queryParams.append('userId', filters.userId); // Para admin poder filtrar por cliente
+    if (filters.userId) queryParams.append('userId', filters.userId); 
     
     const queryString = queryParams.toString();
     const fetchURL = queryString ? `${API_URL}/appointments?${queryString}` : `${API_URL}/appointments`;
@@ -64,7 +63,7 @@ export const bookAppointment = async (appointmentId, token) => {
 export const cancelAppointmentBooking = async (appointmentId, token) => { 
     if (!token) throw new Error('Token não fornecido para cancelar marcação.');
     try {
-        const response = await fetch(`${API_URL}/appointments/${appointmentId}/book`, { // O endpoint de cancelamento é o mesmo mas com método DELETE
+        const response = await fetch(`${API_URL}/appointments/${appointmentId}/book`, { 
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         });
@@ -121,15 +120,15 @@ export const adminDeleteAppointment = async (appointmentId, token) => {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
     });
-    if (response.status === 200 || response.status === 204) { // 200 com mensagem ou 204 sem conteúdo
+    if (response.status === 200 || response.status === 204) {
         try {
-            const data = await response.json(); // Tenta ler JSON se houver
+            const data = await response.json(); 
             return data.message ? data : { message: "Consulta eliminada com sucesso." };
-        } catch (e) { // Se não houver JSON (caso de 204), retorna mensagem padrão
+        } catch (e) {
             return { message: "Consulta eliminada com sucesso." };
         }
     }
-    // Se a resposta não for ok e não for 204
+
     const errorData = await response.json();
     throw new Error(errorData.message || 'Erro ao eliminar consulta.');
   } catch (error) { 
@@ -139,18 +138,17 @@ export const adminDeleteAppointment = async (appointmentId, token) => {
   }
 };
 
-export const staffRespondToRequest = async (appointmentId, decision, token, totalCost = null) => { // Adicionado totalCost como parâmetro opcional
+export const staffRespondToRequest = async (appointmentId, decision, token, totalCost = null) => { 
     if (!token) throw new Error('Token não fornecido para staffRespondToRequest.');
     try {
         const bodyPayload = { decision };
         if (decision === 'accept' && totalCost !== null) {
             bodyPayload.totalCost = totalCost;
         } else if (decision === 'accept' && totalCost === null) {
-            // Lançar erro ou lidar com isso, pois o backend agora espera totalCost ao aceitar
             throw new Error("Custo total é necessário para aceitar o pedido.");
         }
 
-        const response = await fetch(`${API_URL}/appointments/${appointmentId}/respond`, { // Confirma o teu API_URL
+        const response = await fetch(`${API_URL}/appointments/${appointmentId}/respond`, { 
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
             body: JSON.stringify(bodyPayload),
@@ -167,11 +165,11 @@ export const staffRespondToRequest = async (appointmentId, decision, token, tota
 export const adminGetTodayAppointmentsCount = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/appointments/stats/today-count`, { // Garanta que API_URL não termina com / se aqui já tem
+    const response = await fetch(`${API_URL}/appointments/stats/today-count`, { 
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar contagem de consultas de hoje.');
-    return data; // Espera-se { todayAppointmentsCount: XX }
+    return data; 
   } catch (error) { console.error("Erro em adminGetTodayAppointmentsCount:", error); throw error; }
 };

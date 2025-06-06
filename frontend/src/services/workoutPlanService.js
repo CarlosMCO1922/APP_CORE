@@ -99,7 +99,7 @@ export const adminCreateGlobalWorkoutPlan = async (planData, token) => {
     const response = await fetch(`${API_URL}/workout-plans/global`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(planData), // { name, notes, isVisible, exercises: [...] }
+      body: JSON.stringify(planData),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao criar plano de treino global.');
@@ -131,17 +131,10 @@ export const adminGetGlobalWorkoutPlanById = async (planId, token) => {
   } catch (error) { console.error("Erro em adminGetGlobalWorkoutPlanById:", error); throw error; }
 };
 
-/**
- * CLIENTE: Busca os detalhes de um plano de treino global específico que está marcado como visível.
- * @param {string} planId - O ID do plano de treino global.
- * @param {string} token - O token de autenticação do cliente.
- * @returns {Promise<object>} O objeto do plano de treino.
- */
 export const getGlobalWorkoutPlanByIdClient = async (planId, token) => {
   if (!token) throw new Error('Token não fornecido.');
   if (!planId) throw new Error('ID do Plano não fornecido.');
   try {
-    // Chama a nova rota que criámos no backend
     const response = await fetch(`${API_URL}/workout-plans/visible/${planId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -159,12 +152,7 @@ export const getGlobalWorkoutPlanByIdClient = async (planId, token) => {
 };
 
 
-/**
- * CLIENTE: Busca todos os planos de treino globais que estão marcados como visíveis.
- * @param {string} token - O token de autenticação do cliente.
- * @param {string} searchTerm - O termo de pesquisa opcional.
- * @returns {Promise<Array>} Um array de planos de treino visíveis.
- */
+
 export const getVisibleWorkoutPlansService = async (token, searchTerm = '') => {
   if (!token) throw new Error('Token não fornecido.');
   try {
@@ -195,7 +183,7 @@ export const adminUpdateGlobalWorkoutPlan = async (planId, planData, token) => {
     const response = await fetch(`${API_URL}/workout-plans/global/${planId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(planData), // { name?, notes?, isVisible?, exercises?: [...] }
+      body: JSON.stringify(planData),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao atualizar plano de treino global.');
@@ -245,21 +233,13 @@ export const adminRemovePlanFromTraining = async (planId, trainingId, token) => 
   } catch (error) { console.error("Erro em adminRemovePlanFromTraining:", error); throw error; }
 };
 
-// --- Funções para gerir EXERCÍCIOS dentro de um plano "modelo" / global ---
-// As funções que já tinhas para addExerciseToPlan, updateExerciseInPlan, removeExerciseFromPlan
-// podem ser adaptadas ou duplicadas para funcionar com os IDs de planos globais.
-// Exemplo: addExerciseToGlobalPlan, etc. que chamariam rotas como /api/workout-plans/global/:planId/exercises
-
 export const addExerciseToGlobalPlan = async (planId, exerciseData, token) => {
   if (!token) throw new Error('Token não fornecido.');
   try {
-    // Assume que a rota no backend para adicionar exercício a plano global é:
-    // POST /api/workout-plans/global/:planId/exercises
-    // (Terás de criar esta rota no backend/routes/workoutPlanRoutes.js e a função correspondente no controller)
     const response = await fetch(`${API_URL}/workout-plans/global/${planId}/exercises`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(exerciseData), // { exerciseId, sets, reps, order, notes, etc. }
+      body: JSON.stringify(exerciseData),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao adicionar exercício ao plano global.');
@@ -270,9 +250,6 @@ export const addExerciseToGlobalPlan = async (planId, exerciseData, token) => {
 export const updateExerciseInGlobalPlan = async (planExerciseId, exerciseData, token) => {
   if (!token) throw new Error('Token não fornecido.');
   try {
-    // Assume que a rota no backend para atualizar exercício num plano global é:
-    // PUT /api/workout-plans/global/exercises/:planExerciseId
-    // (Terás de criar esta rota e a função no controller)
     const response = await fetch(`${API_URL}/workout-plans/global/exercises/${planExerciseId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -287,9 +264,6 @@ export const updateExerciseInGlobalPlan = async (planExerciseId, exerciseData, t
 export const removeExerciseFromGlobalPlan = async (planExerciseId, token) => {
   if (!token) throw new Error('Token não fornecido.');
   try {
-    // Assume que a rota no backend para remover exercício de plano global é:
-    // DELETE /api/workout-plans/global/exercises/:planExerciseId
-    // (Terás de criar esta rota e a função no controller)
     const response = await fetch(`${API_URL}/workout-plans/global/exercises/${planExerciseId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
@@ -301,9 +275,7 @@ export const removeExerciseFromGlobalPlan = async (planExerciseId, token) => {
 };
 
 
-// Funções que buscam planos associados a um TREINO específico (M:N)
-// getWorkoutPlansByTrainingId já existe e deve ser atualizada para usar a relação M:N
-// Esta função é chamada pela AdminManageWorkoutPlansPage e ClientTrainingPlanPage
+
 export const getWorkoutPlansByTrainingId = async (trainingId, token) => {
     if (!token) throw new Error('Token não fornecido.');
     if (!trainingId) throw new Error('ID do Treino não fornecido.');
@@ -315,7 +287,7 @@ export const getWorkoutPlansByTrainingId = async (trainingId, token) => {
       if (!response.ok) {
         throw new Error(data.message || 'Erro ao buscar planos de treino associados ao treino.');
       }
-      return data; // Espera um array de WorkoutPlans com seus WorkoutPlanExercises
+      return data;
     } catch (error) {
       console.error("Erro em getWorkoutPlansByTrainingId:", error);
       throw error;

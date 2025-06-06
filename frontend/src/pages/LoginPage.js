@@ -1,10 +1,10 @@
 // src/pages/LoginPage.js
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../context/AuthContext'; // Certifica-te que o caminho está correto
+import { useAuth } from '../context/AuthContext'; 
 import { useNavigate, Link } from 'react-router-dom';
 
-// --- Definição das Cores (mantidas como definiste) ---
+// --- Definição das Cores ---
 const coreGold = '#D4AF37';
 const coreBlack = '#1A1A1A';
 const lightTextColor = '#E0E0E0';
@@ -229,7 +229,6 @@ const FooterText = styled.footer`
   }
 `;
 
-// A lógica da função LoginPage (useState, handleSubmit, etc.) permanece a mesma
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -246,7 +245,6 @@ function LoginPage() {
     setLoading(true);
     try {
       await login(email, password, isStaffLogin); 
-      // Redirecionamento é tratado pelo App.js ou ProtectedRoute
     } catch (err) {
       setError(err.message || 'Falha no login. Verifica as tuas credenciais.');
     } finally {
@@ -304,7 +302,7 @@ function LoginPage() {
             </ErrorMessage>
           )}
 
-          <FormGroup> {/* Este FormGroup é redundante se SubmitButton for o único filho */}
+          <FormGroup> 
             <SubmitButton
               type="submit"
               disabled={loading}

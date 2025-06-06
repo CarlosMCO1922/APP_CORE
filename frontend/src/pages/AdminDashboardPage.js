@@ -4,16 +4,16 @@ import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { adminGetTotalPaid } from '../services/paymentService';
-import { adminGetCurrentWeekSignups, adminGetTodayTrainingsCount } from '../services/trainingService'; // Adicionado
-import { adminGetTodayAppointmentsCount } from '../services/appointmentService'; // Adicionado
+import { adminGetCurrentWeekSignups, adminGetTodayTrainingsCount } from '../services/trainingService'; 
+import { adminGetTodayAppointmentsCount } from '../services/appointmentService';
 import {
     FaDollarSign, FaUsers, FaCalendarDay,
     FaCalendarAlt, FaUserMd, FaDumbbell, FaCreditCard,
     FaRunning, FaRegCalendarCheck, FaUserPlus, FaCalendarCheck as FaCalendarCheckIcon
 } from 'react-icons/fa';
-import { theme } from '../theme'; // Assume que o theme está corretamente importado
+import { theme } from '../theme';
 
-// --- Styled Components (Completos) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};

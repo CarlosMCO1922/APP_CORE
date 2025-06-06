@@ -270,15 +270,12 @@ export const createTrainingSeriesService = async (seriesData, token) => {
     }
     throw new Error(errorData.message || `Erro ${response.status} ao criar série de treinos.`);
   }
-  return response.json(); // Espera-se { message, series, instancesCreatedCount }
+  return response.json(); 
 };
 
-/**
- * Cliente obtém todas as séries de treinos recorrentes ativas para se inscrever.
- */
+
 export const getActiveTrainingSeriesForClientService = async (token) => {
   if (!token) throw new Error('Token não fornecido para buscar séries ativas.');
-  // Assumindo que o endpoint no backend é GET /training-series (ou /training-series/active)
   const url = `${API_URL}/training-series`; 
   console.log('Frontend Service: Buscando séries ativas para cliente. URL:', url);
   const response = await fetch(url, {
@@ -299,22 +296,11 @@ export const getActiveTrainingSeriesForClientService = async (token) => {
   return data; 
 };
 
-/**
- * Cliente inscreve-se numa série de treinos.
- */
-/**
- * Cliente inscreve-se numa série de treinos.
- * @param {object} subscriptionData - Deve conter { trainingSeriesId, clientSubscriptionEndDate }
- * @param {string} token - Token de autenticação do cliente.
- * @returns {Promise<object>} - A resposta da API.
- */
 export const createSeriesSubscriptionService = async (subscriptionData, token) => {
   if (!token) throw new Error('Token não fornecido para criar subscrição em série.');
   if (!subscriptionData || !subscriptionData.trainingSeriesId || !subscriptionData.clientSubscriptionEndDate) {
     throw new Error('Dados insuficientes para subscrição: trainingSeriesId e clientSubscriptionEndDate são obrigatórios.');
   }
-
-  // Endpoint correto conforme backend/routes/trainingSeriesRoutes.js
   const url = `${API_URL}/training-series/subscriptions`;
 
   console.log('Frontend Service: Criando subscrição em série. URL:', url, 'Payload:', subscriptionData);
@@ -327,24 +313,17 @@ export const createSeriesSubscriptionService = async (subscriptionData, token) =
      body: JSON.stringify(subscriptionData),
   });
 
-  // Tratamento de resposta mais robusto
+
   if (!response.ok) {
     let errorData;
-    const responseText = await response.text(); // Lê o corpo da resposta como texto primeiro
+    const responseText = await response.text();
     try {
       errorData = JSON.parse(responseText);
     } catch(e) {
-      // Se não for JSON, lança um erro com o texto da resposta (ou parte dele)
       console.error("Resposta do servidor não é JSON:", responseText);
       throw new Error(`Erro HTTP ${response.status} ao subscrever série. Resposta: ${responseText.substring(0, 200)}...`);
     }
     throw new Error(errorData.message || `Erro ${response.status} ao inscrever-se na série de treinos.`);
   }
-  return response.json(); // Espera-se { message, subscription, bookingsCreatedCount, bookingsSkippedCount }
+  return response.json();
 };
-
-
-
-// TODO: Adicionar mais serviços para:
-// - Admin: getAllTrainingSeriesAdminService (listar todas as séries), atualizar série, apagar série
-// - Cliente: listar suas subscrições, cancelar subscrição

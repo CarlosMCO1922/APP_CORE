@@ -10,7 +10,6 @@ import {
     deleteExercise
 } from '../../services/exerciseService';
 
-// --- Reutilizar Styled Components (copia/adapta das tuas outras páginas de admin) ---
 const PageContainer = styled.div` background-color: #1A1A1A; color: #E0E0E0; min-height: 100vh; padding: 20px 40px; font-family: 'Inter', sans-serif; `;
 const Title = styled.h1` font-size: 2.2rem; color: #D4AF37; margin-bottom: 25px; `;
 const Table = styled.table` width: 100%; border-collapse: collapse; margin-top: 20px; background-color: #252525; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5); th, td { border-bottom: 1px solid #383838; padding: 10px 12px; text-align: left; font-size: 0.9rem; } th { background-color: #303030; color: #D4AF37; font-weight: 600; } tr:last-child td { border-bottom: none; } tr:hover { background-color: #2c2c2c; } img { max-width: 60px; max-height: 60px; object-fit: cover; border-radius: 4px; } `;

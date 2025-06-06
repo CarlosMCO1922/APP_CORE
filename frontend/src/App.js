@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-
 import { useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 
-// Componentes de Página (como no seu ficheiro)
+// Componentes de Página 
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -33,30 +33,21 @@ import AdminManageGlobalWorkoutPlansPage from './pages/admin/AdminManageGlobalWo
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
 
-// --- Componente ProtectedRoute (como no seu ficheiro) ---
+// --- Componente ProtectedRoute  ---
 const ProtectedRoute = ({ allowedRoles }) => {
   const { authState } = useAuth();
   if (!authState.isAuthenticated) return <Navigate to="/login" replace />;
-  const currentRole = authState.role; // authState.user?.role se user puder ser null inicialmente
+  const currentRole = authState.role; 
 
-  // Se authState.role ainda não estiver definido (ex: no primeiro render antes do useEffect no AuthContext popular), pode mostrar um loader ou redirecionar
   if (allowedRoles && !currentRole) { 
-    // Poderia mostrar um spinner ou algo enquanto o role é determinado
-    // console.warn("ProtectedRoute: authState.role é null, isAuthenticated:", authState.isAuthenticated);
-    // Se está autenticado mas o role é null, pode ser um estado transitório.
-    // Se não estiver autenticado, o primeiro if já trata.
-    // Considerar o que fazer aqui. Por agora, se autenticado mas sem role, permite acesso
-    // ou redireciona para uma página de carregamento/erro se o role for estritamente necessário.
-    // Para simplificar, vamos assumir que se está autenticado, o role será definido em breve.
+
   } else if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
-    // Redireciona com base no role atual se não estiver nos permitidos
     if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(currentRole)) {
       return <Navigate to="/admin/dashboard" replace />;
     }
     if (currentRole === 'user') {
       return <Navigate to="/dashboard" replace />;
     }
-    // Fallback se o role for desconhecido mas autenticado (improvável com a sua lógica de AuthContext)
     return <Navigate to="/login" replace />; 
   }
   return <Outlet />;
@@ -65,14 +56,13 @@ const ProtectedRoute = ({ allowedRoles }) => {
 function App() {
   const { authState } = useAuth();
   useEffect(() => {
-    // console.log("App.js: authState mudou:", authState);
   }, [authState]);
 
   return (
     <Router>
-      <NotificationProvider> {/* Envolve toda a app para acesso ao contexto de notificações */}
+      <NotificationProvider> 
         {authState.isAuthenticated && <Navbar />}
-        <div className="main-content-area"> {/* Ajuste App.css se esta classe aplicar padding */}
+        <div className="main-content-area"> 
           <Routes>
             <Route
               path="/login"
@@ -101,11 +91,10 @@ function App() {
               <Route path="/meu-progresso" element={<ClientProgressPage />} />
               <Route path="/explorar-planos" element={<ExploreWorkoutPlansPage />} />
               <Route path="/meu-progresso/usar-plano/:globalPlanId" element={<ClientProgressPage />} />
-              
+
             </Route>
 
             {/* Rotas de Staff/Admin */}
-            {/* O AdminTrainingSeriesPage deve estar aqui dentro se for para todos os staff, ou num bloco mais restrito se for só para role 'admin' */}
             <Route element={<ProtectedRoute allowedRoles={['admin', 'trainer', 'physiotherapist', 'employee']} />}>
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/calendario-geral" element={<CalendarPage />} />
@@ -115,7 +104,7 @@ function App() {
               <Route path="/admin/trainings/:trainingId/manage-plans" element={<AdminManageWorkoutPlansPage />} />
               <Route path="/admin/manage-appointments" element={<AdminManageAppointmentsPage />} />
               <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
-              <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} /> {/* Staff também acede */}
+              <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} /> 
               <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
               <Route path="/admin/users/:userId/details" element={<AdminUserDetailsPage />} /> 
               <Route path='/admin/training-series' element={<AdminTrainingSeriesPage />} /> 

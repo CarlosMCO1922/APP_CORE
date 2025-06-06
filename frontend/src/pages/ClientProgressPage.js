@@ -19,7 +19,7 @@ import {
 import { theme } from '../theme';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
-// --- Styled Components (mantidos como estavam) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -658,7 +658,7 @@ const ClientProgressPage = () => {
     const [statsEndDate, setStatsEndDate] = useState('');
 
     const [chartMetric, setChartMetric] = useState('performedWeight');
-    const [loadingStatistics, setLoadingStatistics] = useState(false); // <<< ADICIONADO AQUI
+    const [loadingStatistics, setLoadingStatistics] = useState(false); 
 
     const fetchBookedTrainings = useCallback(async () => {
         if (authState.token && !globalPlanId) {
@@ -776,7 +776,7 @@ const ClientProgressPage = () => {
 
     }, [performanceLogs, statsStartDate, statsEndDate, workoutPlans]);
 
-    const handlePerformanceInputChange = (planExerciseId, field, value) => { // <<< ADICIONADO AQUI
+    const handlePerformanceInputChange = (planExerciseId, field, value) => { 
       setCurrentPerformanceInputs(prev => ({
         ...prev,
         [planExerciseId]: { ...(prev[planExerciseId] || {}), [field]: value }

@@ -3,12 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-// AQUI ESTÁ A CORREÇÃO: O nome da função importada agora corresponde ao que foi exportado.
 import { getVisibleWorkoutPlansService } from '../services/workoutPlanService'; 
 import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle } from 'react-icons/fa';
 import { theme } from '../theme';
 
-// --- Styled Components (mantidos como estavam) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -188,7 +187,6 @@ const ExploreWorkoutPlansPage = () => {
     setLoading(true);
     setError('');
     try {
-      // AQUI ESTÁ A CORREÇÃO: Usar o nome correto da função do serviço.
       const data = await getVisibleWorkoutPlansService(authState.token, term);
       setPlans(data || []);
     } catch (err) {

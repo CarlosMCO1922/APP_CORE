@@ -1,13 +1,13 @@
 // src/pages/ClientTrainingPlanPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import styled, { keyframes, createGlobalStyle } from 'styled-components'; // createGlobalStyle pode ser útil para estilos de body específicos da página, se não estiver no global
+import styled, { keyframes, createGlobalStyle } from 'styled-components'; 
 import { useAuth } from '../context/AuthContext';
 import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService';
 import { getAllTrainings } from '../services/trainingService';
 import { FaImage, FaVideo, FaTimes, FaArrowLeft } from 'react-icons/fa';
 
-// --- Styled Components Melhorados (usam props.theme que virá do ThemeProvider global) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${props => props.theme.colors.background};
   color: ${props => props.theme.colors.textMain};
@@ -375,18 +375,8 @@ function ClientTrainingPlanPage() {
     }
     setMediaModalContent({ type: '', src: '', alt: '' });
   };
-
-  // Não é necessário o ThemeProvider aqui se estiver globalmente no index.js ou App.js
-  // Apenas o GlobalStyle se quiseres estilos específicos para esta página que usem o tema
-  // if (loading) return <PageContainer><LoadingText>A carregar plano de treino...</LoadingText></PageContainer>;
-
-  // Se o ThemeProvider estiver global, o return principal não precisa de o envolver.
-  // Apenas se NÃO estiver global, aí sim, esta página precisaria do seu próprio ThemeProvider.
-
-  // Assumindo que o ThemeProvider está global no src/index.js
   return (
     <>
-      {/* <GlobalStyle /> Se quiseres estilos de body específicos SÓ para esta página */}
       <PageContainer>
         <HeaderContainer>
           <MainTitle>Plano de Treino</MainTitle>
@@ -498,7 +488,6 @@ function ClientTrainingPlanPage() {
                   })()}
                   {mediaModalContent.type === 'video_error' && (
                   <div style={{ padding: '20px', textAlign: 'center', color: 'white' }}>
-                      {/* Aceder ao tema através de props.theme se o styled component pai tiver acesso, ou hardcode se for uma emergência */}
                       <p style={{ color: (props) => props.theme ? props.theme.colors.error : '#FF6B6B', fontSize: '1.1rem' }}>Não foi possível carregar o vídeo.</p>
                       <p style={{fontSize: '0.9rem'}}>URL: <a href={mediaModalContent.src} target="_blank" rel="noopener noreferrer" style={{ color: (props) => props.theme ? props.theme.colors.primary : '#D4AF37' }}>{mediaModalContent.src}</a></p>
                       {mediaModalContent.originalType === 'video' && <p style={{fontSize: '0.9rem'}}>(Verifica se o URL é um link direto para um ficheiro de vídeo como .mp4 ou um link válido do YouTube)</p>}

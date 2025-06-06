@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
-import { clientGetMyPendingPaymentsService } from '../services/paymentService'; // Importado
+import { clientGetMyPendingPaymentsService } from '../services/paymentService';
 import { 
     getActiveTrainingSeriesForClientService, 
     createSeriesSubscriptionService 
@@ -14,7 +14,7 @@ import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck,
     FaInfoCircle, FaTimes, FaPlusSquare } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
-import { theme } from '../theme'; // Assume que tem um theme.js
+import { theme } from '../theme'; 
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -455,9 +455,9 @@ const DashboardPage = () => {
 
       } catch (err) {
         console.error("Erro ao buscar dados do dashboard:", err);
-        if (err.message.toLowerCase().includes("pagamentos pendentes")) { // Mais robusto
+        if (err.message.toLowerCase().includes("pagamentos pendentes")) { 
             setPendingPaymentsError(err.message);
-        } else if (err.message.toLowerCase().includes("marcações")) { // Mais robusto
+        } else if (err.message.toLowerCase().includes("marcações")) {
             setError(err.message);
         } else {
             setError('Não foi possível carregar todos os dados do dashboard.');
@@ -493,7 +493,6 @@ const DashboardPage = () => {
 
     bookings.appointments.forEach(appointment => {
       const eventDate = new Date(`${appointment.date}T${appointment.time}`);
-      // Filtrar para mostrar apenas consultas que não estão em estados "finais" ou "negativos"
       const relevantStatus = !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída', 'não_compareceu'].includes(appointment.status);
       if (eventDate >= now && relevantStatus) {
         allEvents.push({
@@ -511,10 +510,9 @@ const DashboardPage = () => {
     return allEvents.sort((a, b) => a.date - b.date).slice(0, 3);
   }, [bookings.trainings, bookings.appointments]);
 
-  // 👇 NOVAS FUNÇÕES HANDLER PARA SÉRIES 👇
   const handleOpenSeriesSubscriptionModal = (series) => {
     setSelectedSeriesForSubscription(series);
-    setClientSubscriptionEndDate(series.seriesEndDate); // Default para o fim da série
+    setClientSubscriptionEndDate(series.seriesEndDate); 
     setSeriesModalMessage({type: '', text: ''});
     setShowSeriesModal(true);
   };
@@ -540,18 +538,12 @@ const DashboardPage = () => {
       const subscriptionData = {
         trainingSeriesId: selectedSeriesForSubscription.id,
         clientSubscriptionEndDate: clientSubscriptionEndDate,
-        // O backend calculará a clientSubscriptionStartDate se não for enviada,
-        // ou pode definir aqui se quiser que o cliente possa escolher (ex: new Date().toISOString().split('T')[0])
       };
       const result = await createSeriesSubscriptionService(subscriptionData, authState.token);
       setSeriesModalMessage({type: 'success', text: result.message || 'Inscrição na série bem-sucedida!'});
-      // Refresh bookings para mostrar as novas aulas da série
-      fetchPageData(); 
-      // Opcional: fechar modal após um tempo ou deixar o user fechar
+      fetchPageData();
       setTimeout(() => {
           handleCloseSeriesSubscriptionModal();
-          // Pode querer redirecionar para /calendario ou /meus-agendamentos
-          // navigate('/calendario'); 
       }, 3000);
 
     } catch (error) {

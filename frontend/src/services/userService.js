@@ -104,7 +104,7 @@ export const adminDeleteUser = async (userId, token) => {
   } catch (error) { console.error("Erro em adminDeleteUser:", error); throw error; }
 };
 
-// @desc    Admin obtém todos os treinos de um utilizador específico
+
 export const adminGetUserTrainingsService = async (userId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!userId) throw new Error('ID do Utilizador não fornecido.');
@@ -121,7 +121,6 @@ export const adminGetUserTrainingsService = async (userId, token) => {
   }
 };
 
-// @desc    Admin obtém todas as consultas de um utilizador específico
 export const adminGetUserAppointmentsService = async (userId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!userId) throw new Error('ID do Utilizador não fornecido.');

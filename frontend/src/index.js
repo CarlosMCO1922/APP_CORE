@@ -7,8 +7,8 @@ import { AuthProvider } from './context/AuthContext';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { theme } from './theme'; 
-import * as serviceWorkerRegistration from './serviceWorkerRegistration'; // Importa
-// import reportWebVitals from './reportWebVitals'; // Se estiveres a usar e quiseres manter
+import * as serviceWorkerRegistration from './serviceWorkerRegistration'; 
+
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
@@ -45,8 +45,5 @@ root.render(
   </React.StrictMode>
 );
 
-// Para registar o Service Worker e tornar a app offline e mais rápida:
-serviceWorkerRegistration.register(); // ALTERA DE .unregister() PARA .register()
 
-// Se quiseres medir performance, podes manter ou adicionar reportWebVitals
-// reportWebVitals(console.log);
+serviceWorkerRegistration.register(); 

@@ -6,8 +6,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #1A1A1A; /* Cor de fundo base (core-black) */
-  color: #f0f0f0; /* Cor de texto base (claro) */
+  background-color: #1A1A1A;
+  color: #f0f0f0; 
 }
 
 code {
@@ -15,7 +15,6 @@ code {
     monospace;
 }
 
-/* Podes adicionar outros resets ou estilos globais aqui se necessário */
 * {
   box-sizing: border-box;
 }
