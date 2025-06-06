@@ -3,11 +3,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { getVisibleWorkoutPlansClient } from '../services/workoutPlanService'; // Criaremos esta função no serviço
+// AQUI ESTÁ A CORREÇÃO: O nome da função importada agora corresponde ao que foi exportado.
+import { getVisibleWorkoutPlansService } from '../services/workoutPlanService'; 
 import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle } from 'react-icons/fa';
-import { theme } from '../theme'; // Importa o teu tema
+import { theme } from '../theme';
 
-// --- Styled Components (adapta ou reutiliza os teus estilos globais) ---
+// --- Styled Components (mantidos como estavam) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -88,7 +89,7 @@ const SearchButton = styled.button`
   gap: 8px;
   transition: background-color 0.2s;
   &:hover {
-    background-color: #e6c358; // Um tom mais claro do primary para hover
+    background-color: #e6c358; 
   }
 `;
 
@@ -146,8 +147,7 @@ const ExercisePreviewItem = styled.li`
     margin-bottom: 3px;
 `;
 
-
-const UsePlanButton = styled.button` // Alterado para button
+const UsePlanButton = styled.button`
   background-color: ${({ theme }) => theme.colors.success};
   color: white;
   padding: 10px 15px;
@@ -163,7 +163,7 @@ const UsePlanButton = styled.button` // Alterado para button
   transition: background-color 0.2s;
   width: 100%;
   &:hover {
-    background-color: #5cb85c; // Um tom mais escuro de success para hover
+    background-color: #5cb85c;
   }
 `;
 
@@ -188,7 +188,8 @@ const ExploreWorkoutPlansPage = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await getVisibleWorkoutPlansClient(authState.token, term);
+      // AQUI ESTÁ A CORREÇÃO: Usar o nome correto da função do serviço.
+      const data = await getVisibleWorkoutPlansService(authState.token, term);
       setPlans(data || []);
     } catch (err) {
       setError(err.message || 'Erro ao carregar planos de treino.');
@@ -208,8 +209,6 @@ const ExploreWorkoutPlansPage = () => {
   };
 
   const handleUseThisPlan = (planId) => {
-    // Navega para a página de progresso, passando o ID do plano global.
-    // A página ClientProgressPage precisará ser adaptada para buscar os detalhes deste plano global.
     navigate(`/meu-progresso/usar-plano/${planId}`);
   };
 
@@ -246,7 +245,7 @@ const ExploreWorkoutPlansPage = () => {
               {plan.notes && <PlanCardNotes><i><FaInfoCircle /> {plan.notes}</i></PlanCardNotes>}
               {plan.planExercises && plan.planExercises.length > 0 && (
                 <ExercisePreviewList>
-                  {plan.planExercises.slice(0, 3).map(ex => ( // Mostra apenas os primeiros 3 exercícios como preview
+                  {plan.planExercises.slice(0, 3).map(ex => (
                      <ExercisePreviewItem key={ex.id}>
                        {ex.exerciseDetails?.name || 'Exercício desconhecido'}
                        {ex.reps && ` - ${ex.reps} reps`}
