@@ -615,34 +615,6 @@ const DashboardPage = () => {
           !loading && <NoBookingsText>Não tens eventos futuros agendados.</NoBookingsText>
         )}
       </Section>
-
-      <Section>
-        <SectionTitle><FaCalendarAlt /> Descobrir Programas Semanais</SectionTitle>
-        {loadingSeries && <LoadingText>A carregar programas...</LoadingText>}
-        {seriesError && <ErrorText>{seriesError}</ErrorText>}
-        {!loadingSeries && !seriesError && availableSeries.length === 0 && (
-          <NoItemsText>De momento, não há programas semanais disponíveis.</NoItemsText>
-        )}
-        {!loadingSeries && !seriesError && availableSeries.length > 0 && (
-          <ItemList>
-            {availableSeries.map(series => (
-              <ItemCard key={`series-${series.id}`} itemType="series">
-                <div>
-                  <h3>{series.name}</h3>
-                  {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
-                  <p><span>Horário:</span> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
-                  <p><span>Período:</span> {moment(series.seriesStartDate).format('DD/MM/YY')} a {moment(series.seriesEndDate).format('DD/MM/YY')}</p>
-                  {series.description && <p><FaInfoCircle /> {series.description.substring(0,100)}{series.description.length > 100 && '...'}</p>}
-                </div>
-                <ViewDetailsButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
-                  <FaPlusSquare /> Detalhes e Inscrição
-                </ViewDetailsButton>
-              </ItemCard>
-            ))}
-          </ItemList>
-        )}
-      </Section>
-
       <Section>
         <SectionTitle><FaRunning /> Meus Treinos Inscritos</SectionTitle>
         {bookings.trainings.length > 0 ? (
