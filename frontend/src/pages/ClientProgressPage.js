@@ -19,7 +19,7 @@ import {
 import { theme } from '../theme';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
-// --- Styled Components (mantidos como no ficheiro original) ---
+// --- Styled Components (com as definições em falta adicionadas) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -431,7 +431,6 @@ const ModalActions = styled.div`
   gap: 10px;
 `;
 
-// ... (Restante dos Styled Components mantidos como estavam) ...
 const StatisticsSection = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: clamp(15px, 3vw, 25px);
@@ -508,6 +507,50 @@ const ChartMetricSelectorContainer = styled.div`
     }
   }
 `;
+
+// -- NOVOS STYLED COMPONENTS PARA OS FILTROS --
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const FilterLabel = styled.label`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 3px;
+`;
+
+const FilterInput = styled.input`
+  padding: 9px 12px;
+  background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.9rem;
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
+const FilterButton = styled.button`
+  background-color: ${({ theme, secondary }) => secondary ? theme.colors.buttonSecondaryBg : theme.colors.primary};
+  color: ${({ theme, secondary }) => secondary ? theme.colors.textMain : theme.colors.textDark};
+  padding: 9px 15px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: background-color 0.2s ease;
+  height: 38px;
+  
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+`;
+// --- Fim dos Styled Components ---
 
 
 const calculateAggregateStats = (performanceLogs) => {
