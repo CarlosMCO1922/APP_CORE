@@ -109,3 +109,30 @@ exports.createTrainingSeries = async (req, res) => {
     }
 };
 
+exports.getAllActiveSeries = async (req, res) => {
+  try {
+    const series = await db.TrainingSeries.findAll({
+      where: {
+        seriesEndDate: {
+          [db.Sequelize.Op.gte]: new Date()
+        }
+      },
+      include: [
+        {
+          model: db.Staff,
+          as: 'instructor',
+          attributes: ['firstName', 'lastName']
+        }
+      ],
+      order: [['seriesStartDate', 'ASC']]
+    });
+
+    res.status(200).json(series);
+
+  } catch (error) {
+    console.error('Erro ao listar séries de treinos ativas:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao buscar séries de treinos.' });
+  }
+};
+
+
