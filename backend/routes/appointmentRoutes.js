@@ -7,17 +7,7 @@ const { protect, isAdminStaff, isClientUser, isStaff } = require('../middleware/
 
 router.get('/', protect, appointmentController.getAllAppointments); 
 
-
-router.get('/:id', protect, appointmentController.getAppointmentById);
-
 router.get('/available-slots', protect, isClientUser, appointmentController.getAvailableSlotsForProfessional);
-
-router.post('/request', protect, isClientUser, appointmentController.clientRequestAppointment);
-router.post('/:appointmentId/book', protect, isClientUser, appointmentController.clientBookAppointment);
-router.delete('/:appointmentId/book', protect, isClientUser, appointmentController.clientCancelAppointmentBooking);
-
-
-router.patch('/:appointmentId/respond', protect, isStaff, appointmentController.staffRespondToAppointmentRequest);
 
 router.get(
     '/stats/today-count',
@@ -26,6 +16,14 @@ router.get(
     appointmentController.getTodayAppointmentsCount
 );
 
+router.get('/:id', protect, appointmentController.getAppointmentById);
+
+router.post('/request', protect, isClientUser, appointmentController.clientRequestAppointment);
+router.post('/:appointmentId/book', protect, isClientUser, appointmentController.clientBookAppointment);
+router.delete('/:appointmentId/book', protect, isClientUser, appointmentController.clientCancelAppointmentBooking);
+
+
+router.patch('/:appointmentId/respond', protect, isStaff, appointmentController.staffRespondToAppointmentRequest);
 
 router.post('/', protect, isAdminStaff, appointmentController.adminCreateAppointment);
 router.put('/:id', protect, isAdminStaff, appointmentController.adminUpdateAppointment);
