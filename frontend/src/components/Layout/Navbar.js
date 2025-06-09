@@ -9,7 +9,7 @@ import {
   FaUserTie, FaDumbbell, FaCalendarCheck, FaMoneyBillWave,
   FaCog, FaSignOutAlt, FaBars, FaTimes,
   FaBell, FaEnvelopeOpen, FaCheckDouble,
-  FaListOl, 
+  FaListOl, FaUserCircle, 
   FaCalendarPlus 
 } from 'react-icons/fa';
 import { theme } from '../../theme';
@@ -27,7 +27,6 @@ const Nav = styled.nav`
   z-index: 1000;
   min-height: 60px;
   width: 100%;
-  box-sizing: border-box;
 `;
 
 const NavLogoLink = styled(Link)`
@@ -58,9 +57,8 @@ const DesktopNavLinks = styled.div`
   gap: 0.5rem; 
   flex-grow: 1; 
   justify-content: flex-end; 
-  min-width: 0; 
 
-  @media (max-width: 992px) {
+  @media (max-width: 1024px) { // Aumentado o breakpoint para o menu mobile aparecer mais cedo
     display: none;
   }
 `;
@@ -102,29 +100,16 @@ const LogoutButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-shrink: 0;
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.textOnPrimary || theme.colors.background};
+    color: ${({ theme }) => theme.colors.textDark};
   }
-`;
-
-const UserInfo = styled.span`
-  color: ${({ theme }) => theme.colors.textMain};
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px; 
-  flex-shrink: 1; 
-  padding: 0.5rem 0; 
 `;
 
 const DropdownContainer = styled.div`
   position: relative;
   display: inline-block;
-  flex-shrink: 0;
 `;
 
 const DropdownButton = styled.button`
@@ -148,7 +133,7 @@ const DropdownButton = styled.button`
 `;
 
 const DropdownContent = styled.div`
-  display: ${props => (props.$isOpen ? 'block' : 'none')};
+  display: ${props => (props.isOpen ? 'block' : 'none')};
   position: absolute;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   min-width: 240px;
@@ -157,7 +142,7 @@ const DropdownContent = styled.div`
   border-radius: 8px;
   right: 0;
   top: calc(100% + 5px);
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   padding: 0.5rem 0;
 `;
 
@@ -183,9 +168,8 @@ const HamburgerIcon = styled.div`
   color: ${({ theme }) => theme.colors.textMain};
   cursor: pointer;
   margin-left: auto;
-  padding: 0.5rem;
 
-  @media (max-width: 992px) {
+  @media (max-width: 1024px) {
     display: block;
   }
 `;
@@ -200,47 +184,19 @@ const MobileMenuOverlay = styled.div`
   right: 0;
   bottom: 0;
   padding: 1rem 0;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
   z-index: 999;
   overflow-y: auto;
-  transform: ${props => props.$isOpen ? 'translateX(0)' : 'translateX(-100%)'};
+  transform: ${props => props.isOpen ? 'translateX(0)' : 'translateX(-100%)'};
   transition: transform 0.3s ease-in-out;
+`;
 
-  ${NavLinkStyled}, ${DropdownButton}, ${LogoutButton} {
-    width: calc(100% - 2rem);
-    margin: 0.5rem 1rem;
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'};
-    border-radius: 0;
-    
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-  ${DropdownContainer} {
-    width: calc(100% - 2rem);
-    margin: 0.5rem 1rem;
-  }
-  ${DropdownButton} {
-    width: 100%;
-    justify-content: space-between;
-    padding: 1rem;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'};
-  }
-  ${DropdownContent} {
-    position: static;
-    width: 100%;
-    box-shadow: none;
-    border: none;
-    border-top: 1px dashed #555;
-    padding-left: 1rem;
-    background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#2a2a2a'};
-  }
-
-  @media (min-width: 993px) {
-    display: none;
-  }
+const UserInfo = styled.div`
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.5rem; 
 `;
 
 const NotificationBellContainer = styled.div`
@@ -375,50 +331,40 @@ const ViewAllNotificationsLink = styled(Link)`
 
 // --- Lógica do Componente ---
 function Navbar() {
-  const { authState, logout } = useAuth();
-  const {
-    notifications,
-    unreadCount,
-    markNotificationAsRead,
-    markAllNotificationsAsRead,
-    isLoading: notificationsLoading,
-    totalNotifications 
-  } = useNotifications();
-
+const { authState, logout } = useAuth();
+  const { notifications, unreadCount, markNotificationAsRead, markAllNotificationsAsRead, isLoading: notificationsLoading, totalNotifications } = useNotifications();
   const navigate = useNavigate();
-  const [managementDropdownOpen, setManagementDropdownOpen] = useState(false);
+  
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false); // NOVO ESTADO
   const [notificationsDropdownOpen, setNotificationsDropdownOpen] = useState(false);
 
-  const managementDropdownRef = useRef(null);
+  const adminDropdownRef = useRef(null);
+  const clientDropdownRef = useRef(null); // NOVO REF
   const notificationsDropdownRef = useRef(null);
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   const handleLogout = () => {
-    logout();
     closeAllMenus();
+    logout();
     navigate('/login');
   };
 
   const closeAllMenus = () => {
-    setManagementDropdownOpen(false);
+    setAdminDropdownOpen(false);
+    setClientDropdownOpen(false);
     setNotificationsDropdownOpen(false);
     setIsMobileMenuOpen(false);
-  }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (managementDropdownRef.current && !managementDropdownRef.current.contains(event.target)) {
-        setManagementDropdownOpen(false);
-      }
-      if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target)) {
-        setNotificationsDropdownOpen(false);
-      }
+      if (adminDropdownRef.current && !adminDropdownRef.current.contains(event.target)) setAdminDropdownOpen(false);
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) setClientDropdownOpen(false);
+      if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target)) setNotificationsDropdownOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -431,72 +377,69 @@ function Navbar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleNotificationClick = (notification) => {
-    if (!notification.isRead) {
-      markNotificationAsRead(notification.id);
-    }
-    if (notification.link) {
-      navigate(notification.link);
-    }
+ const handleNotificationClick = (notification) => {
+    if (!notification.isRead) markNotificationAsRead(notification.id);
+    if (notification.link) navigate(notification.link);
     closeAllMenus();
   };
 
-  const handleMarkAllReadClick = async () => {
-    await markAllNotificationsAsRead();
-  };
+  const handleMarkAllReadClick = () => markAllNotificationsAsRead();
+  const handleNavigateAndCloseMenus = () => closeAllMenus();
 
-  const handleNavigateAndCloseMenus = () => { 
-      closeAllMenus();
-  }
+  if (!authState.isAuthenticated) return null;
 
-  if (!authState.isAuthenticated) {
-    return null;
-  }
+  const { role, user } = authState;
+  const isUserClient = role === 'user';
+  const isStaffGeneral = role && role !== 'user';
+  const isAdminStrict = role === 'admin';
 
-  const isUserClient = authState.role === 'user';
-  const isStaffGeneral = authState.role && authState.role !== 'user';
-  const isAdminStrict = authState.role === 'admin'; 
-
-  const commonClientLinksJsx = (
+  const clientLinks = (
     <>
       <NavItem><NavLinkStyled to="/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/calendario" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/meu-progresso" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Meu Progresso</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/meus-pagamentos" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/definicoes" onClick={handleNavigateAndCloseMenus}><FaCog /> Definições</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/calendario" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Agendar</NavLinkStyled></NavItem>
+      
+      <DropdownContainer ref={clientDropdownRef}>
+        <DropdownButton onClick={() => setClientDropdownOpen(prev => !prev)} className={clientDropdownOpen ? 'active' : ''}>
+          <FaUserCircle /> Minha Área {clientDropdownOpen ? '▴' : '▾'}
+        </DropdownButton>
+        <DropdownContent isOpen={clientDropdownOpen}>
+          <DropdownLink to="/meus-treinos" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Meus Treinos</DropdownLink>
+          <DropdownLink to="/meu-progresso" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Meu Progresso</DropdownLink>
+          <DropdownLink to="/meus-pagamentos" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
+          <DropdownLink to="/explorar-planos" onClick={handleNavigateAndCloseMenus}><FaListOl /> Explorar Planos</DropdownLink>
+          <DropdownLink to="/definicoes" onClick={handleNavigateAndCloseMenus}><FaCog /> Definições</DropdownLink>
+        </DropdownContent>
+      </DropdownContainer>
     </>
   );
 
-  const commonStaffLinksJsx = (
+  const staffLinks = (
     <>
       <NavItem><NavLinkStyled to="/admin/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Pedidos</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário Geral</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={handleNavigateAndCloseMenus}><FaRegCalendarCheck /> Pedidos</NavLinkStyled></NavItem>
     </>
   );
 
-  const adminManagementDropdownJsx = (
-    <DropdownContainer ref={managementDropdownRef}>
-      <DropdownButton
-        onClick={() => setManagementDropdownOpen(prev => !prev)}
-        className={managementDropdownOpen ? 'active' : ''}
-      >
-        <FaCog /> Gestão {managementDropdownOpen ? '▴' : '▾'}
+  const adminManagementDropdown = (
+    <DropdownContainer ref={adminDropdownRef}>
+      <DropdownButton onClick={() => setAdminDropdownOpen(prev => !prev)} className={adminDropdownOpen ? 'active' : ''}>
+        <FaCog /> Gestão {adminDropdownOpen ? '▴' : '▾'}
       </DropdownButton>
-      <DropdownContent $isOpen={managementDropdownOpen}>
+      <DropdownContent isOpen={adminDropdownOpen}>
         <DropdownLink to="/admin/manage-users" onClick={handleNavigateAndCloseMenus}><FaUsers /> Clientes</DropdownLink>
         <DropdownLink to="/admin/manage-staff" onClick={handleNavigateAndCloseMenus}><FaUserTie /> Equipa</DropdownLink>
-        <DropdownLink to="/admin/manage-trainings" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Treinos Individuais</DropdownLink>
-        <DropdownLink to="/admin/training-series" onClick={handleNavigateAndCloseMenus}><FaCalendarPlus /> Séries de Treinos</DropdownLink> 
+        <DropdownLink to="/admin/manage-trainings" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Treinos</DropdownLink>
+        <DropdownLink to="/admin/training-series" onClick={handleNavigateAndCloseMenus}><FaCalendarPlus /> Séries</DropdownLink>
         <DropdownLink to="/admin/manage-appointments" onClick={handleNavigateAndCloseMenus}><FaCalendarCheck /> Consultas</DropdownLink>
         <DropdownLink to="/admin/manage-payments" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-        <DropdownLink to="/admin/manage-exercises" onClick={handleNavigateAndCloseMenus}><FaListOl /> Exercícios Base</DropdownLink>
-        <DropdownLink to="/admin/manage-global-plans" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Planos de Treino Modelo</DropdownLink>
+        <DropdownLink to="/admin/manage-exercises" onClick={handleNavigateAndCloseMenus}><FaListOl /> Exercícios</DropdownLink>
+        <DropdownLink to="/admin/manage-global-plans" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Planos Modelo</DropdownLink>
       </DropdownContent>
     </DropdownContainer>
   );
 
-  const notificationBellJsx = (
+  const notificationBell = (
     <NotificationBellContainer ref={notificationsDropdownRef}>
       <BellIcon onClick={() => setNotificationsDropdownOpen(prev => !prev)} />
       {unreadCount > 0 && <UnreadBadge>{unreadCount}</UnreadBadge>}
@@ -544,19 +487,14 @@ function Navbar() {
         </NavLogoLink>
 
         <DesktopNavLinks>
-          {authState.user && (
-            <NavItem><UserInfo>Olá, {authState.user.firstName}!</UserInfo></NavItem>
-          )}
-          {isUserClient && commonClientLinksJsx}
-          {isStaffGeneral && !isAdminStrict && commonStaffLinksJsx}
-          {isAdminStrict && (
-            <>
-              {commonStaffLinksJsx}
-              <NavItem>{adminManagementDropdownJsx}</NavItem>
-            </>
-          )}
-          <NavItem>{notificationBellJsx}</NavItem>
-          <NavItem><LogoutButton onClick={handleLogout}><FaSignOutAlt /> Logout</LogoutButton></NavItem>
+          {user && <NavItem><UserInfo>Olá, {user.firstName}!</UserInfo></NavItem>}
+          
+          {isUserClient && clientLinks}
+          {isStaffGeneral && !isAdminStrict && staffLinks}
+          {isAdminStrict && <>{staffLinks}<NavItem>{adminManagementDropdown}</NavItem></>}
+          
+          <NavItem>{notificationBell}</NavItem>
+          <NavItem><LogoutButton onClick={handleLogout}><FaSignOutAlt /> Sair</LogoutButton></NavItem>
         </DesktopNavLinks>
 
         <HamburgerIcon onClick={() => setIsMobileMenuOpen(prev => !prev)}>
@@ -564,26 +502,18 @@ function Navbar() {
         </HamburgerIcon>
       </Nav>
 
-      <MobileMenuOverlay $isOpen={isMobileMenuOpen}>
-        <div style={{padding: '1rem', borderBottom: '1px solid #4A4A4A', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-            {authState.user && (
-                <UserInfo style={{marginRight: 'auto', maxWidth: 'none' }}> 
-                    Olá, {authState.user.firstName}!
-                </UserInfo>
-            )}
-            {React.cloneElement(notificationBellJsx, { key: "notification-mobile-bell"})} 
-        </div>
-
-        {isUserClient && commonClientLinksJsx}
-        {isStaffGeneral && !isAdminStrict && commonStaffLinksJsx}
-        {isAdminStrict && (
-          <>
-            {commonStaffLinksJsx}
-            {React.cloneElement(adminManagementDropdownJsx, { key: "admin-mobile-dropdown"})} 
-          </>
-        )}
-        <LogoutButton onClick={handleLogout} style={{ justifyContent: 'center'}}>
-          <FaSignOutAlt /> Logout
+      <MobileMenuOverlay isOpen={isMobileMenuOpen}>
+        <UserInfo style={{padding: '1rem', borderBottom: '1px solid #4A4A4A', display: 'flex', justifyContent: 'space-between'}}>
+          Olá, {user.firstName}!
+          {notificationBell}
+        </UserInfo>
+        
+        {isUserClient && clientLinks}
+        {isStaffGeneral && staffLinks}
+        {isAdminStrict && adminManagementDropdown}
+        
+        <LogoutButton onClick={handleLogout} style={{ justifyContent: 'center', margin: '1rem' }}>
+          <FaSignOutAlt /> Sair
         </LogoutButton>
       </MobileMenuOverlay>
     </>
