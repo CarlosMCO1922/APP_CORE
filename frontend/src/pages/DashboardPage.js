@@ -8,7 +8,7 @@ import { clientGetMyPendingPaymentsService } from '../services/paymentService';
 import { 
     getActiveTrainingSeriesForClientService, 
     createSeriesSubscriptionService, 
-    cancelTrainingBooking // <<< ADICIONADO
+    cancelTrainingBooking 
 } from '../services/trainingService'; 
 import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, 
     FaRegClock, FaExclamationTriangle, FaCreditCard, FaUsers, 
@@ -374,6 +374,49 @@ const ViewDetailsButton = styled.button`
   gap: 6px;
   &:hover { background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; }
 `;
+
+const EventActions = styled.div`
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #383838;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const PlanLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.primary};
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  &:hover {
+    text-decoration: underline;
+    color: #e6c358;
+  }
+`;
+
+const CancelButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.error};
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 5px;
+  transition: all 0.2s;
+  &:hover:not(:disabled) {
+    color: #ff8a8a;
+    transform: scale(1.1);
+  }
+  &:disabled {
+    color: #555;
+    cursor: not-allowed;
+  }
+`;
+
+const NoItemsText = styled.p`text-align: center; color: #888; padding: 20px;`;
 
 const DashboardPage = () => {
     const { authState } = useAuth();
