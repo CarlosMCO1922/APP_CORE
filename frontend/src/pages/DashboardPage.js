@@ -133,24 +133,19 @@ const BookingItem = styled.li`
   }
 `;
 
-const UpcomingEventItem = styled(BookingItem)`
-  border-left-color: #00A9FF;
-  min-height: auto;
-  padding: 15px;
+const UpcomingEventItem = styled.li`
+  background-color: #252525;
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 5px solid #00A9FF;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 
-  h3 {
-    font-size: 1.1rem;
-    color: #00A9FF;
-    margin-bottom: 8px;
-  }
-  p {
-    font-size: 0.9rem;
-    margin: 4px 0;
-  }
-  .event-type-icon {
-    margin-right: 8px;
-    color: #00A9FF;
-  }
+  h3 { font-size: 1.1rem; color: #00A9FF; margin-bottom: 8px; }
+  p { font-size: 0.9rem; margin: 4px 0; color: #a0a0a0; }
+  span { font-weight: 600; color: #c8c8c8; }
 `;
 
 const LoadingText = styled.p`
@@ -416,6 +411,27 @@ const ViewDetailsButton = styled.button`
   }
 `;
 
+const EventActions = styled.div`
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #383838;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const CancelButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.error};
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 5px;
+  transition: color 0.2s;
+  &:hover:not(:disabled) { color: #ff8a8a; }
+  &:disabled { color: #555; }
+`;
+
 
 
 
@@ -566,7 +582,7 @@ const DashboardPage = () => {
       </Header>
 
       <ActionsSection>
-        <StyledLinkButton to="/calendario">Ver Calendário e Marcar</StyledLinkButton>
+        <StyledLinkButton to="/calendario">Agendar</StyledLinkButton>
         <StyledLinkButton to="/meus-pagamentos">Meus Pagamentos</StyledLinkButton>
         <StyledLinkButton to="/definicoes">Minhas Definições</StyledLinkButton>
       </ActionsSection>
@@ -597,47 +613,40 @@ const DashboardPage = () => {
       )}
 
       <Section>
-        <SectionTitle><FaRegCalendarCheck /> Próximos Eventos</SectionTitle>
-        {upcomingEvents.length > 0 ? (
-          <BookingList>
-            {upcomingEvents.map(event => (
-              <UpcomingEventItem key={event.id}>
-                <h3><span className="event-type-icon">{event.icon}</span>{event.title}</h3>
-                <p><FaRegClock style={{ marginRight: '5px'}} /> <span>Data:</span> {event.date.toLocaleDateString('pt-PT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} às {event.date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</p>
-                <p>{event.description}</p>
-                {event.type === 'Treino' && event.link && (
-                    <PlanLink to={event.link}>Ver Plano de Treino</PlanLink>
-                )}
-              </UpcomingEventItem>
-            ))}
-          </BookingList>
-        ) : (
-          !loading && <NoBookingsText>Não tens eventos futuros agendados.</NoBookingsText>
-        )}
-      </Section>
-      <Section>
-        <SectionTitle><FaRunning /> Meus Treinos Inscritos</SectionTitle>
-        {bookings.trainings.length > 0 ? (
-          <BookingList>
-            {bookings.trainings.map(training => (
-              <BookingItem key={`train-${training.id}`}>
-                <div>
-                  <h3>{training.name}</h3>
-                  <p><span>Data:</span> {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time.substring(0, 5)}</p>
-                  <p><span>Instrutor:</span> {training.instructor?.firstName} {training.instructor?.lastName}</p>
-                  <p><span>Descrição:</span> {training.description || 'Sem descrição.'}</p>
-                </div>
-                <PlanLink to={`/treinos/${training.id}/plano`}>
-                  Ver Plano de Treino
-                </PlanLink>
-              </BookingItem>
-            ))}
-          </BookingList>
-        ) : (
-          !loading && <NoBookingsText>Ainda não te inscreveste em nenhum treino.</NoBookingsText>
-        )}
-      </Section>
+                <SectionTitle><FaRegCalendarCheck /> Próximos Eventos</SectionTitle>
+                {loading && <LoadingText>A carregar...</LoadingText>}
+                {error && <ErrorText>{error}</ErrorText>}
+                {pageMessage && <p style={{color: 'green'}}>{pageMessage}</p>}
 
+                {upcomingEvents.length > 0 ? (
+                    <BookingList>
+                        {upcomingEvents.map(event => (
+                            <UpcomingEventItem key={`${event.type}-${event.id}`}>
+                                <h3>{event.type === 'Treino' ? <FaRunning /> : <FaUserMd />} {event.title}</h3>
+                                <p><span>Data:</span> {moment(event.dateObj).format('dddd, D/MM/YY [às] HH:mm')}</p>
+                                
+                                <EventActions>
+                                    {event.link ? (
+                                        <PlanLink to={event.link}><FaEye /> Ver Detalhes</PlanLink>
+                                    ) : <span>&nbsp;</span>}
+
+                                    {event.type === 'Treino' && (
+                                        <CancelButton 
+                                            onClick={() => handleCancelTraining(event.id)}
+                                            disabled={actionLoading === event.id}
+                                            title="Cancelar inscrição"
+                                        >
+                                            {actionLoading === event.id ? '...' : <FaTrashAlt />}
+                                        </CancelButton>
+                                    )}
+                                </EventActions>
+                            </UpcomingEventItem>
+                        ))}
+                    </BookingList>
+                ) : (
+                    !loading && <NoBookingsText>Não tens eventos futuros agendados.</NoBookingsText>
+                )}
+            </Section>
       <Section>
         <SectionTitle><FaUserMd /> Minhas Consultas Agendadas</SectionTitle>
         {bookings.appointments.length > 0 ? (

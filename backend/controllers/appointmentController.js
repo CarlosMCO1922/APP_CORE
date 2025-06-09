@@ -700,6 +700,58 @@ const getTodayAppointmentsCount = async (req, res) => {
   }
 };
 
+const getAvailableSlotsForProfessional = async (req, res) => {
+  const { date, staffId, durationMinutes } = req.query;
+
+  if (!date || !staffId || !durationMinutes) {
+    return res.status(400).json({ message: 'Data, ID do profissional e duração são obrigatórios.' });
+  }
+
+  const professionalId = parseInt(staffId);
+  const slotDuration = parseInt(durationMinutes);
+
+  try {
+    const workingHours = [
+      { start: '10:00', end: '13:00' },
+      { start: '15:00', end: '18:00' },
+    ];
+    const potentialSlots = [];
+    workingHours.forEach(period => {
+      let currentTime = moment.utc(`${date} ${period.start}`, 'YYYY-MM-DD HH:mm');
+      const endTime = moment.utc(`${date} ${period.end}`, 'YYYY-MM-DD HH:mm');
+
+      while (currentTime.clone().add(slotDuration, 'minutes').isSameOrBefore(endTime)) {
+        potentialSlots.push(currentTime.format('HH:mm'));
+        currentTime.add(60, 'minutes');
+      }
+    });
+    
+    const existingAppointments = await db.Appointment.findAll({
+      where: {
+        staffId: professionalId,
+        date: date,
+        status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] }
+      },
+      attributes: ['time', 'durationMinutes']
+    });
+
+    const availableSlots = potentialSlots.filter(slot => {
+      const slotStart = moment.utc(`${date} ${slot}`, 'YYYY-MM-DD HH:mm');
+      const slotEnd = slotStart.clone().add(slotDuration, 'minutes');
+      return !existingAppointments.some(existing => {
+        const existingStart = moment.utc(`${date} ${existing.time}`, 'YYYY-MM-DD HH:mm');
+        const existingEnd = existingStart.clone().add(existing.durationMinutes, 'minutes');
+        return slotStart.isBefore(existingEnd) && slotEnd.isAfter(existingStart);
+      });
+    });
+
+    res.status(200).json(availableSlots);
+
+  } catch (error) {
+    console.error('Erro ao gerar horários disponíveis:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
 
 module.exports = {
   adminCreateAppointment,
@@ -711,5 +763,6 @@ module.exports = {
   clientCancelAppointmentBooking,
   clientRequestAppointment,
   staffRespondToAppointmentRequest,
-  getTodayAppointmentsCount
+  getTodayAppointmentsCount,
+  getAvailableSlotsForProfessional,
 };

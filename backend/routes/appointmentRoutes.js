@@ -10,6 +10,8 @@ router.get('/', protect, appointmentController.getAllAppointments);
 
 router.get('/:id', protect, appointmentController.getAppointmentById);
 
+router.get('/available-slots', protect, isClientUser, appointmentController.getAvailableSlotsForProfessional);
+
 router.post('/request', protect, isClientUser, appointmentController.clientRequestAppointment);
 router.post('/:appointmentId/book', protect, isClientUser, appointmentController.clientBookAppointment);
 router.delete('/:appointmentId/book', protect, isClientUser, appointmentController.clientCancelAppointmentBooking);

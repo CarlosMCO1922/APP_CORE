@@ -173,3 +173,29 @@ export const adminGetTodayAppointmentsCount = async (token) => {
     return data; 
   } catch (error) { console.error("Erro em adminGetTodayAppointmentsCount:", error); throw error; }
 };
+
+export const getAvailableSlotsForProfessional = async (params, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!params.staffId || !params.date || !params.durationMinutes) {
+    throw new Error('Parâmetros staffId, date, e durationMinutes são obrigatórios.');
+  }
+
+  const queryParams = new URLSearchParams(params).toString();
+  const url = `${API_URL}/appointments/available-slots?${queryParams}`;
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao buscar horários disponíveis.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro em getAvailableSlotsForProfessional:", error);
+    throw error;
+  }
+};
