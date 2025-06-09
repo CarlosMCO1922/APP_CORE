@@ -514,36 +514,33 @@ const DashboardPage = () => {
     const now = new Date();
     const allEvents = [];
 
-    bookings.trainings.forEach(training => {
-      const eventDate = new Date(`${training.date}T${training.time}`);
-      if (eventDate >= now) {
-        allEvents.push({
-          id: `train-${training.id}`,
-          type: 'Treino',
-          title: training.name,
-          date: eventDate,
-          description: training.instructor ? `Com ${training.instructor.firstName} ${training.instructor.lastName}` : '',
-          icon: <FaRunning />,
-          link: `/treinos/${training.id}/plano`
-        });
-      }
-    });
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    const allEvents = [
+      ...bookings.trainings.map(t => ({...t, eventType: 'Treino', dateObj: moment(`${t.date}T${t.time}`).toDate(), link: `/treinos/${t.id}/plano`, icon: <FaRunning />, uniqueKey: `train-${t.id}`})),
+      ...bookings.appointments.map(a => ({...a, eventType: 'Consulta', dateObj: moment(`${a.date}T${a.time}`).toDate(), icon: <FaUserMd />, uniqueKey: `appt-${a.id}`})),
+      ];
+    return allEvents
+      .filter(event => event.dateObj >= now && !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída'].includes(event.status))
+      .sort((a,b) => a.dateObj - b.dateObj)
+      .slice(0, 5);
+  }, [bookings]);
 
-    bookings.appointments.forEach(appointment => {
-      const eventDate = new Date(`${appointment.date}T${appointment.time}`);
-      const relevantStatus = !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída', 'não_compareceu'].includes(appointment.status);
-      if (eventDate >= now && relevantStatus) {
-        allEvents.push({
-          id: `appt-${appointment.id}`,
-          type: 'Consulta',
-          title: `Consulta de ${appointment.professional?.role === 'physiotherapist' ? 'Fisioterapia' : 'Acompanhamento'}`,
-          date: eventDate,
-          description: `Com ${appointment.professional?.firstName} ${appointment.professional?.lastName}`,
-          icon: <FaUserMd />,
-          link: `/calendario`
-        });
-      }
-    });
+  bookings.appointments.forEach(appointment => {
+    const eventDate = new Date(`${appointment.date}T${appointment.time}`);
+    const relevantStatus = !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída', 'não_compareceu'].includes(appointment.status);
+    if (eventDate >= now && relevantStatus) {
+      allEvents.push({
+        id: `appt-${appointment.id}`,
+        type: 'Consulta',
+        title: `Consulta de ${appointment.professional?.role === 'physiotherapist' ? 'Fisioterapia' : 'Acompanhamento'}`,
+        date: eventDate,
+        description: `Com ${appointment.professional?.firstName} ${appointment.professional?.lastName}`,
+        icon: <FaUserMd />,
+        link: `/calendario`
+      });
+    }
+  });
 
     return allEvents.sort((a, b) => a.date - b.date).slice(0, 3);
   }, [bookings.trainings, bookings.appointments]);
