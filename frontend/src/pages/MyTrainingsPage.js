@@ -7,18 +7,25 @@ import { getMyBookings } from '../services/userService';
 import { cancelTrainingBooking } from '../services/trainingService';
 import { FaRunning, FaTrashAlt, FaArrowLeft, FaRegClock } from 'react-icons/fa';
 import moment from 'moment';
+import 'moment/locale/pt';
 
 const PageContainer = styled.div`
   max-width: 900px;
   margin: 20px auto;
   padding: 20px clamp(15px, 4vw, 40px);
   font-family: ${({ theme }) => theme.fonts.main};
+  color: ${({ theme }) => theme.colors.textMain};
+`;
+
+const Header = styled.div`
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
 
 const Title = styled.h1`
   font-size: 2.2rem;
   color: ${({ theme }) => theme.colors.primary};
-  margin-bottom: 25px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -73,15 +80,14 @@ const CancelButton = styled.button`
   font-size: 0.85rem;
   font-weight: 500;
   transition: background-color 0.2s;
-  &:hover { background-color: #c62828; }
+  &:hover:not(:disabled) { background-color: #c62828; }
   &:disabled { background-color: #555; cursor: not-allowed; }
 `;
 
 const LoadingText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.primary};`;
-const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error};`;
-const MessageText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.success};`;
-const EmptyText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.textMuted}; padding: 20px;`;
-
+const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error}; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; padding: 10px; border-radius: 5px;`;
+const MessageText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.success}; background-color: ${({theme}) => theme.colors.successBg}; border: 1px solid ${({theme}) => theme.colors.success}; padding: 10px; border-radius: 5px;`;
+const EmptyText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.textMuted}; padding: 20px; background-color: #2c2c2c; border-radius: 8px;`;
 
 const MyTrainingsPage = () => {
   const [trainings, setTrainings] = useState([]);
@@ -96,10 +102,12 @@ const MyTrainingsPage = () => {
     setLoading(true);
     try {
       const data = await getMyBookings(authState.token);
-      const futureTrainings = (data.trainings || []).filter(t => moment(`${t.date} ${t.time}`).isAfter(moment()));
-      setTrainings(futureTrainings.sort((a,b) => new Date(a.date) - new Date(b.date)));
+      const futureTrainings = (data.trainings || [])
+        .filter(t => moment(`${t.date}T${t.time}`).isAfter(moment()))
+        .sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+      setTrainings(futureTrainings);
     } catch (err) {
-      setError(err.message || 'Erro ao carregar treinos.');
+      setError(err.message || 'Erro ao carregar os seus treinos.');
     } finally {
       setLoading(false);
     }
@@ -117,7 +125,7 @@ const MyTrainingsPage = () => {
     try {
       const response = await cancelTrainingBooking(trainingId, authState.token);
       setMessage(response.message);
-      await fetchBookings();
+      fetchBookings(); // Re-busca a lista para atualizar a UI
     } catch (err) {
       setError(err.message || "Erro ao cancelar inscrição.");
     } finally {
@@ -128,25 +136,34 @@ const MyTrainingsPage = () => {
   return (
     <PageContainer>
       <BackLink to="/dashboard"><FaArrowLeft /> Voltar ao Painel</BackLink>
-      <Title><FaRunning />Meus Treinos Inscritos</Title>
+      <Header>
+        <Title><FaRunning />Meus Treinos Inscritos</Title>
+      </Header>
+      
       {loading && <LoadingText>A carregar...</LoadingText>}
       {error && <ErrorText>{error}</ErrorText>}
       {message && <MessageText>{message}</MessageText>}
+      
       {!loading && trainings.length === 0 && <EmptyText>Não tem inscrições em treinos futuros.</EmptyText>}
       
-      <TrainingList>
-        {trainings.map(training => (
-          <TrainingCard key={training.id}>
-            <Info>
-              <h3>{training.name}</h3>
-              <p><FaRegClock /> {moment(training.date).format('dddd, D [de] MMMM [de] YYYY')} às {training.time.substring(0, 5)}</p>
-            </Info>
-            <CancelButton onClick={() => handleCancel(training.id)} disabled={cancellingId === training.id}>
-              {cancellingId === training.id ? 'A cancelar...' : <><FaTrashAlt /> Cancelar Inscrição</>}
-            </CancelButton>
-          </TrainingCard>
-        ))}
-      </TrainingList>
+      {!loading && trainings.length > 0 && (
+        <TrainingList>
+          {trainings.map(training => (
+            <TrainingCard key={training.id}>
+              <Info>
+                <h3>{training.name}</h3>
+                <p>
+                  <FaRegClock style={{marginRight: '6px'}}/> 
+                  {moment(`${training.date}T${training.time}`).locale('pt').format('dddd, D [de] MMMM [de] YYYY [às] HH:mm')}
+                </p>
+              </Info>
+              <CancelButton onClick={() => handleCancel(training.id)} disabled={cancellingId === training.id}>
+                {cancellingId === training.id ? 'A cancelar...' : <><FaTrashAlt /> Cancelar Inscrição</>}
+              </CancelButton>
+            </TrainingCard>
+          ))}
+        </TrainingList>
+      )}
     </PageContainer>
   );
 };

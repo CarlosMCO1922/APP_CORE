@@ -164,14 +164,7 @@ const DropdownLink = styled(Link)`
 
 const HamburgerIcon = styled.div`
   display: none;
-  font-size: 1.8rem;
-  color: ${({ theme }) => theme.colors.textMain};
-  cursor: pointer;
-  margin-left: auto;
-
-  @media (max-width: 1024px) {
-    display: block;
-  }
+  @media (max-width: 1024px) { display: block; font-size: 1.8rem; cursor: pointer; }
 `;
 
 const MobileMenuOverlay = styled.div`
@@ -190,13 +183,10 @@ const MobileMenuOverlay = styled.div`
   transition: transform 0.3s ease-in-out;
 `;
 
-const UserInfo = styled.div`
-  color: ${({ theme }) => theme.colors.textMain};
-  font-size: 0.9rem;
+const UserInfo = styled.span`
+  color: #a0a0a0;
+  margin-right: 1rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0.5rem; 
 `;
 
 const NotificationBellContainer = styled.div`
@@ -395,21 +385,20 @@ const { authState, logout } = useAuth();
 
   const clientLinks = (
     <>
-      <NavItem><NavLinkStyled to="/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/calendario" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Agendar</NavLinkStyled></NavItem>
-      
-      <DropdownContainer ref={clientDropdownRef}>
+      <NavItem><NavLinkStyled to="/dashboard" onClick={closeAllMenus}><FaTachometerAlt /> Painel</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/calendario" onClick={closeAllMenus}><FaCalendarAlt /> Agendar</NavLinkStyled></NavItem>
+      <NavItem ref={clientDropdownRef}>
         <DropdownButton onClick={() => setClientDropdownOpen(prev => !prev)} className={clientDropdownOpen ? 'active' : ''}>
           <FaUserCircle /> Minha Área {clientDropdownOpen ? '▴' : '▾'}
         </DropdownButton>
         <DropdownContent isOpen={clientDropdownOpen}>
-          <DropdownLink to="/meus-treinos" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Meus Treinos</DropdownLink>
-          <DropdownLink to="/meu-progresso" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Meu Progresso</DropdownLink>
-          <DropdownLink to="/meus-pagamentos" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-          <DropdownLink to="/explorar-planos" onClick={handleNavigateAndCloseMenus}><FaListOl /> Explorar Planos</DropdownLink>
-          <DropdownLink to="/definicoes" onClick={handleNavigateAndCloseMenus}><FaCog /> Definições</DropdownLink>
+          <DropdownLink to="/meus-treinos" onClick={closeAllMenus}><FaDumbbell /> Meus Treinos</DropdownLink>
+          <DropdownLink to="/meu-progresso" onClick={closeAllMenus}><FaClipboardList /> Meu Progresso</DropdownLink>
+          <DropdownLink to="/meus-pagamentos" onClick={closeAllMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
+          <DropdownLink to="/explorar-planos" onClick={closeAllMenus}><FaListOl /> Explorar Planos</DropdownLink>
+          <DropdownLink to="/definicoes" onClick={closeAllMenus}><FaCog /> Definições</DropdownLink>
         </DropdownContent>
-      </DropdownContainer>
+      </NavItem>
     </>
   );
 

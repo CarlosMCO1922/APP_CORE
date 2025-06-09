@@ -11,7 +11,7 @@ import {
 } from '../services/trainingService'; 
 import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, 
     FaRegClock, FaExclamationTriangle, FaCreditCard, FaUsers, 
-    FaInfoCircle, FaTimes, FaPlusSquare } from 'react-icons/fa';
+    FaInfoCircle, FaTimes, FaEye, FaTrashAlt } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
 import { theme } from '../theme'; 
@@ -442,6 +442,8 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pendingPaymentsError, setPendingPaymentsError] = useState('');
+  const [pageMessage, setPageMessage] = useState('');
+  const [actionLoading, setActionLoading] = useState(null);
 
   const [availableSeries, setAvailableSeries] = useState([]);
   const [loadingSeries, setLoadingSeries] = useState(true);
@@ -567,6 +569,24 @@ const DashboardPage = () => {
       setSeriesModalMessage({type: 'error', text: error.message || 'Falha ao inscrever na série.'});
     } finally {
       setSubscribingToSeries(false);
+    }
+  };
+
+  const handleCancelTraining = async (trainingId) => {
+    if (!window.confirm("Tem a certeza que quer cancelar a sua inscrição neste treino?")) return;
+    
+    setActionLoading(trainingId);
+    setPageMessage('');
+    setError('');
+
+    try {
+      const response = await cancelTrainingBookingService(trainingId, authState.token);
+      setPageMessage(response.message || "Inscrição cancelada com sucesso!");
+      await fetchBookings(); // Re-busca os dados para atualizar a lista
+    } catch (err) {
+      setError(err.message || "Não foi possível cancelar a inscrição.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
