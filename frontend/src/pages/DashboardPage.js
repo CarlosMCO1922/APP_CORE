@@ -7,7 +7,7 @@ import { getMyBookings } from '../services/userService';
 import { clientGetMyPendingPaymentsService } from '../services/paymentService';
 import { 
     getActiveTrainingSeriesForClientService, 
-    createSeriesSubscriptionService, cancelTrainingBookingService
+    createSeriesSubscriptionService, cancelTrainingBooking
 } from '../services/trainingService'; 
 import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, 
     FaRegClock, FaExclamationTriangle, FaCreditCard, FaUsers, 
@@ -600,7 +600,7 @@ const DashboardPage = () => {
     setError('');
 
     try {
-      const response = await cancelTrainingBookingService(trainingId, authState.token);
+      const response = await cancelTrainingBooking(trainingId, authState.token);
       setPageMessage(response.message || "Inscrição cancelada com sucesso!");
       await fetchBookings(); // Re-busca os dados para atualizar a lista
     } catch (err) {
