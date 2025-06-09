@@ -1,22 +1,24 @@
 // src/pages/DashboardPage.js
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
 import { clientGetMyPendingPaymentsService } from '../services/paymentService';
 import { 
     getActiveTrainingSeriesForClientService, 
-    createSeriesSubscriptionService, cancelTrainingBooking
+    createSeriesSubscriptionService, 
+    cancelTrainingBooking // <<< ADICIONADO
 } from '../services/trainingService'; 
 import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, 
     FaRegClock, FaExclamationTriangle, FaCreditCard, FaUsers, 
-    FaInfoCircle, FaTimes, FaEye, FaTrashAlt } from 'react-icons/fa';
+    FaInfoCircle, FaTimes, FaPlusSquare, FaEye, FaTrashAlt // <<< ADICIONADO
+} from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
 import { theme } from '../theme'; 
 
-// --- Styled Components ---
+// --- Styled Components (do teu ficheiro original) ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -143,7 +145,7 @@ const UpcomingEventItem = styled.li`
   flex-direction: column;
   justify-content: space-between;
 
-  h3 { font-size: 1.1rem; color: #00A9FF; margin-bottom: 8px; }
+  h3 { font-size: 1.1rem; color: #00A9FF; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;}
   p { font-size: 0.9rem; margin: 4px 0; color: #a0a0a0; }
   span { font-weight: 600; color: #c8c8c8; }
 `;
@@ -172,6 +174,13 @@ const ErrorText = styled.p`
   color: ${({ theme }) => theme.colors.error || '#FF6B6B'};
   background-color: ${({ theme }) => theme.colors.errorBg || 'rgba(255, 107, 107, 0.1)'};
   border-color: ${({ theme }) => theme.colors.error || '#FF6B6B'};
+`;
+
+const MessageText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.success};
+  background-color: ${({ theme }) => theme.colors.successBg};
+  border-color: ${({ theme }) => theme.colors.success};
 `;
 
 const NoBookingsText = styled.p`
@@ -207,19 +216,6 @@ const StyledLinkButton = styled(Link)`
   }
 `;
 
-const PlanLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: underline;
-  display: inline-block;
-  margin-top: 12px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  padding: 5px 0;
-  &:hover {
-    color: #e6c358;
-  }
-`;
-
 const PendingPaymentsSection = styled(Section)`
   border: 2px solid ${({ theme }) => theme.colors.warning || '#FFA000'};
   background-color: rgba(255, 160, 0, 0.05);
@@ -228,6 +224,7 @@ const PendingPaymentsSection = styled(Section)`
 `;
 
 const PendingPaymentItem = styled.li`
+  list-style: none; /* Adicionado para garantir que não há bullets */
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 12px 15px;
   border-radius: 8px;
@@ -321,37 +318,27 @@ const ModalButton = styled.button`
   width: 100%;
   @media (min-width: 480px) { width: auto; }
 `;
-const CloseModalButton = styled.button` /* Renomeado de CloseButton */
+const CloseModalButton = styled.button`
   position: absolute; top: 10px; right: 15px; background: transparent; border: none;
   color: #aaa; font-size: 1.8rem; cursor: pointer;
   &:hover { color: #fff; }
 `;
-const ModalMessageText = styled.p` /* Para mensagens dentro do modal */
+const ModalMessageText = styled.p`
   font-size: 0.9rem; text-align: center; padding: 10px; margin: 10px 0 0 0;
   border-radius: 4px;
   &.success { color: ${({ theme }) => theme.colors.success}; background-color: ${({ theme }) => theme.colors.successBg}; border: 1px solid ${({ theme }) => theme.colors.success};}
   &.error { color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border: 1px solid ${({ theme }) => theme.colors.error};}
 `;
 
-const NoItemsText = styled.p` // Pode basear-se no seu NoBookingsText ou criar um novo
-  text-align: center;
-  font-size: 1rem;
-  color: ${({ theme }) => theme.colors.textMuted || '#888'};
-  padding: 20px;
-  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#222'}; // Cor de fundo um pouco diferente
-  border-radius: ${({ theme }) => theme.borderRadius || '8px'};
-  margin-top: 20px;
-`;
-
-const ItemList = styled.ul` // Similar ao seu BookingList
+const ItemList = styled.ul`
   list-style: none;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); // Ajuste minmax conforme necessário
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 20px;
 `;
 
-const ItemCard = styled.li` // Similar ao seu BookingItem
+const ItemCard = styled.li`
   background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
   padding: 20px;
   border-radius: ${({ theme }) => theme.borderRadius || '10px'};
@@ -364,33 +351,12 @@ const ItemCard = styled.li` // Similar ao seu BookingItem
   flex-direction: column;
   justify-content: space-between;
 
-  &:hover {
-    transform: translateY(-3px);
-  }
+  &:hover { transform: translateY(-3px); }
 
-  h3 {
-    margin-top: 0;
-    margin-bottom: 12px;
-    color: ${({ theme }) => theme.colors.textMain};
-    font-size: 1.25rem;
-  }
-  p {
-    margin: 6px 0;
-    font-size: 0.95rem;
-    color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'};
-    line-height: 1.5;
-    display: flex; // Para alinhar ícones com texto em <p>
-    align-items: center;
-    gap: 6px;
-  }
-  p svg { // Estilo para ícones dentro de <p> se os usar lá
-     color: ${({ theme }) => theme.colors.primary};
-     margin-right: 4px;
-  }
-  span { // Para destacar partes do texto dentro de <p>
-    font-weight: 600;
-    color: ${({ theme }) => theme.colors.textMain || '#c8c8c8'};
-  }
+  h3 { margin-top: 0; margin-bottom: 12px; color: ${({ theme }) => theme.colors.textMain}; font-size: 1.25rem; }
+  p { margin: 6px 0; font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'}; line-height: 1.5; display: flex; align-items: center; gap: 6px; }
+  p svg { color: ${({ theme }) => theme.colors.primary}; margin-right: 4px; }
+  span { font-weight: 600; color: ${({ theme }) => theme.colors.textMain || '#c8c8c8'}; }
 `;
 
 const ViewDetailsButton = styled.button`
@@ -406,274 +372,182 @@ const ViewDetailsButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
-  }
+  &:hover { background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; }
 `;
-
-const EventActions = styled.div`
-  margin-top: 15px;
-  padding-top: 10px;
-  border-top: 1px solid #383838;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const CancelButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.error};
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 5px;
-  transition: color 0.2s;
-  &:hover:not(:disabled) { color: #ff8a8a; }
-  &:disabled { color: #555; }
-`;
-
-
-
 
 const DashboardPage = () => {
-  const { authState } = useAuth();
-  const [bookings, setBookings] = useState({ trainings: [], appointments: [] });
-  const [pendingPayments, setPendingPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [pendingPaymentsError, setPendingPaymentsError] = useState('');
-  const [pageMessage, setPageMessage] = useState('');
-  const [actionLoading, setActionLoading] = useState(null);
+    const { authState } = useAuth();
+    const [bookings, setBookings] = useState({ trainings: [], appointments: [] });
+    const [pendingPayments, setPendingPayments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [pageMessage, setPageMessage] = useState('');
+    const [actionLoading, setActionLoading] = useState(null);
 
-  const [availableSeries, setAvailableSeries] = useState([]);
-  const [loadingSeries, setLoadingSeries] = useState(true);
-  const [seriesError, setSeriesError] = useState('');
-  const [showSeriesModal, setShowSeriesModal] = useState(false);
-  const [selectedSeriesForSubscription, setSelectedSeriesForSubscription] = useState(null);
-  const [clientSubscriptionEndDate, setClientSubscriptionEndDate] = useState('');
-  const [subscribingToSeries, setSubscribingToSeries] = useState(false);
-  const [seriesModalMessage, setSeriesModalMessage] = useState({type: '', text: ''});
+    const [availableSeries, setAvailableSeries] = useState([]);
+    const [loadingSeries, setLoadingSeries] = useState(true);
+    const [seriesError, setSeriesError] = useState('');
+    const [showSeriesModal, setShowSeriesModal] = useState(false);
+    const [selectedSeriesForSubscription, setSelectedSeriesForSubscription] = useState(null);
+    const [clientSubscriptionEndDate, setClientSubscriptionEndDate] = useState('');
+    const [subscribingToSeries, setSubscribingToSeries] = useState(false);
+    const [seriesModalMessage, setSeriesModalMessage] = useState({ type: '', text: '' });
 
-  const fetchPageData = useCallback(async () => {
-    if (authState.token) {
-      setLoading(true);
-      setError('');
-      setPendingPaymentsError('');
-      try {
-        const [bookingsData, pendingPaymentsData] = await Promise.all([
-          getMyBookings(authState.token),
-          clientGetMyPendingPaymentsService(authState.token)
-        ]);
-
-        setBookings({
-          trainings: bookingsData.trainings || [],
-          appointments: bookingsData.appointments || []
-        });
-        setPendingPayments(pendingPaymentsData || []);
-
-      } catch (err) {
-        console.error("Erro ao buscar dados do dashboard:", err);
-        if (err.message.toLowerCase().includes("pagamentos pendentes")) { 
-            setPendingPaymentsError(err.message);
-        } else if (err.message.toLowerCase().includes("marcações")) {
-            setError(err.message);
-        } else {
+    const fetchPageData = useCallback(async () => {
+        if (!authState.token) return;
+        setLoading(true);
+        setError('');
+        setSeriesError('');
+        try {
+            const [bookingsData, pendingPaymentsData, seriesData] = await Promise.all([
+                getMyBookings(authState.token),
+                clientGetMyPendingPaymentsService(authState.token).catch(() => []),
+                getActiveTrainingSeriesForClientService(authState.token).catch(() => [])
+            ]);
+            setBookings({
+                trainings: bookingsData.trainings || [],
+                appointments: bookingsData.appointments || []
+            });
+            setPendingPayments(pendingPaymentsData || []);
+            setAvailableSeries(seriesData || []);
+        } catch (err) {
             setError('Não foi possível carregar todos os dados do dashboard.');
+            console.error("Erro ao buscar dados do dashboard:", err);
+        } finally {
+            setLoading(false);
+            setLoadingSeries(false);
         }
-      } finally {
-        setLoading(false);
-      }
-    }
-  }, [authState.token]);
+    }, [authState.token]);
 
-  useEffect(() => {
-    fetchPageData();
-  }, [fetchPageData]);
+    useEffect(() => {
+        fetchPageData();
+    }, [fetchPageData]);
 
-  const fetchBookings = useCallback(async () => {
-    if (!authState.token) return;
-    setLoading(true);
-    try {
-      const data = await getMyBookings(authState.token);
-      setBookings({
-        trainings: data.trainings || [],
-        appointments: data.appointments || []
-      });
-    } catch (err) {
-      setError(err.message || 'Erro ao carregar dados do painel.');
-    } finally {
-      setLoading(false);
-    }
-  }, [authState.token]);
+    const upcomingEvents = useMemo(() => {
+        const now = new Date();
+        const allEvents = [
+            ...bookings.trainings.map(t => ({...t, eventType: 'Treino', dateObj: moment(`${t.date}T${t.time}`).toDate(), link: `/treinos/${t.id}/plano`, icon: <FaRunning />, uniqueKey: `train-${t.id}`})),
+            ...bookings.appointments.map(a => ({...a, eventType: 'Consulta', dateObj: moment(`${a.date}T${a.time}`).toDate(), icon: <FaUserMd />, uniqueKey: `appt-${a.id}`}))
+        ];
+        return allEvents
+            .filter(event => event.dateObj >= now && !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída'].includes(event.status))
+            .sort((a, b) => a.dateObj - b.dateObj)
+            .slice(0, 5);
+    }, [bookings]);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    const handleCancelTraining = async (trainingId) => {
+        if (!window.confirm("Tem a certeza que quer cancelar a sua inscrição neste treino?")) return;
+        setActionLoading(trainingId);
+        setPageMessage('');
+        setError('');
+        try {
+            const res = await cancelTrainingBooking(trainingId, authState.token);
+            setPageMessage(res.message || "Inscrição cancelada com sucesso!");
+            await fetchPageData();
+        } catch (err) {
+            setError(err.message || "Não foi possível cancelar a inscrição.");
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
-  const upcomingEvents = useMemo(() => {
-    const now = new Date();
-    const allEvents = [];
-
-  const upcomingEvents = useMemo(() => {
-    const now = new Date();
-    const allEvents = [
-      ...bookings.trainings.map(t => ({...t, eventType: 'Treino', dateObj: moment(`${t.date}T${t.time}`).toDate(), link: `/treinos/${t.id}/plano`, icon: <FaRunning />, uniqueKey: `train-${t.id}`})),
-      ...bookings.appointments.map(a => ({...a, eventType: 'Consulta', dateObj: moment(`${a.date}T${a.time}`).toDate(), icon: <FaUserMd />, uniqueKey: `appt-${a.id}`})),
-      ];
-    return allEvents
-      .filter(event => event.dateObj >= now && !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída'].includes(event.status))
-      .sort((a,b) => a.dateObj - b.dateObj)
-      .slice(0, 5);
-  }, [bookings]);
-
-  bookings.appointments.forEach(appointment => {
-    const eventDate = new Date(`${appointment.date}T${appointment.time}`);
-    const relevantStatus = !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída', 'não_compareceu'].includes(appointment.status);
-    if (eventDate >= now && relevantStatus) {
-      allEvents.push({
-        id: `appt-${appointment.id}`,
-        type: 'Consulta',
-        title: `Consulta de ${appointment.professional?.role === 'physiotherapist' ? 'Fisioterapia' : 'Acompanhamento'}`,
-        date: eventDate,
-        description: `Com ${appointment.professional?.firstName} ${appointment.professional?.lastName}`,
-        icon: <FaUserMd />,
-        link: `/calendario`
-      });
-    }
-  });
-
-    return allEvents.sort((a, b) => a.date - b.date).slice(0, 3);
-  }, [bookings.trainings, bookings.appointments]);
-
-  const handleOpenSeriesSubscriptionModal = (series) => {
-    setSelectedSeriesForSubscription(series);
-    setClientSubscriptionEndDate(series.seriesEndDate); 
-    setSeriesModalMessage({type: '', text: ''});
-    setShowSeriesModal(true);
-  };
-
-  const handleCloseSeriesSubscriptionModal = () => {
-    setShowSeriesModal(false);
-    setSelectedSeriesForSubscription(null);
-    setClientSubscriptionEndDate('');
-    setSeriesModalMessage({type: '', text: ''});
-  };
-
-  const handleSubscriptionDateChange = (e) => {
-    setClientSubscriptionEndDate(e.target.value);
-  };
-
-  const handleSubscribeToSeries = async (e) => {
-    e.preventDefault();
-    if (!selectedSeriesForSubscription || !authState.token) return;
-
-    setSubscribingToSeries(true);
-    setSeriesModalMessage({type: '', text: ''});
-    try {
-      const subscriptionData = {
-        trainingSeriesId: selectedSeriesForSubscription.id,
-        clientSubscriptionEndDate: clientSubscriptionEndDate,
-      };
-      const result = await createSeriesSubscriptionService(subscriptionData, authState.token);
-      setSeriesModalMessage({type: 'success', text: result.message || 'Inscrição na série bem-sucedida!'});
-      fetchPageData();
-      setTimeout(() => {
-          handleCloseSeriesSubscriptionModal();
-      }, 3000);
-
-    } catch (error) {
-      console.error("Erro ao inscrever na série:", error);
-      setSeriesModalMessage({type: 'error', text: error.message || 'Falha ao inscrever na série.'});
-    } finally {
-      setSubscribingToSeries(false);
-    }
-  };
-
-  const handleCancelTraining = async (trainingId) => {
-    if (!window.confirm("Tem a certeza que quer cancelar a sua inscrição neste treino?")) return;
+    const handleOpenSeriesSubscriptionModal = (series) => {
+        setSelectedSeriesForSubscription(series);
+        setClientSubscriptionEndDate(series.seriesEndDate); 
+        setSeriesModalMessage({type: '', text: ''});
+        setShowSeriesModal(true);
+    };
     
-    setActionLoading(trainingId);
-    setPageMessage('');
-    setError('');
+    const handleCloseSeriesSubscriptionModal = () => {
+        setShowSeriesModal(false);
+        setSelectedSeriesForSubscription(null);
+        setClientSubscriptionEndDate('');
+        setSeriesModalMessage({type: '', text: ''});
+    };
+    
+    const handleSubscriptionDateChange = (e) => {
+        setClientSubscriptionEndDate(e.target.value);
+    };
+    
+    const handleSubscribeToSeries = async (e) => {
+        e.preventDefault();
+        if (!selectedSeriesForSubscription || !authState.token) return;
+        setSubscribingToSeries(true);
+        setSeriesModalMessage({type: '', text: ''});
+        try {
+          const subscriptionData = {
+            trainingSeriesId: selectedSeriesForSubscription.id,
+            clientSubscriptionEndDate: clientSubscriptionEndDate,
+          };
+          const result = await createSeriesSubscriptionService(subscriptionData, authState.token);
+          setSeriesModalMessage({type: 'success', text: result.message || 'Inscrição na série bem-sucedida!'});
+          fetchPageData();
+          setTimeout(() => handleCloseSeriesSubscriptionModal(), 3000);
+        } catch (error) {
+          console.error("Erro ao inscrever na série:", error);
+          setSeriesModalMessage({type: 'error', text: error.message || 'Falha ao inscrever na série.'});
+        } finally {
+          setSubscribingToSeries(false);
+        }
+    };
 
-    try {
-      const response = await cancelTrainingBooking(trainingId, authState.token);
-      setPageMessage(response.message || "Inscrição cancelada com sucesso!");
-      await fetchBookings(); // Re-busca os dados para atualizar a lista
-    } catch (err) {
-      setError(err.message || "Não foi possível cancelar a inscrição.");
-    } finally {
-      setActionLoading(null);
+    if (loading) {
+        return <PageContainer><LoadingText>A carregar o seu dashboard...</LoadingText></PageContainer>;
     }
-  };
 
-  if (loading) {
-    return <PageContainer><LoadingText>A carregar o seu dashboard...</LoadingText></PageContainer>;
-  }
+    return (
+        <PageContainer>
+            <Header>
+                <Title>Meu Painel CORE</Title>
+                <WelcomeMessage>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</WelcomeMessage>
+            </Header>
 
-  return (
-    <PageContainer>
-      <Header>
-        <Title>Meu Painel CORE</Title>
-        <WelcomeMessage>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</WelcomeMessage>
-      </Header>
+            <ActionsSection>
+                <StyledLinkButton to="/calendario">Agendar</StyledLinkButton>
+                <StyledLinkButton to="/meus-treinos">Meus Treinos</StyledLinkButton>
+                <StyledLinkButton to="/meus-pagamentos">Meus Pagamentos</StyledLinkButton>
+            </ActionsSection>
 
-      <ActionsSection>
-        <StyledLinkButton to="/calendario">Agendar</StyledLinkButton>
-        <StyledLinkButton to="/meus-pagamentos">Meus Pagamentos</StyledLinkButton>
-        <StyledLinkButton to="/definicoes">Minhas Definições</StyledLinkButton>
-      </ActionsSection>
+            {error && <ErrorText>{error}</ErrorText>}
+            {pageMessage && <MessageText>{pageMessage}</MessageText>}
 
-      {error && <ErrorText>{error}</ErrorText>}
-      {pendingPaymentsError && <ErrorText>{pendingPaymentsError}</ErrorText>}
+            {pendingPayments.length > 0 && (
+                <PendingPaymentsSection>
+                    <SectionTitle style={{ color: theme.colors.warning || '#FFA000' }}><FaExclamationTriangle /> Pagamentos Pendentes</SectionTitle>
+                    <ul>
+                        {pendingPayments.map(payment => (
+                            <PendingPaymentItem key={`pending-${payment.id}`}>
+                                <div>
+                                    <p><span>Descrição:</span> {payment.description || payment.category.replace(/_/g, ' ')}</p>
+                                    <p><span>Valor:</span> {Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</p>
+                                </div>
+                                <PayNowButton to="/meus-pagamentos"><FaCreditCard /> Pagar Agora</PayNowButton>
+                            </PendingPaymentItem>
+                        ))}
+                    </ul>
+                </PendingPaymentsSection>
+            )}
 
-      {pendingPayments.length > 0 && (
-        <PendingPaymentsSection>
-          <SectionTitle style={{ color: theme.colors.warning || '#FFA000' }}>
-            <FaExclamationTriangle /> Pagamentos Pendentes
-          </SectionTitle>
-          <BookingList style={{gridTemplateColumns: '1fr'}}>
-            {pendingPayments.map(payment => (
-              <PendingPaymentItem key={`pending-${payment.id}`}>
-                <div>
-                  <p><span>Descrição:</span> {payment.description || payment.category.replace(/_/g, ' ')}</p>
-                  <p><span>Valor:</span> {Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</p>
-                  <p><span>Data de Emissão:</span> {new Date(payment.paymentDate).toLocaleDateString('pt-PT')}</p>
-                </div>
-                <PayNowButton to="/meus-pagamentos">
-                  <FaCreditCard /> Pagar Agora
-                </PayNowButton>
-              </PendingPaymentItem>
-            ))}
-          </BookingList>
-        </PendingPaymentsSection>
-      )}
-
-      <Section>
+            <Section>
                 <SectionTitle><FaRegCalendarCheck /> Próximos Eventos</SectionTitle>
-                {loading && <LoadingText>A carregar...</LoadingText>}
-                {error && <ErrorText>{error}</ErrorText>}
-                {pageMessage && <p style={{color: 'green'}}>{pageMessage}</p>}
-
-                {upcomingEvents.length > 0 ? (
+                {!loading && upcomingEvents.length > 0 ? (
                     <BookingList>
                         {upcomingEvents.map(event => (
-                            <UpcomingEventItem key={`${event.type}-${event.id}`}>
-                                <h3>{event.type === 'Treino' ? <FaRunning /> : <FaUserMd />} {event.title}</h3>
-                                <p><span>Data:</span> {moment(event.dateObj).format('dddd, D/MM/YY [às] HH:mm')}</p>
-                                
+                            <UpcomingEventItem key={event.uniqueKey}>
+                                <div>
+                                    <h3>{event.icon} {event.name || event.title}</h3>
+                                    <p><span>Data:</span> {moment(event.dateObj).locale('pt').format('dddd, D/MM/YYYY [às] HH:mm')}</p>
+                                    <p><span>Com:</span> {event.instructor?.firstName || event.professional?.firstName || 'N/A'}</p>
+                                </div>
                                 <EventActions>
-                                    {event.link ? (
-                                        <PlanLink to={event.link}><FaEye /> Ver Detalhes</PlanLink>
-                                    ) : <span>&nbsp;</span>}
-
-                                    {event.type === 'Treino' && (
+                                    {event.link ? <PlanLink to={event.link}><FaEye /> Ver Plano</PlanLink> : <span />}
+                                    {event.eventType === 'Treino' && (
                                         <CancelButton 
                                             onClick={() => handleCancelTraining(event.id)}
                                             disabled={actionLoading === event.id}
                                             title="Cancelar inscrição"
                                         >
-                                            {actionLoading === event.id ? '...' : <FaTrashAlt />}
+                                            {actionLoading === event.id ? 'A cancelar...' : <FaTrashAlt />}
                                         </CancelButton>
                                     )}
                                 </EventActions>
@@ -684,68 +558,54 @@ const DashboardPage = () => {
                     !loading && <NoBookingsText>Não tens eventos futuros agendados.</NoBookingsText>
                 )}
             </Section>
-      <Section>
-        <SectionTitle><FaUserMd /> Minhas Consultas Agendadas</SectionTitle>
-        {bookings.appointments.length > 0 ? (
-          <BookingList>
-            {bookings.appointments.map(appointment => (
-              <BookingItem key={`appt-${appointment.id}`}>
-                <h3>Consulta de {appointment.professional?.role === 'physiotherapist' ? 'Fisioterapia' : 'Acompanhamento'}</h3>
-                <p><span>Data:</span> {new Date(appointment.date).toLocaleDateString('pt-PT')} às {appointment.time.substring(0, 5)}</p>
-                <p><span>Profissional:</span> {appointment.professional?.firstName} {appointment.professional?.lastName}</p>
-                <p><span>Status:</span> {appointment.status?.replace(/_/g, ' ')}</p>
-                <p><span>Notas:</span> {appointment.notes || 'Sem notas adicionais.'}</p>
-              </BookingItem>
-            ))}
-          </BookingList>
-        ) : (
-          !loading && <NoBookingsText>Não tens consultas agendadas.</NoBookingsText>
-        )}
-      </Section>
 
-      {showSeriesModal && selectedSeriesForSubscription && (
-        <ModalOverlay onClick={handleCloseSeriesSubscriptionModal}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <CloseModalButton onClick={handleCloseSeriesSubscriptionModal}><FaTimes /></CloseModalButton>
-            <ModalTitle>Inscrever em: {selectedSeriesForSubscription.name}</ModalTitle>
-            
-            <ModalDetail><strong>Instrutor:</strong> {selectedSeriesForSubscription.instructor?.firstName} {selectedSeriesForSubscription.instructor?.lastName}</ModalDetail>
-            <ModalDetail>
-                <strong>Horário Fixo Semanal:</strong> Todas as {moment().day(selectedSeriesForSubscription.dayOfWeek).format('dddd')}s, das {selectedSeriesForSubscription.startTime.substring(0,5)} às {selectedSeriesForSubscription.endTime.substring(0,5)}.
-            </ModalDetail>
-            <ModalDetail><strong>Período da Série:</strong> {moment(selectedSeriesForSubscription.seriesStartDate).format('L')} a {moment(selectedSeriesForSubscription.seriesEndDate).format('L')}.</ModalDetail>
-            {selectedSeriesForSubscription.description && <ModalDetail><strong>Descrição:</strong> {selectedSeriesForSubscription.description}</ModalDetail>}
-            {selectedSeriesForSubscription.location && <ModalDetail><strong>Local:</strong> {selectedSeriesForSubscription.location}</ModalDetail>}
-            <ModalDetail><strong>Capacidade por Aula:</strong> {selectedSeriesForSubscription.capacity} participantes.</ModalDetail>
-            
-            <ModalForm onSubmit={handleSubscribeToSeries}>
-              <ModalLabel htmlFor="clientSubscriptionEndDate">Pretendo frequentar até à data (inclusive):</ModalLabel>
-              <ModalInput 
-                type="date" 
-                id="clientSubscriptionEndDate"
-                name="clientSubscriptionEndDate"
-                value={clientSubscriptionEndDate}
-                onChange={handleSubscriptionDateChange}
-                min={moment.max(moment(), moment(selectedSeriesForSubscription.seriesStartDate)).format('YYYY-MM-DD')}
-                max={selectedSeriesForSubscription.seriesEndDate}
-                required
-              />
-              <p style={{fontSize: '0.8rem', color: theme.colors.textMuted}}>
-                Pode escolher qualquer data de fim até ao final da série. A sua inscrição será para todas as aulas semanais dentro do período que selecionar.
-              </p>
-              {seriesModalMessage.text && <ModalMessageText className={seriesModalMessage.type}>{seriesModalMessage.text}</ModalMessageText>}
-              <ModalActions>
-                <ModalButton type="button" onClick={handleCloseSeriesSubscriptionModal} disabled={subscribingToSeries}>Cancelar</ModalButton>
-                <ModalButton type="submit" primary disabled={subscribingToSeries}>
-                  {subscribingToSeries ? 'A Inscrever...' : 'Confirmar Inscrição na Série'}
-                </ModalButton>
-              </ModalActions>
-            </ModalForm>
-          </ModalContent>
-        </ModalOverlay>
-      )}
-    </PageContainer>
-  );
+            <Section>
+                <SectionTitle><FaUsers /> Descobrir Programas Semanais</SectionTitle>
+                {loadingSeries ? <LoadingText>A carregar programas...</LoadingText> : seriesError ? <ErrorText>{seriesError}</ErrorText> : (
+                    availableSeries.length > 0 ? (
+                        <ItemList>
+                            {availableSeries.map(series => (
+                                <ItemCard key={series.id} itemType="series">
+                                    <div>
+                                        <h3>{series.name}</h3>
+                                        <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
+                                        {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
+                                    </div>
+                                    <ViewDetailsButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
+                                        <FaInfoCircle /> Ver Detalhes e Inscrever
+                                    </ViewDetailsButton>
+                                </ItemCard>
+                            ))}
+                        </ItemList>
+                    ) : (
+                        <NoItemsText>De momento, não há programas semanais com inscrições abertas.</NoItemsText>
+                    )
+                )}
+            </Section>
+
+            {showSeriesModal && selectedSeriesForSubscription && (
+                <ModalOverlay onClick={handleCloseSeriesSubscriptionModal}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                        <CloseModalButton onClick={handleCloseSeriesSubscriptionModal}><FaTimes /></CloseModalButton>
+                        <ModalTitle>Inscrever em: {selectedSeriesForSubscription.name}</ModalTitle>
+                        <ModalDetail><strong>Instrutor:</strong> {selectedSeriesForSubscription.instructor?.firstName} {selectedSeriesForSubscription.instructor?.lastName}</ModalDetail>
+                        <ModalDetail><strong>Horário:</strong> Todas as {moment().day(selectedSeriesForSubscription.dayOfWeek).format('dddd')}s, das {selectedSeriesForSubscription.startTime.substring(0,5)} às {selectedSeriesForSubscription.endTime.substring(0,5)}.</ModalDetail>
+                        <ModalForm onSubmit={handleSubscribeToSeries}>
+                            <ModalLabel htmlFor="clientSubscriptionEndDate">Pretendo frequentar até à data (inclusive):</ModalLabel>
+                            <ModalInput type="date" id="clientSubscriptionEndDate" name="clientSubscriptionEndDate" value={clientSubscriptionEndDate} onChange={handleSubscriptionDateChange} min={moment.max(moment(), moment(selectedSeriesForSubscription.seriesStartDate)).format('YYYY-MM-DD')} max={selectedSeriesForSubscription.seriesEndDate} required />
+                            {seriesModalMessage.text && <ModalMessageText className={seriesModalMessage.type}>{seriesModalMessage.text}</ModalMessageText>}
+                            <ModalActions>
+                                <ModalButton type="button" onClick={handleCloseSeriesSubscriptionModal} disabled={subscribingToSeries}>Cancelar</ModalButton>
+                                <ModalButton type="submit" primary disabled={subscribingToSeries}>
+                                    {subscribingToSeries ? 'A Inscrever...' : 'Confirmar Inscrição'}
+                                </ModalButton>
+                            </ModalActions>
+                        </ModalForm>
+                    </ModalContent>
+                </ModalOverlay>
+            )}
+        </PageContainer>
+    );
 };
 
 export default DashboardPage;
