@@ -716,14 +716,16 @@ const getAvailableSlotsForProfessional = async (req, res) => {
       { start: '10:00', end: '13:00' },
       { start: '15:00', end: '18:00' },
     ];
+
     const potentialSlots = [];
     workingHours.forEach(period => {
-      let currentTime = moment.utc(`${date} ${period.start}`, 'YYYY-MM-DD HH:mm');
-      const endTime = moment.utc(`${date} ${period.end}`, 'YYYY-MM-DD HH:mm');
+      let currentTime = moment.utc(`${date}T${period.start}`);
+      const endTime = moment.utc(`${date}T${period.end}`);
 
       while (currentTime.clone().add(slotDuration, 'minutes').isSameOrBefore(endTime)) {
         potentialSlots.push(currentTime.format('HH:mm'));
-        currentTime.add(60, 'minutes');
+        // CORREÇÃO LÓGICA: O incremento deve ser igual à duração do slot para não saltar horários.
+        currentTime.add(slotDuration, 'minutes');
       }
     });
     
@@ -737,10 +739,11 @@ const getAvailableSlotsForProfessional = async (req, res) => {
     });
 
     const availableSlots = potentialSlots.filter(slot => {
-      const slotStart = moment.utc(`${date} ${slot}`, 'YYYY-MM-DD HH:mm');
+      const slotStart = moment.utc(`${date}T${slot}`);
       const slotEnd = slotStart.clone().add(slotDuration, 'minutes');
+      
       return !existingAppointments.some(existing => {
-        const existingStart = moment.utc(`${date} ${existing.time}`, 'YYYY-MM-DD HH:mm');
+        const existingStart = moment.utc(`${date}T${existing.time}`);
         const existingEnd = existingStart.clone().add(existing.durationMinutes, 'minutes');
         return slotStart.isBefore(existingEnd) && slotEnd.isAfter(existingStart);
       });
@@ -749,12 +752,14 @@ const getAvailableSlotsForProfessional = async (req, res) => {
     res.status(200).json(availableSlots);
 
   } catch (error) {
-    console.error('Erro ao gerar horários disponíveis:', error);
-    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+    console.error('Erro detalhado ao gerar horários disponíveis:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao gerar horários.', errorDetails: error.message });
   }
 };
 
 module.exports = {
+  checkForStaffAppointmentConflict, // Se esta função for usada por outros controladores (se não for, pode ser removida daqui)
+  internalCreateSignalPayment, // O mesmo que acima
   adminCreateAppointment,
   getAllAppointments,
   getAppointmentById,
@@ -765,5 +770,5 @@ module.exports = {
   clientRequestAppointment,
   staffRespondToAppointmentRequest,
   getTodayAppointmentsCount,
-  getAvailableSlotsForProfessional,
+  getAvailableSlotsForProfessional, 
 };
