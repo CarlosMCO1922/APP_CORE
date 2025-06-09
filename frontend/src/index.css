@@ -111,4 +111,9 @@ code {
   font-weight: bold;
 }
 
-/* --- Fim dos Estilos para o React Calendar --- */
+.main-content-area {
+  position: relative; 
+  z-index: 1;     
+}
+
+/* --- Fim os Estilos para o React Calendar --- */
