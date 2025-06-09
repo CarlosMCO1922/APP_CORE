@@ -10,7 +10,7 @@ import {
   FaCog, FaSignOutAlt, FaBars, FaTimes,
   FaBell, FaEnvelopeOpen, FaCheckDouble,
   FaListOl, FaUserCircle, 
-  FaCalendarPlus 
+  FaCalendarPlus, FaCalendarCheck
 } from 'react-icons/fa';
 import { theme } from '../../theme';
 
