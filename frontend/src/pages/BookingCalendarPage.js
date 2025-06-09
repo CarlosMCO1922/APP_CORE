@@ -1,279 +1,195 @@
 // src/pages/BookingCalendarPage.js
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import Calendar from 'react-calendar';
 import { useAuth } from '../context/AuthContext';
-import { getAllAppointments, bookAppointment as bookAppointmentService, clientRequestNewAppointment } from '../services/appointmentService';
-import { getAllTrainings, bookTraining as bookTrainingService } from '../services/trainingService';
+import { getAvailableSlotsForProfessional, clientRequestNewAppointment } from '../services/appointmentService';
 import { getAllStaffForSelection } from '../services/staffService';
-import { FaArrowLeft, FaRegCalendarCheck, FaClock, FaCheckCircle, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaRegCalendarCheck, FaClock, FaUserMd } from 'react-icons/fa';
 import moment from 'moment';
+import 'moment/locale/pt';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 20px clamp(15px, 4vw, 40px);
+  max-width: 1000px; margin: 20px auto; padding: 20px clamp(15px, 4vw, 40px);
   font-family: ${({ theme }) => theme.fonts.main};
 `;
-
 const Header = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 30px;
+  display: flex; align-items: center; gap: 15px; margin-bottom: 30px;
 `;
-
 const BackButton = styled(Link)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.colors.primary}; }
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.5rem;
+  transition: color 0.2s; &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
-
 const Title = styled.h1`
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-  color: ${({ theme }) => theme.colors.textMain};
-  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.2rem); color: ${({ theme }) => theme.colors.textMain}; margin: 0;
 `;
-
 const BookingLayout = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 40px;
-  @media (min-width: 800px) {
-    grid-template-columns: auto 1fr;
-  }
+  display: grid; grid-template-columns: 1fr; gap: 40px;
+  @media (min-width: 800px) { grid-template-columns: auto 1fr; }
 `;
-
+const LeftColumn = styled.div`
+  display: flex; flex-direction: column; gap: 20px;
+`;
+const ProfessionalSelector = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: 20px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  label { display: block; margin-bottom: 10px; font-weight: 500; color: ${({ theme }) => theme.colors.primary}; display: flex; align-items: center; gap: 8px;}
+  select { width: 100%; padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; }
+`;
 const CalendarContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  display: flex; justify-content: center; align-items: flex-start;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: 20px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
-
 const TimeSlotsContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: 25px;
-  border-radius: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 25px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; min-height: 400px;
 `;
-
 const TimeSlotsHeader = styled.h3`
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.textMuted};
-  margin-top: 0;
-  margin-bottom: 25px;
-  text-align: center;
-  span {
-    color: ${({ theme }) => theme.colors.primary};
-    font-weight: 600;
-  }
+  font-size: 1.2rem; font-weight: 500; color: ${({ theme }) => theme.colors.textMuted};
+  margin-top: 0; margin-bottom: 25px; text-align: center;
+  span { color: ${({ theme }) => theme.colors.primary}; font-weight: 600; }
 `;
-
 const TimePeriodGroup = styled.div`
   margin-bottom: 25px;
-  h4 {
-    font-size: 0.9rem;
-    color: ${({ theme }) => theme.colors.textMuted};
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  }
+  h4 { font-size: 0.9rem; color: ${({ theme }) => theme.colors.textMuted}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
 `;
-
 const TimeSlotsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 15px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px;
 `;
-
 const TimeSlotButton = styled.button`
-  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#1F1F1F'};
-  color: ${({ theme }) => theme.colors.textMain};
-  padding: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-  
-  &:hover:not(:disabled) {
-    background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.textDark};
-    border-color: ${({ theme }) => theme.colors.primary};
-  }
-  &:disabled {
-    background-color: #2a2a2a;
-    color: #555;
-    cursor: not-allowed;
-    border-color: #333;
-  }
+  background-color: #2c2c2c; color: ${({ theme }) => theme.colors.textMain};
+  padding: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.textDark}; border-color: ${({ theme }) => theme.colors.primary}; transform: translateY(-2px); }
 `;
-
 const LoadingText = styled.p`text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.primary};`;
 const ErrorText = styled.p`text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.error};`;
-const NoSlotsText = styled.p`text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.textMuted}; padding: 20px 0;`;
+const NoSlotsText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.textMuted}; padding: 20px 0;`;
 
 const BookingCalendarPage = () => {
   const { authState } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [serviceId, setServiceId] = useState('');
-  const [serviceType, setServiceType] = useState(''); // 'training' ou 'appointment'
-
-  const [allEvents, setAllEvents] = useState([]);
-  const [availableDays, setAvailableDays] = useState(new Set());
-  const [timeSlotsForDay, setTimeSlotsForDay] = useState([]);
-
+  const [serviceType, setServiceType] = useState('');
+  const [professionals, setProfessionals] = useState([]);
+  const [selectedProfessional, setSelectedProfessional] = useState('');
+  const [availableSlots, setAvailableSlots] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   
   const [loading, setLoading] = useState(true);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Lógica para determinar o tipo de serviço a partir do ID
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const id = params.get('service');
-    setServiceId(id);
-    if (id === 'pt_grupo') {
-      setServiceType('training');
-    } else {
-      setServiceType('appointment');
-    }
-  }, [location.search]);
+    const type = params.get('type');
+    setServiceType(type);
 
-  // Lógica para buscar todos os eventos (treinos e consultas)
-  useEffect(() => {
-    if (authState.token) {
+    if (authState.token && type === 'appointment') {
       setLoading(true);
-      setError('');
-      Promise.all([
-        getAllTrainings(authState.token),
-        getAllAppointments(authState.token, { status: 'disponível' })
-      ]).then(([trainings, appointments]) => {
-        const combinedEvents = [
-          ...trainings.map(t => ({...t, type: 'training'})),
-          ...appointments.map(a => ({...a, type: 'appointment'}))
-        ];
-        setAllEvents(combinedEvents);
-      }).catch(err => {
-        setError('Erro ao carregar horários disponíveis.');
-        console.error(err);
-      }).finally(() => {
-        setLoading(false);
-      });
+      getAllStaffForSelection(authState.token)
+        .then(data => {
+          const physios = data.filter(p => p.role === 'physiotherapist' || p.role === 'admin' || p.role === 'trainer');
+          setProfessionals(physios);
+        })
+        .catch(err => setError("Erro ao carregar lista de profissionais."))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-  }, [authState.token]);
-  
+  }, [location.search, authState.token]);
+
   useEffect(() => {
-    if (allEvents.length > 0 && serviceType) {
-      const filteredForService = allEvents.filter(event => event.type === serviceType);
-      
-      const daysWithSlots = new Set(
-        filteredForService.map(event => moment(event.date).format('YYYY-MM-DD'))
-      );
-      setAvailableDays(daysWithSlots);
-
-      const slots = filteredForService
-        .filter(event => moment(event.date).isSame(selectedDate, 'day'))
-        .sort((a, b) => a.time.localeCompare(b.time));
-        
-      setTimeSlotsForDay(slots);
+    if (serviceType === 'appointment' && selectedProfessional && selectedDate) {
+      setSlotsLoading(true);
+      setAvailableSlots([]);
+      const params = {
+        staffId: selectedProfessional,
+        date: moment(selectedDate).format('YYYY-MM-DD'),
+        durationMinutes: 60,
+      };
+      getAvailableSlotsForProfessional(params, authState.token)
+        .then(slots => setAvailableSlots(slots))
+        .catch(err => {
+            console.error(err);
+            setError("Não foi possível carregar os horários para este dia.");
+        })
+        .finally(() => setSlotsLoading(false));
     }
-  }, [allEvents, serviceType, selectedDate]);
+  }, [serviceType, selectedProfessional, selectedDate, authState.token]);
 
+  const handleRequestAppointment = async (time) => {
+    if (!window.confirm(`Confirmas o pedido de consulta para ${moment(selectedDate).format('DD/MM/YYYY')} às ${time}?`)) return;
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-  };
-  
-  const handleBookSlot = async (event) => {
-    if (!window.confirm(`Tem a certeza que quer marcar para as ${event.time.substring(0, 5)}?`)) return;
+    const requestData = {
+      staffId: selectedProfessional,
+      date: moment(selectedDate).format('YYYY-MM-DD'),
+      time: time,
+      durationMinutes: 60
+    };
 
     try {
-      if (event.type === 'training') {
-        await bookTrainingService(event.id, authState.token);
-      } else {
-        await bookAppointmentService(event.id, authState.token);
-      }
-      alert('Marcação realizada com sucesso!');
-      navigate('/dashboard'); 
+      await clientRequestNewAppointment(requestData, authState.token);
+      alert('Pedido de consulta enviado com sucesso! Serás notificado quando for aceite.');
+      navigate('/dashboard');
     } catch (err) {
-      alert(`Erro na marcação: ${err.message}`);
+      alert(`Erro ao enviar pedido: ${err.message}`);
     }
   };
 
-  const tileClassName = ({ date, view }) => {
-    if (view === 'month') {
-      if (availableDays.has(moment(date).format('YYYY-MM-DD'))) {
-        return 'has-slots'; 
-      }
-    }
-    return null;
-  };
-
-  const morningSlots = timeSlotsForDay.filter(slot => parseInt(slot.time.split(':')[0]) < 12);
-  const afternoonSlots = timeSlotsForDay.filter(slot => parseInt(slot.time.split(':')[0]) >= 12);
+  const morningSlots = availableSlots.filter(slot => parseInt(slot.split(':')[0]) < 12);
+  const afternoonSlots = availableSlots.filter(slot => parseInt(slot.split(':')[0]) >= 12);
+  const pageTitle = serviceType === 'appointment' ? 'Agendar Consulta' : 'Agendar Treino';
 
   return (
     <PageContainer>
       <Header>
         <BackButton to="/calendario"><FaArrowLeft /></BackButton>
-        <Title>Escolha uma hora</Title>
+        <Title>{pageTitle}</Title>
       </Header>
       
-      {loading && <LoadingText>A carregar...</LoadingText>}
       {error && <ErrorText>{error}</ErrorText>}
 
-      {!loading && !error && (
+      {serviceType === 'appointment' ? (
         <BookingLayout>
-          <CalendarContainer>
-            <Calendar
-              onChange={handleDateChange}
-              value={selectedDate}
-              locale="pt-BR"
-              tileClassName={tileClassName}
-              minDate={new Date()}
-            />
-          </CalendarContainer>
-
+          <LeftColumn>
+            <ProfessionalSelector>
+              <label htmlFor="professional-select"><FaUserMd /> Selecione o Profissional</label>
+              <select id="professional-select" value={selectedProfessional} onChange={e => setSelectedProfessional(e.target.value)}>
+                <option value="">{loading ? 'A carregar...' : 'Escolha...'}</option>
+                {professionals.map(p => (
+                  <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
+                ))}
+              </select>
+            </ProfessionalSelector>
+            {selectedProfessional && (
+              <CalendarContainer>
+                <Calendar onChange={setSelectedDate} value={selectedDate} locale="pt-BR" minDate={new Date()} />
+              </CalendarContainer>
+            )}
+          </LeftColumn>
           <TimeSlotsContainer>
             <TimeSlotsHeader>
-              <FaRegCalendarCheck /> <span>{moment(selectedDate).format('dddd, DD [de] MMMM')}</span>
+              <FaRegCalendarCheck style={{marginRight: '10px'}} /> 
+              <span>{moment(selectedDate).format('dddd, D [de] MMMM')}</span>
             </TimeSlotsHeader>
-            {timeSlotsForDay.length > 0 ? (
+            {!selectedProfessional ? <NoSlotsText>Por favor, selecione um profissional para ver os horários.</NoSlotsText>
+            : slotsLoading ? <LoadingText>A procurar vagas...</LoadingText>
+            : availableSlots.length > 0 ? (
               <>
                 {morningSlots.length > 0 && (
-                  <TimePeriodGroup>
-                    <h4>Antes do meio-dia</h4>
-                    <TimeSlotsGrid>
-                      {morningSlots.map(slot => (
-                        <TimeSlotButton key={slot.id} onClick={() => handleBookSlot(slot)}>
-                          {slot.time.substring(0, 5)}
-                        </TimeSlotButton>
-                      ))}
-                    </TimeSlotsGrid>
-                  </TimePeriodGroup>
+                  <TimePeriodGroup><h4>Antes do meio-dia</h4><TimeSlotsGrid>
+                    {morningSlots.map(slot => <TimeSlotButton key={slot} onClick={() => handleRequestAppointment(slot)}>{slot}</TimeSlotButton>)}
+                  </TimeSlotsGrid></TimePeriodGroup>
                 )}
                 {afternoonSlots.length > 0 && (
-                  <TimePeriodGroup>
-                    <h4>Depois do meio-dia</h4>
-                    <TimeSlotsGrid>
-                      {afternoonSlots.map(slot => (
-                        <TimeSlotButton key={slot.id} onClick={() => handleBookSlot(slot)}>
-                          {slot.time.substring(0, 5)}
-                        </TimeSlotButton>
-                      ))}
-                    </TimeSlotsGrid>
-                  </TimePeriodGroup>
+                  <TimePeriodGroup><h4>Depois do meio-dia</h4><TimeSlotsGrid>
+                    {afternoonSlots.map(slot => <TimeSlotButton key={slot} onClick={() => handleRequestAppointment(slot)}>{slot}</TimeSlotButton>)}
+                  </TimeSlotsGrid></TimePeriodGroup>
                 )}
               </>
             ) : (
@@ -281,6 +197,8 @@ const BookingCalendarPage = () => {
             )}
           </TimeSlotsContainer>
         </BookingLayout>
+      ) : (
+        <p>Funcionalidade para agendar treinos em desenvolvimento.</p>
       )}
     </PageContainer>
   );
