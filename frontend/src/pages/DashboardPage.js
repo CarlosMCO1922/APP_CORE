@@ -7,7 +7,7 @@ import { getMyBookings } from '../services/userService';
 import { clientGetMyPendingPaymentsService } from '../services/paymentService';
 import { 
     getActiveTrainingSeriesForClientService, 
-    createSeriesSubscriptionService 
+    createSeriesSubscriptionService, cancelTrainingBookingService
 } from '../services/trainingService'; 
 import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, 
     FaRegClock, FaExclamationTriangle, FaCreditCard, FaUsers, 
@@ -489,6 +489,26 @@ const DashboardPage = () => {
   useEffect(() => {
     fetchPageData();
   }, [fetchPageData]);
+
+  const fetchBookings = useCallback(async () => {
+    if (!authState.token) return;
+    setLoading(true);
+    try {
+      const data = await getMyBookings(authState.token);
+      setBookings({
+        trainings: data.trainings || [],
+        appointments: data.appointments || []
+      });
+    } catch (err) {
+      setError(err.message || 'Erro ao carregar dados do painel.');
+    } finally {
+      setLoading(false);
+    }
+  }, [authState.token]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
 
   const upcomingEvents = useMemo(() => {
     const now = new Date();
