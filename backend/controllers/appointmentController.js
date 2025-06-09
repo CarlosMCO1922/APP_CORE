@@ -2,6 +2,7 @@
 const db = require('../models');
 const { Op, Sequelize } = require('sequelize'); 
 const { format } = require('date-fns'); 
+const moment = require('moment');
 const { _internalCreateNotification } = require('./notificationController');
 
 // --- Função Auxiliar para Verificar Conflitos de Consulta ---
