@@ -9,8 +9,8 @@ import {
   FaUserTie, FaDumbbell, FaCalendarCheck, FaMoneyBillWave,
   FaCog, FaSignOutAlt, FaBars, FaTimes,
   FaBell, FaEnvelopeOpen, FaCheckDouble,
-  FaListOl, FaUserCircle, 
-  FaCalendarPlus, FaCalendarCheck
+  FaListOl, FaUserCircle, FaRegCalendarCheck,
+  FaCalendarPlus
 } from 'react-icons/fa';
 import { theme } from '../../theme';
 
