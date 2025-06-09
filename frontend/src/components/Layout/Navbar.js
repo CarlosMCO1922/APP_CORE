@@ -1,20 +1,17 @@
 // src/components/Layout/Navbar.js
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import {
   FaTachometerAlt, FaCalendarAlt, FaClipboardList, FaUsers,
   FaUserTie, FaDumbbell, FaCalendarCheck, FaMoneyBillWave,
-  FaCog, FaSignOutAlt, FaBars, FaTimes,
-  FaBell, FaEnvelopeOpen, FaCheckDouble,
-  FaListOl, FaUserCircle, FaRegCalendarCheck,
-  FaCalendarPlus
+  FaCog, FaSignOutAlt, FaBars, FaTimes, FaBell, FaCheckDouble,
+  FaListOl, FaCalendarPlus, FaUserCircle, FaRegCalendarCheck
 } from 'react-icons/fa';
-import { theme } from '../../theme';
+import moment from 'moment';
 
-// --- Styled Components ---
 const Nav = styled.nav`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 0.75rem 1.5rem;
@@ -25,15 +22,12 @@ const Nav = styled.nav`
   position: sticky;
   top: 0;
   z-index: 1000;
-  min-height: 60px;
-  width: 100%;
 `;
 
 const NavLogoLink = styled(Link)`
   display: flex;
   align-items: center;
   text-decoration: none;
-  flex-shrink: 0;
 `;
 
 const LogoImage = styled.img`
@@ -46,25 +40,20 @@ const LogoText = styled.span`
   font-size: 1.4rem;
   font-weight: bold;
   color: ${({ theme }) => theme.colors.primary};
-  @media (max-width: 768px) {
-    display: none;
-  }
+  @media (max-width: 768px) { display: none; }
 `;
 
 const DesktopNavLinks = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem; 
-  flex-grow: 1; 
-  justify-content: flex-end; 
-
-  @media (max-width: 1024px) { // Aumentado o breakpoint para o menu mobile aparecer mais cedo
-    display: none;
-  }
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-grow: 1;
+  @media (max-width: 1024px) { display: none; }
 `;
 
 const NavItem = styled.div`
-  flex-shrink: 0;
+  position: relative;
 `;
 
 const NavLinkStyled = styled(Link)`
@@ -73,17 +62,15 @@ const NavLinkStyled = styled(Link)`
   font-size: 0.9rem;
   font-weight: 500;
   padding: 0.5rem 0.75rem;
-  position: relative;
-  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   border-radius: 6px;
   white-space: nowrap;
-
+  transition: all 0.2s ease-in-out;
   &:hover {
     color: ${({ theme }) => theme.colors.primary};
-    background-color: #333333;
+    background-color: #333;
   }
 `;
 
@@ -96,20 +83,14 @@ const LogoutButton = styled.button`
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-
+  transition: all 0.2s ease-in-out;
   &:hover {
     background-color: ${({ theme }) => theme.colors.primary};
     color: ${({ theme }) => theme.colors.textDark};
   }
-`;
-
-const DropdownContainer = styled.div`
-  position: relative;
-  display: inline-block;
 `;
 
 const DropdownButton = styled.button`
@@ -117,6 +98,7 @@ const DropdownButton = styled.button`
   background-color: transparent;
   border: none;
   font-size: 0.9rem;
+  font-family: inherit;
   font-weight: 500;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
@@ -124,11 +106,10 @@ const DropdownButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   border-radius: 6px;
-  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
-
+  transition: all 0.2s ease-in-out;
   &:hover, &.active {
     color: ${({ theme }) => theme.colors.primary};
-    background-color: #333333;
+    background-color: #333;
   }
 `;
 
@@ -141,9 +122,15 @@ const DropdownContent = styled.div`
   z-index: 1001;
   border-radius: 8px;
   right: 0;
-  top: calc(100% + 5px);
+  top: calc(100% + 10px);
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   padding: 0.5rem 0;
+  animation: fadeIn 0.2s ease-out;
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 `;
 
 const DropdownLink = styled(Link)`
@@ -154,10 +141,8 @@ const DropdownLink = styled(Link)`
   align-items: center;
   gap: 0.75rem;
   font-size: 0.9rem;
-  white-space: nowrap;
-
   &:hover {
-    background-color: #333333;
+    background-color: #333;
     color: ${({ theme }) => theme.colors.primary};
   }
 `;
@@ -168,19 +153,14 @@ const HamburgerIcon = styled.div`
 `;
 
 const MobileMenuOverlay = styled.div`
-  display: flex;
-  flex-direction: column;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  position: fixed;
-  top: 60px; 
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 1rem 0;
-  z-index: 999;
-  overflow-y: auto;
+  display: flex; flex-direction: column; background-color: #1c1c1c;
+  position: fixed; top: 60px; left: 0; right: 0; bottom: 0;
+  padding: 1rem 0; z-index: 999;
   transform: ${props => props.isOpen ? 'translateX(0)' : 'translateX(-100%)'};
   transition: transform 0.3s ease-in-out;
+  
+  ${NavLinkStyled}, ${DropdownButton}, ${LogoutButton} { width: calc(100% - 2rem); margin: 0.5rem 1rem; padding: 1rem; text-align: left; border-radius: 0; }
+  ${LogoutButton} { border-bottom: none; }
 `;
 
 const UserInfo = styled.span`
@@ -191,154 +171,67 @@ const UserInfo = styled.span`
 
 const NotificationBellContainer = styled.div`
   position: relative;
-  margin-left: 1rem;
-  margin-right: 1rem;
-  @media (max-width: 992px) {
-    margin-left: 0; 
-  }
 `;
-
 const BellIcon = styled(FaBell)`
   font-size: 1.5rem;
   color: ${({ theme }) => theme.colors.textMain};
   cursor: pointer;
-  transition: color 0.2s ease-in-out;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-  }
+  transition: color 0.2s;
+  &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
-
 const UnreadBadge = styled.span`
-  position: absolute;
-  top: -5px;
-  right: -8px;
-  background-color: ${({ theme }) => theme.colors.error || 'red'};
-  color: white;
-  border-radius: 50%;
-  padding: 2px 6px;
-  font-size: 0.7rem;
-  font-weight: bold;
-  pointer-events: none;
-  border: 1px solid ${({ theme }) => theme.colors.cardBackground};
+  position: absolute; top: -5px; right: -8px;
+  background-color: ${({ theme }) => theme.colors.error};
+  color: white; border-radius: 50%;
+  width: 18px; height: 18px; font-size: 0.7rem;
+  font-weight: bold; display: flex;
+  justify-content: center; align-items: center;
 `;
-
-const NotificationsDropdownContent = styled.div`
-  display: ${props => (props.$isOpen ? 'block' : 'none')};
-  position: absolute;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  min-width: 300px;
-  max-width: 350px;
-  max-height: 400px;
-  overflow-y: auto;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3);
-  z-index: 1001;
-  border-radius: 8px;
-  right: 0;
-  top: calc(100% + 10px);
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'};
-  color: ${({ theme }) => theme.colors.textMain};
-
-  &::-webkit-scrollbar { width: 6px; }
-  &::-webkit-scrollbar-track { background: #333; border-radius: 3px; }
-  &::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-  &::-webkit-scrollbar-thumb:hover { background: #666; }
+const NotificationsDropdownContent = styled(DropdownContent)`
+  width: 320px;
 `;
-
 const NotificationHeader = styled.div`
-  padding: 10px 15px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  h4 {
-    margin: 0;
-    font-size: 1rem;
-    color: ${({ theme }) => theme.colors.primary};
-  }
+  padding: 10px 15px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex; justify-content: space-between; align-items: center;
+  h4 { margin: 0; font-size: 0.95rem; }
 `;
-
 const MarkAllReadButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.textMain};
-  font-size: 0.8rem;
-  cursor: pointer;
-  padding: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-  }
-  &:disabled {
-    color: #666;
-    cursor: not-allowed;
-  }
+  background: none; border: none; font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.primary}; cursor: pointer;
+  &:hover { text-decoration: underline; }
+  &:disabled { color: #666; cursor: not-allowed; }
 `;
-
+const NotificationList = styled.ul`
+  list-style: none; padding: 0; margin: 0; overflow-y: auto; max-height: 300px;
+`;
 const NotificationItemStyled = styled.div`
-  padding: 12px 15px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'};
-  cursor: pointer;
-  background-color: ${props => props.$isRead ? 'transparent' : (props.theme.colors.cardBackgroundDarker || '#3a3a3a')};
-  transition: background-color 0.2s;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:hover {
-    background-color: #333333;
-  }
-
-  p {
-    margin: 0 0 5px 0;
-    font-size: 0.85rem;
-    line-height: 1.4;
-    white-space: normal;
-  }
-
-  small {
-    font-size: 0.7rem;
-    color: #888;
-  }
+  padding: 12px 15px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  cursor: pointer; background-color: ${props => props.isRead ? 'transparent' : '#3a3a3a'};
+  p { margin: 0 0 5px 0; font-size: 0.85rem; line-height: 1.4; white-space: normal; }
+  small { font-size: 0.75rem; color: #888; }
+  &:last-child { border-bottom: none; }
+  &:hover { background-color: #333; }
 `;
-
 const ViewAllNotificationsLink = styled(Link)`
-  display: block;
-  text-align: center;
-  padding: 10px;
-  font-size: 0.85rem;
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder || '#4A4A4A'};
-  &:hover {
-    background-color: #333333;
-  }
+  display: block; text-align: center; padding: 10px; font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.primary}; text-decoration: none;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  &:hover { background-color: #333; }
 `;
 
-// --- Lógica do Componente ---
 function Navbar() {
-const { authState, logout } = useAuth();
-  const { notifications, unreadCount, markNotificationAsRead, markAllNotificationsAsRead, isLoading: notificationsLoading, totalNotifications } = useNotifications();
+  const { authState, logout } = useAuth();
+  const { notifications, unreadCount, markNotificationAsRead, markAllNotificationsAsRead, totalNotifications } = useNotifications();
   const navigate = useNavigate();
-  
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
-  const [clientDropdownOpen, setClientDropdownOpen] = useState(false); // NOVO ESTADO
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false);
   const [notificationsDropdownOpen, setNotificationsDropdownOpen] = useState(false);
 
   const adminDropdownRef = useRef(null);
-  const clientDropdownRef = useRef(null); // NOVO REF
+  const clientDropdownRef = useRef(null);
   const notificationsDropdownRef = useRef(null);
-
-  const handleLogout = () => {
-    closeAllMenus();
-    logout();
-    navigate('/login');
-  };
 
   const closeAllMenus = () => {
     setAdminDropdownOpen(false);
@@ -353,42 +246,32 @@ const { authState, logout } = useAuth();
       if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) setClientDropdownOpen(false);
       if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target)) setNotificationsDropdownOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 992) { 
-        setIsMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
- const handleNotificationClick = (notification) => {
+  const handleLogout = () => {
+    closeAllMenus();
+    logout();
+    navigate('/login');
+  };
+  
+  const handleNotificationClick = (notification) => {
     if (!notification.isRead) markNotificationAsRead(notification.id);
     if (notification.link) navigate(notification.link);
     closeAllMenus();
   };
 
-  const handleMarkAllReadClick = () => markAllNotificationsAsRead();
-  const handleNavigateAndCloseMenus = () => closeAllMenus();
-
   if (!authState.isAuthenticated) return null;
 
   const { role, user } = authState;
-  const isUserClient = role === 'user';
-  const isStaffGeneral = role && role !== 'user';
-  const isAdminStrict = role === 'admin';
 
   const clientLinks = (
     <>
       <NavItem><NavLinkStyled to="/dashboard" onClick={closeAllMenus}><FaTachometerAlt /> Painel</NavLinkStyled></NavItem>
       <NavItem><NavLinkStyled to="/calendario" onClick={closeAllMenus}><FaCalendarAlt /> Agendar</NavLinkStyled></NavItem>
       <NavItem ref={clientDropdownRef}>
-        <DropdownButton onClick={() => setClientDropdownOpen(prev => !prev)} className={clientDropdownOpen ? 'active' : ''}>
+        <DropdownButton onClick={() => setClientDropdownOpen(p => !p)} className={clientDropdownOpen ? 'active' : ''}>
           <FaUserCircle /> Minha Área {clientDropdownOpen ? '▴' : '▾'}
         </DropdownButton>
         <DropdownContent isOpen={clientDropdownOpen}>
@@ -404,109 +287,76 @@ const { authState, logout } = useAuth();
 
   const staffLinks = (
     <>
-      <NavItem><NavLinkStyled to="/admin/dashboard" onClick={handleNavigateAndCloseMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={handleNavigateAndCloseMenus}><FaCalendarAlt /> Calendário Geral</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={handleNavigateAndCloseMenus}><FaRegCalendarCheck /> Pedidos</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/dashboard" onClick={closeAllMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={closeAllMenus}><FaCalendarAlt /> Calendário Geral</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={closeAllMenus}><FaRegCalendarCheck /> Pedidos</NavLinkStyled></NavItem>
     </>
   );
-
+  
   const adminManagementDropdown = (
-    <DropdownContainer ref={adminDropdownRef}>
-      <DropdownButton onClick={() => setAdminDropdownOpen(prev => !prev)} className={adminDropdownOpen ? 'active' : ''}>
+    <NavItem ref={adminDropdownRef}>
+      <DropdownButton onClick={() => setAdminDropdownOpen(p => !p)} className={adminDropdownOpen ? 'active' : ''}>
         <FaCog /> Gestão {adminDropdownOpen ? '▴' : '▾'}
       </DropdownButton>
       <DropdownContent isOpen={adminDropdownOpen}>
-        <DropdownLink to="/admin/manage-users" onClick={handleNavigateAndCloseMenus}><FaUsers /> Clientes</DropdownLink>
-        <DropdownLink to="/admin/manage-staff" onClick={handleNavigateAndCloseMenus}><FaUserTie /> Equipa</DropdownLink>
-        <DropdownLink to="/admin/manage-trainings" onClick={handleNavigateAndCloseMenus}><FaDumbbell /> Treinos</DropdownLink>
-        <DropdownLink to="/admin/training-series" onClick={handleNavigateAndCloseMenus}><FaCalendarPlus /> Séries</DropdownLink>
-        <DropdownLink to="/admin/manage-appointments" onClick={handleNavigateAndCloseMenus}><FaCalendarCheck /> Consultas</DropdownLink>
-        <DropdownLink to="/admin/manage-payments" onClick={handleNavigateAndCloseMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-        <DropdownLink to="/admin/manage-exercises" onClick={handleNavigateAndCloseMenus}><FaListOl /> Exercícios</DropdownLink>
-        <DropdownLink to="/admin/manage-global-plans" onClick={handleNavigateAndCloseMenus}><FaClipboardList /> Planos Modelo</DropdownLink>
+        <DropdownLink to="/admin/manage-users" onClick={closeAllMenus}><FaUsers /> Clientes</DropdownLink>
+        <DropdownLink to="/admin/manage-staff" onClick={closeAllMenus}><FaUserTie /> Equipa</DropdownLink>
+        <DropdownLink to="/admin/manage-trainings" onClick={closeAllMenus}><FaDumbbell /> Treinos</DropdownLink>
+        <DropdownLink to="/admin/training-series" onClick={closeAllMenus}><FaCalendarPlus /> Séries</DropdownLink>
+        <DropdownLink to="/admin/manage-appointments" onClick={closeAllMenus}><FaCalendarCheck /> Consultas</DropdownLink>
+        <DropdownLink to="/admin/manage-payments" onClick={closeAllMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
+        <DropdownLink to="/admin/manage-exercises" onClick={closeAllMenus}><FaListOl /> Exercícios</DropdownLink>
+        <DropdownLink to="/admin/manage-global-plans" onClick={closeAllMenus}><FaClipboardList /> Planos Modelo</DropdownLink>
       </DropdownContent>
-    </DropdownContainer>
-  );
-
-  const notificationBell = (
-    <NotificationBellContainer ref={notificationsDropdownRef}>
-      <BellIcon onClick={() => setNotificationsDropdownOpen(prev => !prev)} />
-      {unreadCount > 0 && <UnreadBadge>{unreadCount}</UnreadBadge>}
-      <NotificationsDropdownContent $isOpen={notificationsDropdownOpen}>
-        <NotificationHeader>
-          <h4>Notificações</h4>
-          <MarkAllReadButton onClick={handleMarkAllReadClick} disabled={unreadCount === 0 || notificationsLoading}>
-            <FaCheckDouble /> Marcar todas como lidas
-          </MarkAllReadButton>
-        </NotificationHeader>
-        {notificationsLoading && notifications.length === 0 && <p style={{padding: '10px', textAlign: 'center', fontSize: '0.8rem'}}>A carregar...</p>}
-        {!notificationsLoading && notifications.length === 0 && <p style={{padding: '10px', textAlign: 'center', fontSize: '0.8rem'}}>Não há notificações.</p>}
-        {notifications.slice(0, 7).map(notif => (
-          <NotificationItemStyled
-            key={notif.id}
-            $isRead={notif.isRead}
-            onClick={() => handleNotificationClick(notif)}
-            title={notif.isRead ? "Lida" : "Não lida"}
-          >
-            <p>{notif.message}</p>
-            <small>{new Date(notif.createdAt).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}</small>
-          </NotificationItemStyled>
-        ))}
-        {notifications.length > 0 && (
-            <ViewAllNotificationsLink
-                to="/notificacoes"
-                onClick={() => {
-                    setNotificationsDropdownOpen(false); 
-                    setIsMobileMenuOpen(false); 
-                }}
-            >
-              Ver todas as notificações ({totalNotifications}) 
-            </ViewAllNotificationsLink>
-        )}
-      </NotificationsDropdownContent>
-    </NotificationBellContainer>
+    </NavItem>
   );
 
   return (
     <>
       <Nav>
-        <NavLogoLink to={isUserClient ? "/dashboard" : "/admin/dashboard"} onClick={handleNavigateAndCloseMenus}>
+        <NavLogoLink to={role === 'user' ? "/dashboard" : "/admin/dashboard"} onClick={closeAllMenus}>
           <LogoImage src="/logo_core.png" alt="CORE Logo" />
           <LogoText>CORE</LogoText>
         </NavLogoLink>
-
         <DesktopNavLinks>
-          {user && <NavItem><UserInfo>Olá, {user.firstName}!</UserInfo></NavItem>}
-          
-          {isUserClient && clientLinks}
-          {isStaffGeneral && !isAdminStrict && staffLinks}
-          {isAdminStrict && <>{staffLinks}<NavItem>{adminManagementDropdown}</NavItem></>}
-          
-          <NavItem>{notificationBell}</NavItem>
+          <UserInfo>Olá, {user?.firstName}!</UserInfo>
+          {role === 'user' && clientLinks}
+          {role !== 'user' && role !== 'admin' && staffLinks}
+          {role === 'admin' && <>{staffLinks}{adminManagementDropdown}</>}
+          <NavItem ref={notificationsDropdownRef}>
+            <DropdownButton onClick={() => setNotificationsDropdownOpen(p => !p)}>
+                <BellIcon />
+                {unreadCount > 0 && <UnreadBadge>{unreadCount}</UnreadBadge>}
+            </DropdownButton>
+            <NotificationsDropdownContent isOpen={notificationsDropdownOpen}>
+                <NotificationHeader>
+                    <h4>Notificações</h4>
+                    {unreadCount > 0 && <MarkAllReadButton onClick={markAllNotificationsAsRead}>Marcar todas como lidas</MarkAllReadButton>}
+                </NotificationHeader>
+                <NotificationList>
+                    {notifications.length > 0 ? notifications.slice(0, 5).map(notif => (
+                        <NotificationItemStyled key={notif.id} isRead={notif.isRead} onClick={() => handleNotificationClick(notif)}>
+                            <p>{notif.message}</p>
+                            <small>{moment(notif.createdAt).fromNow()}</small>
+                        </NotificationItemStyled>
+                    )) : <p style={{padding: '15px', textAlign: 'center', fontSize: '0.85rem'}}>Sem notificações.</p>}
+                </NotificationList>
+                <ViewAllNotificationsLink to="/notificacoes" onClick={closeAllMenus}>Ver todas ({totalNotifications})</ViewAllNotificationsLink>
+            </NotificationsDropdownContent>
+          </NavItem>
           <NavItem><LogoutButton onClick={handleLogout}><FaSignOutAlt /> Sair</LogoutButton></NavItem>
         </DesktopNavLinks>
-
-        <HamburgerIcon onClick={() => setIsMobileMenuOpen(prev => !prev)}>
+        <HamburgerIcon onClick={() => setIsMobileMenuOpen(p => !p)}>
           {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
         </HamburgerIcon>
       </Nav>
-
       <MobileMenuOverlay isOpen={isMobileMenuOpen}>
-        <UserInfo style={{padding: '1rem', borderBottom: '1px solid #4A4A4A', display: 'flex', justifyContent: 'space-between'}}>
-          Olá, {user.firstName}!
-          {notificationBell}
-        </UserInfo>
-        
-        {isUserClient && clientLinks}
-        {isStaffGeneral && staffLinks}
-        {isAdminStrict && adminManagementDropdown}
-        
-        <LogoutButton onClick={handleLogout} style={{ justifyContent: 'center', margin: '1rem' }}>
-          <FaSignOutAlt /> Sair
-        </LogoutButton>
+          {role === 'user' && clientLinks}
+          {role !== 'user' && role !== 'admin' && staffLinks}
+          {role === 'admin' && <>{staffLinks}{adminManagementDropdown}</>}
+          <LogoutButton onClick={handleLogout} style={{ justifyContent: 'center', margin: '1rem' }}>Sair</LogoutButton>
       </MobileMenuOverlay>
     </>
   );
 }
-
 export default Navbar;
