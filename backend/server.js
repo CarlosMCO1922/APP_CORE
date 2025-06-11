@@ -54,24 +54,6 @@ app.use(errorHandler);
 db.sequelize.sync({ alter: true})
   .then(() => {
     console.log('Base de dados sincronizada com sucesso.');
-
-    console.log('A executar correção única na coluna "trainingId"...');
-    const queryInterface = db.sequelize.getQueryInterface();
-    return queryInterface.changeColumn(
-      'client_exercise_performances', // Nome exato da tabela no plural
-      'trainingId',                   // Nome exato da coluna
-      {
-        type: db.Sequelize.INTEGER,
-        allowNull: true,              // <<< A alteração que queremos aplicar
-        onDelete: 'SET NULL'          // Manter a propriedade onDelete que já tinhas
-      }
-    ).then(() => {
-      console.log('>>> CORREÇÃO DA COLUNA "trainingId" CONCLUÍDA COM SUCESSO. <<<');
-    }).catch(err => {
-      // Se a coluna já estiver correta, pode dar um erro "column "trainingId" of relation "..." is already nullable"
-      // o que não é um problema.
-      console.warn('AVISO ao executar a correção na coluna (pode já estar correta):', err.message);
-    });
   })
   .catch(err => {
     console.error('Erro ao sincronizar a base de dados:', err);
