@@ -1,5 +1,3 @@
-ClientPorgressPage.js
-
 // src/pages/ClientProgressPage.js
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
