@@ -891,8 +891,8 @@ const ClientProgressPage = () => {
                             <TrainingCard key={training.id} onClick={() => setSelectedTraining(training.id)}>
                             <h3>{training.name}</h3>
                             <p>Data: {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time ? training.time.substring(0, 5) : 'N/A'}</p>
-                            <SelectTrainingButton onClick={(e) => { e.stopPropagation(); setSelectedTraining(training.id); }}>
-                                Registar/Ver Progresso
+                            <SelectTrainingButton as={Link} to={`/treino-ao-vivo/treino/${training.id}`}>
+                                Iniciar Treino
                             </SelectTrainingButton>
                             </TrainingCard>
                         ))}

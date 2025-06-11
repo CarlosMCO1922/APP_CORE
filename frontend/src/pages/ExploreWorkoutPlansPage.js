@@ -254,8 +254,8 @@ const ExploreWorkoutPlansPage = () => {
                 </ExercisePreviewList>
               )}
             </div>
-            <UsePlanButton onClick={() => handleUseThisPlan(plan.id)}>
-               Usar este Plano para Registar Progresso
+            <UsePlanButton as={Link} to={`/treino-ao-vivo/plano/${plan.id}`}>
+                Iniciar Treino com este Plano
             </UsePlanButton>
           </PlanCard>
         ))}
