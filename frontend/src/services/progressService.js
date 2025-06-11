@@ -5,8 +5,8 @@ console.log('API_URL em uso no progressService:', API_URL);
 
 export const logExercisePerformanceService = async (performanceData, token) => {
   if (!token) throw new Error('Token não fornecido para logExercisePerformanceService.');
-  if (!performanceData || !performanceData.trainingId || !performanceData.workoutPlanId || !performanceData.planExerciseId || !performanceData.performedAt) {
-    throw new Error('Dados obrigatórios em falta para registar desempenho (trainingId, workoutPlanId, planExerciseId, performedAt).');
+  if (!performanceData || !performanceData.workoutPlanId || !performanceData.planExerciseId || !performanceData.performedAt) {
+  throw new Error('Dados obrigatórios em falta para registar desempenho (workoutPlanId, planExerciseId, performedAt).');
   }
   try {
     const url = `${API_URL}/progress/log-performance`;
