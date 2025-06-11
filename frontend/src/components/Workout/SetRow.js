@@ -108,6 +108,8 @@ const SetRow = ({ setNumber, prescribedReps, onSetComplete, trainingId, workoutP
       performedWeight: weight ? parseFloat(weight) : null,
     };
 
+    console.log("A enviar para a API:", performanceData);
+
     try {
       await logExercisePerformanceService(performanceData, authState.token);
       setIsCompleted(true);
