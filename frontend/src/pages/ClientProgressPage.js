@@ -96,7 +96,6 @@ const SelectTrainingButton = styled.button`
     &:hover { background-color: ${({ theme }) => theme.colors.primaryHover || '#e6c358'}; }
 `;
 
-// <<< NOVOS/ATUALIZADOS STYLED COMPONENTS PARA A INTERFACE DE TREINO AO VIVO >>>
 const fadeIn = keyframes` from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); }`;
 
 const WorkoutLiveContainer = styled.div`
@@ -455,8 +454,7 @@ const ClientProgressPage = () => {
     const [loadingFullHistory, setLoadingFullHistory] = useState(false);
     const [fullHistoryError, setFullHistoryError] = useState('');
     const [trainingStatistics, setTrainingStatistics] = useState(null);
-
-    // <<< NOVOS ESTADOS PARA A INTERFACE DE TREINO AO VIVO >>>
+    const [workoutPlan, setWorkoutPlan] = useState(null); // Para o plano ativo
     const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
     const [setsState, setSetsState] = useState({});
     const [isTimerRunning, setIsTimerRunning] = useState(false);
