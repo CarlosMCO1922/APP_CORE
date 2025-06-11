@@ -28,6 +28,13 @@ const PageContainer = styled.div`
   font-family: ${({ theme }) => theme.fonts.main};
 `;
 
+const Header = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+`;
+
 const HeaderContainer = styled.div`
   margin-bottom: 20px;
   padding-bottom: 15px;
