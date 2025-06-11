@@ -63,18 +63,17 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   const [lastPerformance, setLastPerformance] = useState('A carregar histórico...');
   const [historyError, setHistoryError] = useState('');
 
+  // Inicializa as séries com base no plano
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({
       id: i,
       setNumber: i + 1,
       prescribedReps: planExercise.reps,
-      isCompleted: false,
-      weight: '',
-      reps: '',
     }));
     setSets(initialSets);
   }, [planExercise]);
 
+  // Busca o histórico do exercício
   const fetchHistory = useCallback(async () => {
     if (!authState.token || !planExercise.id) return;
     try {
@@ -94,7 +93,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
-
+  
   const handleAddSet = () => {
     setSets(prevSets => [
       ...prevSets,
@@ -102,9 +101,6 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
         id: prevSets.length,
         setNumber: prevSets.length + 1,
         prescribedReps: planExercise.reps,
-        isCompleted: false,
-        weight: '',
-        reps: '',
       }
     ]);
   };
@@ -119,7 +115,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
       </CardHeader>
       
       <div>
-        {sets.map((set, index) => (
+        {sets.map((set) => (
           <SetRow
             key={set.id}
             setNumber={set.setNumber}
