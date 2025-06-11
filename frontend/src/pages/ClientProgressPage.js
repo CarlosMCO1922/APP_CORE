@@ -1,5 +1,4 @@
-// src/pages/ClientProgressPage.js
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef, Fragment } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import styled, { css, keyframes } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -26,13 +25,6 @@ const PageContainer = styled.div`
   min-height: 100vh;
   padding: 25px clamp(15px, 4vw, 40px);
   font-family: ${({ theme }) => theme.fonts.main};
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
 `;
 
 const HeaderContainer = styled.div`
@@ -62,10 +54,7 @@ const BackLink = styled(Link)`
   border-radius: ${({ theme }) => theme.borderRadius};
   transition: background-color 0.2s, color 0.2s;
   font-size: 0.95rem;
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
-  }
+  &:hover { background-color: ${({ theme }) => theme.colors.cardBackground}; color: #fff; }
 `;
 
 const MessageBaseStyles = css`
@@ -78,7 +67,6 @@ const LoadingText = styled.p`${MessageBaseStyles} color: ${({ theme }) => theme.
 const ErrorText = styled.p`${MessageBaseStyles} color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border-color: ${({ theme }) => theme.colors.error};`;
 const EmptyText = styled.p`${MessageBaseStyles} color: ${({ theme }) => theme.colors.textMuted}; font-style: italic; border-color: transparent; background-color: rgba(0,0,0,0.05); padding: 30px 15px;`;
 const PageSuccessMessage = styled.p`${MessageBaseStyles} color: ${({ theme }) => theme.colors.success || '#28a745'}; background-color: ${({ theme }) => theme.colors.successBg || 'rgba(40, 167, 69, 0.1)'}; border-color: ${({ theme }) => theme.colors.success || '#28a745'};`;
-
 const SectionTitle = styled.h2`
     font-size: 1.6rem; color: ${({ theme }) => theme.colors.primary};
     margin-top: 30px; margin-bottom: 20px; padding-bottom: 10px;
@@ -108,15 +96,23 @@ const SelectTrainingButton = styled.button`
     &:hover { background-color: ${({ theme }) => theme.colors.primaryHover || '#e6c358'}; }
 `;
 
-// <<< ALTERAÇÃO AQUI: Novos Styled Components para a interface de treino ao vivo >>>
+// <<< NOVOS/ATUALIZADOS STYLED COMPONENTS PARA A INTERFACE DE TREINO AO VIVO >>>
 const fadeIn = keyframes` from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); }`;
 
+const WorkoutLiveContainer = styled.div`
+  animation: ${fadeIn} 0.5s ease-out;
+`;
+const WorkoutHeader = styled.div`
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+`;
 const FinishWorkoutButton = styled.button`
   background-color: ${({ theme }) => theme.colors.success};
   color: white; border: none; border-radius: 20px;
-  padding: 10px 20px; font-weight: bold; cursor: pointer;
+  padding: 10px 20px; font-weight: bold; font-size: 0.9rem; cursor: pointer;
+  transition: background-color 0.2s;
+  &:hover { background-color: ${({ theme }) => theme.colors.successDark || '#5cb85c'}; }
 `;
-const ExerciseTitle = styled.h2`
+const ExerciseTitle = styled.h3`
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 1.8rem; text-align: center; margin-bottom: 10px;
 `;
@@ -126,7 +122,6 @@ const PrescribedText = styled.p`
 `;
 const SetList = styled.div`
   display: flex; flex-direction: column; gap: 15px;
-  animation: ${fadeIn} 0.5s ease-out;
 `;
 const SetRow = styled.div`
   display: grid; grid-template-columns: 40px 1fr 1fr 60px;
@@ -147,7 +142,8 @@ const InputGroup = styled.div`
   label { font-size: 0.7rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 4px; text-transform: uppercase; }
   input {
     background-color: ${({ theme }) => theme.colors.inputBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-    color: white; border-radius: 5px; padding: 10px; text-align: center;
+    color: ${({ theme }) => theme.colors.textMain};
+    border-radius: 5px; padding: 10px; text-align: center;
     font-size: 1.1rem; font-weight: 500; width: 100%; -moz-appearance: textfield;
     &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   }
@@ -187,37 +183,288 @@ const RestTimerContainer = styled.div`
   p { margin: 0; font-size: 1.5rem; font-weight: bold; min-width: 80px; text-align: center; }
   button { background-color: rgba(0,0,0,0.2); color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
 `;
-// --- Fim dos Styled Components ---
 
-// <<< ALTERAÇÃO AQUI: A página agora tem dois modos: "selection" e "workout" >>>
+const ModalOverlayStyled = styled.div`
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.88); display: flex;
+  justify-content: center; align-items: center;
+  z-index: 1050; padding: 20px;
+`;
+
+const ModalContentStyled = styled.div`
+  background-color: ${({ theme }) => theme.colors.modalBg || '#2A2A2A'};
+  padding: clamp(20px, 3vw, 30px);
+  border-radius: 10px; width: 100%;
+  max-width: 750px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  position: relative; color: ${({ theme }) => theme.colors.textMain};
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-top: 3px solid ${({ theme }) => theme.colors.primary};
+`;
+
+const ModalHeaderStyled = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+`;
+
+const ModalTitleStyled = styled.h3`
+  color: ${({ theme }) => theme.colors.primary};
+  margin: 0;
+  font-size: clamp(1.3rem, 3vw, 1.6rem);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const CloseModalButtonStyled = styled.button`
+  background: transparent; border: none;
+  color: #aaa; font-size: 1.8rem; cursor: pointer;
+  padding: 5px; line-height: 1;
+  transition: color 0.2s;
+  &:hover { color: white; }
+`;
+
+const FullHistoryTableContainer = styled.div`
+  overflow-y: auto;
+  max-height: 50vh;
+  margin-bottom: 15px;
+
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: ${({ theme }) => theme.colors.scrollbarTrack || '#383838'}; border-radius: 3px; }
+  &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.scrollbarThumb || '#555'}; border-radius: 3px; }
+  &::-webkit-scrollbar-thumb:hover { background: ${({ theme }) => theme.colors.scrollbarThumbHover || '#666'}; }
+`;
+
+const FullHistoryTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th, td {
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.05)'};
+    padding: 8px 10px;
+    text-align: left;
+  }
+  th {
+    background-color: ${({ theme }) => theme.colors.tableHeaderBg || '#333'};
+    color: ${({ theme }) => theme.colors.primary};
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  tbody tr:nth-child(even) {
+    background-color: ${({ theme }) => theme.colors.tableRowEvenBg || '#272727'};
+  }
+  td {
+    color: ${({ theme }) => theme.colors.textMuted};
+    span.notes {
+      display: block;
+      font-style: italic;
+      font-size: 0.8rem;
+      color: #999;
+      white-space: pre-wrap;
+    }
+  }
+`;
+
+const ViewHistoryButton = styled.button`
+  background-color: transparent;
+  color: ${({ theme }) => theme.colors.info || '#17a2b8'};
+  border: 1px solid ${({ theme }) => theme.colors.info || '#17a2b8'};
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.info || '#17a2b8'};
+    color: white;
+  }
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+`;
+
+const ModalLabel = styled.label`
+  font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 4px; display: block; font-weight: 500;
+`;
+
+
+const ModalInput = styled.input`
+  padding: 10px 14px; background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+`;
+
+const StatisticsSection = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: clamp(15px, 3vw, 25px);
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  margin-top: 30px;
+  margin-bottom: 20px;
+
+  h3 {
+    color: ${({ theme }) => theme.colors.secondary || theme.colors.primary};
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha};
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+`;
+
+const StatCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#2C2C2C'}; 
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 3px solid ${({ theme }) => theme.colors.primary};
+  
+  h4 {
+    font-size: 0.9rem;
+    color: ${({ theme }) => theme.colors.textMuted};
+    margin-top: 0;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+  
+  p {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: ${({ theme }) => theme.colors.textMain};
+    margin: 0;
+  }
+`;
+
+const ChartMetricSelectorContainer = styled.div`
+  margin: 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  
+  label {
+    color: ${({ theme }) => theme.colors.textMuted};
+    font-size: 0.9rem;
+  }
+
+  select {
+    padding: 8px 12px;
+    background-color: ${({ theme }) => theme.colors.inputBg || '#383838'};
+    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    border-radius: ${({ theme }) => theme.borderRadius};
+    color: ${({ theme }) => theme.colors.textMain};
+    font-size: 0.9rem;
+    &:focus {
+      outline: none;
+      border-color: ${({ theme }) => theme.colors.primary};
+    }
+  }
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const FilterLabel = styled.label`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 3px;
+`;
+
+const FilterInput = styled.input`
+  padding: 9px 12px;
+  background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.9rem;
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
+const FilterButton = styled.button`
+  background-color: ${({ theme, secondary }) => secondary ? theme.colors.buttonSecondaryBg : theme.colors.primary};
+  color: ${({ theme, secondary }) => secondary ? theme.colors.textMain : theme.colors.textDark};
+  padding: 9px 15px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: background-color 0.2s ease;
+  height: 38px;
+  
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+`;
+
 const ClientProgressPage = () => {
     const { authState } = useAuth();
     const navigate = useNavigate();
     const { globalPlanId } = useParams();
 
-    // Estados para o modo de seleção (o que já tinhas)
+    // <<< ESTADOS DO TEU FICHEIRO ORIGINAL, PARA SELEÇÃO E DADOS >>>
     const [myTrainings, setMyTrainings] = useState([]);
     const [selectedTraining, setSelectedTraining] = useState(null);
     const [selectedTrainingName, setSelectedTrainingName] = useState('');
+    const [workoutPlans, setWorkoutPlans] = useState([]);
+    const [performanceLogs, setPerformanceLogs] = useState({});
     const [loadingTrainings, setLoadingTrainings] = useState(!globalPlanId);
-    
-    // Estados para o modo de treino "ao vivo"
-    const [workoutPlan, setWorkoutPlan] = useState(null);
-    const [loadingPlan, setLoadingPlan] = useState(!!globalPlanId);
-    const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-    const [setsState, setSetsState] = useState({});
-    
-    // Estados do temporizador
-    const [restTime, setRestTime] = useState(60);
-    const [isTimerRunning, setIsTimerRunning] = useState(false);
-    const timerRef = useRef(null);
-    const audioRef = useRef(null);
-    
-    // Estados de feedback e erro
+    const [loadingPlansAndProgress, setLoadingPlansAndProgress] = useState(!!globalPlanId);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [showFullHistoryModal, setShowFullHistoryModal] = useState(false);
+    const [selectedExerciseForHistory, setSelectedExerciseForHistory] = useState(null);
+    const [fullHistoryLogs, setFullHistoryLogs] = useState([]);
+    const [loadingFullHistory, setLoadingFullHistory] = useState(false);
+    const [fullHistoryError, setFullHistoryError] = useState('');
+    const [trainingStatistics, setTrainingStatistics] = useState(null);
 
-    // Fetch inicial para a seleção de treinos (se não vier de um plano livre)
+    // <<< NOVOS ESTADOS PARA A INTERFACE DE TREINO AO VIVO >>>
+    const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+    const [setsState, setSetsState] = useState({});
+    const [isTimerRunning, setIsTimerRunning] = useState(false);
+    const [restTime, setRestTime] = useState(60);
+    const timerRef = useRef(null);
+    const audioRef = useRef(null);
+
+    // <<< LÓGICA PRESERVADA: Fetch inicial para a seleção de treinos >>>
     const fetchBookedTrainings = useCallback(async () => {
         if (authState.token && !globalPlanId) {
             setLoadingTrainings(true);
@@ -235,17 +482,14 @@ const ClientProgressPage = () => {
     useEffect(() => {
         fetchBookedTrainings();
     }, [fetchBookedTrainings]);
-    
-    // Lógica para carregar o plano de treino quando um treino é selecionado ou um plano livre é usado
+
+    // <<< LÓGICA ALTERADA: Carrega o plano de treino (de um treino agendado ou livre) >>>
     const loadWorkoutData = useCallback(async () => {
       const planIdToLoad = selectedTraining || globalPlanId;
       if (!planIdToLoad || !authState.token) return;
 
-      setLoadingPlan(true);
+      setLoadingPlansAndProgress(true);
       setError('');
-      setSuccessMessage('');
-      setWorkoutPlan(null);
-
       try {
         let planData;
         if(globalPlanId) {
@@ -253,10 +497,7 @@ const ClientProgressPage = () => {
             setSelectedTrainingName(`Plano Livre: ${planData.name}`);
         } else {
             const plans = await getWorkoutPlansByTrainingId(selectedTraining, authState.token);
-            if (plans && plans.length > 0) {
-              // Por agora, assumimos o primeiro plano do treino. A lógica pode ser expandida aqui.
-              planData = plans[0]; 
-            }
+            planData = (plans && plans.length > 0) ? plans[0] : null;
             const trainingDetails = myTrainings.find(t => t.id === selectedTraining);
             if (trainingDetails) setSelectedTrainingName(trainingDetails.name);
         }
@@ -271,15 +512,17 @@ const ClientProgressPage = () => {
       } catch (err) {
         setError(err.message || "Não foi possível carregar os detalhes deste plano.");
       } finally {
-        setLoadingPlan(false);
+        setLoadingPlansAndProgress(false);
       }
     }, [selectedTraining, globalPlanId, authState.token, myTrainings]);
 
     useEffect(() => {
-      loadWorkoutData();
-    }, [loadWorkoutData]);
-    
-    // Lógica do Temporizador
+        if (selectedTraining || globalPlanId) {
+            loadWorkoutData();
+        }
+    }, [selectedTraining, globalPlanId, loadWorkoutData]);
+
+    // <<< NOVA LÓGICA: Controlo do Temporizador >>>
     useEffect(() => {
         if (isTimerRunning && restTime > 0) {
             timerRef.current = setInterval(() => { setRestTime(prev => prev - 1); }, 1000);
@@ -289,11 +532,11 @@ const ClientProgressPage = () => {
             if (audioRef.current) {
                 audioRef.current.play().catch(e => console.log("Erro ao tocar som:", e));
             }
-            // Não resetamos o tempo aqui, ele será redefinido no próximo set
         }
         return () => clearInterval(timerRef.current);
     }, [isTimerRunning, restTime]);
-
+    
+    // <<< NOVA LÓGICA: Funções para a interface de treino ao vivo >>>
     const initializeSets = (exercises) => {
         const initialState = {};
         if (exercises?.length) {
@@ -305,7 +548,6 @@ const ClientProgressPage = () => {
         }
         setSetsState(initialState);
     };
-
     const handleSetChange = (exId, setIndex, field, value) => {
         const newSets = { ...setsState };
         if(newSets[exId]?.[setIndex]) {
@@ -313,11 +555,10 @@ const ClientProgressPage = () => {
             setSetsState(newSets);
         }
     };
-    
     const logPerformance = useCallback(async (planExerciseId, setData) => {
         if (!workoutPlan?.id) return;
         const performanceData = {
-            trainingId: selectedTraining || 0, // 0 ou um ID placeholder para planos livres
+            trainingId: selectedTraining, // Pode ser null para planos livres
             workoutPlanId: workoutPlan.id,
             planExerciseId,
             performedAt: new Date().toISOString(),
@@ -328,7 +569,7 @@ const ClientProgressPage = () => {
             await logExercisePerformanceService(performanceData, authState.token);
         } catch (error) {
             console.error("Falha ao registar série:", error);
-            // Poderia mostrar um erro ao utilizador aqui
+            setError("Falha ao registar série. Tente novamente.");
         }
     }, [authState.token, workoutPlan, selectedTraining]);
 
@@ -337,18 +578,22 @@ const ClientProgressPage = () => {
         const currentSet = newSets[exId]?.[setIndex];
         if (currentSet) {
             currentSet.completed = !currentSet.completed;
-            setSetsState(newSets); // Atualiza a UI imediatamente
+            setSetsState(newSets);
 
             if (currentSet.completed) {
+                if(!currentSet.reps && !currentSet.weight) {
+                  alert("Por favor, preencha o peso ou as repetições antes de completar a série.");
+                  currentSet.completed = false; // Desfaz
+                  setSetsState(newSets);
+                  return;
+                }
                 logPerformance(exId, currentSet);
-                // Inicia o temporizador com o descanso definido no plano, ou 60s por defeito
                 const prescribedRest = workoutPlan?.planExercises[currentExerciseIndex]?.restSeconds;
                 setRestTime(prescribedRest > 0 ? prescribedRest : 60);
                 setIsTimerRunning(true);
             } else {
                 clearInterval(timerRef.current);
                 setIsTimerRunning(false);
-                // Lógica para apagar o registo seria aqui, mas é mais complexo. Por agora, apenas desmarca.
             }
         }
     }, [setsState, logPerformance, workoutPlan, currentExerciseIndex]);
@@ -363,99 +608,99 @@ const ClientProgressPage = () => {
     };
 
     const clearSelection = () => {
-        if (globalPlanId) {
-            navigate('/meu-progresso');
-        } else {
-            setSelectedTraining(null);
-            setWorkoutPlan(null);
-        }
+      if (globalPlanId) { navigate('/meu-progresso'); } 
+      else { setSelectedTraining(null); setWorkoutPlan(null); }
     };
 
     const currentExercise = workoutPlan?.planExercises[currentExerciseIndex];
     const hasActiveSelection = selectedTraining || globalPlanId;
 
-    if (!hasActiveSelection) {
-        return (
-            <PageContainer>
-                <BackLink to="/dashboard"><FaArrowLeft /> Voltar ao Painel</BackLink>
-                <HeaderContainer>
-                    <Title><FaClipboardList /> Registar Progresso Pessoal</Title>
-                </HeaderContainer>
-                {loadingTrainings && <LoadingText>A carregar seus treinos...</LoadingText>}
-                {error && <ErrorText>{error}</ErrorText>}
-
-                {!loadingTrainings && (
-                    <>
-                        <SectionTitle>Selecione um Treino Agendado</SectionTitle>
-                        {myTrainings.length > 0 ? (
-                            <TrainingSelectorGrid>
-                            {myTrainings.map(training => (
-                                <TrainingCard key={training.id} onClick={() => setSelectedTraining(training.id)}>
-                                <h3>{training.name}</h3>
-                                <p>Data: {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time ? training.time.substring(0, 5) : 'N/A'}</p>
-                                <SelectTrainingButton onClick={(e) => { e.stopPropagation(); setSelectedTraining(training.id); }}>
-                                    Registar Progresso
-                                </SelectTrainingButton>
-                                </TrainingCard>
-                            ))}
-                            </TrainingSelectorGrid>
-                        ) : (<EmptyText>Não está inscrito em nenhum treino.</EmptyText>)}
-                        
-                        <SectionTitle>Ou escolha um Plano Livre</SectionTitle>
-                        <SelectTrainingButton as={Link} to="/explorar-planos" style={{ textDecoration: 'none', display: 'inline-block', width: 'auto' }}>
-                            Explorar Planos de Treino
-                        </SelectTrainingButton>
-                    </>
-                )}
-            </PageContainer>
-        );
-    }
-    
-    if (loadingPlan) return <PageContainer><LoadingText>A carregar plano de treino...</LoadingText></PageContainer>;
-    if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
-    if (!workoutPlan) return <PageContainer><EmptyText>Plano de treino não encontrado ou inválido.</EmptyText></PageContainer>;
-
+    // <<< Renderização Condicional: Mostra Seleção OU Treino Ao Vivo >>>
     return (
         <PageContainer>
             <audio ref={audioRef} src="/timer_end.mp3" preload="auto" />
-            <Header>
-                <BackLink to="#" onClick={clearSelection}><FaArrowLeft /></BackLink>
-                <FinishWorkoutButton onClick={() => navigate('/dashboard')}>Terminar Treino</FinishWorkoutButton>
-            </Header>
-            
-            {currentExercise && (
-                <>
-                    <ExerciseTitle>{currentExercise.exerciseDetails?.name}</ExerciseTitle>
-                    <PrescribedText>
-                        Prescrito: {currentExercise.sets || 'N/A'} séries de {currentExercise.reps || 'N/A'} reps com {currentExercise.restSeconds || 'N/A'}s de descanso.
-                    </PrescribedText>
+            <BackLink to="/dashboard"><FaArrowLeft /> Voltar ao Painel</BackLink>
+            <HeaderContainer>
+                <Title><FaClipboardList /> Registar Progresso Pessoal</Title>
+            </HeaderContainer>
 
-                    <SetList>
-                        {setsState[currentExercise.id]?.map((set, index) => (
-                            <SetRow key={index} isCompleted={set.completed}>
-                                <SetNumber isCompleted={set.completed}>{index + 1}</SetNumber>
-                                <InputGroup>
-                                    <label>PESO (KG)</label>
-                                    <input type="number" value={set.weight} onChange={e => handleSetChange(currentExercise.id, index, 'weight', e.target.value)} placeholder={index > 0 ? (setsState[currentExercise.id][index - 1].weight || '0') : '0'} />
-                                </InputGroup>
-                                <InputGroup>
-                                    <label>REPS</label>
-                                    <input type="number" value={set.reps} onChange={e => handleSetChange(currentExercise.id, index, 'reps', e.target.value)} placeholder={currentExercise.reps || '0'}/>
-                                </InputGroup>
-                                <CheckButton isCompleted={set.completed} onClick={() => toggleSetCompleted(currentExercise.id, index)}>
-                                    <FaCheck />
-                                </CheckButton>
-                            </SetRow>
-                        ))}
-                    </SetList>
+            {error && <ErrorText>{error}</ErrorText>}
+            {successMessage && <PageSuccessMessage>{successMessage}</PageSuccessMessage>}
 
-                    <AddSetButton onClick={() => addSet(currentExercise.id)}>+ Adicionar Série</AddSetButton>
+            {!hasActiveSelection ? (
+                // <<< TUA VIEW ORIGINAL DE SELEÇÃO DE TREINO >>>
+                <Fragment>
+                    {loadingTrainings && <LoadingText>A carregar seus treinos...</LoadingText>}
+                    {!loadingTrainings && (
+                        <>
+                            <SectionTitle>Selecione um Treino Agendado</SectionTitle>
+                            {myTrainings.length > 0 ? (
+                                <TrainingSelectorGrid>
+                                {myTrainings.map(training => (
+                                    <TrainingCard key={training.id} onClick={() => setSelectedTraining(training.id)}>
+                                    <h3>{training.name}</h3>
+                                    <p>Data: {new Date(training.date).toLocaleDateString('pt-PT')} às {training.time ? training.time.substring(0, 5) : 'N/A'}</p>
+                                    <SelectTrainingButton onClick={(e) => { e.stopPropagation(); setSelectedTraining(training.id); }}>
+                                        Registar/Ver Progresso
+                                    </SelectTrainingButton>
+                                    </TrainingCard>
+                                ))}
+                                </TrainingSelectorGrid>
+                            ) : (<EmptyText>Não está inscrito em nenhum treino.</EmptyText>)}
+                            <SectionTitle>Ou escolha um Plano Livre</SectionTitle>
+                            <SelectTrainingButton as={Link} to="/explorar-planos" style={{ textDecoration: 'none', display: 'inline-block', width: 'auto' }}>
+                                Explorar Planos de Treino
+                            </SelectTrainingButton>
+                        </>
+                    )}
+                </Fragment>
+            ) : (
+                // <<< NOVA VIEW DE TREINO AO VIVO >>>
+                <Fragment>
+                    {loadingPlan && <LoadingText>A carregar plano de treino...</LoadingText>}
+                    {!loadingPlan && workoutPlan && (
+                        <WorkoutLiveContainer>
+                            <WorkoutHeader>
+                                <SelectTrainingButton onClick={clearSelection} style={{ backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain }}>Mudar Treino</SelectTrainingButton>
+                                <FinishWorkoutButton onClick={() => navigate('/dashboard')}>Terminar Treino</FinishWorkoutButton>
+                            </WorkoutHeader>
+                            {currentExercise && (
+                                <>
+                                    <ExerciseTitle>{currentExercise.exerciseDetails?.name}</ExerciseTitle>
+                                    <PrescribedText>
+                                        Prescrito: {currentExercise.sets || 'N/A'} séries de {currentExercise.reps || 'N/A'} reps com {currentExercise.restSeconds || 'N/A'}s de descanso.
+                                    </PrescribedText>
 
-                    <ExerciseNav>
-                        <NavButton onClick={() => setCurrentExerciseIndex(p => p - 1)} disabled={currentExerciseIndex === 0}>Anterior</NavButton>
-                        <NavButton onClick={() => setCurrentExerciseIndex(p => p + 1)} disabled={currentExerciseIndex >= (workoutPlan.planExercises.length - 1)}>Próximo</NavButton>
-                    </ExerciseNav>
-                </>
+                                    <SetList>
+                                        {setsState[currentExercise.id]?.map((set, index) => (
+                                            <SetRow key={index} isCompleted={set.completed}>
+                                                <SetNumber isCompleted={set.completed}>{index + 1}</SetNumber>
+                                                <InputGroup>
+                                                    <label>PESO (KG)</label>
+                                                    <input type="number" value={set.weight} onChange={e => handleSetChange(currentExercise.id, index, 'weight', e.target.value)} placeholder={index > 0 ? (setsState[currentExercise.id][index - 1].weight || '0') : '0'} />
+                                                </InputGroup>
+                                                <InputGroup>
+                                                    <label>REPS</label>
+                                                    <input type="number" value={set.reps} onChange={e => handleSetChange(currentExercise.id, index, 'reps', e.target.value)} placeholder={currentExercise.reps || '0'}/>
+                                                </InputGroup>
+                                                <CheckButton isCompleted={set.completed} onClick={() => toggleSetCompleted(currentExercise.id, index)}>
+                                                    <FaCheck />
+                                                </CheckButton>
+                                            </SetRow>
+                                        ))}
+                                    </SetList>
+
+                                    <AddSetButton onClick={() => addSet(currentExercise.id)}>+ Adicionar Série</AddSetButton>
+
+                                    <ExerciseNav>
+                                        <NavButton onClick={() => setCurrentExerciseIndex(p => p - 1)} disabled={currentExerciseIndex === 0}>Anterior</NavButton>
+                                        <NavButton onClick={() => setCurrentExerciseIndex(p => p + 1)} disabled={currentExerciseIndex >= (workoutPlan.planExercises.length - 1)}>Próximo</NavButton>
+                                    </ExerciseNav>
+                                </>
+                            )}
+                        </WorkoutLiveContainer>
+                    )}
+                </Fragment>
             )}
 
             {isTimerRunning && (
@@ -466,6 +711,8 @@ const ClientProgressPage = () => {
                     <button onClick={() => { clearInterval(timerRef.current); setIsTimerRunning(false); }}>Saltar</button>
                 </RestTimerContainer>
             )}
+
+            {/* As tuas funcionalidades de estatísticas e histórico podem ser adicionadas aqui, se quiseres que apareçam durante o treino ao vivo */}
         </PageContainer>
     );
 };
