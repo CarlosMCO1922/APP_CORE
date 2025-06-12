@@ -17,6 +17,7 @@ import ExploreWorkoutPlansPage from './pages/ExploreWorkoutPlansPage';
 import BookingServiceSelectionPage from './pages/BookingServiceSelectionPage';
 import BookingCalendarPage from './pages/BookingCalendarPage';
 import LiveWorkoutSessionPage from './pages/LiveWorkoutSessionPage';
+import WorkoutSummaryPage from './pages/WorkoutSummaryPage';
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
 import AdminUserDetailsPage from './pages/admin/AdminUserDetailsPage';
@@ -95,6 +96,7 @@ function App() {
               <Route path="/meu-progresso/usar-plano/:globalPlanId" element={<ClientProgressPage />} />
               <Route path="/calendario" element={<BookingServiceSelectionPage />} />
               <Route path="/agendar" element={<BookingCalendarPage />} />
+              <Route path="/treino/resumo" element={<WorkoutSummaryPage />} />
               <Route path="/treino-ao-vivo/plano/:globalPlanId" element={<LiveWorkoutSessionPage />} />
               <Route path="/treino-ao-vivo/treino/:trainingId" element={<LiveWorkoutSessionPage />} />
             </Route>

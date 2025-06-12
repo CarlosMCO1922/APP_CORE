@@ -62,15 +62,11 @@ const DeleteButton = styled.button`
 
 const SetRow = ({ setId, setNumber, prescribedReps, onSetComplete, trainingId, workoutPlanId, planExerciseId, restSeconds, lastWeight, lastReps, onDeleteSet }) => {
   const { authState } = useAuth();
-
-  // --- INÍCIO DA CORREÇÃO: Todas as declarações de estado no topo ---
   const [weight, setWeight] = useState(lastWeight || '');
   const [reps, setReps] = useState(lastReps || '');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  // Não há nenhum componente PlateCalculatorModal aqui, foi removido na versão anterior
 
-  // --- INÍCIO DA CORREÇÃO: useEffects vêm DEPOIS de todos os useStates ---
   useEffect(() => {
     if (!isCompleted) {
         setWeight(lastWeight || '');
@@ -90,7 +86,7 @@ const SetRow = ({ setId, setNumber, prescribedReps, onSetComplete, trainingId, w
     try {
       await logExercisePerformanceService(performanceData, authState.token);
       setIsCompleted(true);
-      onSetComplete(restSeconds);
+      onSetComplete(performanceData, restSeconds);
     } catch (error) {
       console.error("Erro ao registar série:", error);
       alert(`Falha ao registar a série: ${error.message}`);

@@ -95,6 +95,7 @@ const LiveWorkoutSessionPage = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const [activeRestTimer, setActiveRestTimer] = useState({ active: false, duration: 90, key: 0 });
+  const [completedSets, setCompletedSets] = useState([]);
 
   const fetchPlan = useCallback(async () => {
     if (!authState.token) return;
@@ -139,15 +140,24 @@ const LiveWorkoutSessionPage = () => {
     return `${hours > 0 ? String(hours).padStart(2, '0') + ':' : ''}${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const handleSetComplete = (restDuration) => {
+  const handleSetComplete = (performanceData, restDuration) => {
+    setCompletedSets(prev => [...prev, performanceData]);
     const duration = restDuration !== null && restDuration !== undefined ? restDuration : 90;
     setActiveRestTimer({ active: true, duration: duration, key: prev => prev.key + 1 });
   };
   
   const handleFinishWorkout = () => {
     if (window.confirm("Tens a certeza que queres terminar o treino?")) {
-        alert("Treino Concluído! O teu progresso foi guardado.");
-        navigate('/meu-progresso');
+        const allPlanExercises = workoutPlans.flatMap(p => p.planExercises || []);
+        
+        navigate('/treino/resumo', {
+            state: {
+                sessionData: completedSets,
+                duration: elapsedTime,
+                workoutName: sessionName,
+                allPlanExercises: allPlanExercises,
+            }
+        });
     }
   };
 
