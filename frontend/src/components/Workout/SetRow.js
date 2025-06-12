@@ -6,17 +6,14 @@ import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService } from '../../services/progressService';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 
-// --- Styled Components (a maioria mantém-se) ---
+// --- Styled Components --- (O teu código aqui mantém-se igual)
 const RowContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-
-  &:last-of-type {
-    border-bottom: none;
-  }
+  &:last-of-type { border-bottom: none; }
 `;
 const SetLabel = styled.span`
   font-weight: 600;
@@ -41,90 +38,47 @@ const Input = styled.input`
   font-size: 1rem;
   text-align: center;
   -moz-appearance: textfield;
-
-  &::-webkit-outer-spin-button,
-  &::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
-  }
-  
-  &:disabled {
-    background-color: #2c2c2c;
-    color: ${({ theme }) => theme.colors.textMuted};
-    border-color: #333;
-    opacity: 0.7;
-  }
+  &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+  &:disabled { background-color: #2c2c2c; color: ${({ theme }) => theme.colors.textMuted}; border-color: #333; opacity: 0.7; }
 `;
 const CheckButton = styled.button`
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
+  width: 45px; height: 45px; border-radius: 50%;
   border: 2px solid ${({ theme, isCompleted }) => isCompleted ? theme.colors.success : theme.colors.cardBorder};
   background-color: ${({ theme, isCompleted }) => isCompleted ? theme.colors.success : 'transparent'};
   color: ${({ theme, isCompleted }) => isCompleted ? 'white' : theme.colors.textMuted};
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease-in-out;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.primary};
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-  }
+  font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease-in-out; flex-shrink: 0;
+  &:hover:not(:disabled) { border-color: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.primary}; }
+  &:disabled { cursor: not-allowed; }
 `;
 const DeleteButton = styled.button`
-  background: transparent;
-  border: none;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 5px;
-  transition: color 0.2s;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.error};
-  }
+  background: transparent; border: none; color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1rem; cursor: pointer; padding: 5px; display: flex;
+  align-items: center; justify-content: center; margin-left: 5px; transition: color 0.2s;
+  &:hover { color: ${({ theme }) => theme.colors.error}; }
 `;
+// --- Fim dos Styled Components ---
 
-// --- Componente SetRow Atualizado ---
 const SetRow = ({ setId, setNumber, prescribedReps, onSetComplete, trainingId, workoutPlanId, planExerciseId, restSeconds, lastWeight, lastReps, onDeleteSet }) => {
   const { authState } = useAuth();
+
+  // --- INÍCIO DA CORREÇÃO: Todas as declarações de estado no topo ---
   const [weight, setWeight] = useState(lastWeight || '');
   const [reps, setReps] = useState(lastReps || '');
-  
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  // Não há nenhum componente PlateCalculatorModal aqui, foi removido na versão anterior
+
+  // --- INÍCIO DA CORREÇÃO: useEffects vêm DEPOIS de todos os useStates ---
   useEffect(() => {
     if (!isCompleted) {
         setWeight(lastWeight || '');
-    }
-  }, [lastWeight, isCompleted]);
-
-  useEffect(() => {
-    if(!isCompleted) {
         setReps(lastReps || '');
     }
-  }, [lastReps, isCompleted]);
-
+  }, [lastWeight, lastReps, isCompleted]);
+  // --- FIM DA CORREÇÃO ---
   
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleComplete = async () => {
     setIsLoading(true);
     const performanceData = {
