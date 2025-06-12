@@ -1,6 +1,6 @@
 // src/components/Workout/SetRow.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService } from '../../services/progressService';
@@ -95,7 +95,7 @@ const SetRow = ({ setNumber, prescribedReps, onSetComplete, trainingId, workoutP
   const [reps, setReps] = useState(lastReps || '');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   useEffect(() => {
       setWeight(lastWeight || '');
       setReps(lastReps || '');
