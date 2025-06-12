@@ -7,6 +7,7 @@ import { getMyPerformanceHistoryForExerciseService } from '../../services/progre
 import { FaDumbbell, FaHistory, FaCalculator} from 'react-icons/fa';
 import SetRow from './SetRow';
 import PlateCalculatorModal from './PlateCalculatorModal';
+import ExerciseDetailModal from './ExerciseDetailModal';
 
 const CardContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
@@ -38,6 +39,12 @@ const ExerciseName = styled.h2`
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer; // Adicionar cursor de ponteiro
+  transition: color 0.2s;
+
+  &:hover {
+    color: #e6c358; // Um pouco mais claro no hover
+  }
 `;
 
 const LastPerformance = styled.p`
@@ -93,6 +100,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   const [historyError, setHistoryError] = useState('');
   const [showCalculator, setShowCalculator] = useState(false);
   const [sharedWeight, setSharedWeight] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({
@@ -156,7 +164,9 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
       <CardContainer>
         <CardHeader>
           <HeaderInfo>
-            <ExerciseName><FaDumbbell /> {planExercise.exerciseDetails.name}</ExerciseName>
+            <ExerciseName onClick={() => setIsDetailModalOpen(true)}>
+              <FaDumbbell /> {planExercise.exerciseDetails.name}
+            </ExerciseName>
             <LastPerformance>
               <FaHistory /> {historyError || lastPerformanceText}
             </LastPerformance>
@@ -191,6 +201,12 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
         <PlateCalculatorModal
           onClose={() => setShowCalculator(false)}
           onSelectWeight={handleWeightFromCalculator}
+        />
+      )}
+      {isDetailModalOpen && (
+        <ExerciseDetailModal
+          exercise={planExercise.exerciseDetails}
+          onClose={() => setIsDetailModalOpen(false)}
         />
       )}
     </>
