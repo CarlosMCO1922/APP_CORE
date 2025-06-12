@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
 import { FaDumbbell, FaHistory } from 'react-icons/fa';
 import SetRow from './SetRow';
+import PlateCalculatorModal from './PlateCalculatorModal';
 
 const CardContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
@@ -17,6 +18,9 @@ const CardContainer = styled.div`
 `;
 
 const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -57,13 +61,33 @@ const AddSetButton = styled.button`
   }
 `;
 
+const CalcButton = styled.button`
+  background: transparent;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMuted};
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+  height: fit-content;
+  margin-left: 15px;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
 const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete }) => {
   const { authState } = useAuth();
   const [sets, setSets] = useState([]);
   const [lastPerformanceText, setLastPerformanceText] = useState('A carregar histórico...');
   const [lastPerformanceData, setLastPerformanceData] = useState({ weight: '', reps: '' });
-
   const [historyError, setHistoryError] = useState('');
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [sharedWeight, setSharedWeight] = useState(null);
 
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({
@@ -80,13 +104,11 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
       const history = await getMyPerformanceHistoryForExerciseService(planExercise.id, authState.token);
       if (history && history.length > 0) {
         const lastSession = history[0];
-        
         setLastPerformanceText(`Reps: ${lastSession.performedReps || '-'}, Peso: ${lastSession.performedWeight || '-'}kg`);
         setLastPerformanceData({
             weight: lastSession.performedWeight || '',
             reps: lastSession.performedReps || ''
         });
-
       } else {
         setLastPerformanceText('Ainda não há registos para este exercício.');
       }
@@ -103,38 +125,70 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   const handleAddSet = () => {
     setSets(prevSets => [
       ...prevSets,
-      { id: prevSets.length, setNumber: prevSets.length + 1, prescribedReps: planExercise.reps }
+      { id: Date.now(), setNumber: prevSets.length + 1, prescribedReps: planExercise.reps } // Usar Date.now() para um ID único
     ]);
   };
   
-  return (
-    <CardContainer>
-      <CardHeader>
-        <ExerciseName><FaDumbbell /> {planExercise.exerciseDetails.name}</ExerciseName>
-        <LastPerformance>
-          <FaHistory /> {historyError || lastPerformanceText}
-        </LastPerformance>
-      </CardHeader>
-      
-      <div>
-        {sets.map((set) => (
-          <SetRow
-            key={set.id}
-            setNumber={set.setNumber}
-            prescribedReps={set.prescribedReps}
-            trainingId={trainingId}
-            workoutPlanId={workoutPlanId}
-            planExerciseId={planExercise.id}
-            onSetComplete={onSetComplete}
-            restSeconds={planExercise.restSeconds}
-            lastWeight={lastPerformanceData.weight}
-            lastReps={lastPerformanceData.reps}
-          />
-        ))}
-      </div>
+  const handleDeleteSet = (setIdToDelete) => {
+    setSets(prevSets => {
+      const filteredSets = prevSets.filter(set => set.id !== setIdToDelete);
+      // Re-numera as séries para manter a ordem correta
+      return filteredSets.map((set, index) => ({
+        ...set,
+        setNumber: index + 1
+      }));
+    });
+  };
 
-      <AddSetButton onClick={handleAddSet}>+ Adicionar Série</AddSetButton>
-    </CardContainer>
+  const handleWeightFromCalculator = (selectedWeight) => {
+    setSharedWeight(selectedWeight); // Atualiza o peso partilhado para todas as séries
+    setShowCalculator(false);
+  };
+
+  
+  return (
+    <>
+      <CardContainer>
+        <CardHeader>
+          <HeaderInfo>
+            <ExerciseName><FaDumbbell /> {planExercise.exerciseDetails.name}</ExerciseName>
+            <LastPerformance>
+              <FaHistory /> {historyError || lastPerformanceText}
+            </LastPerformance>
+          </HeaderInfo>
+          <CalcButton onClick={() => setShowCalculator(true)} title="Calculadora de Discos">
+            <FaCalculator />
+          </CalcButton>
+        </CardHeader>
+        
+        <div>
+          {sets.map((set) => (
+            <SetRow
+              key={set.id}
+              setId={set.id}
+              setNumber={set.setNumber}
+              prescribedReps={set.prescribedReps}
+              trainingId={trainingId}
+              workoutPlanId={workoutPlanId}
+              planExerciseId={planExercise.id}
+              onSetComplete={onSetComplete}
+              restSeconds={planExercise.restSeconds}
+              lastWeight={sharedWeight !== null ? sharedWeight : lastPerformanceData.weight}
+              lastReps={lastPerformanceData.reps}
+              onDeleteSet={handleDeleteSet}
+            />
+          ))}
+        </div>
+
+        <AddSetButton onClick={handleAddSet}>+ Adicionar Série</AddSetButton>
+      </CardContainer>
+      {showCalculator && (
+        <PlateCalculatorModal
+          onClose={() => setShowCalculator(false)}
+          onSelectWeight={handleWeightFromCalculator}
+        />
+      )}
+    </>
   );
 };
 

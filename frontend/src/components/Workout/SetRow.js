@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService } from '../../services/progressService';
-import { FaCheck, FaCalculator } from 'react-icons/fa';
-import PlateCalculatorModal from './PlateCalculatorModal';
+import { FaCheck, FaTimes } from 'react-icons/fa';
 
+// --- Styled Components (a maioria mantém-se) ---
 const RowContainer = styled.div`
   display: flex;
   align-items: center;
@@ -26,16 +26,10 @@ const SetLabel = styled.span`
   transition: color 0.3s;
 `;
 const InputGroup = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   flex-grow: 1;
   gap: 10px;
-  align-items: center;
-`;
-const WeightInputContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex: 1;
 `;
 const Input = styled.input`
   width: 100%;
@@ -91,53 +85,54 @@ const CheckButton = styled.button`
     cursor: not-allowed;
   }
 `;
-const CalcButton = styled.button`
+const DeleteButton = styled.button`
   background: transparent;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border: none;
   color: ${({ theme }) => theme.colors.textMuted};
-  padding: 8px;
-  height: 47px;
-  border-radius: 6px;
+  font-size: 1rem;
   cursor: pointer;
+  padding: 5px;
   display: flex;
   align-items: center;
-  transition: all 0.2s;
+  justify-content: center;
+  margin-left: 5px;
+  transition: color 0.2s;
+
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-    border-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.error};
   }
 `;
 
-
-const SetRow = ({ setNumber, prescribedReps, onSetComplete, trainingId, workoutPlanId, planExerciseId, restSeconds, lastWeight, lastReps }) => {
+// --- Componente SetRow Atualizado ---
+const SetRow = ({ setId, setNumber, prescribedReps, onSetComplete, trainingId, workoutPlanId, planExerciseId, restSeconds, lastWeight, lastReps, onDeleteSet }) => {
   const { authState } = useAuth();
   const [weight, setWeight] = useState(lastWeight || '');
   const [reps, setReps] = useState(lastReps || '');
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showCalculator, setShowCalculator] = useState(false);
-
+  
   useEffect(() => {
     if (!isCompleted) {
         setWeight(lastWeight || '');
+    }
+  }, [lastWeight, isCompleted]);
+
+  useEffect(() => {
+    if(!isCompleted) {
         setReps(lastReps || '');
     }
-  }, [lastWeight, lastReps, isCompleted]);
+  }, [lastReps, isCompleted]);
+
+  
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleComplete = async () => {
     setIsLoading(true);
     const performanceData = {
-      trainingId: trainingId || null,
-      workoutPlanId,
-      planExerciseId,
-      performedAt: new Date().toISOString(),
-      setNumber,
+      trainingId: trainingId || null, workoutPlanId, planExerciseId,
+      performedAt: new Date().toISOString(), setNumber,
       performedReps: reps ? parseInt(reps, 10) : null,
       performedWeight: weight ? parseFloat(weight) : null,
     };
-
-    console.log("A enviar para a API:", performanceData);
-
     try {
       await logExercisePerformanceService(performanceData, authState.token);
       setIsCompleted(true);
@@ -151,43 +146,33 @@ const SetRow = ({ setNumber, prescribedReps, onSetComplete, trainingId, workoutP
   };
 
   return (
-    <>
-      <RowContainer>
-        <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
-        <InputGroup>
-          <WeightInputContainer>
-            <Input
-              type="number"
-              placeholder="Peso"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              disabled={isCompleted || isLoading}
-            />
-            <CalcButton onClick={() => setShowCalculator(true)} title="Calculadora de Discos" disabled={isCompleted || isLoading}>
-              <FaCalculator />
-            </CalcButton>
-          </WeightInputContainer>
-
-          <Input
-            type="number"
-            placeholder={prescribedReps ? `(${prescribedReps})` : "Reps"}
-            value={reps}
-            onChange={(e) => setReps(e.target.value)}
-            disabled={isCompleted || isLoading}
-          />
-        </InputGroup>
-        <CheckButton onClick={handleComplete} isCompleted={isCompleted} disabled={isCompleted || isLoading}>
-          {isCompleted ? <FaCheck /> : ''}
-        </CheckButton>
-      </RowContainer>
-
-      {showCalculator && (
-        <PlateCalculatorModal
-          onClose={() => setShowCalculator(false)}
-          onSelectWeight={(selectedWeight) => setWeight(String(selectedWeight))}
+    <RowContainer>
+      <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
+      <InputGroup>
+        <Input
+          type="number"
+          placeholder="Peso"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          disabled={isCompleted || isLoading}
         />
+        <Input
+          type="number"
+          placeholder={prescribedReps ? `(${prescribedReps})` : "Reps"}
+          value={reps}
+          onChange={(e) => setReps(e.target.value)}
+          disabled={isCompleted || isLoading}
+        />
+      </InputGroup>
+      <CheckButton onClick={handleComplete} isCompleted={isCompleted} disabled={isCompleted || isLoading}>
+        {isCompleted ? <FaCheck /> : ''}
+      </CheckButton>
+      {!isCompleted && (
+        <DeleteButton onClick={() => onDeleteSet(setId)} title="Eliminar Série" disabled={isLoading}>
+          <FaTimes />
+        </DeleteButton>
       )}
-    </>
+    </RowContainer>
   );
 };
 
