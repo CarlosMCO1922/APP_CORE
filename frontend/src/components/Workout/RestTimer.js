@@ -55,13 +55,14 @@ const RestTimer = ({ duration, onFinish }) => {
       onFinish();
       return;
     }
-
     const intervalId = setInterval(() => {
       setTimeLeft(prevTime => prevTime - 1);
     }, 1000);
 
+ 
     return () => clearInterval(intervalId);
-  }, [timeLeft, onFinish]); 
+    
+  }, [timeLeft, onFinish]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
