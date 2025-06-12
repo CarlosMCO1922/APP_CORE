@@ -87,6 +87,43 @@ const BackButton = styled(Link)`
   }
 `;
 
+const PRSection = styled.div`
+  margin-top: 40px;
+  h2 {
+    font-size: 1.8rem;
+    color: ${({ theme }) => theme.colors.primary};
+    text-align: center;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+`;
+
+const PRCard = styled.div`
+  background: linear-gradient(145deg, #2f2f2f, #252525);
+  border: 1px solid ${({ theme }) => theme.colors.primary};
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+  padding: 20px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  margin-bottom: 15px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 1.2rem;
+    color: white;
+    font-weight: 600;
+  }
+  
+  span {
+    font-size: 1rem;
+    color: ${({ theme }) => theme.colors.primary};
+    font-weight: bold;
+  }
+`;
+
 const WorkoutSummaryPage = () => {
   const location = useLocation();
   // Extrai os dados passados através do state da navegação
@@ -141,9 +178,17 @@ const WorkoutSummaryPage = () => {
           <p>{stats.totalSets}</p>
         </StatCard>
       </StatsGrid>
-      
-      {/* Aqui podemos adicionar a lista de exercícios e os PRs na Fase 2 */}
-
+      {personalRecords && personalRecords.length > 0 && (
+        <PRSection>
+          <h2><FaTrophy /> Novos Recordes Pessoais!</h2>
+          {personalRecords.map((pr, index) => (
+            <PRCard key={index}>
+              <span>{getExerciseName(pr.planExerciseId)}</span>
+              <p>{pr.value}</p>
+            </PRCard>
+          ))}
+        </PRSection>
+      )}
       <BackButton to="/dashboard">Voltar ao Painel</BackButton>
     </PageContainer>
   );

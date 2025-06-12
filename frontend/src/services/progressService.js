@@ -156,3 +156,27 @@ export const deleteExercisePerformanceLogService = async (logId, token) => {
     throw error;
   }
 };
+
+export const checkPersonalRecordsService = async (completedSets, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!completedSets || completedSets.length === 0) return { records: [] };
+  
+  try {
+    const response = await fetch(`${API_URL}/progress/check-prs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(completedSets),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao verificar recordes pessoais.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro em checkPersonalRecordsService:", error);
+    throw error;
+  }
+};

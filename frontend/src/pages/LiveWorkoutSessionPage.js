@@ -8,6 +8,7 @@ import { getWorkoutPlansByTrainingId, getGlobalWorkoutPlanByIdClient } from '../
 import { FaArrowLeft, FaStopwatch, FaFlagCheckered } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard';
 import RestTimer from '../components/Workout/RestTimer';
+import { checkPersonalRecordsService } from '../services/progressService'; 
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -146,18 +147,32 @@ const LiveWorkoutSessionPage = () => {
     setActiveRestTimer({ active: true, duration: duration, key: prev => prev.key + 1 });
   };
   
-  const handleFinishWorkout = () => {
+  const handleFinishWorkout = async () => {
     if (window.confirm("Tens a certeza que queres terminar o treino?")) {
-        const allPlanExercises = workoutPlans.flatMap(p => p.planExercises || []);
-        
-        navigate('/treino/resumo', {
-            state: {
-                sessionData: completedSets,
-                duration: elapsedTime,
-                workoutName: sessionName,
-                allPlanExercises: allPlanExercises,
-            }
-        });
+        try {
+            const prData = await checkPersonalRecordsService(completedSets, authState.token); 
+            const allPlanExercises = workoutPlans.flatMap(p => p.planExercises || []);
+            
+            navigate('/treino/resumo', {
+                state: {
+                    sessionData: completedSets,
+                    duration: elapsedTime,
+                    workoutName: sessionName,
+                    allPlanExercises: allPlanExercises,
+                    personalRecords: prData.records || []
+                }
+            });
+        } catch (error) {
+            console.error("Erro ao finalizar treino e verificar PRs:", error);
+            navigate('/treino/resumo', {
+                state: {
+                    sessionData: completedSets,
+                    duration: elapsedTime,
+                    workoutName: sessionName,
+                    personalRecords: []
+                }
+            });
+        }
     }
   };
 

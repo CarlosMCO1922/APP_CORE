@@ -5,7 +5,8 @@ const {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
   getMyPerformanceHistoryForExercise,
-  deletePerformanceLog 
+  deletePerformanceLog,
+  checkPersonalRecords,
 } = require('../controllers/progressController');
 const { protect, isClientUser } = require('../middleware/authMiddleware');
 
@@ -16,6 +17,7 @@ router.use(isClientUser);
 router.post('/log-performance', logExercisePerformance);
 router.get('/my-history/training/:trainingId/plan/:workoutPlanId', getMyPerformanceForWorkoutPlan);
 router.get('/my-exercise-history/:planExerciseId', getMyPerformanceHistoryForExercise);
+router.post('/check-prs', checkPersonalRecords);
 
 // --- NOVA ROTA PARA ELIMINAR ---
 router.delete('/log/:logId', deletePerformanceLog);

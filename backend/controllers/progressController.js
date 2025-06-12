@@ -134,9 +134,69 @@ const deletePerformanceLog = async (req, res) => {
     }
 };
 
+const checkPersonalRecords = async (req, res) => {
+  const userId = req.user.id;
+  const completedSets = req.body; // Espera um array de séries completadas
+
+  if (!Array.isArray(completedSets) || completedSets.length === 0) {
+    return res.status(200).json({ records: [] }); // Nada a verificar
+  }
+
+  try {
+    const newRecords = [];
+
+    for (const set of completedSets) {
+      if (!set.planExerciseId || !set.performedWeight || !set.performedReps) {
+        continue; 
+      }
+
+      const previousMaxWeightForReps = await db.ClientExercisePerformance.max('performedWeight', {
+        where: {
+          userId,
+          planExerciseId: set.planExerciseId,
+          performedReps: set.performedReps,
+          id: { [Op.not]: null } 
+        }
+      });
+
+      if (!previousMaxWeightForReps || set.performedWeight > previousMaxWeightForReps) {
+        newRecords.push({
+          type: 'Peso Máximo',
+          value: `${set.performedWeight} kg x ${set.performedReps} reps`,
+          planExerciseId: set.planExerciseId
+        });
+      }
+
+      const previousMaxRepsForWeight = await db.ClientExercisePerformance.max('performedReps', {
+        where: {
+          userId,
+          planExerciseId: set.planExerciseId,
+          performedWeight: set.performedWeight
+        }
+      });
+
+      if (!previousMaxRepsForWeight || set.performedReps > previousMaxRepsForWeight) {
+        newRecords.push({
+          type: 'Máximo de Reps',
+          value: `${set.performedReps} reps com ${set.performedWeight} kg`,
+          planExerciseId: set.planExerciseId
+        });
+      }
+    }
+    
+    const uniqueRecords = Array.from(new Map(newRecords.map(item => [item.type + item.value, item])).values());
+
+    res.status(200).json({ records: uniqueRecords });
+  } catch (error) {
+    console.error('Erro ao verificar recordes pessoais:', error);
+    res.status(500).json({ message: 'Erro interno ao verificar recordes.' });
+  }
+};
+
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
   getMyPerformanceHistoryForExercise,
   deletePerformanceLog, 
+  checkPersonalRecords,
 };
