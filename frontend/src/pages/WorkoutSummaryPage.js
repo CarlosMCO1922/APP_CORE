@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaCheckCircle, FaStopwatch, FaWeightHanging, FaListOl, FaClipboardList } from 'react-icons/fa';
+import { FaCheckCircle, FaStopwatch, FaWeightHanging, FaListOl, FaClipboardList, FaTrophy } from 'react-icons/fa';
 
 const PageContainer = styled.div`
   max-width: 800px;
@@ -126,8 +126,13 @@ const PRCard = styled.div`
 
 const WorkoutSummaryPage = () => {
   const location = useLocation();
-  // Extrai os dados passados através do state da navegação
-  const { sessionData, duration, workoutName, allPlanExercises } = location.state || { sessionData: [], duration: 0, workoutName: 'Treino', allPlanExercises: [] };
+  const { 
+    sessionData = [], 
+    duration = 0, 
+    workoutName = 'Treino', 
+    allPlanExercises = [], 
+    personalRecords = [] 
+  } = location.state || {};
 
   // Calcula as estatísticas usando useMemo para eficiência
   const stats = useMemo(() => {
@@ -151,6 +156,11 @@ const WorkoutSummaryPage = () => {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     return `${hours > 0 ? hours + 'h ' : ''}${minutes > 0 ? minutes + 'm ' : ''}${seconds}s`;
+  };
+
+  const getExerciseName = (planExerciseId) => {
+    const exercise = allPlanExercises.find(ex => ex.id === planExerciseId);
+    return exercise?.exerciseDetails?.name || 'Exercício Desconhecido';
   };
 
   return (
