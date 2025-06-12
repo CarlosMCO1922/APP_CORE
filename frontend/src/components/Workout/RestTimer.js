@@ -52,19 +52,19 @@ const RestTimer = ({ duration, onFinish }) => {
 
   useEffect(() => {
     if (timeLeft <= 0) {
-      // Tocar um som
-      const audio = new Audio('/notification-sound.mp3'); // Adiciona um som na pasta /public
-      audio.play().catch(e => console.log("Não foi possível tocar o som:", e));
+      const audio = new Audio('/notification-sound.mp3'); // Opcional: som na pasta /public
+      audio.play().catch(e => console.warn("Não foi possível tocar o som:", e));
       onFinish();
       return;
     }
+
 
     const intervalId = setInterval(() => {
       setTimeLeft(prevTime => prevTime - 1);
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [timeLeft, onFinish]);
+  }, [timeLeft, onFinish, duration]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
