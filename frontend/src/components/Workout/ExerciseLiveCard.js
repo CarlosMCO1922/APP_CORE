@@ -60,10 +60,11 @@ const AddSetButton = styled.button`
 const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete }) => {
   const { authState } = useAuth();
   const [sets, setSets] = useState([]);
-  const [lastPerformance, setLastPerformance] = useState('A carregar histórico...');
+  const [lastPerformanceText, setLastPerformanceText] = useState('A carregar histórico...');
+  const [lastPerformanceData, setLastPerformanceData] = useState({ weight: '', reps: '' });
+
   const [historyError, setHistoryError] = useState('');
 
-  // Inicializa as séries com base no plano
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({
       id: i,
@@ -73,16 +74,21 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
     setSets(initialSets);
   }, [planExercise]);
 
-  // Busca o histórico do exercício
   const fetchHistory = useCallback(async () => {
     if (!authState.token || !planExercise.id) return;
     try {
       const history = await getMyPerformanceHistoryForExerciseService(planExercise.id, authState.token);
       if (history && history.length > 0) {
         const lastSession = history[0];
-        setLastPerformance(`Reps: ${lastSession.performedReps || '-'}, Peso: ${lastSession.performedWeight || '-'}kg`);
+        
+        setLastPerformanceText(`Reps: ${lastSession.performedReps || '-'}, Peso: ${lastSession.performedWeight || '-'}kg`);
+        setLastPerformanceData({
+            weight: lastSession.performedWeight || '',
+            reps: lastSession.performedReps || ''
+        });
+
       } else {
-        setLastPerformance('Ainda não há registos para este exercício.');
+        setLastPerformanceText('Ainda não há registos para este exercício.');
       }
     } catch (err) {
       setHistoryError('Não foi possível carregar o histórico.');
@@ -97,11 +103,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   const handleAddSet = () => {
     setSets(prevSets => [
       ...prevSets,
-      {
-        id: prevSets.length,
-        setNumber: prevSets.length + 1,
-        prescribedReps: planExercise.reps,
-      }
+      { id: prevSets.length, setNumber: prevSets.length + 1, prescribedReps: planExercise.reps }
     ]);
   };
   
@@ -110,7 +112,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
       <CardHeader>
         <ExerciseName><FaDumbbell /> {planExercise.exerciseDetails.name}</ExerciseName>
         <LastPerformance>
-          <FaHistory /> {historyError || lastPerformance}
+          <FaHistory /> {historyError || lastPerformanceText}
         </LastPerformance>
       </CardHeader>
       
@@ -125,6 +127,8 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
             planExerciseId={planExercise.id}
             onSetComplete={onSetComplete}
             restSeconds={planExercise.restSeconds}
+            lastWeight={lastPerformanceData.weight}
+            lastReps={lastPerformanceData.reps}
           />
         ))}
       </div>

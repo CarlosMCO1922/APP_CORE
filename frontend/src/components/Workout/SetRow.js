@@ -89,12 +89,17 @@ const CheckButton = styled.button`
   }
 `;
 
-const SetRow = ({ setNumber, prescribedReps, onSetComplete, trainingId, workoutPlanId, planExerciseId, restSeconds }) => {
+const SetRow = ({ setNumber, prescribedReps, onSetComplete, trainingId, workoutPlanId, planExerciseId, restSeconds, lastWeight, lastReps }) => {
   const { authState } = useAuth();
-  const [weight, setWeight] = useState('');
-  const [reps, setReps] = useState('');
+  const [weight, setWeight] = useState(lastWeight || '');
+  const [reps, setReps] = useState(lastReps || '');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  useEffect(() => {
+      setWeight(lastWeight || '');
+      setReps(lastReps || '');
+  }, [lastWeight, lastReps]);
 
   const handleComplete = async () => {
     setIsLoading(true);
@@ -107,13 +112,13 @@ const SetRow = ({ setNumber, prescribedReps, onSetComplete, trainingId, workoutP
       performedReps: reps ? parseInt(reps, 10) : null,
       performedWeight: weight ? parseFloat(weight) : null,
     };
-
+    
     console.log("A enviar para a API:", performanceData);
 
     try {
       await logExercisePerformanceService(performanceData, authState.token);
       setIsCompleted(true);
-      onSetComplete(restSeconds); // Notifica a página pai para iniciar o cronómetro
+      onSetComplete(restSeconds); 
     } catch (error) {
       console.error("Erro ao registar série:", error);
       alert(`Falha ao registar a série: ${error.message}`);
