@@ -1,10 +1,10 @@
 // src/components/Workout/ExerciseLiveCard.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, HeaderInfo } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
-import { FaDumbbell, FaHistory } from 'react-icons/fa';
+import { FaDumbbell, FaHistory, FaCalculator} from 'react-icons/fa';
 import SetRow from './SetRow';
 import PlateCalculatorModal from './PlateCalculatorModal';
 
