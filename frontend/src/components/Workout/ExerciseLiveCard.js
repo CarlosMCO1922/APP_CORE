@@ -26,6 +26,11 @@ const CardHeader = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
 
+const HeaderInfo = styled.div`
+    flex-grow: 1;
+`;
+
+
 const ExerciseName = styled.h2`
   color: ${({ theme }) => theme.colors.primary};
   font-size: 1.6rem;
