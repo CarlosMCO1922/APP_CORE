@@ -48,21 +48,29 @@ const CloseTimerButton = styled.button`
 `;
 
 const RestTimer = ({ duration, onFinish }) => {
-  const [timeLeft, setTimeLeft] = useState(duration);
+  // O estado agora é o tempo que já passou, começando em 0.
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
-    if (timeLeft <= 0) {
-      onFinish();
-      return;
-    }
+    // Cria um intervalo que é executado a cada segundo.
     const intervalId = setInterval(() => {
-      setTimeLeft(prevTime => prevTime - 1);
+      // Usa a forma funcional para garantir que temos sempre o valor mais recente.
+      setElapsedTime(prevTime => prevTime + 1);
     }, 1000);
 
- 
+    // Função de limpeza que é chamada quando o componente é removido da tela.
     return () => clearInterval(intervalId);
-    
-  }, [timeLeft, onFinish]);
+  }, []); // A lista de dependências está VAZIA, para o efeito correr só uma vez.
+
+  // Um segundo useEffect para verificar se o tempo acabou.
+  // Isto é mais limpo e seguro do que colocar a lógica dentro do setInterval.
+  useEffect(() => {
+    if (elapsedTime >= duration) {
+      const audio = new Audio('/notification-sound.mp3'); // Opcional
+      audio.play().catch(e => console.warn("Não foi possível tocar o som:", e));
+      onFinish();
+    }
+  }, [elapsedTime, duration, onFinish]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -72,7 +80,9 @@ const RestTimer = ({ duration, onFinish }) => {
 
   return (
     <TimerContainer>
-      <TimerText>Descanso: {formatTime(timeLeft)}</TimerText>
+      <TimerText>
+        Descanso: {formatTime(elapsedTime)} / {formatTime(duration)}
+      </TimerText>
       <CloseTimerButton onClick={onFinish} aria-label="Fechar cronómetro">
         <FaTimes />
       </CloseTimerButton>
