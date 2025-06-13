@@ -82,10 +82,24 @@ const BookingServiceSelectionPage = () => {
   };
 
   const handleContinue = () => {
-    if (selectedService) {
-      navigate(`/agendar?serviceId=${selectedService.id}&type=${selectedService.type}`);
+    if (!selectedService) return;
+
+    switch (selectedService.type) {
+      case 'training_group':
+        navigate('/agendar-treino-grupo');
+        break;
+      case 'appointment':
+        navigate(`/agendar?serviceId=${selectedService.id}&type=appointment`);
+        break;
+      case 'training_request':
+        // Futuramente, isto irá para a página de pedido de PT Individual
+        alert("Funcionalidade de pedido de PT Individual em desenvolvimento.");
+        // navigate('/pedir-pt-individual');
+        break;
+      default:
+        console.error("Tipo de serviço desconhecido:", selectedService.type);
     }
-  };
+};
 
   return (
     <PageContainer>
