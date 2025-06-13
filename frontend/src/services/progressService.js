@@ -195,3 +195,28 @@ export const getMyRecordsService = async (token) => {
     throw error;
   }
 };
+
+export const updatePerformanceLogService = async (logId, performanceData, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!logId) throw new Error('ID do Log é obrigatório para atualizar.');
+
+  try {
+    const response = await fetch(`${API_URL}/progress/log/${logId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(performanceData),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao atualizar registo.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro em updatePerformanceLogService:", error);
+    throw error;
+  }
+};

@@ -191,6 +191,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
               lastWeight={sharedWeight !== null ? sharedWeight : lastPerformanceData.weight}
               lastReps={lastPerformanceData.reps}
               onDeleteSet={handleDeleteSet}
+              onLogDeleted={onLogDeleted}
             />
           ))}
         </div>

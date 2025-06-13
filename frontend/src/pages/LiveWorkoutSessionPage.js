@@ -146,6 +146,10 @@ const LiveWorkoutSessionPage = () => {
     const duration = restDuration !== null && restDuration !== undefined ? restDuration : 90;
     setActiveRestTimer({ active: true, duration: duration, key: prev => prev.key + 1 });
   };
+
+  const handleLogDeleted = (deletedLogId) => {
+    setCompletedSets(prev => prev.filter(set => set.id !== deletedLogId));
+  };
   
   const handleFinishWorkout = async () => {
     if (window.confirm("Tens a certeza que queres terminar o treino?")) {
@@ -200,6 +204,7 @@ const LiveWorkoutSessionPage = () => {
                     trainingId={trainingId}
                     workoutPlanId={plan.id}
                     onSetComplete={handleSetComplete}
+                    onLogDeleted={handleLogDeleted}
                   />
               ))}
             </div>

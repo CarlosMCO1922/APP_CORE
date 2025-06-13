@@ -8,6 +8,7 @@ const {
   deletePerformanceLog,
   checkPersonalRecords,
   getMyPersonalRecords,
+  updatePerformanceLog,
 } = require('../controllers/progressController');
 const { protect, isClientUser } = require('../middleware/authMiddleware');
 
@@ -23,6 +24,7 @@ router.get('/my-records', getMyPersonalRecords);
 
 
 router.delete('/log/:logId', deletePerformanceLog);
+router.patch('/log/:logId', updatePerformanceLog);
 
 
 module.exports = router;

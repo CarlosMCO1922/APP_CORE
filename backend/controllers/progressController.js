@@ -300,11 +300,54 @@ const getMyPersonalRecords = async (req, res) => {
   }
 };
 
+const updatePerformanceLog = async (req, res) => {
+    const logIdToUpdate = parseInt(req.params.logId, 10);
+    const authenticatedUserId = req.user.id;
+    const { performedReps, performedWeight, notes } = req.body;
+
+    if (isNaN(logIdToUpdate)) {
+        return res.status(400).json({ message: 'ID do registo inválido.' });
+    }
+
+    try {
+        const log = await db.ClientExercisePerformance.findByPk(logIdToUpdate);
+
+        if (!log) {
+            return res.status(404).json({ message: 'Registo de desempenho não encontrado.' });
+        }
+
+        // Verificação de segurança: O utilizador só pode editar os seus próprios registos.
+        if (log.userId !== authenticatedUserId) {
+            return res.status(403).json({ message: 'Não autorizado a editar este registo.' });
+        }
+
+        // Atualiza os campos fornecidos
+        if (performedReps !== undefined) {
+            log.performedReps = performedReps ? parseInt(performedReps, 10) : null;
+        }
+        if (performedWeight !== undefined) {
+            log.performedWeight = performedWeight ? parseFloat(performedWeight) : null;
+        }
+        if (notes !== undefined) {
+            log.notes = notes;
+        }
+        
+        const updatedLog = await log.save();
+
+        res.status(200).json({ message: 'Registo atualizado com sucesso!', performance: updatedLog });
+
+    } catch (error) {
+        console.error('Erro no controlador updatePerformanceLog:', error);
+        res.status(500).json({ message: 'Erro interno do servidor ao tentar atualizar o registo.' });
+    }
+};
+
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
   getMyPerformanceHistoryForExercise,
   deletePerformanceLog, 
   checkPersonalRecords,
-  getMyPersonalRecords
+  getMyPersonalRecords,
+  updatePerformanceLog
 };
