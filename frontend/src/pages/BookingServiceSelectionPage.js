@@ -92,9 +92,8 @@ const BookingServiceSelectionPage = () => {
         navigate(`/agendar?serviceId=${selectedService.id}&type=appointment`);
         break;
       case 'training_request':
-        // Futuramente, isto irá para a página de pedido de PT Individual
-        alert("Funcionalidade de pedido de PT Individual em desenvolvimento.");
-        // navigate('/pedir-pt-individual');
+        navigate('/pedir-pt-individual');
+      break;
         break;
       default:
         console.error("Tipo de serviço desconhecido:", selectedService.type);

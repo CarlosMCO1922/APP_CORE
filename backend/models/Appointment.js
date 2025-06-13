@@ -25,6 +25,12 @@ module.exports = (sequelize) => {
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    category: {
+      type: DataTypes.ENUM('FISIOTERAPIA', 'PT_INDIVIDUAL'),
+      allowNull: false,
+      defaultValue: 'FISIOTERAPIA',
+      comment: 'Distingue entre uma consulta de fisioterapia e uma sessão de PT individual'
+    },
     status: {
       type: DataTypes.ENUM(
         'disponível',

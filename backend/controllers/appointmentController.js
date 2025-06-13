@@ -520,10 +520,10 @@ const clientCancelAppointmentBooking = async (req, res) => {
 
 
 const clientRequestAppointment = async (req, res) => {
-  const { staffId, date, time, notes, durationMinutes = 60 } = req.body; 
+  const { staffId, date, time, notes, category, durationMinutes = 60 } = req.body; 
   const userId = req.user.id;
 
-  if (!staffId || !date || !time) {
+  if (!staffId || !date || !time || !category) {
     return res.status(400).json({ message: 'Campos obrigatórios em falta: ID do profissional, data e hora.' });
   }
   if (isNaN(parseInt(staffId))) {
