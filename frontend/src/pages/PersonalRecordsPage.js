@@ -1,6 +1,5 @@
 // src/pages/PersonalRecordsPage.js
 import React, { useState, useEffect, useCallback } from 'react';
-import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styled, { css } from 'styled-components';
