@@ -96,6 +96,24 @@ const ActionButton = styled.button`
   }
 `;
 
+const DeleteButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  transition: color 0.2s;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.error};
+  }
+`;
+
 
 const SetRow = ({ setId, setNumber, onSetComplete, trainingId, workoutPlanId, planExerciseId, restSeconds, lastWeight, lastReps, onDeleteSet, onLogDeleted }) => {
   const { authState } = useAuth();

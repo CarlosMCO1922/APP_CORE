@@ -92,7 +92,7 @@ const CalcButton = styled.button`
   }
 `;
 
-const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete }) => {
+const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete, onLogDeleted}) => {
   const { authState } = useAuth();
   const [sets, setSets] = useState([]);
   const [lastPerformanceText, setLastPerformanceText] = useState('A carregar histórico...');
