@@ -8,7 +8,7 @@ import {
   FaTachometerAlt, FaCalendarAlt, FaClipboardList, FaUsers,
   FaUserTie, FaDumbbell, FaCalendarCheck, FaMoneyBillWave,
   FaCog, FaSignOutAlt, FaBars, FaTimes, FaBell, FaCheckDouble,
-  FaListOl, FaCalendarPlus, FaUserCircle, FaRegCalendarCheck
+  FaListOl, FaCalendarPlus, FaUserCircle, FaRegCalendarCheck, FaTrophy
 } from 'react-icons/fa';
 import moment from 'moment';
 
