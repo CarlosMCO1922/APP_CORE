@@ -20,10 +20,23 @@ const Header = styled.div`
   h1 { font-size: 2.5rem; color: ${({ theme }) => theme.colors.primary}; margin: 0; }
 `;
 
-const BackLink = styled(Link)` /* ... (podes copiar de outra página) ... */ `;
-const LoadingText = styled.p` /* ... (podes copiar de outra página) ... */ `;
-const ErrorText = styled.p` /* ... (podes copiar de outra página) ... */ `;
-const EmptyText = styled.p` /* ... (podes copiar de outra página) ... */ `;
+const BackLink = styled(Link)`  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1.5rem;
+  transition: color 0.2s;
+  &:hover { color: ${({ theme }) => theme.colors.primary}; }`;
+
+const LoadingText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.primary}; padding: 40px; font-size: 1.2rem;`;
+
+const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error}; padding: 20px; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; border-radius: 8px;`;
+
+const EmptyText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-style: italic;
+  border-color: transparent;
+  background-color: rgba(0,0,0,0.05);
+  padding: 30px 15px;
+`;
 
 const RecordsGrid = styled.div`
   display: flex;
