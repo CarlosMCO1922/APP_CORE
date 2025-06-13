@@ -208,33 +208,55 @@ const getMyPersonalRecords = async (req, res) => {
   const userId = req.user.id;
   try {
     // 1. Encontrar todos os exercícios únicos que o utilizador já realizou
-    const performedExercises = await db.ClientExercisePerformance.findAll({
-      where: { userId },
-      attributes: [
-        [db.Sequelize.fn('DISTINCT', db.Sequelize.col('planExerciseId')), 'planExerciseId']
-      ],
-      include: [{
-        model: db.WorkoutPlanExercise,
-        as: 'planExerciseDetails',
-        attributes: ['id'],
-        include: [{ model: db.Exercise, as: 'exerciseDetails', attributes: ['name'] }]
-      }]
+    // Abordagem corrigida: Primeiro obtemos todos os logs e depois filtramos para únicos em JS
+    const allPerformances = await db.ClientExercisePerformance.findAll({
+        where: { userId },
+        attributes: ['planExerciseId'],
+        include: [{
+            model: db.WorkoutPlanExercise,
+            as: 'planExerciseDetails',
+            attributes: ['id'],
+            required: true, // Garante que só vêm logs com um exercício de plano válido
+            include: [{
+                model: db.Exercise,
+                as: 'exerciseDetails',
+                attributes: ['name'],
+                required: true,
+            }]
+        }],
+        order: [['performedAt', 'DESC']]
     });
 
-    if (!performedExercises || performedExercises.length === 0) {
+    // Criar uma lista de exercícios únicos a partir de todos os desempenhos
+    const uniqueExercisesMap = new Map();
+    allPerformances.forEach(p => {
+      // Usamos o ID do exercício do plano como chave para garantir a unicidade
+      if (p.planExerciseId && !uniqueExercisesMap.has(p.planExerciseId)) {
+        uniqueExercisesMap.set(p.planExerciseId, {
+          exerciseName: p.planExerciseDetails?.exerciseDetails?.name || 'Exercício Desconhecido'
+        });
+      }
+    });
+    
+    const uniqueExercises = Array.from(uniqueExercisesMap.entries()).map(([planExerciseId, details]) => ({
+        planExerciseId,
+        exerciseName: details.exerciseName
+    }));
+
+
+    if (uniqueExercises.length === 0) {
       return res.status(200).json([]);
     }
 
     const recordsByExercise = [];
 
-    // 2. Para cada exercício, encontrar os diferentes tipos de PRs
-    for (const item of performedExercises) {
-      const planExerciseId = item.planExerciseId;
-      const exerciseName = item.planExerciseDetails?.exerciseDetails?.name || 'Exercício Desconhecido';
+    // 2. Para cada exercício único, encontrar os diferentes tipos de PRs
+    for (const exercise of uniqueExercises) {
+      const { planExerciseId, exerciseName } = exercise;
       
       const records = [];
 
-      // PR de Peso Máximo (1-Rep Max, 3-Rep Max, 5-Rep Max, etc.)
+      // PR de Peso Máximo (Agrupado por nº de repetições)
       const maxWeights = await db.ClientExercisePerformance.findAll({
         where: { userId, planExerciseId },
         attributes: [
@@ -246,23 +268,28 @@ const getMyPersonalRecords = async (req, res) => {
         raw: true
       });
       maxWeights.forEach(pr => {
-        if(pr.performedReps) records.push({ type: 'Peso Máximo', value: `${pr.maxWeight} kg x ${pr.performedReps} reps` });
+        if(pr.performedReps && pr.maxWeight > 0) records.push({ type: `Peso Máx. (${pr.performedReps} reps)`, value: `${pr.maxWeight} kg` });
       });
 
-      // PR de Volume Máximo (peso * reps)
-      const maxVolume = await db.ClientExercisePerformance.max(
-        db.Sequelize.literal('"performedWeight" * "performedReps"'),
-        { where: { userId, planExerciseId } }
-      );
-      if (maxVolume) {
-        records.push({ type: 'Volume Máximo (1 Série)', value: `${maxVolume.toFixed(2)} kg` });
+      // PR de Volume Máximo (peso * reps) numa única série
+      const maxVolumeResult = await db.ClientExercisePerformance.findOne({
+        where: { userId, planExerciseId },
+        attributes: [[db.Sequelize.literal('"performedWeight" * "performedReps"'), 'volume']],
+        order: [[db.Sequelize.literal('volume'), 'DESC NULLS LAST']],
+        limit: 1,
+        raw: true
+      });
+      if (maxVolumeResult && maxVolumeResult.volume > 0) {
+        records.push({ type: 'Volume Máximo (1 Série)', value: `${Number(maxVolumeResult.volume).toFixed(2)}` });
       }
 
-      recordsByExercise.push({
-        planExerciseId,
-        exerciseName,
-        records
-      });
+      if (records.length > 0) {
+        recordsByExercise.push({
+          planExerciseId,
+          exerciseName,
+          records
+        });
+      }
     }
 
     res.status(200).json(recordsByExercise);
