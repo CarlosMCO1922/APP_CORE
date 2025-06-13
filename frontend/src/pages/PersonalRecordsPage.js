@@ -25,6 +25,18 @@ const BackLink = styled(Link)`  color: ${({ theme }) => theme.colors.textMuted};
   transition: color 0.2s;
   &:hover { color: ${({ theme }) => theme.colors.primary}; }`;
 
+const MessageBaseStyles = css`
+  text-align: center;
+  padding: 12px 18px;
+  margin: 20px auto;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border-width: 1px;
+  border-style: solid;
+  max-width: 600px;
+  font-size: 0.9rem;
+  font-weight: 500;
+`;
+
 const LoadingText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.primary}; padding: 40px; font-size: 1.2rem;`;
 
 const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error}; padding: 20px; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; border-radius: 8px;`;
