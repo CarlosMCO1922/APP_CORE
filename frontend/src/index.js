@@ -8,6 +8,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { theme } from './theme'; 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration'; 
+import { NotificationProvider } from './context/NotificationContext';
 
 
 import { loadStripe } from '@stripe/stripe-js';
@@ -37,9 +38,11 @@ root.render(
     <ThemeProvider theme={theme}>
       <GlobalStyle />
       <AuthProvider>
-        <Elements stripe={stripePromise}>
-          <App />
-        </Elements>
+        <NotificationProvider> 
+          <Elements stripe={stripePromise}>
+            <App />
+          </Elements>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>

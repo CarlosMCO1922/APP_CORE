@@ -67,7 +67,6 @@ function App() {
 
   return (
     <Router>
-      <NotificationProvider> 
         {authState.isAuthenticated && <Navbar />}
         <div className="main-content-area"> 
           <Routes>
@@ -140,7 +139,6 @@ function App() {
             />
           </Routes>
         </div>
-      </NotificationProvider>
     </Router>
   );
 }
