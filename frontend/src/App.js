@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
 
 // Componentes de Página 
 import LoginPage from './pages/LoginPage';
@@ -67,79 +66,75 @@ function App() {
 
   return (
     <Router>
-        {authState.isAuthenticated && <Navbar />}
-        <div className="main-content-area"> 
-          <Routes>
-            <Route
-              path="/login"
-              element={
-                !authState.isAuthenticated
-                  ? <LoginPage />
-                  : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
-              }
-            />
-            <Route
-              path="/register"
-              element={
-                !authState.isAuthenticated
-                  ? <RegisterPage />
-                  : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
-              }
-            />
-
-            {/* Rotas de Cliente */}
-            <Route element={<ProtectedRoute allowedRoles={['user']} />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/definicoes" element={<SettingsPage />} />
-              <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
-              <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
-              <Route path="/meu-progresso" element={<ClientProgressPage />} />
-              <Route path="/explorar-planos" element={<ExploreWorkoutPlansPage />} />
-              <Route path="/meu-progresso/usar-plano/:globalPlanId" element={<ClientProgressPage />} />
-              <Route path="/calendario" element={<BookingServiceSelectionPage />} />
-              <Route path="/agendar" element={<BookingCalendarPage />} />
-              <Route path="/agendar-treino-grupo" element={<GroupTrainingCalendarPage />} />
-              <Route path="/treino/resumo" element={<WorkoutSummaryPage />} />
-              <Route path="/treino-ao-vivo/plano/:globalPlanId" element={<LiveWorkoutSessionPage />} />
-              <Route path="/treino-ao-vivo/treino/:trainingId" element={<LiveWorkoutSessionPage />} />
-              <Route path="/meus-recordes" element={<PersonalRecordsPage />} />
-              <Route path="/pedir-pt-individual" element={<IndividualPTRequestPage />} />
-            </Route>
-
-            {/* Rotas de Staff/Admin */}
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'trainer', 'physiotherapist', 'employee']} />}>
-              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-              <Route path="/admin/calendario-geral" element={<CalendarPage />} />
-              <Route path="/admin/manage-users" element={<AdminManageUsersPage />} />
-              <Route path="/admin/manage-staff" element={<AdminManageStaffPage />} />
-              <Route path="/admin/manage-trainings" element={<AdminManageTrainingsPage />} />
-              <Route path="/admin/trainings/:trainingId/manage-plans" element={<AdminManageWorkoutPlansPage />} />
-              <Route path="/admin/manage-appointments" element={<AdminManageAppointmentsPage />} />
-              <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
-              <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} /> 
-              <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
-              <Route path="/admin/users/:userId/details" element={<AdminUserDetailsPage />} /> 
-              <Route path='/admin/training-series' element={<AdminTrainingSeriesPage />} /> 
-              <Route path="/admin/manage-global-plans" element={<AdminManageGlobalWorkoutPlansPage />} />
-            </Route>
-
-            {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}
-            <Route element={<ProtectedRoute allowedRoles={['user', 'admin', 'trainer', 'physiotherapist', 'employee']} />}>
-                <Route path="/notificacoes" element={<NotificationsPage />} />
-            </Route>
-
-            {/* Rota Catch-all */}
-            <Route
-              path="*"
-              element={
-                authState.isAuthenticated
-                  ? (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
-                  : <Navigate to="/login" replace />
-              }
-            />
-          </Routes>
-        </div>
-    </Router>
+      {authState.isAuthenticated && <Navbar />}
+      <div className="main-content-area"> 
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              !authState.isAuthenticated
+                ? <LoginPage />
+                : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              !authState.isAuthenticated
+                ? <RegisterPage />
+                : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
+            }
+          />
+          {/* Rotas de Cliente */}
+          <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/definicoes" element={<SettingsPage />} />
+            <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
+            <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
+            <Route path="/meu-progresso" element={<ClientProgressPage />} />
+            <Route path="/explorar-planos" element={<ExploreWorkoutPlansPage />} />
+            <Route path="/meu-progresso/usar-plano/:globalPlanId" element={<ClientProgressPage />} />
+            <Route path="/calendario" element={<BookingServiceSelectionPage />} />
+            <Route path="/agendar" element={<BookingCalendarPage />} />
+            <Route path="/agendar-treino-grupo" element={<GroupTrainingCalendarPage />} />
+            <Route path="/treino/resumo" element={<WorkoutSummaryPage />} />
+            <Route path="/treino-ao-vivo/plano/:globalPlanId" element={<LiveWorkoutSessionPage />} />
+            <Route path="/treino-ao-vivo/treino/:trainingId" element={<LiveWorkoutSessionPage />} />
+            <Route path="/meus-recordes" element={<PersonalRecordsPage />} />
+            <Route path="/pedir-pt-individual" element={<IndividualPTRequestPage />} />
+          </Route>
+          {/* Rotas de Staff/Admin */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'trainer', 'physiotherapist', 'employee']} />}>
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/calendario-geral" element={<CalendarPage />} />
+            <Route path="/admin/manage-users" element={<AdminManageUsersPage />} />
+            <Route path="/admin/manage-staff" element={<AdminManageStaffPage />} />
+            <Route path="/admin/manage-trainings" element={<AdminManageTrainingsPage />} />
+            <Route path="/admin/trainings/:trainingId/manage-plans" element={<AdminManageWorkoutPlansPage />} />
+            <Route path="/admin/manage-appointments" element={<AdminManageAppointmentsPage />} />
+            <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
+            <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} /> 
+            <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
+            <Route path="/admin/users/:userId/details" element={<AdminUserDetailsPage />} /> 
+            <Route path='/admin/training-series' element={<AdminTrainingSeriesPage />} /> 
+            <Route path="/admin/manage-global-plans" element={<AdminManageGlobalWorkoutPlansPage />} />
+          </Route>
+          {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}
+          <Route element={<ProtectedRoute allowedRoles={['user', 'admin', 'trainer', 'physiotherapist', 'employee']} />}>
+              <Route path="/notificacoes" element={<NotificationsPage />} />
+          </Route>
+          {/* Rota Catch-all */}
+          <Route
+            path="*"
+            element={
+              authState.isAuthenticated
+                ? (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
+                : <Navigate to="/login" replace />
+            }
+          />
+        </Routes>
+      </div>
+  </Router>
   );
 }
 export default App;

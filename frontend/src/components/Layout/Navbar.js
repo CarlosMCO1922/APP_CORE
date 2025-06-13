@@ -355,6 +355,11 @@ function Navbar() {
           {role === 'user' && clientLinks}
           {role !== 'user' && role !== 'admin' && staffLinks}
           {role === 'admin' && <>{staffLinks}{adminManagementDropdown}</>}
+          <NavItem style={{width: 'calc(100% - 2rem)', margin: '0.5rem 1rem'}}>
+          <DropdownLink to="/notificacoes" onClick={closeAllMenus}>
+            <FaBell /> Notificações {unreadCount > 0 && `(${unreadCount})`}
+          </DropdownLink>
+          </NavItem>
           <LogoutButton onClick={handleLogout} style={{ justifyContent: 'center', margin: '1rem' }}>Sair</LogoutButton>
       </MobileMenuOverlay>
     </>
