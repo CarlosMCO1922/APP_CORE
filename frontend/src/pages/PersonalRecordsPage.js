@@ -1,10 +1,10 @@
 // src/pages/PersonalRecordsPage.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styled, { css } from 'styled-components';
 import { getMyRecordsService } from '../services/progressService';
-import { FaTrophy, FaArrowLeft, FaDumbbell } from 'react-icons/fa';
+import { FaTrophy, FaArrowLeft, FaDumbbell, FaSearch } from 'react-icons/fa';
 
 const PageContainer = styled.div`
   max-width: 900px;
@@ -20,10 +20,24 @@ const Header = styled.div`
   h1 { font-size: 2.5rem; color: ${({ theme }) => theme.colors.primary}; margin: 0; }
 `;
 
-const BackLink = styled(Link)`  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.colors.primary}; }`;
+const BackLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.primary};
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 25px;
+  padding: 9px 16px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  transition: background-color 0.2s, color 0.2s;
+  font-size: 0.95rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.cardBackground};
+    color: #fff;
+  }
+`;
 
 const MessageBaseStyles = css`
   text-align: center;
@@ -38,9 +52,7 @@ const MessageBaseStyles = css`
 `;
 
 const LoadingText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.primary}; padding: 40px; font-size: 1.2rem;`;
-
 const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error}; padding: 20px; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; border-radius: 8px;`;
-
 const EmptyText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.textMuted};
@@ -48,6 +60,34 @@ const EmptyText = styled.p`
   border-color: transparent;
   background-color: rgba(0,0,0,0.05);
   padding: 30px 15px;
+`;
+
+const FilterContainer = styled.div`
+  position: sticky;
+  top: 75px; /* Altura aproximada da tua Navbar. Ajusta se for diferente. */
+  padding: 15px;
+  background-color: ${({ theme }) => theme.colors.background};
+  z-index: 900;
+  margin: 0 -15px 20px -15px; /* Compensa o padding para ir de ponta a ponta */
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 12px 15px;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
 `;
 
 const RecordsGrid = styled.div`
@@ -87,7 +127,7 @@ const RecordItem = styled.li`
   align-items: center;
   padding: 8px 0;
   font-size: 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.08)'};
   
   &:last-child { border-bottom: none; }
 
@@ -97,16 +137,18 @@ const RecordItem = styled.li`
 
 const PersonalRecordsPage = () => {
   const { authState } = useAuth();
-  const [records, setRecords] = useState([]);
+  const [allRecords, setAllRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchRecords = useCallback(async () => {
     if (!authState.token) return;
     try {
       setLoading(true);
       const data = await getMyRecordsService(authState.token);
-      setRecords(data);
+      const sortedData = data.sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
+      setAllRecords(sortedData);
     } catch (err) {
       setError(err.message || 'Erro ao carregar os teus recordes.');
     } finally {
@@ -118,6 +160,15 @@ const PersonalRecordsPage = () => {
     fetchRecords();
   }, [fetchRecords]);
 
+  const filteredRecords = useMemo(() => {
+    if (!searchTerm) {
+      return allRecords;
+    }
+    return allRecords.filter(item =>
+      item.exerciseName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [allRecords, searchTerm]);
+
   if (loading) return <PageContainer><LoadingText>A carregar recordes...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
 
@@ -127,10 +178,22 @@ const PersonalRecordsPage = () => {
       <Header>
         <h1><FaTrophy /> Meus Recordes Pessoais</h1>
       </Header>
+      
+      {allRecords.length > 0 && (
+        <FilterContainer>
+            <FaSearch style={{color: '#888'}} />
+            <SearchInput
+                type="text"
+                placeholder="Pesquisar exercício..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+        </FilterContainer>
+      )}
 
-      {records.length > 0 ? (
+      {filteredRecords.length > 0 ? (
         <RecordsGrid>
-          {records.map(item => (
+          {filteredRecords.map(item => (
             <ExerciseRecordCard key={item.planExerciseId}>
               <h2><FaDumbbell /> {item.exerciseName}</h2>
               <RecordList>
@@ -145,7 +208,9 @@ const PersonalRecordsPage = () => {
           ))}
         </RecordsGrid>
       ) : (
-        <EmptyText>Ainda não tens recordes registados. Conclui um treino para começar!</EmptyText>
+        <EmptyText>
+            {searchTerm ? 'Nenhum exercício encontrado para a tua pesquisa.' : 'Ainda não tens recordes registados. Conclui um treino para começar!'}
+        </EmptyText>
       )}
     </PageContainer>
   );
