@@ -73,7 +73,6 @@ const SetRow = ({ setId, setNumber, prescribedReps, onSetComplete, trainingId, w
         setReps(lastReps || '');
     }
   }, [lastWeight, lastReps, isCompleted]);
-  // --- FIM DA CORREÇÃO ---
   
   const handleComplete = async () => {
     setIsLoading(true);
@@ -84,9 +83,9 @@ const SetRow = ({ setId, setNumber, prescribedReps, onSetComplete, trainingId, w
       performedWeight: weight ? parseFloat(weight) : null,
     };
     try {
-      await logExercisePerformanceService(performanceData, authState.token);
+      const result = await logExercisePerformanceService(performanceData, authState.token);
       setIsCompleted(true);
-      onSetComplete(performanceData, restSeconds);
+      onSetComplete(result.performance, restSeconds);
     } catch (error) {
       console.error("Erro ao registar série:", error);
       alert(`Falha ao registar a série: ${error.message}`);

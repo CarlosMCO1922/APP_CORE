@@ -136,57 +136,68 @@ const deletePerformanceLog = async (req, res) => {
 
 const checkPersonalRecords = async (req, res) => {
   const userId = req.user.id;
-  const completedSets = req.body; // Espera um array de séries completadas
+  const completedSets = req.body; 
 
   if (!Array.isArray(completedSets) || completedSets.length === 0) {
-    return res.status(200).json({ records: [] }); // Nada a verificar
+    return res.status(200).json({ records: [] }); 
   }
 
   try {
     const newRecords = [];
+    const checkedPRs = new Set(); 
 
     for (const set of completedSets) {
-      if (!set.planExerciseId || !set.performedWeight || !set.performedReps) {
-        continue; 
+      if (!set.id || !set.planExerciseId || !set.performedWeight || !set.performedReps) {
+        continue;
       }
+      
+      const { id, planExerciseId, performedWeight, performedReps } = set;
+      const commonWhereClause = {
+        userId,
+        planExerciseId,
+        id: { [Op.ne]: id } 
+      };
 
       const previousMaxWeightForReps = await db.ClientExercisePerformance.max('performedWeight', {
         where: {
-          userId,
-          planExerciseId: set.planExerciseId,
-          performedReps: set.performedReps,
-          id: { [Op.not]: null } 
+          ...commonWhereClause,
+          performedReps: performedReps
         }
       });
 
-      if (!previousMaxWeightForReps || set.performedWeight > previousMaxWeightForReps) {
-        newRecords.push({
-          type: 'Peso Máximo',
-          value: `${set.performedWeight} kg x ${set.performedReps} reps`,
-          planExerciseId: set.planExerciseId
-        });
+      if (previousMaxWeightForReps === null || performedWeight > previousMaxWeightForReps) {
+        const prKey = `weight-${performedReps}`;
+        if (!checkedPRs.has(prKey)) {
+            newRecords.push({
+              type: 'Peso Máximo',
+              value: `${performedWeight} kg x ${performedReps} reps`,
+              planExerciseId: planExerciseId
+            });
+            checkedPRs.add(prKey);
+        }
       }
 
       const previousMaxRepsForWeight = await db.ClientExercisePerformance.max('performedReps', {
         where: {
-          userId,
-          planExerciseId: set.planExerciseId,
-          performedWeight: set.performedWeight
+          ...commonWhereClause,
+          performedWeight: performedWeight
         }
       });
-
-      if (!previousMaxRepsForWeight || set.performedReps > previousMaxRepsForWeight) {
-        newRecords.push({
-          type: 'Máximo de Reps',
-          value: `${set.performedReps} reps com ${set.performedWeight} kg`,
-          planExerciseId: set.planExerciseId
-        });
+      
+      if (previousMaxRepsForWeight === null || performedReps > previousMaxRepsForWeight) {
+        const prKey = `reps-${performedWeight}`;
+        if (!checkedPRs.has(prKey)) {
+            newRecords.push({
+              type: 'Máximo de Reps',
+              value: `${performedReps} reps com ${performedWeight} kg`,
+              planExerciseId: planExerciseId
+            });
+            checkedPRs.add(prKey);
+        }
       }
     }
     
-    const uniqueRecords = Array.from(new Map(newRecords.map(item => [item.type + item.value, item])).values());
-
-    res.status(200).json({ records: uniqueRecords });
+    res.status(200).json({ records: newRecords });
   } catch (error) {
     console.error('Erro ao verificar recordes pessoais:', error);
     res.status(500).json({ message: 'Erro interno ao verificar recordes.' });
