@@ -7,8 +7,8 @@ const serviceData = [
   {
     category: 'Personal Training',
     services: [
-      { id: 'pt_individual_60', name: 'PT Individual 60 minutos', type: 'appointment', details: '60 min • 13,00€ - 21,25€' },
-      { id: 'pt_grupo', name: 'PT Grupo', type: 'training', details: '45 min • 2,15€ - 7,50€' },
+      { id: 'pt_individual_60', name: 'Pedir Sessão de PT Individual', type: 'training_request', details: '60 min • A combinar' },
+      { id: 'pt_grupo', name: 'Inscrever em Treino de Grupo', type: 'training_group', details: 'Aulas pré-agendadas' },
     ]
   },
   {
