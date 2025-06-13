@@ -18,6 +18,7 @@ import BookingServiceSelectionPage from './pages/BookingServiceSelectionPage';
 import BookingCalendarPage from './pages/BookingCalendarPage';
 import LiveWorkoutSessionPage from './pages/LiveWorkoutSessionPage';
 import WorkoutSummaryPage from './pages/WorkoutSummaryPage';
+import PersonalRecordsPage from './pages/PersonalRecordsPage';
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
 import AdminUserDetailsPage from './pages/admin/AdminUserDetailsPage';
@@ -99,6 +100,7 @@ function App() {
               <Route path="/treino/resumo" element={<WorkoutSummaryPage />} />
               <Route path="/treino-ao-vivo/plano/:globalPlanId" element={<LiveWorkoutSessionPage />} />
               <Route path="/treino-ao-vivo/treino/:trainingId" element={<LiveWorkoutSessionPage />} />
+              <Route path="/meus-recordes" element={<PersonalRecordsPage />} />
             </Route>
 
             {/* Rotas de Staff/Admin */}

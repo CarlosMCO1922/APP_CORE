@@ -204,10 +204,80 @@ const checkPersonalRecords = async (req, res) => {
   }
 };
 
+const getMyPersonalRecords = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    // 1. Encontrar todos os exercícios únicos que o utilizador já realizou
+    const performedExercises = await db.ClientExercisePerformance.findAll({
+      where: { userId },
+      attributes: [
+        [db.Sequelize.fn('DISTINCT', db.Sequelize.col('planExerciseId')), 'planExerciseId']
+      ],
+      include: [{
+        model: db.WorkoutPlanExercise,
+        as: 'planExerciseDetails',
+        attributes: ['id'],
+        include: [{ model: db.Exercise, as: 'exerciseDetails', attributes: ['name'] }]
+      }]
+    });
+
+    if (!performedExercises || performedExercises.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const recordsByExercise = [];
+
+    // 2. Para cada exercício, encontrar os diferentes tipos de PRs
+    for (const item of performedExercises) {
+      const planExerciseId = item.planExerciseId;
+      const exerciseName = item.planExerciseDetails?.exerciseDetails?.name || 'Exercício Desconhecido';
+      
+      const records = [];
+
+      // PR de Peso Máximo (1-Rep Max, 3-Rep Max, 5-Rep Max, etc.)
+      const maxWeights = await db.ClientExercisePerformance.findAll({
+        where: { userId, planExerciseId },
+        attributes: [
+          'performedReps',
+          [db.Sequelize.fn('MAX', db.Sequelize.col('performedWeight')), 'maxWeight']
+        ],
+        group: ['performedReps'],
+        order: [['performedReps', 'ASC']],
+        raw: true
+      });
+      maxWeights.forEach(pr => {
+        if(pr.performedReps) records.push({ type: 'Peso Máximo', value: `${pr.maxWeight} kg x ${pr.performedReps} reps` });
+      });
+
+      // PR de Volume Máximo (peso * reps)
+      const maxVolume = await db.ClientExercisePerformance.max(
+        db.Sequelize.literal('"performedWeight" * "performedReps"'),
+        { where: { userId, planExerciseId } }
+      );
+      if (maxVolume) {
+        records.push({ type: 'Volume Máximo (1 Série)', value: `${maxVolume.toFixed(2)} kg` });
+      }
+
+      recordsByExercise.push({
+        planExerciseId,
+        exerciseName,
+        records
+      });
+    }
+
+    res.status(200).json(recordsByExercise);
+
+  } catch (error) {
+    console.error("Erro ao buscar recordes pessoais:", error);
+    res.status(500).json({ message: 'Erro interno ao buscar recordes pessoais.' });
+  }
+};
+
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
   getMyPerformanceHistoryForExercise,
   deletePerformanceLog, 
   checkPersonalRecords,
+  getMyPersonalRecords
 };

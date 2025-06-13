@@ -180,3 +180,18 @@ export const checkPersonalRecordsService = async (completedSets, token) => {
     throw error;
   }
 };
+
+export const getMyRecordsService = async (token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/progress/my-records`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar recordes.');
+    return data;
+  } catch (error) {
+    console.error("Erro em getMyRecordsService:", error);
+    throw error;
+  }
+};
