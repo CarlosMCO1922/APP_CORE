@@ -118,26 +118,28 @@ const LiveWorkoutSessionPage = () => {
   const [activeRestTimer, setActiveRestTimer] = useState({ active: false, duration: 90, key: 0 });
   const [completedSets, setCompletedSets] = useState([]);
 
-  const fetchPlan = useCallback(async () => {
+    const fetchPlan = useCallback(async () => {
     if (!authState.token) return;
     setLoading(true);
     setError('');
     try {
-        let plansData;
+        let finalPlanData;
         if (trainingId) {
-            plansData = await getWorkoutPlansByTrainingId(trainingId, authState.token);
-            if (!plansData || plansData.length === 0) throw new Error("Este treino não tem um plano associado.");
-            setSessionName(plansData[0].trainingSessions[0]?.name || "Treino Agendado");
+            const plans = await getWorkoutPlansByTrainingId(trainingId, authState.token);
+            if (!plans || plans.length === 0) throw new Error("Este treino não tem um plano associado.");
+            finalPlanData = plans[0]; 
+            setSessionName(finalPlanData.trainingSessions[0]?.name || "Treino Agendado");
         } else if (globalPlanId) {
-            const plan = await getGlobalWorkoutPlanByIdClient(globalPlanId, authState.token);
-            plansData = [plan];
-            setSessionName(plan.name);
+            finalPlanData = await getGlobalWorkoutPlanByIdClient(globalPlanId, authState.token);
+            setSessionName(finalPlanData.name);
         } else {
             throw new Error("Nenhum plano de treino especificado.");
         }
-        setWorkoutPlan(plansData);
+        setWorkoutPlan(finalPlanData);
+
     } catch (err) {
         setError(err.message || 'Não foi possível carregar o plano de treino.');
+        setWorkoutPlan(null); 
     } finally {
         setLoading(false);
     }
