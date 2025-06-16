@@ -261,6 +261,8 @@ const LiveWorkoutSessionPage = () => {
     return Array.from(groups.values());
   }, [workoutPlan]);
 
+  const currentGroup = groupedExercises[currentExerciseIndex];
+
   const goToNextExercise = () => {
         setCurrentExerciseIndex(prev => Math.min(prev + 1, groupedExercises.length - 1));
     };
