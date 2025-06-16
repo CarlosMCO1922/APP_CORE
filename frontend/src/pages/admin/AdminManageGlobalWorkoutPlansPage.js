@@ -15,6 +15,7 @@ import {
 } from '../../services/workoutPlanService';
 import { getAllExercises } from '../../services/exerciseService'; 
 import { getAllTrainings } from '../../services/trainingService'; 
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
     FaArrowLeft, FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye 
@@ -404,8 +405,76 @@ const AdminManageGlobalWorkoutPlansPage = () => {
     return Array.from(groups.values());
   }, [currentPlanData.exercises]);
 
+  const handleOnDragEnd = (result) => {
+        const { source, destination, type } = result;
+        if (!destination) return;
 
-    const handleSavePlan = async (e) => {
+        let newExercises = Array.from(currentPlanData.exercises);
+
+        if (type === 'GROUP') { // Arrastar um Bloco
+            const reorderedGroups = [...planExercisesGrouped];
+            const [movedGroup] = reorderedGroups.splice(source.index, 1);
+            reorderedGroups.splice(destination.index, 0, movedGroup);
+
+            const flattenedAndReordered = reorderedGroups.flat();
+            const finalExercises = [];
+            const groupMapping = {};
+            let currentGroupIndex = 0;
+            
+            flattenedAndReordered.forEach(ex => {
+                const originalExercise = newExercises.find(e => (e.id || e.tempId) === (ex.id || ex.tempId));
+                if (groupMapping[ex.supersetGroup] === undefined) {
+                    groupMapping[ex.supersetGroup] = currentGroupIndex++;
+                }
+                finalExercises.push({ ...originalExercise, supersetGroup: groupMapping[ex.supersetGroup] });
+            });
+
+            setCurrentPlanData(prev => ({ ...prev, exercises: finalExercises }));
+            return;
+        }
+
+        if (type === 'EXERCISE') { 
+            const sourceGroupIndex = parseInt(source.droppableId.replace('block-', ''));
+            const destGroupIndex = parseInt(destination.droppableId.replace('block-', ''));
+            
+            const sourceGroup = planExercisesGrouped[sourceGroupIndex];
+            const exerciseToMove = sourceGroup.find((_, index) => index === source.index);
+            
+          
+            newExercises.splice(exerciseToMove.originalIndex, 1);
+
+           
+            const updatedExercise = { ...exerciseToMove, supersetGroup: planExercisesGrouped[destGroupIndex][0].supersetGroup };
+            
+            
+            const groupToInsertInto = planExercisesGrouped[destGroupIndex];
+            let targetIndex;
+            if (destination.index >= groupToInsertInto.length) {
+                const lastExercise = groupToInsertInto[groupToInsertInto.length - 1];
+                targetIndex = lastExercise ? newExercises.findIndex(ex => (ex.id || ex.tempId) === (lastExercise.id || lastExercise.tempId)) + 1 : newExercises.length;
+            } else {
+                const siblingExercise = groupToInsertInto[destination.index];
+                targetIndex = newExercises.findIndex(ex => (ex.id || ex.tempId) === (siblingExercise.id || siblingExercise.tempId));
+            }
+            newExercises.splice(targetIndex, 0, updatedExercise);
+
+            const finalGrouped = {};
+            newExercises.forEach(ex => {
+                if(!finalGrouped[ex.supersetGroup]) finalGrouped[ex.supersetGroup] = [];
+                finalGrouped[ex.supersetGroup].push(ex);
+            });
+            const finalReorderedExercises = Object.values(finalGrouped).flat().map((ex, index) => {
+                const group = finalGrouped[ex.supersetGroup];
+                ex.order = group.findIndex(gEx => (gEx.id || gEx.tempId) === (ex.id || ex.tempId));
+                return ex;
+            });
+
+            setCurrentPlanData(prev => ({...prev, exercises: finalReorderedExercises}));
+        }
+    };
+
+
+  const handleSavePlan = async (e) => {
         e.preventDefault();
         setFormLoading(true); setError(''); setSuccessMessage('');
 
@@ -518,8 +587,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
                   <td>{plan.isVisible ? 'Sim' : 'Não'}</td>
                   <td>{plan.notes?.substring(0, 50) || '-'}{plan.notes && plan.notes.length > 50 ? '...' : ''}</td>
                   <td>
-                    <ActionButton title="Editar Plano" onClick={() => handleOpenEditModal(plan)}><FaEdit /></ActionButton>
-                    <ActionButton title="Gerir Exercícios do Plano" onClick={() => handleOpenEditModal(plan)}><FaListOl /></ActionButton> {/* Reutiliza o modal de edição para gerir exercícios */}
+                    <ActionButton title="Editar Plano e Exercícios" onClick={() => handleOpenEditModal(plan)}><FaEdit /></ActionButton>
                     <ActionButton title="Associar a Treino" onClick={() => handleOpenAssignModal(plan)}><FaLink /></ActionButton>
                     <ActionButton title="Eliminar Plano" className="delete" onClick={() => handleDeletePlan(plan.id)}><FaTrashAlt /></ActionButton>
                   </td>
@@ -535,10 +603,11 @@ const AdminManageGlobalWorkoutPlansPage = () => {
       {/* Modal para Criar/Editar Plano de Treino e seus Exercícios */}
       {showPlanModal && (
         <ModalOverlay onClick={handleCloseModal}>
-          <ModalContent large onClick={(e) => e.stopPropagation()}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseModalButton onClick={handleCloseModal}><FaTimes /></CloseModalButton>
             <ModalTitle>{isEditingPlan ? 'Editar Plano de Treino Modelo' : 'Criar Novo Plano de Treino Modelo'}</ModalTitle>
             {error && <p style={{color: 'red'}}>{error}</p>}
+            
             <ModalForm onSubmit={handleSavePlan}>
               <ModalLabel htmlFor="planName">Nome do Plano*</ModalLabel>
               <ModalInput type="text" name="name" id="planName" value={currentPlanData.name} onChange={handlePlanFormChange} required />
@@ -550,96 +619,91 @@ const AdminManageGlobalWorkoutPlansPage = () => {
                   name="isVisible"
                   id="planIsVisible"
                   checked={currentPlanData.isVisible || false}
-                  onChange={(e) => setCurrentPlanData(prev => ({ ...prev, isVisible: e.target.checked }))}
+                  onChange={handlePlanFormChange}
                 />
                 <ModalLabel htmlFor="planIsVisible" style={{ marginBottom: 0, cursor: 'pointer' }}>
                   Visível para Clientes na Biblioteca de Planos
                 </ModalLabel>
               </ModalCheckboxContainer>
+              
               <PlanEditorContainer>
-                <h4 style={{color: '#D4AF37', marginBottom: '10px'}}>Exercícios do Plano:</h4>
-                {planExercisesGrouped.map((group, groupIndex) => (
-                  <SupersetGroupContainer key={groupIndex}>
-                    <SupersetHeader>
-                      <h4><FaLayerGroup /> Bloco {groupIndex + 1} ({group.length > 1 ? 'Superset' : 'Exercício Único'})</h4>
-                      <ActionButton danger type="button" onClick={() => handleRemoveSupersetGroup(group[0].supersetGroup)}>
-                        <FaTrashAlt /> Apagar Bloco
-                      </ActionButton>
-                    </SupersetHeader>
-                    {group.map((ex) => (
-                      <ExerciseEntry key={ex.originalIndex}>
-                        <div style={{flexGrow: 1}}>
-                          <ExerciseFieldsGrid>
-                            <div>
-                              <ModalLabel htmlFor={`exOrder-${ex.originalIndex}`}>Ordem</ModalLabel>
-                              <ModalInput type="number" id={`exOrder-${ex.originalIndex}`} value={ex.order} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'order', e.target.value)} />
-                            </div>
-                            <div style={{gridColumn: 'span 4'}}>
-                              <ModalLabel htmlFor={`exId-${ex.originalIndex}`}>Exercício</ModalLabel>
-                              <ModalSelect id={`exId-${ex.originalIndex}`} value={ex.exerciseId} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'exerciseId', e.target.value)} required>
-                                <option value="">Selecione...</option>
-                                {allExercises.map(baseEx => <option key={baseEx.id} value={baseEx.id}>{baseEx.name}</option>)}
-                              </ModalSelect>
-                            </div>
-                          </ExerciseFieldsGrid>
-                          <ExerciseFieldsGrid>
-                            <div><ModalLabel>Séries</ModalLabel><ModalInput type="number" value={ex.sets} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'sets', e.target.value)} /></div>
-                            <div><ModalLabel>Reps</ModalLabel><ModalInput type="text" value={ex.reps} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'reps', e.target.value)} /></div>
-                            <div><ModalLabel>Descanso (s)</ModalLabel><ModalInput type="number" value={ex.restSeconds} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'restSeconds', e.target.value)} /></div>
-                          </ExerciseFieldsGrid>
-                        </div>
-                        <ActionButton title="Remover Exercício" danger type="button" onClick={() => handleRemoveExerciseFromCurrentPlan(ex.originalIndex)}><FaTimes /></ActionButton>
-                      </ExerciseEntry>
-                    ))}
-                    <ActionButton primary type="button" onClick={() => handleAddExerciseToGroup(group[0].supersetGroup)} style={{marginTop: '10px'}}>
-                      <FaPlus /> Adicionar Exercício a este Bloco
-                    </ActionButton>
-                  </SupersetGroupContainer>
-                ))}
+                <h4 style={{color: '#D4AF37', marginBottom: '10px'}}>Exercícios do Plano</h4>
+
+                {/* --- INÍCIO DA ESTRUTURA DRAG-AND-DROP --- */}
+                <DragDropContext onDragEnd={handleOnDragEnd}>
+                  <Droppable droppableId="all-superset-blocks" type="GROUP">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef}>
+                        {planExercisesGrouped.map((group, groupIndex) => (
+                          <Draggable key={group[0].supersetGroup} draggableId={`group-${group[0].supersetGroup}`} index={groupIndex}>
+                            {(provided) => (
+                              <div ref={provided.innerRef} {...provided.draggableProps}>
+                                <SupersetGroupContainer>
+                                  <SupersetHeader {...provided.dragHandleProps}>
+                                    <h4><FaGripVertical style={{ marginRight: '8px' }} /> Bloco {groupIndex + 1} ({group.length > 1 ? 'Superset' : 'Exercício Único'})</h4>
+                                    <ActionButton danger type="button" onClick={() => handleRemoveSupersetGroup(group[0].supersetGroup)}>
+                                      <FaTrashAlt />
+                                    </ActionButton>
+                                  </SupersetHeader>
+
+                                  <Droppable droppableId={`block-${groupIndex}`} type="EXERCISE">
+                                    {(providedDroppable) => (
+                                      <div {...providedDroppable.droppableProps} ref={providedDroppable.innerRef}>
+                                        {group.map((ex, exerciseIndex) => (
+                                          <Draggable key={ex.tempId || ex.id} draggableId={String(ex.tempId || ex.id)} index={exerciseIndex}>
+                                            {(providedDraggable) => (
+                                              <div ref={providedDraggable.innerRef} {...providedDraggable.draggableProps} {...providedDraggable.dragHandleProps}>
+                                                <ExerciseEntry>
+                                                  <DragHandle><FaGripVertical /></DragHandle>
+                                                  <div style={{flexGrow: 1}}>
+                                                    <ExerciseFieldsGrid>
+                                                      <div style={{gridColumn: 'span 5'}}>
+                                                        <ModalLabel htmlFor={`exId-${ex.originalIndex}`}>Exercício</ModalLabel>
+                                                        <ModalSelect id={`exId-${ex.originalIndex}`} value={ex.exerciseId} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'exerciseId', e.target.value)} required>
+                                                          <option value="">Selecione...</option>
+                                                          {allExercises.map(baseEx => <option key={baseEx.id} value={baseEx.id}>{baseEx.name}</option>)}
+                                                        </ModalSelect>
+                                                      </div>
+                                                    </ExerciseFieldsGrid>
+                                                    <ExerciseFieldsGrid>
+                                                      <div><ModalLabel>Séries</ModalLabel><ModalInput type="number" value={ex.sets} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'sets', e.target.value)} placeholder="Ex: 3" /></div>
+                                                      <div><ModalLabel>Reps</ModalLabel><ModalInput type="text" value={ex.reps} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'reps', e.target.value)} placeholder="Ex: 8-12" /></div>
+                                                      <div><ModalLabel>Descanso (s)</ModalLabel><ModalInput type="number" value={ex.restSeconds} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'restSeconds', e.target.value)} placeholder="Ex: 60" /></div>
+                                                    </ExerciseFieldsGrid>
+                                                  </div>
+                                                  <ActionButton title="Remover Exercício" danger type="button" onClick={() => handleRemoveExerciseFromCurrentPlan(ex.originalIndex)}><FaTimes /></ActionButton>
+                                                </ExerciseEntry>
+                                              </div>
+                                            )}
+                                          </Draggable>
+                                        ))}
+                                        {providedDroppable.placeholder}
+                                      </div>
+                                    )}
+                                  </Droppable>
+                                  <ActionButton primary type="button" onClick={() => handleAddExerciseToGroup(group[0].supersetGroup)} style={{marginTop: '10px'}}>
+                                    <FaPlus /> Adicionar Exercício a este Bloco
+                                  </ActionButton>
+                                </SupersetGroupContainer>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+                {/* --- FIM DA ESTRUTURA DRAG-AND-DROP --- */}
+
                 <ActionButton secondary type="button" onClick={handleAddSupersetGroup} style={{marginTop: '10px', width: '100%'}}>
-                  <FaPlusCircle /> Adicionar Novo Bloco (Superset ou Exercício Único)
+                    <FaPlusCircle /> Adicionar Novo Bloco (Superset ou Exercício Único)
                 </ActionButton>
               </PlanEditorContainer>
-              <ExercisesInSection>
-                <h4 style={{color: theme.colors.primary, marginBottom: '10px'}}>Exercícios do Plano:</h4>
-                {currentPlanData.exercises.map((ex, index) => (
-                  <ExerciseEntry key={index}>
-                    <div style={{flexGrow: 1, marginRight: '10px'}}>
-                      <ExerciseFieldsGrid>
-                        <div>
-                          <ModalLabel htmlFor={`exOrder-${index}`}>Ordem*</ModalLabel>
-                          <ModalInput type="number" id={`exOrder-${index}`} value={ex.order} onChange={(e) => handleExerciseChangeInPlan(index, 'order', e.target.value)} required />
-                        </div>
-                        <div style={{gridColumn: 'span 2'}}>
-                          <ModalLabel htmlFor={`exId-${index}`}>Exercício*</ModalLabel>
-                          <ModalSelect id={`exId-${index}`} value={ex.exerciseId} onChange={(e) => handleExerciseChangeInPlan(index, 'exerciseId', e.target.value)} required>
-                            <option value="">Selecione um exercício</option>
-                            {allExercises.map(baseEx => <option key={baseEx.id} value={baseEx.id}>{baseEx.name}</option>)}
-                          </ModalSelect>
-                        </div>
-                      </ExerciseFieldsGrid>
-                      <ExerciseFieldsGrid>
-                        <div><ModalLabel htmlFor={`exSets-${index}`}>Séries</ModalLabel><ModalInput type="number" id={`exSets-${index}`} value={ex.sets} onChange={(e) => handleExerciseChangeInPlan(index, 'sets', e.target.value)} /></div>
-                        <div><ModalLabel htmlFor={`exReps-${index}`}>Reps</ModalLabel><ModalInput type="text" id={`exReps-${index}`} value={ex.reps} onChange={(e) => handleExerciseChangeInPlan(index, 'reps', e.target.value)} /></div>
-                        <div><ModalLabel htmlFor={`exDuration-${index}`}>Duração (s)</ModalLabel><ModalInput type="number" id={`exDuration-${index}`} value={ex.durationSeconds} onChange={(e) => handleExerciseChangeInPlan(index, 'durationSeconds', e.target.value)} /></div>
-                        <div><ModalLabel htmlFor={`exRest-${index}`}>Descanso (s)</ModalLabel><ModalInput type="number" id={`exRest-${index}`} value={ex.restSeconds} onChange={(e) => handleExerciseChangeInPlan(index, 'restSeconds', e.target.value)} /></div>
-                      </ExerciseFieldsGrid>
-                      <div>
-                        <ModalLabel htmlFor={`exNotes-${index}`}>Notas do Exercício</ModalLabel>
-                        <ModalTextarea id={`exNotes-${index}`} value={ex.notes} onChange={(e) => handleExerciseChangeInPlan(index, 'notes', e.target.value)} style={{minHeight: '50px'}} />
-                      </div>
-                    </div>
-                    <ActionButton title="Remover Exercício" className="delete" type="button" onClick={() => handleRemoveExerciseFromCurrentPlan(index)}><FaTrashAlt /></ActionButton>
-                  </ExerciseEntry>
-                ))}
-                <ModalButton type="button" onClick={handleAddExerciseToCurrentPlan} style={{marginTop: '10px', backgroundColor: theme.colors.buttonSecondaryBg, color: theme.colors.textMain}}>
-                  <FaPlus /> Adicionar Exercício ao Plano
-                </ModalButton>
-              </ExercisesInSection>
 
               <ModalActions>
-                <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
-                <ModalButton type="submit" primary disabled={formLoading}><FaSave /> {formLoading ? 'A guardar...' : 'Guardar Plano Modelo'}</ModalButton>
+                <ModalButton type="button" onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
+                <ModalButton type="submit" primary disabled={formLoading}><FaSave /> {formLoading ? 'A guardar...' : 'Guardar Plano'}</ModalButton>
               </ModalActions>
             </ModalForm>
           </ModalContent>
@@ -671,7 +735,6 @@ const AdminManageGlobalWorkoutPlansPage = () => {
           </ModalContent>
         </ModalOverlay>
       )}
-
     </PageContainer>
   );
 };
