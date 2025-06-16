@@ -1,5 +1,5 @@
 // src/pages/admin/AdminManageGlobalWorkoutPlansPage.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo} from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
@@ -17,7 +17,7 @@ import { getAllExercises } from '../../services/exerciseService';
 import { getAllTrainings } from '../../services/trainingService'; 
 import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
-    FaArrowLeft, FaTimes, FaSave, FaImage, FaVideo, FaEye 
+    FaArrowLeft, FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye 
 } from 'react-icons/fa';
 import { theme } from '../../theme';
 
