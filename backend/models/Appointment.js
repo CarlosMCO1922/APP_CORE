@@ -26,10 +26,16 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     category: {
-      type: DataTypes.ENUM('FISIOTERAPIA', 'PT_INDIVIDUAL'),
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'FISIOTERAPIA',
-      comment: 'Distingue entre uma consulta de fisioterapia e uma sessão de PT individual'
+      comment: 'Distingue entre uma consulta de fisioterapia e uma sessão de PT individual',
+      validate: {
+        isIn: {
+          args: [['FISIOTERAPIA', 'PT_INDIVIDUAL']],
+          msg: "A categoria deve ser 'FISIOTERAPIA' ou 'PT_INDIVIDUAL'"
+        }
+      }
     },
     status: {
       type: DataTypes.ENUM(
