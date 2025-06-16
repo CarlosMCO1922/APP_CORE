@@ -15,7 +15,7 @@ import {
 } from '../../services/workoutPlanService';
 import { getAllExercises } from '../../services/exerciseService'; 
 import { getAllTrainings } from '../../services/trainingService'; 
-import { DragDropContext, Droppable, Draggable, DragHandle } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
     FaArrowLeft, FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical 
