@@ -29,6 +29,12 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: 0,
     },
+    supersetGroup: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Agrupa exercícios. Exercícios com o mesmo supersetGroup são um superset (1, 2, 3...).'
+    },
     notes: {
       type: DataTypes.TEXT,
       allowNull: true,
