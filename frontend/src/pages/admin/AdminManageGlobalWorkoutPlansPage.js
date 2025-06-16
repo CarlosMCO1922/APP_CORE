@@ -172,8 +172,56 @@ const ActionButton = styled.button`
 `;
 
 const ExercisesInSection = styled.div` margin-top: 15px; padding-top: 15px; border-top: 1px solid #4A4A4A; `;
-const ExerciseEntry = styled.div` background-color: #383838; padding: 10px; border-radius: 6px; margin-bottom:10px; display: flex; justify-content: space-between; align-items: flex-start;`;
-const ExerciseFieldsGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px;`;
+
+const PlanEditorContainer = styled.div`
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #4A4A4A;
+`;
+
+const SupersetGroupContainer = styled.div`
+  background-color: #383838;
+  border: 1px dashed #555;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+`;
+
+const SupersetHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  h4 {
+    margin: 0;
+    color: ${({ theme }) => theme.colors.primary};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+`;
+
+const ExerciseEntry = styled.div`
+  background-color: #2C2C2C;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+`;
+
+const ExerciseFieldsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 80px 1fr; /* Ordem | Exercício */
+  gap: 15px;
+  margin-bottom: 10px;
+
+  @media (min-width: 600px) {
+    grid-template-columns: 80px 1fr 1fr 1fr 1fr; /* Ordem | Exercício | Séries | Reps | Descanso */
+  }
+`;
 
 const initialPlanState = { name: '', notes: '', isVisible: false, exercises: [] };
 const initialExerciseState = { exerciseId: '', order: 0, sets: '', reps: '', durationSeconds: '', restSeconds: '', notes: '' };
@@ -239,6 +287,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
           id: ex.id, 
           exerciseId: ex.exerciseDetails.id, 
           order: ex.order,
+          supersetGroup: ex.supersetGroup,
           sets: ex.sets || '',
           reps: ex.reps || '',
           durationSeconds: ex.durationSeconds || '',
@@ -276,12 +325,69 @@ const AdminManageGlobalWorkoutPlansPage = () => {
     }));
   };
 
-  const handleRemoveExerciseFromCurrentPlan = (index) => {
-    const updatedExercises = currentPlanData.exercises.filter((_, i) => i !== index);
-    // Reajusta a ordem
-    const reorderedExercises = updatedExercises.map((ex, idx) => ({ ...ex, order: idx }));
-    setCurrentPlanData(prev => ({ ...prev, exercises: reorderedExercises }));
+  const handleAddExerciseToGroup = (supersetGroup) => {
+    const exercisesInGroup = currentPlanData.exercises.filter(ex => ex.supersetGroup === supersetGroup);
+    const nextOrder = exercisesInGroup.length;
+    setCurrentPlanData(prev => ({
+      ...prev,
+      exercises: [...prev.exercises, { 
+          exerciseId: '', 
+          order: nextOrder, // Ordem dentro do superset
+          supersetGroup: supersetGroup, // Pertence a este grupo
+          sets: '', reps: '', restSeconds: '', notes: '' 
+      }]
+    }));
   };
+
+  const handleAddSupersetGroup = () => {
+    const nextSupersetGroup = currentPlanData.exercises.length > 0
+      ? Math.max(...currentPlanData.exercises.map(ex => ex.supersetGroup)) + 1
+      : 0;
+    setCurrentPlanData(prev => ({
+      ...prev,
+      exercises: [...prev.exercises, { 
+          exerciseId: '', 
+          order: 0, 
+          supersetGroup: nextSupersetGroup, 
+          sets: '', reps: '', restSeconds: '', notes: '' 
+      }]
+    }));
+  };
+  
+  const handleRemoveExerciseFromCurrentPlan = (index) => {
+    const exerciseToRemove = currentPlanData.exercises[index];
+    let updatedExercises = currentPlanData.exercises.filter((_, i) => i !== index);
+    const remainingInGroup = updatedExercises.some(ex => ex.supersetGroup === exerciseToRemove.supersetGroup);
+    
+    if (!remainingInGroup) {
+    } else {
+      updatedExercises = updatedExercises.map(ex => {
+        if (ex.supersetGroup === exerciseToRemove.supersetGroup && ex.order > exerciseToRemove.order) {
+          return { ...ex, order: ex.order - 1 };
+        }
+        return ex;
+      });
+    }
+    setCurrentPlanData(prev => ({ ...prev, exercises: updatedExercises }));
+  };
+  
+  const handleRemoveSupersetGroup = (supersetGroup) => {
+    if (!window.confirm("Tem a certeza que quer eliminar este bloco e todos os seus exercícios?")) return;
+    const updatedExercises = currentPlanData.exercises.filter(ex => ex.supersetGroup !== supersetGroup);
+    setCurrentPlanData(prev => ({ ...prev, exercises: updatedExercises }));
+  };
+
+  const planExercisesGrouped = useMemo(() => {
+    if (!currentPlanData.exercises) return [];
+    const groups = {};
+    currentPlanData.exercises.forEach((ex, index) => {
+      if (!groups[ex.supersetGroup]) {
+        groups[ex.supersetGroup] = [];
+      }
+      groups[ex.supersetGroup].push({ ...ex, originalIndex: index });
+    });
+    return Object.values(groups).map(group => group.sort((a, b) => a.order - b.order));
+  }, [currentPlanData.exercises]);
 
   const handleSavePlan = async (e) => {
     e.preventDefault();
@@ -434,6 +540,50 @@ const AdminManageGlobalWorkoutPlansPage = () => {
                   Visível para Clientes na Biblioteca de Planos
                 </ModalLabel>
               </ModalCheckboxContainer>
+              <PlanEditorContainer>
+                <h4 style={{color: '#D4AF37', marginBottom: '10px'}}>Exercícios do Plano:</h4>
+                {planExercisesGrouped.map((group, groupIndex) => (
+                  <SupersetGroupContainer key={groupIndex}>
+                    <SupersetHeader>
+                      <h4><FaLayerGroup /> Bloco {groupIndex + 1} ({group.length > 1 ? 'Superset' : 'Exercício Único'})</h4>
+                      <ActionButton danger type="button" onClick={() => handleRemoveSupersetGroup(group[0].supersetGroup)}>
+                        <FaTrashAlt /> Apagar Bloco
+                      </ActionButton>
+                    </SupersetHeader>
+                    {group.map((ex) => (
+                      <ExerciseEntry key={ex.originalIndex}>
+                        <div style={{flexGrow: 1}}>
+                          <ExerciseFieldsGrid>
+                            <div>
+                              <ModalLabel htmlFor={`exOrder-${ex.originalIndex}`}>Ordem</ModalLabel>
+                              <ModalInput type="number" id={`exOrder-${ex.originalIndex}`} value={ex.order} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'order', e.target.value)} />
+                            </div>
+                            <div style={{gridColumn: 'span 4'}}>
+                              <ModalLabel htmlFor={`exId-${ex.originalIndex}`}>Exercício</ModalLabel>
+                              <ModalSelect id={`exId-${ex.originalIndex}`} value={ex.exerciseId} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'exerciseId', e.target.value)} required>
+                                <option value="">Selecione...</option>
+                                {allExercises.map(baseEx => <option key={baseEx.id} value={baseEx.id}>{baseEx.name}</option>)}
+                              </ModalSelect>
+                            </div>
+                          </ExerciseFieldsGrid>
+                          <ExerciseFieldsGrid>
+                            <div><ModalLabel>Séries</ModalLabel><ModalInput type="number" value={ex.sets} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'sets', e.target.value)} /></div>
+                            <div><ModalLabel>Reps</ModalLabel><ModalInput type="text" value={ex.reps} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'reps', e.target.value)} /></div>
+                            <div><ModalLabel>Descanso (s)</ModalLabel><ModalInput type="number" value={ex.restSeconds} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'restSeconds', e.target.value)} /></div>
+                          </ExerciseFieldsGrid>
+                        </div>
+                        <ActionButton title="Remover Exercício" danger type="button" onClick={() => handleRemoveExerciseFromCurrentPlan(ex.originalIndex)}><FaTimes /></ActionButton>
+                      </ExerciseEntry>
+                    ))}
+                    <ActionButton primary type="button" onClick={() => handleAddExerciseToGroup(group[0].supersetGroup)} style={{marginTop: '10px'}}>
+                      <FaPlus /> Adicionar Exercício a este Bloco
+                    </ActionButton>
+                  </SupersetGroupContainer>
+                ))}
+                <ActionButton secondary type="button" onClick={handleAddSupersetGroup} style={{marginTop: '10px', width: '100%'}}>
+                  <FaPlusCircle /> Adicionar Novo Bloco (Superset ou Exercício Único)
+                </ActionButton>
+              </PlanEditorContainer>
               <ExercisesInSection>
                 <h4 style={{color: theme.colors.primary, marginBottom: '10px'}}>Exercícios do Plano:</h4>
                 {currentPlanData.exercises.map((ex, index) => (
