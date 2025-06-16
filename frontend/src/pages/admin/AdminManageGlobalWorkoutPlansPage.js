@@ -279,24 +279,24 @@ const AdminManageGlobalWorkoutPlansPage = () => {
   const handleOpenEditModal = (plan) => {
     setIsEditingPlan(true);
     setCurrentPlanData({
-      id: plan.id,
-      name: plan.name || '',
-      notes: plan.notes || '',
-      isVisible: plan.isVisible || false,
-      exercises: plan.planExercises ? plan.planExercises.map(ex => ({ 
-          id: ex.id, 
-          exerciseId: ex.exerciseDetails.id, 
-          order: ex.order,
-          supersetGroup: ex.supersetGroup,
-          sets: ex.sets || '',
-          reps: ex.reps || '',
-          durationSeconds: ex.durationSeconds || '',
-          restSeconds: ex.restSeconds || '',
-          notes: ex.notes || ''
-      })) : []
+        id: plan.id,
+        name: plan.name || '',
+        notes: plan.notes || '',
+        isVisible: plan.isVisible || false,
+        exercises: plan.planExercises ? plan.planExercises.map(ex => ({
+            id: ex.id,
+            exerciseId: ex.exerciseDetails.id,
+            order: ex.order,
+            supersetGroup: ex.supersetGroup, 
+            sets: ex.sets || '',
+            reps: ex.reps || '',
+            restSeconds: ex.restSeconds || '',
+            notes: ex.notes || ''
+        })) : []
     });
     setShowPlanModal(true);
-    setError(''); setSuccessMessage('');
+    setError('');
+    setSuccessMessage('');
   };
 
   const handleCloseModal = () => {
@@ -312,9 +312,9 @@ const AdminManageGlobalWorkoutPlansPage = () => {
     setCurrentPlanData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  const handleExerciseChangeInPlan = (index, field, value) => {
+  const handleExerciseChangeInPlan = (originalIndex, field, value) => {
     const updatedExercises = [...currentPlanData.exercises];
-    updatedExercises[index] = { ...updatedExercises[index], [field]: value };
+    updatedExercises[originalIndex] = { ...updatedExercises[originalIndex], [field]: value };
     setCurrentPlanData(prev => ({ ...prev, exercises: updatedExercises }));
   };
 
@@ -328,103 +328,119 @@ const AdminManageGlobalWorkoutPlansPage = () => {
   const handleAddExerciseToGroup = (supersetGroup) => {
     const exercisesInGroup = currentPlanData.exercises.filter(ex => ex.supersetGroup === supersetGroup);
     const nextOrder = exercisesInGroup.length;
+        
     setCurrentPlanData(prev => ({
       ...prev,
-      exercises: [...prev.exercises, { 
-          exerciseId: '', 
-          order: nextOrder, // Ordem dentro do superset
-          supersetGroup: supersetGroup, // Pertence a este grupo
-          sets: '', reps: '', restSeconds: '', notes: '' 
+      exercises: [...prev.exercises, {
+        tempId: `new-${Date.now()}`, 
+        exerciseId: '',
+        order: nextOrder,
+        supersetGroup: supersetGroup,
+        sets: '', reps: '', restSeconds: '', notes: ''
       }]
     }));
   };
 
-  const handleAddSupersetGroup = () => {
-    const nextSupersetGroup = currentPlanData.exercises.length > 0
-      ? Math.max(...currentPlanData.exercises.map(ex => ex.supersetGroup)) + 1
-      : 0;
-    setCurrentPlanData(prev => ({
-      ...prev,
-      exercises: [...prev.exercises, { 
-          exerciseId: '', 
-          order: 0, 
-          supersetGroup: nextSupersetGroup, 
-          sets: '', reps: '', restSeconds: '', notes: '' 
-      }]
-    }));
-  };
+    const handleAddSupersetGroup = () => {
+      const nextSupersetGroup = currentPlanData.exercises.length > 0
+          ? Math.max(...currentPlanData.exercises.map(ex => ex.supersetGroup)) + 1
+          : 0;
+      
+      setCurrentPlanData(prev => ({
+          ...prev,
+          exercises: [...prev.exercises, {
+              tempId: `new-${Date.now()}`,
+              exerciseId: '',
+              order: 0,
+              supersetGroup: nextSupersetGroup,
+              sets: '', reps: '', restSeconds: '', notes: ''
+          }]
+      }));
+    };
   
-  const handleRemoveExerciseFromCurrentPlan = (index) => {
-    const exerciseToRemove = currentPlanData.exercises[index];
-    let updatedExercises = currentPlanData.exercises.filter((_, i) => i !== index);
-    const remainingInGroup = updatedExercises.some(ex => ex.supersetGroup === exerciseToRemove.supersetGroup);
-    
-    if (!remainingInGroup) {
-    } else {
-      updatedExercises = updatedExercises.map(ex => {
-        if (ex.supersetGroup === exerciseToRemove.supersetGroup && ex.order > exerciseToRemove.order) {
-          return { ...ex, order: ex.order - 1 };
-        }
-        return ex;
+    const handleRemoveExerciseFromCurrentPlan = (originalIndex) => {
+      const exerciseToRemove = currentPlanData.exercises[originalIndex];
+      let updatedExercises = currentPlanData.exercises.filter((_, i) => i !== originalIndex);
+      const remainingInGroup = updatedExercises.filter(ex => ex.supersetGroup === exerciseToRemove.supersetGroup);
+      remainingInGroup.sort((a, b) => a.order - b.order);
+      remainingInGroup.forEach((ex, index) => {
+          ex.order = index;
       });
-    }
-    setCurrentPlanData(prev => ({ ...prev, exercises: updatedExercises }));
-  };
+      setCurrentPlanData(prev => ({ ...prev, exercises: updatedExercises }));
+    };
   
-  const handleRemoveSupersetGroup = (supersetGroup) => {
-    if (!window.confirm("Tem a certeza que quer eliminar este bloco e todos os seus exercícios?")) return;
-    const updatedExercises = currentPlanData.exercises.filter(ex => ex.supersetGroup !== supersetGroup);
-    setCurrentPlanData(prev => ({ ...prev, exercises: updatedExercises }));
-  };
-
-  const planExercisesGrouped = useMemo(() => {
-    if (!currentPlanData.exercises) return [];
-    const groups = {};
-    currentPlanData.exercises.forEach((ex, index) => {
-      if (!groups[ex.supersetGroup]) {
-        groups[ex.supersetGroup] = [];
-      }
-      groups[ex.supersetGroup].push({ ...ex, originalIndex: index });
-    });
-    return Object.values(groups).map(group => group.sort((a, b) => a.order - b.order));
-  }, [currentPlanData.exercises]);
-
-  const handleSavePlan = async (e) => {
-    e.preventDefault();
-    setFormLoading(true);
-    setError(''); setSuccessMessage('');
-
-    const planPayload = {
-      name: currentPlanData.name,
-      notes: currentPlanData.notes,
-      isVisible: currentPlanData.isVisible,
-      exercises: currentPlanData.exercises.map(ex => ({
-          exerciseId: ex.exerciseId,
-          order: parseInt(ex.order) || 0,
-          sets: ex.sets ? parseInt(ex.sets) : null,
-          reps: ex.reps || null,
-          durationSeconds: ex.durationSeconds ? parseInt(ex.durationSeconds) : null,
-          restSeconds: ex.restSeconds ? parseInt(ex.restSeconds) : null,
-          notes: ex.notes || null,
-      })),
+    const handleRemoveSupersetGroup = (supersetGroup) => {
+      if (!window.confirm("Tem a certeza que quer eliminar este bloco e todos os seus exercícios?")) return;
+      let remainingExercises = currentPlanData.exercises.filter(ex => ex.supersetGroup !== supersetGroup);
+      
+      const remappedGroups = {};
+      let nextGroupIndex = 0;
+      remainingExercises.sort((a, b) => a.supersetGroup - b.supersetGroup).forEach(ex => {
+          if (remappedGroups[ex.supersetGroup] === undefined) {
+              remappedGroups[ex.supersetGroup] = nextGroupIndex++;
+          }
+          ex.supersetGroup = remappedGroups[ex.supersetGroup];
+      });
+      setCurrentPlanData(prev => ({ ...prev, exercises: remainingExercises }));
     };
 
-    try {
-      if (isEditingPlan) {
-        await adminUpdateGlobalWorkoutPlan(currentPlanData.id, planPayload, authState.token);
-        setSuccessMessage('Plano de treino atualizado com sucesso!');
-      } else {
-        await adminCreateGlobalWorkoutPlan(planPayload, authState.token);
-        setSuccessMessage('Plano de treino criado com sucesso!');
-      }
-      fetchAllData();
-      handleCloseModal();
-    } catch (err) {
-      setError(err.message || 'Erro ao guardar plano de treino.');
-    } finally {
-      setFormLoading(false);
-    }
-  };
+  const planExercisesGrouped = useMemo(() => {
+        if (!currentPlanData.exercises) return [];
+        const groups = new Map();
+        const sortedExercises = [...currentPlanData.exercises].sort((a, b) => {
+            if (a.supersetGroup !== b.supersetGroup) {
+                return a.supersetGroup - b.supersetGroup;
+            }
+            return a.order - b.order;
+        });
+        sortedExercises.forEach((ex, index) => {
+          const group = ex.supersetGroup;
+          if (!groups.has(group)) {
+            groups.set(group, []);
+          }
+        groups.get(group).push({ ...ex, originalIndex: index });
+      });
+        
+    return Array.from(groups.values());
+  }, [currentPlanData.exercises]);
+
+
+    const handleSavePlan = async (e) => {
+        e.preventDefault();
+        setFormLoading(true); setError(''); setSuccessMessage('');
+
+        const planPayload = {
+            name: currentPlanData.name,
+            notes: currentPlanData.notes,
+            isVisible: currentPlanData.isVisible,
+            exercises: currentPlanData.exercises.map(ex => ({
+                id: isNaN(parseInt(ex.id)) ? null : ex.id, 
+                exerciseId: parseInt(ex.exerciseId),
+                order: parseInt(ex.order) || 0,
+                supersetGroup: parseInt(ex.supersetGroup) || 0,
+                sets: ex.sets ? parseInt(ex.sets) : null,
+                reps: ex.reps || null,
+                restSeconds: ex.restSeconds ? parseInt(ex.restSeconds) : null,
+                notes: ex.notes || null,
+            })).filter(ex => ex.exerciseId), 
+        };
+
+        try {
+            if (isEditingPlan) {
+                await adminUpdateGlobalWorkoutPlan(currentPlanData.id, planPayload, authState.token);
+                setSuccessMessage('Plano de treino atualizado com sucesso!');
+            } else {
+                await adminCreateGlobalWorkoutPlan(planPayload, authState.token);
+                setSuccessMessage('Plano de treino criado com sucesso!');
+            }
+            fetchAllData();
+            handleCloseModal();
+        } catch (err) {
+            setError(err.message || 'Erro ao guardar plano de treino.');
+        } finally {
+            setFormLoading(false);
+        }
+    };
 
   const handleDeletePlan = async (planId) => {
     if (window.confirm('Tem a certeza que quer eliminar este plano de treino? Esta ação não pode ser desfeita.')) {
