@@ -1,11 +1,11 @@
 // src/pages/LiveWorkoutSessionPage.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo} from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getWorkoutPlansByTrainingId, getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService';
-import { FaArrowLeft, FaStopwatch, FaFlagCheckered } from 'react-icons/fa';
+import { FaArrowLeft, FaStopwatch, FaFlagCheckered, FaLayerGroup} from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard';
 import RestTimer from '../components/Workout/RestTimer';
 import { checkPersonalRecordsService } from '../services/progressService'; 
@@ -135,7 +135,7 @@ const LiveWorkoutSessionPage = () => {
         } else {
             throw new Error("Nenhum plano de treino especificado.");
         }
-        setWorkoutPlans(plansData);
+        setWorkoutPlan(plansData);
     } catch (err) {
         setError(err.message || 'Não foi possível carregar o plano de treino.');
     } finally {
@@ -175,7 +175,7 @@ const LiveWorkoutSessionPage = () => {
     if (window.confirm("Tens a certeza que queres terminar o treino?")) {
         try {
             const prData = await checkPersonalRecordsService(completedSets, authState.token); 
-            const allPlanExercises = workoutPlans.flatMap(p => p.planExercises || []);
+            const allPlanExercises = workoutPlan?.planExercises || [];
             
             navigate('/treino/resumo', {
                 state: {
