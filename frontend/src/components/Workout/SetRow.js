@@ -9,30 +9,24 @@ import { FaCheck, FaTimes, FaEdit, FaTrashAlt, FaSave } from 'react-icons/fa';
 // --- Styled Components ---
 
 const RowContainer = styled.div`
-  display: flex;
+  display: grid; // A linha agora é uma grelha
+  grid-template-columns: 50px 1fr 1fr 110px; // 4 colunas: #Série, Peso, Reps, Ações
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
 
-  &:last-of-type {
-    border-bottom: none;
+  &:hover {
+    background-color: #303030;
   }
 `;
 
 const SetLabel = styled.span`
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.1rem;
   color: ${({ theme, isCompleted }) => isCompleted ? theme.colors.primary : theme.colors.textMuted};
-  min-width: 60px;
-  text-align: center;
-  transition: color 0.3s;
-`;
-
-const InputGroup = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  flex-grow: 1;
-  gap: 10px;
+  text-align: left;
 `;
 
 const Input = styled.input`
@@ -42,36 +36,25 @@ const Input = styled.input`
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
-  font-size: 1rem;
   text-align: center;
-  -moz-appearance: textfield;
-
+  font-size: 1rem;
+  -moz-appearance: textfield; // Esconde setas em Firefox
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
-  }
-  
   &:disabled {
-    background-color: #2c2c2c;
-    color: ${({ theme }) => theme.colors.textMuted};
-    border-color: #333;
-    opacity: 0.7;
+      background-color: #2c2c2c;
+      cursor: not-allowed;
   }
 `;
 
 const ActionsContainer = styled.div`
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 8px;
-  min-width: 105px;
-  justify-content: flex-end;
 `;
 
 const ActionButton = styled.button`
@@ -216,10 +199,8 @@ const SetRow = ({ setId, setNumber, onSetComplete, trainingId, workoutPlanId, pl
   return (
     <RowContainer>
       <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
-      <InputGroup>
-        <Input type="number" placeholder="Peso" value={weight} onChange={e => setWeight(e.target.value)} disabled={isCompleted && !isEditing} />
-        <Input type="number" placeholder="Reps" value={reps} onChange={e => setReps(e.target.value)} disabled={isCompleted && !isEditing} />
-      </InputGroup>
+      <Input type="number" placeholder="Peso" value={weight} onChange={e => setWeight(e.target.value)} disabled={isCompleted && !isEditing} />
+      <Input type="number" placeholder="Reps" value={reps} onChange={e => setReps(e.target.value)} disabled={isCompleted && !isEditing} />
       <ActionsContainer>
         {renderActions()}
         {!isCompleted && (

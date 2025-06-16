@@ -5,7 +5,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getWorkoutPlansByTrainingId, getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService';
-import { FaArrowLeft, FaStopwatch, FaFlagCheckered, FaLayerGroup} from 'react-icons/fa';
+import { FaArrowLeft, FaStopwatch, FaFlagCheckered, FaLayerGroup, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard';
 import RestTimer from '../components/Workout/RestTimer';
 import { checkPersonalRecordsService } from '../services/progressService'; 
@@ -80,7 +80,6 @@ const FinishWorkoutButton = styled.button`
   }
 `;
 
-// <<< NOVO STYLED COMPONENT PARA OS BLOCOS >>>
 const SupersetBlock = styled.div`
   background-color: #202020;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -100,6 +99,44 @@ const SupersetBlock = styled.div`
   }
 `;
 
+const WorkoutPager = styled.div`
+  margin-top: 2rem;
+`;
+const NavigationControls = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+`;
+const NavButton = styled.button`
+  background: ${({ theme }) => theme.colors.cardBackground};
+  color: ${({ theme }) => theme.colors.textMain};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover {
+    background: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.textDark};
+  }
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+`;
+const ProgressIndicator = styled.div`
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: center;
+`;
+
 // --- Componente Principal ---
 
 const LiveWorkoutSessionPage = () => {
@@ -117,6 +154,8 @@ const LiveWorkoutSessionPage = () => {
 
   const [activeRestTimer, setActiveRestTimer] = useState({ active: false, duration: 90, key: 0 });
   const [completedSets, setCompletedSets] = useState([]);
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+
 
     const fetchPlan = useCallback(async () => {
     if (!authState.token) return;
@@ -222,51 +261,75 @@ const LiveWorkoutSessionPage = () => {
     return Array.from(groups.values());
   }, [workoutPlan]);
 
+  const goToNextExercise = () => {
+        setCurrentExerciseIndex(prev => Math.min(prev + 1, groupedExercises.length - 1));
+    };
+    const goToPreviousExercise = () => {
+        setCurrentExerciseIndex(prev => Math.max(prev - 1, 0));
+    };
+
   if (loading) return <PageContainer><LoadingText>A carregar sessão de treino...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
 
   return (
     <>
-      <PageContainer>
-        <SessionHeader>
-          <BackLink to="/meu-progresso" title="Voltar (o progresso não será guardado)"><FaArrowLeft /></BackLink>
-          <SessionTimer><FaStopwatch /> {formatTime(elapsedTime)}</SessionTimer>
-        </SessionHeader>
+            <PageContainer>
+                <SessionHeader>
+                    <BackLink to="/meu-progresso" title="Voltar"><FaArrowLeft /></BackLink>
+                    <SessionTimer><FaStopwatch /> {formatTime(elapsedTime)}</SessionTimer>
+                </SessionHeader>
 
-        <SessionTitle>{sessionName}</SessionTitle>
-        <div>
-          {groupedExercises.map((group, index) => (
-            <SupersetBlock key={index}>
-              <h3>
-                <FaLayerGroup /> 
-                Bloco {index + 1} {group.length > 1 ? '(Superset)' : ''}
-              </h3>
-              {group.map(exercise => (
-                  <ExerciseLiveCard
-                    key={exercise.id}
-                    planExercise={exercise}
-                    trainingId={trainingId}
-                    workoutPlanId={workoutPlan.id}
-                    onSetComplete={handleSetComplete}
-                    onLogDeleted={handleLogDeleted}
-                  />
-              ))}
-            </SupersetBlock>
-          ))}
-        </div>
-        <FinishWorkoutButton onClick={handleFinishWorkout}>
-            <FaFlagCheckered /> Concluir Treino
-        </FinishWorkoutButton>
-      </PageContainer>
-      
-      {activeRestTimer.active && (
-        <RestTimer
-          key={activeRestTimer.key}
-          duration={activeRestTimer.duration}
-          onFinish={() => setActiveRestTimer({ active: false, duration: 0, key: activeRestTimer.key })}
-        />
-      )}
-    </>
+                <SessionTitle>{sessionName}</SessionTitle>
+
+                {/* --- NOVA ESTRUTURA DE NAVEGAÇÃO --- */}
+                {groupedExercises.length > 0 && currentGroup ? (
+                    <WorkoutPager>
+                        <NavigationControls>
+                            <NavButton onClick={goToPreviousExercise} disabled={currentExerciseIndex === 0}>
+                                <FaChevronLeft />
+                            </NavButton>
+                            <ProgressIndicator>
+                                Bloco {currentExerciseIndex + 1} de {groupedExercises.length}
+                            </ProgressIndicator>
+                            <NavButton onClick={goToNextExercise} disabled={currentExerciseIndex === groupedExercises.length - 1}>
+                                <FaChevronRight />
+                            </NavButton>
+                        </NavigationControls>
+
+                        <SupersetBlock>
+                            <h3>
+                                <FaLayerGroup /> 
+                                {currentGroup.length > 1 ? `Superset (${currentGroup.map(e => e.exerciseDetails.name).join(' + ')})` : currentGroup[0].exerciseDetails.name}
+                            </h3>
+                            {currentGroup.map(exercise => (
+                                <ExerciseLiveCard
+                                    key={exercise.id}
+                                    planExercise={exercise}
+                                    trainingId={trainingId}
+                                    workoutPlanId={workoutPlan.id}
+                                    onSetComplete={handleSetComplete}
+                                    onLogDeleted={handleLogDeleted}
+                                />
+                            ))}
+                        </SupersetBlock>
+                    </WorkoutPager>
+                ) : (
+                    !loading && <p>Nenhum exercício encontrado neste plano.</p>
+                )}
+                
+                <FinishWorkoutButton onClick={handleFinishWorkout}>
+                    <FaFlagCheckered /> Concluir Treino
+                </FinishWorkoutButton>
+            </PageContainer>
+            
+            {activeRestTimer.active && (
+                <RestTimer
+                    key={activeRestTimer.key}
+                    duration={activeRestTimer.duration}
+                    onFinish={() => setActiveRestTimer(prev => ({ ...prev, active: false }))}
+                />
+            )}
+        </>
   );
 };
 

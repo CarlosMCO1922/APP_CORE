@@ -92,6 +92,21 @@ const CalcButton = styled.button`
   }
 `;
 
+const SetsGridHeader = styled.div`
+  display: grid;
+  grid-template-columns: 50px 1fr 1fr 110px; // Alinhado com as colunas do SetRow
+  gap: 12px;
+  padding: 0 10px;
+  margin-bottom: 8px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  text-align: center;
+
+  span:nth-child(1) { text-align: left; }
+`;
+
 const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete, onLogDeleted}) => {
   const { authState } = useAuth();
   const [sets, setSets] = useState([]);
@@ -161,20 +176,13 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   
   return (
     <>
-      <CardContainer>
-        <CardHeader>
-          <HeaderInfo>
-            <ExerciseName onClick={() => setIsDetailModalOpen(true)}>
-              <FaDumbbell /> {planExercise.exerciseDetails.name}
-            </ExerciseName>
-            <LastPerformance>
-              <FaHistory /> {historyError || lastPerformanceText}
-            </LastPerformance>
-          </HeaderInfo>
-          <CalcButton onClick={() => setShowCalculator(true)} title="Calculadora de Discos">
-            <FaCalculator />
-          </CalcButton>
-        </CardHeader>
+      <CardContainer> 
+        <SetsGridHeader>
+          <span>Série</span>
+          <span>Peso (kg)</span>
+          <span>Reps</span>
+          <span>Concluir</span>
+        </SetsGridHeader>
         
         <div>
           {sets.map((set) => (
