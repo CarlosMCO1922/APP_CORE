@@ -80,6 +80,26 @@ const FinishWorkoutButton = styled.button`
   }
 `;
 
+// <<< NOVO STYLED COMPONENT PARA OS BLOCOS >>>
+const SupersetBlock = styled.div`
+  background-color: #202020;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  padding: 15px;
+  margin-bottom: 30px;
+  
+  & > h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 15px 0;
+    color: ${({ theme }) => theme.colors.textMuted};
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+`;
+
 // --- Componente Principal ---
 
 const LiveWorkoutSessionPage = () => {
@@ -87,7 +107,7 @@ const LiveWorkoutSessionPage = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
 
-  const [workoutPlans, setWorkoutPlans] = useState([]);
+  const [workoutPlan, setWorkoutPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sessionName, setSessionName] = useState('Sessão de Treino');
@@ -180,6 +200,26 @@ const LiveWorkoutSessionPage = () => {
     }
   };
 
+  const groupedExercises = useMemo(() => {
+    if (!workoutPlan?.planExercises) return [];
+
+    const groups = new Map();
+    const sortedPlanExercises = [...workoutPlan.planExercises].sort((a, b) => {
+        if (a.supersetGroup !== b.supersetGroup) return a.supersetGroup - b.supersetGroup;
+        return a.order - b.order;
+    });
+
+    sortedPlanExercises.forEach(ex => {
+      const groupKey = ex.supersetGroup;
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, []);
+      }
+      groups.get(groupKey).push(ex);
+    });
+
+    return Array.from(groups.values());
+  }, [workoutPlan]);
+
   if (loading) return <PageContainer><LoadingText>A carregar sessão de treino...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
 
@@ -192,25 +232,26 @@ const LiveWorkoutSessionPage = () => {
         </SessionHeader>
 
         <SessionTitle>{sessionName}</SessionTitle>
-
         <div>
-          {workoutPlans.sort((a,b) => a.TrainingWorkoutPlan.orderInTraining - b.TrainingWorkoutPlan.orderInTraining).map(plan => (
-            <div key={plan.id}>
-              <h2 style={{color: '#aaa', fontSize: '1.2rem'}}>Bloco: {plan.name}</h2>
-              {plan.planExercises && plan.planExercises.sort((a,b) => a.order - b.order).map(exercise => (
+          {groupedExercises.map((group, index) => (
+            <SupersetBlock key={index}>
+              <h3>
+                <FaLayerGroup /> 
+                Bloco {index + 1} {group.length > 1 ? '(Superset)' : ''}
+              </h3>
+              {group.map(exercise => (
                   <ExerciseLiveCard
                     key={exercise.id}
                     planExercise={exercise}
                     trainingId={trainingId}
-                    workoutPlanId={plan.id}
+                    workoutPlanId={workoutPlan.id}
                     onSetComplete={handleSetComplete}
                     onLogDeleted={handleLogDeleted}
                   />
               ))}
-            </div>
+            </SupersetBlock>
           ))}
         </div>
-        
         <FinishWorkoutButton onClick={handleFinishWorkout}>
             <FaFlagCheckered /> Concluir Treino
         </FinishWorkoutButton>
