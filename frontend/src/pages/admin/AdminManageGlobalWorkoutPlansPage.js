@@ -224,6 +224,16 @@ const ExerciseFieldsGrid = styled.div`
   }
 `;
 
+const DragHandle = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 10px;
+  color: #777;
+  cursor: grab;
+  &:active { cursor: grabbing; }
+`;
+
 const initialPlanState = { name: '', notes: '', isVisible: false, exercises: [] };
 const initialExerciseState = { exerciseId: '', order: 0, sets: '', reps: '', durationSeconds: '', restSeconds: '', notes: '' };
 
