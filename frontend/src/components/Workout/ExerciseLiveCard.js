@@ -94,17 +94,15 @@ const CalcButton = styled.button`
 
 const SetsGridHeader = styled.div`
   display: grid;
-  grid-template-columns: 50px 1fr 1fr 110px; // Alinhado com as colunas do SetRow
+  grid-template-columns: 50px 1fr 1fr 105px;
   gap: 12px;
   padding: 0 10px;
-  margin-bottom: 8px;
+  margin: 20px 0 8px 0;
   color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
   text-align: center;
-
-  span:nth-child(1) { text-align: left; }
+  span:first-child { text-align: left; }
+  span:last-child { text-align: right; }
 `;
 
 const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete, onLogDeleted}) => {
@@ -181,7 +179,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
           <span>Série</span>
           <span>Peso (kg)</span>
           <span>Reps</span>
-          <span>Concluir</span>
+          <span></span> {/* Espaço para os botões de ação */}
         </SetsGridHeader>
         
         <div>

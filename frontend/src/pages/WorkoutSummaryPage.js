@@ -124,6 +124,37 @@ const PRCard = styled.div`
   }
 `;
 
+const DetailsSection = styled.div`
+  margin-top: 40px;
+  h2 {
+    font-size: 1.8rem; color: ${({ theme }) => theme.colors.primary};
+    text-align: center; margin-bottom: 20px;
+  }
+`;
+const ExerciseSummaryCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: 20px; border-radius: ${({ theme }) => theme.borderRadius};
+  margin-bottom: 15px;
+  h3 {
+    margin: 0 0 15px 0; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;
+  }
+`;
+const SetsTable = styled.div`
+  display: flex; flex-direction: column; gap: 8px;
+`;
+const SetRowSummary = styled.div`
+  display: grid; grid-template-columns: 50px 1fr 1fr;
+  text-align: center; font-size: 0.95rem; padding: 8px 5px;
+  border-radius: 4px;
+  background-color: #333;
+  span:first-child { color: ${({ theme }) => theme.colors.textMuted}; font-weight: bold; text-align: left; padding-left: 10px;}
+  span { color: ${({ theme }) => theme.colors.textMain}; }
+`;
+const SetsTableHeader = styled(SetRowSummary)`
+  background-color: transparent; font-weight: 600; color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 0.8rem; text-transform: uppercase;
+`;
+
 const WorkoutSummaryPage = () => {
   const location = useLocation();
   const { 
@@ -150,6 +181,19 @@ const WorkoutSummaryPage = () => {
       totalVolume: totalVolume.toFixed(2),
     };
   }, [sessionData]);
+
+  const setsByExercise = useMemo(() => {
+        if (!sessionData) return new Map();
+        const map = new Map();
+        sessionData.forEach(set => {
+            const name = getExerciseName(set.planExerciseId);
+            if (!map.has(name)) {
+                map.set(name, []);
+            }
+            map.get(name).push(set);
+        });
+        return map;
+    }, [sessionData, getExerciseName]);
   
   const formatTime = (totalSeconds) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -170,7 +214,28 @@ const WorkoutSummaryPage = () => {
         <Title>Treino Concluído!</Title>
         <Subtitle>Bom trabalho em completar o treino "{workoutName}".</Subtitle>
       </SummaryHeader>
-
+      <DetailsSection>
+        <h2>Detalhes do Treino</h2>
+        {Array.from(setsByExercise.entries()).map(([exerciseName, sets]) => (
+          <ExerciseSummaryCard key={exerciseName}>
+            <h3><FaDumbbell /> {exerciseName}</h3>
+              <SetsTable>
+                <SetsTableHeader>
+                  <span>Série</span>
+                  <span>Peso (kg)</span>
+                  <span>Reps</span>
+                </SetsTableHeader>
+                {sets.map((set, index) => (
+                  <SetRowSummary key={index}>
+                    <span>{set.setNumber}</span>
+                    <span>{set.performedWeight || '-'}</span>
+                    <span>{set.performedReps || '-'}</span>
+                  </SetRowSummary>
+                ))}
+                </SetsTable>
+          </ExerciseSummaryCard>
+                ))}
+      </DetailsSection>
       <StatsGrid>
         <StatCard>
           <FaStopwatch />

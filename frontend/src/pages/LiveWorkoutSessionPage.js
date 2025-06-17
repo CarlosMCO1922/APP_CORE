@@ -100,13 +100,13 @@ const SupersetBlock = styled.div`
 `;
 
 const WorkoutPager = styled.div`
-  margin-top: 2rem;
+  margin-top: 1rem;
 `;
 const NavigationControls = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 20px 0;
+  margin-bottom: 2rem;
 `;
 const NavButton = styled.button`
   background: ${({ theme }) => theme.colors.cardBackground};
@@ -121,7 +121,7 @@ const NavButton = styled.button`
   font-size: 1.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  &:hover {
+  &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.primary};
     color: ${({ theme }) => theme.colors.textDark};
   }
@@ -136,6 +136,7 @@ const ProgressIndicator = styled.div`
   font-size: 1.1rem;
   text-align: center;
 `;
+
 
 // --- Componente Principal ---
 
@@ -280,33 +281,26 @@ const LiveWorkoutSessionPage = () => {
                     <BackLink to="/meu-progresso" title="Voltar"><FaArrowLeft /></BackLink>
                     <SessionTimer><FaStopwatch /> {formatTime(elapsedTime)}</SessionTimer>
                 </SessionHeader>
-
                 <SessionTitle>{sessionName}</SessionTitle>
 
-                {/* --- NOVA ESTRUTURA DE NAVEGAÇÃO --- */}
                 {groupedExercises.length > 0 && currentGroup ? (
                     <WorkoutPager>
                         <NavigationControls>
-                            <NavButton onClick={goToPreviousExercise} disabled={currentExerciseIndex === 0}>
-                                <FaChevronLeft />
-                            </NavButton>
-                            <ProgressIndicator>
-                                Bloco {currentExerciseIndex + 1} de {groupedExercises.length}
-                            </ProgressIndicator>
-                            <NavButton onClick={goToNextExercise} disabled={currentExerciseIndex === groupedExercises.length - 1}>
-                                <FaChevronRight />
-                            </NavButton>
+                            <NavButton onClick={goToPreviousExercise} disabled={currentExerciseIndex === 0}> <FaChevronLeft /> </NavButton>
+                            <ProgressIndicator> Bloco {currentExerciseIndex + 1} de {groupedExercises.length} </ProgressIndicator>
+                            <NavButton onClick={goToNextExercise} disabled={currentExerciseIndex === groupedExercises.length - 1}> <FaChevronRight /> </NavButton>
                         </NavigationControls>
 
                         <SupersetBlock>
                             <h3>
                                 <FaLayerGroup /> 
-                                {currentGroup.length > 1 ? `Superset (${currentGroup.map(e => e.exerciseDetails.name).join(' + ')})` : currentGroup[0].exerciseDetails.name}
+                                {currentGroup.length > 1 ? `Superset` : currentGroup[0].exerciseDetails.name}
                             </h3>
                             {currentGroup.map(exercise => (
                                 <ExerciseLiveCard
                                     key={exercise.id}
                                     planExercise={exercise}
+                                    isStandalone={currentGroup.length === 1} // Prop para saber se é único
                                     trainingId={trainingId}
                                     workoutPlanId={workoutPlan.id}
                                     onSetComplete={handleSetComplete}
@@ -315,9 +309,7 @@ const LiveWorkoutSessionPage = () => {
                             ))}
                         </SupersetBlock>
                     </WorkoutPager>
-                ) : (
-                    !loading && <p>Nenhum exercício encontrado neste plano.</p>
-                )}
+                ) : ( !loading && <p>Nenhum exercício encontrado neste plano.</p> )}
                 
                 <FinishWorkoutButton onClick={handleFinishWorkout}>
                     <FaFlagCheckered /> Concluir Treino

@@ -9,16 +9,17 @@ import { FaCheck, FaTimes, FaEdit, FaTrashAlt, FaSave } from 'react-icons/fa';
 // --- Styled Components ---
 
 const RowContainer = styled.div`
-  display: grid; // A linha agora é uma grelha
-  grid-template-columns: 50px 1fr 1fr 110px; // 4 colunas: #Série, Peso, Reps, Ações
+  display: grid;
+  grid-template-columns: 50px 1fr 1fr 105px;
   align-items: center;
   gap: 12px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   border-radius: 6px;
   transition: background-color 0.2s ease;
+  background-color: ${props => props.isCompleted ? '#292929' : 'transparent'};
 
   &:hover {
-    background-color: #303030;
+    background-color: ${props => props.isCompleted ? '#292929' : '#303030'};
   }
 `;
 
