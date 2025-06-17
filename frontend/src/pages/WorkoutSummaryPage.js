@@ -165,6 +165,11 @@ const WorkoutSummaryPage = () => {
     personalRecords = [] 
   } = location.state || {};
 
+  const getExerciseName = (planExerciseId) => {
+    const exercise = allPlanExercises.find(ex => ex.id === planExerciseId);
+    return exercise?.exerciseDetails?.name || 'Exercício Desconhecido';
+  };
+
   // Calcula as estatísticas usando useMemo para eficiência
   const stats = useMemo(() => {
     if (!sessionData || sessionData.length === 0) {
@@ -202,10 +207,6 @@ const WorkoutSummaryPage = () => {
     return `${hours > 0 ? hours + 'h ' : ''}${minutes > 0 ? minutes + 'm ' : ''}${seconds}s`;
   };
 
-  const getExerciseName = (planExerciseId) => {
-    const exercise = allPlanExercises.find(ex => ex.id === planExerciseId);
-    return exercise?.exerciseDetails?.name || 'Exercício Desconhecido';
-  };
 
   return (
     <PageContainer>
