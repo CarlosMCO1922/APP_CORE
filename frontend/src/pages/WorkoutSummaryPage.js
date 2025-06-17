@@ -215,28 +215,6 @@ const WorkoutSummaryPage = () => {
         <Title>Treino Concluído!</Title>
         <Subtitle>Bom trabalho em completar o treino "{workoutName}".</Subtitle>
       </SummaryHeader>
-      <DetailsSection>
-        <h2>Detalhes do Treino</h2>
-        {Array.from(setsByExercise.entries()).map(([exerciseName, sets]) => (
-          <ExerciseSummaryCard key={exerciseName}>
-            <h3><FaDumbbell /> {exerciseName}</h3>
-              <SetsTable>
-                <SetsTableHeader>
-                  <span>Série</span>
-                  <span>Peso (kg)</span>
-                  <span>Reps</span>
-                </SetsTableHeader>
-                {sets.map((set, index) => (
-                  <SetRowSummary key={index}>
-                    <span>{set.setNumber}</span>
-                    <span>{set.performedWeight || '-'}</span>
-                    <span>{set.performedReps || '-'}</span>
-                  </SetRowSummary>
-                ))}
-                </SetsTable>
-          </ExerciseSummaryCard>
-                ))}
-      </DetailsSection>
       <StatsGrid>
         <StatCard>
           <FaStopwatch />
@@ -265,6 +243,28 @@ const WorkoutSummaryPage = () => {
           ))}
         </PRSection>
       )}
+      <DetailsSection>
+        <h2>Detalhes do Treino</h2>
+        {Array.from(setsByExercise.entries()).map(([exerciseName, sets]) => (
+          <ExerciseSummaryCard key={exerciseName}>
+            <h3><FaDumbbell /> {exerciseName}</h3>
+              <SetsTable>
+                <SetsTableHeader>
+                  <span>Série</span>
+                  <span>Peso (kg)</span>
+                  <span>Reps</span>
+                </SetsTableHeader>
+                {sets.map((set, index) => (
+                  <SetRowSummary key={index}>
+                    <span>{set.setNumber}</span>
+                    <span>{set.performedWeight || '-'}</span>
+                    <span>{set.performedReps || '-'}</span>
+                  </SetRowSummary>
+                ))}
+                </SetsTable>
+          </ExerciseSummaryCard>
+                ))}
+      </DetailsSection>
       <BackButton to="/dashboard">Voltar ao Painel</BackButton>
     </PageContainer>
   );
