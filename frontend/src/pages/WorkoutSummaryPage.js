@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaCheckCircle, FaStopwatch, FaWeightHanging, FaListOl, FaClipboardList, FaTrophy } from 'react-icons/fa';
+import { FaCheckCircle, FaStopwatch, FaWeightHanging, FaListOl, FaClipboardList, FaTrophy, FaDumbbell} from 'react-icons/fa';
 
 const PageContainer = styled.div`
   max-width: 800px;
