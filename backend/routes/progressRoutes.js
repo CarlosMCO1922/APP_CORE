@@ -10,6 +10,7 @@ const {
   getMyPersonalRecords,
   updatePerformanceLog,
   adminGetUserRecords,
+  adminGetFullExerciseHistoryForUser,
 } = require('../controllers/progressController');
 
 const { protect, isClientUser, isStaff } = require('../middleware/authMiddleware');
