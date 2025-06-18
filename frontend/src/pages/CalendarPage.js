@@ -19,6 +19,7 @@ import {
     cancelTrainingBooking as cancelTrainingBookingService,
     adminCreateTraining,
     createSeriesSubscriptionService,
+    createTrainingSeriesService,
 } from '../services/trainingService';
 import {
     getAllAppointments,
