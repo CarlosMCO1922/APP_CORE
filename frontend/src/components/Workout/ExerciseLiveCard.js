@@ -174,7 +174,17 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   
   return (
     <>
-      <CardContainer> 
+      <CardContainer>
+        <CardHeader>
+          <HeaderInfo>
+            <ExerciseName onClick={() => setIsDetailModalOpen(true)}>
+              <FaDumbbell /> {planExercise.exerciseDetails.name}
+            </ExerciseName>
+            <LastPerformance>
+              <FaHistory /> {historyError || lastPerformanceText}
+            </LastPerformance>
+          </HeaderInfo>
+        </CardHeader>
         <SetsGridHeader>
           <span>Série</span>
           <span>Peso (kg)</span>

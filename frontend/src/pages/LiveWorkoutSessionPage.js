@@ -294,7 +294,7 @@ const LiveWorkoutSessionPage = () => {
                         <SupersetBlock>
                             <h3>
                                 <FaLayerGroup /> 
-                                {currentGroup.length > 1 ? `Superset` : currentGroup[0].exerciseDetails.name}
+                                {currentGroup.length > 1 ? `Superset` : `Exercício Único`}
                             </h3>
                             {currentGroup.map(exercise => (
                                 <ExerciseLiveCard

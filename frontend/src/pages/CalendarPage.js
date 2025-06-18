@@ -46,7 +46,7 @@ const localizer = dateFnsLocalizer({
 });
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
-const initialAdminTrainingFormState = { name: '', description: '', date: '', time: '', capacity: 10, instructorId: '', durationMinutes: 45 };
+const initialAdminTrainingFormState = { name: '', description: '', date: '', time: '', capacity: 10, instructorId: '', durationMinutes: 45, isRecurring: false, recurrenceType: 'weekly', seriesStartDate: '', seriesEndDate: '', dayOfWeek: '1'};
 const initialAdminAppointmentFormState = { date: '', time: '', staffId: '', userId: '', notes: '', status: 'disponível', durationMinutes: 60, totalCost: ''};
 const appointmentStatuses = [ 'disponível', 'agendada', 'confirmada', 'concluída', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'não_compareceu', 'pendente_aprovacao_staff', 'rejeitada_pelo_staff' ];
 
@@ -835,66 +835,68 @@ const CalendarPage = () => {
     setShowAdminCreateTrainingModal(false);
     setAdminTrainingFormData(initialAdminTrainingFormState);
   };
-  const handleAdminTrainingFormChange = (e) => setAdminTrainingFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
   const handleAdminCreateTrainingSubmit = async (e) => {
     e.preventDefault();
-    setAdminTrainingFormLoading(true); setAdminTrainingModalError(''); setPageSuccessMessage('');
-    const dataToSend = {
-      ...adminTrainingFormData,
-      capacity: parseInt(adminTrainingFormData.capacity, 10),
-      instructorId: parseInt(adminTrainingFormData.instructorId, 10),
-      durationMinutes: parseInt(adminTrainingFormData.durationMinutes, 10),
-      time: adminTrainingFormData.time.length === 5 ? `${adminTrainingFormData.time}:00` : adminTrainingFormData.time,
-    };
-    try {
-      await adminCreateTraining(dataToSend, authState.token);
-      setPageSuccessMessage('Novo treino criado com sucesso a partir do calendário!');
-      fetchPageData();
-      handleCloseAdminCreateTrainingModal();
-    } catch (err) {
-      setAdminTrainingModalError(err.message || 'Falha ao criar treino.');
-    } finally {
-      setAdminTrainingFormLoading(false);
-    }
-  };
+    setAdminTrainingFormLoading(true); 
+    setAdminTrainingModalError(''); 
+    setPageSuccessMessage('')
+    const data = currentTrainingData; 
 
-  const handleOpenAdminCreateAppointmentModal = () => {
-    setShowAdminCreateOptionsModal(false);
-    setAdminAppointmentFormData({
-      ...initialAdminAppointmentFormState,
-      date: selectedSlotInfo?.date || '',
-      time: selectedSlotInfo?.time || ''
-    });
-    setAdminAppointmentModalError('');
-    setShowAdminCreateAppointmentModal(true);
-  };
-  const handleCloseAdminCreateAppointmentModal = () => {
-    setShowAdminCreateAppointmentModal(false);
-    setAdminAppointmentFormData(initialAdminAppointmentFormState);
-  };
-  const handleAdminAppointmentFormChange = (e) => setAdminAppointmentFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  const handleAdminCreateAppointmentSubmit = async (e) => {
-    e.preventDefault();
-    setAdminAppointmentFormLoading(true); setAdminAppointmentModalError(''); setPageSuccessMessage('');
-     const dataToSend = {
-      ...adminAppointmentFormData,
-      staffId: adminAppointmentFormData.staffId ? parseInt(adminAppointmentFormData.staffId, 10) : null,
-      userId: adminAppointmentFormData.userId ? parseInt(adminAppointmentFormData.userId, 10) : null,
-      durationMinutes: parseInt(adminAppointmentFormData.durationMinutes, 10),
-      time: adminAppointmentFormData.time.length === 5 ? `${adminAppointmentFormData.time}:00` : adminAppointmentFormData.time,
-      totalCost: (adminAppointmentFormData.userId && adminAppointmentFormData.totalCost !== '' && !isNaN(parseFloat(adminAppointmentFormData.totalCost))) ? parseFloat(adminAppointmentFormData.totalCost) : null,
-    };
-    try {
-      await adminCreateAppointment(dataToSend, authState.token);
-      setPageSuccessMessage('Nova consulta criada com sucesso a partir do calendário!');
-      fetchPageData();
-      handleCloseAdminCreateAppointmentModal();
-    } catch (err) {
-      setAdminAppointmentModalError(err.message || 'Falha ao criar consulta.');
-    } finally {
-      setAdminAppointmentFormLoading(false);
-    }
-  };
+    if (data.isRecurring) {
+      const seriesPayload = {
+        name: data.name,
+        description: data.description,
+        instructorId: parseInt(data.instructorId),
+        recurrenceType: data.recurrenceType,
+        dayOfWeek: data.recurrenceType === 'weekly' ? parseInt(data.dayOfWeek) : null,
+        startTime: data.time,
+        seriesStartDate: data.seriesStartDate,
+        seriesEndDate: data.seriesEndDate,
+        capacity: parseInt(data.capacity),
+      };
+      if (data.time && data.durationMinutes) {
+        const [hours, minutes] = data.time.split(':').map(Number);
+        const endMoment = moment().hours(hours).minutes(minutes).add(parseInt(data.durationMinutes, 10), 'minutes');
+        seriesPayload.endTime = endMoment.format('HH:mm:ss');
+      }
+      // Validações
+      if (!seriesPayload.seriesStartDate || !seriesPayload.seriesEndDate || !seriesPayload.instructorId) {
+        setAdminTrainingModalError("Para treinos recorrentes, preencha nome, instrutor, datas de início/fim da série e hora.");
+        setAdminTrainingFormLoading(false);
+        return;
+      }
+      try {
+        await createTrainingSeriesService(seriesPayload, authState.token);
+        setPageSuccessMessage('Série de treinos recorrentes criada com sucesso!');
+        fetchPageData(); 
+        handleCloseAdminCreateTrainingModal();
+      } catch (err) {
+        setAdminTrainingModalError(err.message || 'Falha ao criar série de treinos.');
+      } finally {
+        setAdminTrainingFormLoading(false);
+      }
+    } else {
+      const trainingPayload = {
+          name: data.name, description: data.description, date: data.date,
+          time: data.time.length === 5 ? `${data.time}:00` : data.time,
+          capacity: parseInt(data.capacity, 10),
+          instructorId: parseInt(data.instructorId, 10),
+          durationMinutes: parseInt(data.durationMinutes, 10),
+      };
+      try {
+          // Assume que não estamos a editar aqui, apenas a criar
+          await adminCreateTraining(trainingPayload, authState.token);
+          setPageSuccessMessage('Novo treino criado com sucesso!');
+          fetchPageData();
+          handleCloseAdminCreateTrainingModal();
+      } catch (err) {
+          setAdminTrainingModalError(err.message || 'Falha ao criar treino.');
+      } finally {
+          setAdminTrainingFormLoading(false);
+      }
+  }
+};
 
   const handleOpenSubscribeToSeriesModal = (trainingResource) => {
     if (!trainingResource || !trainingResource.trainingSeriesId) {
@@ -1122,92 +1124,115 @@ const handleCloseSubscribeSeriesModal = () => {
         <ModalOverlay onClick={handleCloseAdminCreateTrainingModal}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={handleCloseAdminCreateTrainingModal}><FaTimes /></CloseButton>
-            <ModalTitle>Criar Novo Treino</ModalTitle>
-            {adminTrainingModalError && <ModalErrorText>{adminTrainingModalError}</ModalErrorText>}
+            <ModalTitle>Criar Novo Evento de Treino</ModalTitle>
+            
             <AdminModalForm onSubmit={handleAdminCreateTrainingSubmit}>
-              <AdminModalLabel htmlFor="adminTrainName">Nome do Treino*</AdminModalLabel>
+              {/* Checkbox para escolher o tipo de criação */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', backgroundColor: '#333', borderRadius: '6px', marginBottom: '15px' }}>
+                  <ModalInput
+                    type="checkbox"
+                    name="isRecurring"
+                    id="isRecurringTrainModalForm"
+                    checked={adminTrainingFormData.isRecurring || false}
+                    onChange={handleAdminTrainingFormChange}
+                    style={{ width: 'auto' }}
+                  />
+                  <ModalLabel htmlFor="isRecurringTrainModalForm" style={{ marginBottom: 0, cursor: 'pointer', color: theme.colors.textMain }}>
+                    Criar como Treino Recorrente (Série)
+                  </ModalLabel>
+              </div>
+
+              {/* --- Campos Comuns a Ambos os Tipos --- */}
+              <ModalLabel htmlFor="adminTrainName">Nome do Treino/Série*</ModalLabel>
               <AdminModalInput type="text" name="name" id="adminTrainName" value={adminTrainingFormData.name} onChange={handleAdminTrainingFormChange} required />
 
-              <AdminModalLabel htmlFor="adminTrainDesc">Descrição</AdminModalLabel>
+              <ModalLabel htmlFor="adminTrainDesc">Descrição</ModalLabel>
               <AdminModalTextarea name="description" id="adminTrainDesc" value={adminTrainingFormData.description} onChange={handleAdminTrainingFormChange} />
 
               <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
                 <div>
-                    <AdminModalLabel htmlFor="adminTrainDate">Data*</AdminModalLabel>
-                    <AdminModalInput type="date" name="date" id="adminTrainDate" value={adminTrainingFormData.date} onChange={handleAdminTrainingFormChange} required />
+                  <ModalLabel htmlFor="adminTrainInstructor">Instrutor*</ModalLabel>
+                  <AdminModalSelect name="instructorId" id="adminTrainInstructor" value={adminTrainingFormData.instructorId} onChange={handleAdminTrainingFormChange} required>
+                    <option value="">Selecione um instrutor</option>
+                    {adminInstructors.map(instr => (
+                      <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName} ({instr.role})</option>
+                    ))}
+                  </AdminModalSelect>
                 </div>
                 <div>
-                    <AdminModalLabel htmlFor="adminTrainTime">Hora (HH:MM)*</AdminModalLabel>
-                    <AdminModalInput type="time" name="time" id="adminTrainTime" value={adminTrainingFormData.time} onChange={handleAdminTrainingFormChange} required />
+                  <ModalLabel htmlFor="adminTrainCapacity">Capacidade*</ModalLabel>
+                  <AdminModalInput type="number" name="capacity" id="adminTrainCapacity" value={adminTrainingFormData.capacity} onChange={handleAdminTrainingFormChange} required min="1" />
                 </div>
               </div>
 
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
-                <div>
-                    <AdminModalLabel htmlFor="adminTrainDuration">Duração (minutos)*</AdminModalLabel>
-                    <AdminModalInput type="number" name="durationMinutes" id="adminTrainDuration" value={adminTrainingFormData.durationMinutes} onChange={handleAdminTrainingFormChange} required min="1" />
-                </div>
-                <div>
-                    <AdminModalLabel htmlFor="adminTrainCapacity">Capacidade*</AdminModalLabel>
-                    <AdminModalInput type="number" name="capacity" id="adminTrainCapacity" value={adminTrainingFormData.capacity} onChange={handleAdminTrainingFormChange} required min="1" />
-                </div>
-              </div>
+              {/* --- Campos para TREINO ÚNICO (isRecurring é false) --- */}
+              {!adminTrainingFormData.isRecurring && (
+                  <>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                        <div>
+                          <ModalLabel htmlFor="adminTrainDate">Data*</ModalLabel>
+                          <AdminModalInput type="date" name="date" id="adminTrainDate" value={adminTrainingFormData.date} onChange={handleAdminTrainingFormChange} required />
+                        </div>
+                        <div>
+                          <ModalLabel htmlFor="adminTrainTime">Hora (HH:MM)*</ModalLabel>
+                          <AdminModalInput type="time" name="time" id="adminTrainTime" value={adminTrainingFormData.time} onChange={handleAdminTrainingFormChange} required />
+                        </div>
+                      </div>
+                      <ModalLabel htmlFor="adminTrainDuration">Duração (minutos)*</ModalLabel>
+                      <AdminModalInput type="number" name="durationMinutes" id="adminTrainDuration" value={adminTrainingFormData.durationMinutes} onChange={handleAdminTrainingFormChange} required min="1" />
+                  </>
+              )}
 
-              <AdminModalLabel htmlFor="adminTrainInstructor">Instrutor*</AdminModalLabel>
-              <AdminModalSelect name="instructorId" id="adminTrainInstructor" value={adminTrainingFormData.instructorId} onChange={handleAdminTrainingFormChange} required>
-                <option value="">Selecione um instrutor</option>
-                {adminInstructors.map(instr => (
-                  <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName} ({instr.role})</option>
-                ))}
-              </AdminModalSelect>
-
+              {/* --- Campos para TREINO RECORRENTE (isRecurring é true) --- */}
+              {adminTrainingFormData.isRecurring && (
+                  <div style={{ borderTop: '1px solid #444', paddingTop: '15px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                        <div>
+                          <ModalLabel htmlFor="dayOfWeekTrainModalForm">Dia da Semana*</ModalLabel>
+                          <AdminModalSelect name="dayOfWeek" id="dayOfWeekTrainModalForm" value={adminTrainingFormData.dayOfWeek} onChange={handleAdminTrainingFormChange}>
+                              <option value="1">Segunda-feira</option>
+                              <option value="2">Terça-feira</option>
+                              <option value="3">Quarta-feira</option>
+                              <option value="4">Quinta-feira</option>
+                              <option value="5">Sexta-feira</option>
+                              <option value="6">Sábado</option>
+                              <option value="0">Domingo</option>
+                          </AdminModalSelect>
+                        </div>
+                        <div>
+                          <ModalLabel htmlFor="adminTrainTimeRecurring">Hora de Início*</ModalLabel>
+                          <AdminModalInput type="time" name="time" id="adminTrainTimeRecurring" value={adminTrainingFormData.time} onChange={handleAdminTrainingFormChange} required />
+                        </div>
+                      </div>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                          <div>
+                            <ModalLabel htmlFor="seriesStartDateTrainModalForm">Início da Série*</ModalLabel>
+                            <AdminModalInput type="date" name="seriesStartDate" id="seriesStartDateTrainModalForm" value={adminTrainingFormData.seriesStartDate} onChange={handleAdminTrainingFormChange} required />
+                          </div>
+                          <div>
+                            <ModalLabel htmlFor="seriesEndDateTrainModalForm">Fim da Série*</ModalLabel>
+                            <AdminModalInput type="date" name="seriesEndDate" id="seriesEndDateTrainModalForm" value={adminTrainingFormData.seriesEndDate} onChange={handleAdminTrainingFormChange} required />
+                          </div>
+                      </div>
+                       <div>
+                          <ModalLabel htmlFor="adminTrainDurationRecurring">Duração de cada aula (minutos)*</ModalLabel>
+                          <AdminModalInput type="number" name="durationMinutes" id="adminTrainDurationRecurring" value={adminTrainingFormData.durationMinutes} onChange={handleAdminTrainingFormChange} required min="1" />
+                      </div>
+                  </div>
+              )}
+              
+              {adminTrainingModalError && <ModalErrorText>{adminTrainingModalError}</ModalErrorText>}
+              
               <ModalActions>
                 <AdminModalButton type="button" secondary onClick={handleCloseAdminCreateTrainingModal} disabled={adminTrainingFormLoading}>Cancelar</AdminModalButton>
                 <AdminModalButton type="submit" primary disabled={adminTrainingFormLoading}>
-                  <FaDumbbell style={{marginRight: '8px'}} /> {adminTrainingFormLoading ? 'A criar...' : 'Criar Treino'}
+                  {adminTrainingFormLoading ? 'A criar...' : 'Criar Evento'}
                 </AdminModalButton>
               </ModalActions>
             </AdminModalForm>
           </ModalContent>
         </ModalOverlay>
       )}
-
-        {showSubscribeSeriesModal && selectedEvent && (
-          <ModalOverlay onClick={handleCloseSubscribeSeriesModal}>
-            <ModalContent onClick={e => e.stopPropagation()}>
-              <CloseButton onClick={handleCloseSubscribeSeriesModal}>&times;</CloseButton>
-              <ModalTitle>Inscrever na Série: {selectedEvent.title}</ModalTitle>
-              {seriesSubscriptionError && <ModalErrorText>{seriesSubscriptionError}</ModalErrorText>}
-              
-              <RequestModalForm onSubmit={handleSeriesSubscriptionSubmit}>
-                <ModalLabel htmlFor="seriesSubEndDate">Quero participar na série até à data (inclusive):*</ModalLabel>
-                <ModalInput
-                  type="date"
-                  id="seriesSubEndDateCalendar"
-                  value={seriesSubscriptionEndDate}
-                  onChange={(e) => setSeriesSubscriptionEndDate(e.target.value)}
-                  min={moment.max(
-                        moment(), 
-                        moment(selectedSeriesDetailsForSubscription.seriesStartDate) 
-                      ).format('YYYY-MM-DD')}
-                  max={selectedSeriesDetailsForSubscription.seriesEndDate || undefined}
-                  required
-                />
-                <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop:'5px'}}>
-                  A sua inscrição será para todas as aulas desta série que ocorram até à data selecionada.
-                </p>
-                <ModalActions>
-                  <ModalButton type="button" secondary onClick={handleCloseSubscribeSeriesModal} disabled={isSubscribingRecurring}>
-                    Cancelar
-                  </ModalButton>
-                  <ModalButton type="submit" primary disabled={isSubscribingRecurring}>
-                    {isSubscribingRecurring ? 'A Subscrever...' : 'Confirmar Inscrição na Série'}
-                  </ModalButton>
-                </ModalActions>
-              </RequestModalForm>
-            </ModalContent>
-          </ModalOverlay>
-        )}
 
         {showAdminCreateAppointmentModal && isAdminOrStaff && (
               <ModalOverlay onClick={handleCloseAdminCreateAppointmentModal}>
