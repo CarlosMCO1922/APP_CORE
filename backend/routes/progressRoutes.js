@@ -11,21 +11,25 @@ const {
   updatePerformanceLog,
   adminGetUserRecords,
 } = require('../controllers/progressController');
+
 const { protect, isClientUser, isAdminStaff } = require('../middleware/authMiddleware');
 
 // Todas as rotas aqui já estão protegidas e verificam se é um cliente
-router.use(protect);
-router.use(isClientUser); 
+//router.use(protect);
+//router.use(isClientUser); 
 
-router.post('/log-performance', logExercisePerformance);
-router.get('/my-history/training/:trainingId/plan/:workoutPlanId', getMyPerformanceForWorkoutPlan);
-router.get('/my-exercise-history/:planExerciseId', getMyPerformanceHistoryForExercise);
-router.post('/check-prs', checkPersonalRecords);
-router.get('/my-records', getMyPersonalRecords);
-router.delete('/log/:logId', deletePerformanceLog);
-router.patch('/log/:logId', updatePerformanceLog);
+// --- ROTAS DE CLIENTE ---
+router.post('/log-performance', protect, isClientUser, logExercisePerformance);
+router.patch('/log/:logId', protect, isClientUser, updatePerformanceLog);
+router.delete('/log/:logId', protect, isClientUser, deletePerformanceLog);
+router.get('/my-history/training/:trainingId/plan/:workoutPlanId', protect, isClientUser, getMyPerformanceForWorkoutPlan);
+router.get('/my-exercise-history/:planExerciseId', protect, isClientUser, getMyPerformanceHistoryForExercise);
+router.post('/check-prs', protect, isClientUser, checkPersonalRecords);
+router.get('/my-records', protect, isClientUser, getMyPersonalRecords);
 
-router.get('/admin/user-records/:userId', protect, isAdminStaff, adminGetUserRecords);
+// --- ROTA DE STAFF/ADMIN ---
+router.get('/admin/user-records/:userId', protect, isStaff, adminGetUserRecords);
+
 
 
 module.exports = router;
