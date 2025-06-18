@@ -236,3 +236,19 @@ export const adminGetRecordsForUserService = async (userId, token) => {
     throw error;
   }
 };
+
+export const adminGetFullExerciseHistoryForUserService = async (userId, planExerciseId, token) => {
+  if (!token || !userId || !planExerciseId) throw new Error('Token, UserID e PlanExerciseID são obrigatórios.');
+  
+  try {
+    const response = await fetch(`${API_URL}/progress/admin/exercise-history/${userId}/${planExerciseId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar histórico de exercício para o cliente.');
+    return data;
+  } catch (error) {
+    console.error("Erro em adminGetFullExerciseHistoryForUserService:", error);
+    throw error;
+  }
+};

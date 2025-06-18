@@ -434,6 +434,23 @@ const updatePerformanceLog = async (req, res) => {
     }
 };
 
+const adminGetFullExerciseHistoryForUser = async (req, res) => {
+    const { planExerciseId, userId } = req.params;
+    try {
+        const performances = await db.ClientExercisePerformance.findAll({
+            where: {
+                userId: parseInt(userId),
+                planExerciseId: parseInt(planExerciseId)
+            },
+            order: [['performedAt', 'ASC']], // Ordenado por data para o gráfico
+        });
+        res.status(200).json(performances);
+    } catch (error) {
+        console.error('Erro ao buscar histórico completo para admin:', error);
+        res.status(500).json({ message: 'Erro interno ao buscar histórico completo do exercício.' });
+    }
+};
+
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
@@ -442,5 +459,6 @@ module.exports = {
   checkPersonalRecords,
   getMyPersonalRecords,
   updatePerformanceLog,
-  adminGetUserRecords
+  adminGetUserRecords,
+  adminGetFullExerciseHistoryForUser
 };

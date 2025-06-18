@@ -29,7 +29,7 @@ router.get('/my-records', protect, isClientUser, getMyPersonalRecords);
 
 // --- ROTA DE STAFF/ADMIN ---
 router.get('/admin/user-records/:userId', protect, isStaff, adminGetUserRecords);
-
+router.get('/admin/exercise-history/:userId/:planExerciseId', protect, isStaff, adminGetFullExerciseHistoryForUser);
 
 
 module.exports = router;
