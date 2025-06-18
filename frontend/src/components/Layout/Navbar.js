@@ -276,9 +276,8 @@ function Navbar() {
         </DropdownButton>
         <DropdownContent isOpen={clientDropdownOpen}>
           <DropdownLink to="/meus-treinos" onClick={closeAllMenus}><FaDumbbell /> Meus Treinos</DropdownLink>
-          <DropdownLink to="/meu-progresso" onClick={closeAllMenus}><FaClipboardList /> Meu Progresso</DropdownLink>
+          <DropdownLink to="/meu-progresso-detalhado" onClick={closeAllMenus}><FaChartLine /> Meu Progresso</DropdownLink>
           <DropdownLink to="/meus-pagamentos" onClick={closeAllMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-          <DropdownLink to="/meus-recordes" onClick={closeAllMenus}><FaTrophy /> Meus Recordes</DropdownLink>
           <DropdownLink to="/explorar-planos" onClick={closeAllMenus}><FaListOl /> Explorar Planos</DropdownLink>
           <DropdownLink to="/definicoes" onClick={closeAllMenus}><FaCog /> Definições</DropdownLink>
         </DropdownContent>
