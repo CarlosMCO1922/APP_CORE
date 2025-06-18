@@ -34,7 +34,8 @@ import ClientTrainingPlanPage from './pages/ClientTrainingPlanPage';
 import ClientProgressPage from './pages/ClientProgressPage';
 import AdminTrainingSeriesPage from './pages/admin/AdminTrainingSeriesPage';
 import AdminManageGlobalWorkoutPlansPage from './pages/admin/AdminManageGlobalWorkoutPlansPage';
-
+import AdminClientProgressDetailPage from './pages/admin/AdminClientProgressDetailPage';
+import AdminClientSelectionPage from './pages/admin/AdminClientSelectionPage';
 
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
