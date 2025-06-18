@@ -12,7 +12,7 @@ const {
   adminGetUserRecords,
 } = require('../controllers/progressController');
 
-const { protect, isClientUser, isAdminStaff } = require('../middleware/authMiddleware');
+const { protect, isClientUser, isStaff } = require('../middleware/authMiddleware');
 
 // Todas as rotas aqui já estão protegidas e verificam se é um cliente
 //router.use(protect);
