@@ -73,6 +73,98 @@ const getMyPerformanceForWorkoutPlan = async (req, res) => {
   }
 };
 
+const adminGetUserRecords = async (req, res) => {
+    const { userId } = req.params; // ID do cliente que o staff quer consultar
+
+    try {
+        // 1. Encontrar todos os exercícios únicos que o utilizador já realizou
+        const allPerformances = await db.ClientExercisePerformance.findAll({
+            where: { userId: parseInt(userId) },
+            attributes: ['planExerciseId'],
+            include: [{
+                model: db.WorkoutPlanExercise,
+                as: 'planExerciseDetails',
+                attributes: ['id'],
+                required: true,
+                include: [{
+                    model: db.Exercise,
+                    as: 'exerciseDetails',
+                    attributes: ['name'],
+                    required: true,
+                }]
+            }],
+        });
+
+        // 2. Criar uma lista de exercícios únicos em JavaScript
+        const uniqueExercisesMap = new Map();
+        allPerformances.forEach(p => {
+            if (p.planExerciseId && !uniqueExercisesMap.has(p.planExerciseId)) {
+                uniqueExercisesMap.set(p.planExerciseId, {
+                    exerciseName: p.planExerciseDetails?.exerciseDetails?.name || 'Exercício Desconhecido'
+                });
+            }
+        });
+        
+        const uniqueExercises = Array.from(uniqueExercisesMap.entries()).map(([planExerciseId, details]) => ({
+            planExerciseId,
+            exerciseName: details.exerciseName
+        }));
+
+        if (uniqueExercises.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        const recordsByExercise = [];
+
+        // 3. Para cada exercício único, encontrar os diferentes tipos de PRs
+        for (const exercise of uniqueExercises) {
+            const { planExerciseId, exerciseName } = exercise;
+            
+            const records = [];
+
+            // PR de Peso Máximo (agrupado por nº de repetições)
+            const maxWeights = await db.ClientExercisePerformance.findAll({
+                where: { userId: parseInt(userId), planExerciseId },
+                attributes: [
+                    'performedReps',
+                    [db.Sequelize.fn('MAX', db.Sequelize.col('performedWeight')), 'maxWeight']
+                ],
+                group: ['performedReps'],
+                order: [['performedReps', 'ASC']],
+                raw: true
+            });
+            maxWeights.forEach(pr => {
+                if(pr.performedReps && pr.maxWeight > 0) records.push({ type: `Peso Máx. (${pr.performedReps} reps)`, value: `${pr.maxWeight} kg` });
+            });
+
+            // PR de Volume Máximo (peso * reps) numa única série
+            const maxVolumeResult = await db.ClientExercisePerformance.findOne({
+                where: { userId: parseInt(userId), planExerciseId },
+                attributes: [[db.Sequelize.literal('"performedWeight" * "performedReps"'), 'volume']],
+                order: [[db.Sequelize.literal('volume'), 'DESC NULLS LAST']],
+                limit: 1,
+                raw: true
+            });
+            if (maxVolumeResult && maxVolumeResult.volume > 0) {
+                records.push({ type: 'Volume Máximo (1 Série)', value: `${Number(maxVolumeResult.volume).toFixed(2)} kg` });
+            }
+
+            if (records.length > 0) {
+                recordsByExercise.push({
+                    planExerciseId,
+                    exerciseName,
+                    records
+                });
+            }
+        }
+
+        res.status(200).json(recordsByExercise);
+
+    } catch (error) {
+        console.error(`Erro ao buscar recordes para o user ${userId}:`, error);
+        res.status(500).json({ message: 'Erro interno ao buscar recordes do cliente.' });
+    }
+};
 
 const getMyPerformanceHistoryForExercise = async (req, res) => {
   const userId = req.user.id;
@@ -349,5 +441,6 @@ module.exports = {
   deletePerformanceLog, 
   checkPersonalRecords,
   getMyPersonalRecords,
-  updatePerformanceLog
+  updatePerformanceLog,
+  adminGetUserRecords
 };

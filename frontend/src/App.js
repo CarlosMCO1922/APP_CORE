@@ -118,6 +118,8 @@ function App() {
             <Route path="/admin/users/:userId/details" element={<AdminUserDetailsPage />} /> 
             <Route path='/admin/training-series' element={<AdminTrainingSeriesPage />} /> 
             <Route path="/admin/manage-global-plans" element={<AdminManageGlobalWorkoutPlansPage />} />
+            <Route path="/admin/progresso-clientes" element={<AdminClientSelectionPage />} />
+            <Route path="/admin/progresso-clientes/:userId" element={<AdminClientProgressDetailPage />} />
           </Route>
           {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}
           <Route element={<ProtectedRoute allowedRoles={['user', 'admin', 'trainer', 'physiotherapist', 'employee']} />}>

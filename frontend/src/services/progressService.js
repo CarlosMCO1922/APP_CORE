@@ -220,3 +220,19 @@ export const updatePerformanceLogService = async (logId, performanceData, token)
     throw error;
   }
 };
+
+export const adminGetRecordsForUserService = async (userId, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!userId) throw new Error('ID do Utilizador é obrigatório.');
+  try {
+    const response = await fetch(`${API_URL}/progress/admin/user-records/${userId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar recordes do cliente.');
+    return data;
+  } catch (error) {
+    console.error("Erro em adminGetRecordsForUserService:", error);
+    throw error;
+  }
+};

@@ -9,12 +9,15 @@ const {
   checkPersonalRecords,
   getMyPersonalRecords,
   updatePerformanceLog,
+  adminGetUserRecords,
 } = require('../controllers/progressController');
-const { protect, isClientUser } = require('../middleware/authMiddleware');
+const { protect, isClientUser, isAdminStaff } = require('../middleware/authMiddleware');
 
 // Todas as rotas aqui já estão protegidas e verificam se é um cliente
 router.use(protect);
 router.use(isClientUser); 
+
+router.get('/admin/user-records/:userId', protect, isAdminStaff, adminGetUserRecords);
 
 router.post('/log-performance', logExercisePerformance);
 router.get('/my-history/training/:trainingId/plan/:workoutPlanId', getMyPerformanceForWorkoutPlan);

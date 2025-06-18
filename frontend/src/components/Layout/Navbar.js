@@ -301,6 +301,7 @@ function Navbar() {
       </DropdownButton>
       <DropdownContent isOpen={adminDropdownOpen}>
         <DropdownLink to="/admin/manage-users" onClick={closeAllMenus}><FaUsers /> Clientes</DropdownLink>
+        <DropdownLink to="/admin/progresso-clientes" onClick={closeAllMenus}><FaChartLine /> Progresso Clientes</DropdownLink>
         <DropdownLink to="/admin/manage-staff" onClick={closeAllMenus}><FaUserTie /> Equipa</DropdownLink>
         <DropdownLink to="/admin/manage-trainings" onClick={closeAllMenus}><FaDumbbell /> Treinos</DropdownLink>
         <DropdownLink to="/admin/training-series" onClick={closeAllMenus}><FaCalendarPlus /> Séries</DropdownLink>
