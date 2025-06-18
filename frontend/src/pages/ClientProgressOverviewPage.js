@@ -188,7 +188,6 @@ const ClientProgressOverviewPage = () => {
                   <select id="metric-select" value={chartMetric} onChange={e => setChartMetric(e.target.value)}>
                     <option value="estimated1RM">1-Rep Max (Estimado)</option>
                     <option value="volume">Volume (Peso x Reps)</option>
-                    <option value="performedWeight">Peso Levantado</option>
                   </select>
                 </ChartMetricSelector>
                 <AdvancedProgressChart historyLogs={chartData.history} metric={chartMetric} theme={theme} />
