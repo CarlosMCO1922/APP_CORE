@@ -564,18 +564,9 @@ const CalendarPage = () => {
   const [showAdminCreateOptionsModal, setShowAdminCreateOptionsModal] = useState(false);
 
   const [showAdminCreateTrainingModal, setShowAdminCreateTrainingModal] = useState(false);
-  const [adminTrainingFormData, setAdminTrainingFormData] = useState(initialAdminTrainingFormState);
-  const [adminTrainingFormLoading, setAdminTrainingFormLoading] = useState(false);
-  const [adminTrainingModalError, setAdminTrainingModalError] = useState('');
-  const [adminInstructors, setAdminInstructors] = useState([]);
 
   const [showAdminCreateAppointmentModal, setShowAdminCreateAppointmentModal] = useState(false);
-  const [adminAppointmentFormData, setAdminAppointmentFormData] = useState(initialAdminAppointmentFormState);
-  const [adminAppointmentFormLoading, setAdminAppointmentFormLoading] = useState(false);
   const [selectedSeriesDetailsForSubscription, setSelectedSeriesDetailsForSubscription] = useState(null);
-  const [adminAppointmentModalError, setAdminAppointmentModalError] = useState('');
-  const [adminStaffListForAppointment, setAdminStaffListForAppointment] = useState([]);
-  const [adminUserListForAppointment, setAdminUserListForAppointment] = useState([]);
 
   const [showSubscribeSeriesModal, setShowSubscribeSeriesModal] = useState(false);
   const [seriesSubscriptionEndDate, setSeriesSubscriptionEndDate] = useState('');
@@ -587,6 +578,17 @@ const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState(Views.WEEK);
 
+  const [adminTrainingFormData, setAdminTrainingFormData] = useState(initialAdminTrainingFormState);
+  const [adminTrainingFormLoading, setAdminTrainingFormLoading] = useState(false);
+  const [adminTrainingModalError, setAdminTrainingModalError] = useState('');
+  const [adminInstructors, setAdminInstructors] = useState([]);
+    
+  const [adminAppointmentFormData, setAdminAppointmentFormData] = useState(initialAdminAppointmentFormState);
+  const [adminAppointmentFormLoading, setAdminAppointmentFormLoading] = useState(false);
+  const [adminAppointmentModalError, setAdminAppointmentModalError] = useState('');
+  const [adminStaffListForAppointment, setAdminStaffListForAppointment] = useState([]);
+  const [adminUserListForAppointment, setAdminUserListForAppointment] = useState([]);
+    
   const isAdminOrStaff = authState.role && authState.role !== 'user';
   const isClient = authState.role === 'user';
 
@@ -824,79 +826,129 @@ const CalendarPage = () => {
   const handleOpenAdminCreateTrainingModal = () => {
     setShowAdminCreateOptionsModal(false);
     setAdminTrainingFormData({
-      ...initialAdminTrainingFormState,
-      date: selectedSlotInfo?.date || '',
-      time: selectedSlotInfo?.time || ''
+        ...initialAdminTrainingFormState,
+        date: selectedSlotInfo?.date || '',
+        time: selectedSlotInfo?.time || ''
     });
     setAdminTrainingModalError('');
     setShowAdminCreateTrainingModal(true);
   };
+
   const handleCloseAdminCreateTrainingModal = () => {
     setShowAdminCreateTrainingModal(false);
     setAdminTrainingFormData(initialAdminTrainingFormState);
   };
 
-  const handleAdminCreateTrainingSubmit = async (e) => {
-    e.preventDefault();
-    setAdminTrainingFormLoading(true); 
-    setAdminTrainingModalError(''); 
-    setPageSuccessMessage('')
-    const data = currentTrainingData; 
+  const handleAdminTrainingFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setAdminTrainingFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
 
-    if (data.isRecurring) {
-      const seriesPayload = {
-        name: data.name,
-        description: data.description,
-        instructorId: parseInt(data.instructorId),
-        recurrenceType: data.recurrenceType,
-        dayOfWeek: data.recurrenceType === 'weekly' ? parseInt(data.dayOfWeek) : null,
-        startTime: data.time,
-        seriesStartDate: data.seriesStartDate,
-        seriesEndDate: data.seriesEndDate,
-        capacity: parseInt(data.capacity),
+  const handleAdminCreateTrainingSubmit = async (e) => {
+        e.preventDefault();
+        setAdminTrainingFormLoading(true);
+        setAdminTrainingModalError('');
+        setPageSuccessMessage('');
+
+        const data = adminTrainingFormData;
+
+        if (data.isRecurring) { // Se for recorrente
+            const seriesPayload = {
+                name: data.name,
+                description: data.description,
+                instructorId: parseInt(data.instructorId),
+                recurrenceType: 'weekly', // Por agora, apenas semanal
+                dayOfWeek: parseInt(data.dayOfWeek),
+                startTime: data.time,
+                seriesStartDate: data.seriesStartDate,
+                seriesEndDate: data.seriesEndDate,
+                capacity: parseInt(data.capacity),
+            };
+            if (data.time && data.durationMinutes) {
+                const [hours, minutes] = data.time.split(':').map(Number);
+                const endMoment = moment().hours(hours).minutes(minutes).add(parseInt(data.durationMinutes, 10), 'minutes');
+                seriesPayload.endTime = endMoment.format('HH:mm:ss');
+            }
+            // Validações...
+            if (!seriesPayload.seriesStartDate || !seriesPayload.seriesEndDate || !seriesPayload.instructorId) {
+                setAdminTrainingModalError("Para treinos recorrentes, preencha os campos obrigatórios.");
+                setAdminTrainingFormLoading(false);
+                return;
+            }
+            try {
+                await createTrainingSeriesService(seriesPayload, authState.token);
+                setPageSuccessMessage('Série de treinos recorrentes criada com sucesso!');
+                fetchPageData();
+                handleCloseAdminCreateTrainingModal();
+            } catch (err) {
+                setAdminTrainingModalError(err.message || 'Falha ao criar série de treinos.');
+            } finally {
+                setAdminTrainingFormLoading(false);
+            }
+        } else { // Se for treino único
+            const trainingPayload = {
+                name: data.name, description: data.description, date: data.date,
+                time: data.time.length === 5 ? `${data.time}:00` : data.time,
+                capacity: parseInt(data.capacity, 10),
+                instructorId: parseInt(data.instructorId, 10),
+                durationMinutes: parseInt(data.durationMinutes, 10),
+            };
+            try {
+                await adminCreateTraining(trainingPayload, authState.token);
+                setPageSuccessMessage('Novo treino criado com sucesso!');
+                fetchPageData();
+                handleCloseAdminCreateTrainingModal();
+            } catch (err) {
+                setAdminTrainingModalError(err.message || 'Falha ao criar treino.');
+            } finally {
+                setAdminTrainingFormLoading(false);
+            }
+        }
+  };
+
+  const handleOpenAdminCreateAppointmentModal = () => {
+      setShowAdminCreateOptionsModal(false);
+      setAdminAppointmentFormData({
+          ...initialAdminAppointmentFormState,
+          date: selectedSlotInfo?.date || '',
+          time: selectedSlotInfo?.time || ''
+      });
+      setAdminAppointmentModalError('');
+      setShowAdminCreateAppointmentModal(true);
+  };
+  const handleCloseAdminCreateAppointmentModal = () => {
+      setShowAdminCreateAppointmentModal(false);
+      setAdminAppointmentFormData(initialAdminAppointmentFormState);
+  };
+  const handleAdminAppointmentFormChange = (e) => {
+      setAdminAppointmentFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+  const handleAdminCreateAppointmentSubmit = async (e) => {
+      e.preventDefault();
+      setAdminAppointmentFormLoading(true);
+      setAdminAppointmentModalError('');
+      setPageSuccessMessage('');
+      
+      const dataToSend = {
+          ...adminAppointmentFormData,
+          staffId: adminAppointmentFormData.staffId ? parseInt(adminAppointmentFormData.staffId, 10) : null,
+          userId: adminAppointmentFormData.userId ? parseInt(adminAppointmentFormData.userId, 10) : null,
+          durationMinutes: parseInt(adminAppointmentFormData.durationMinutes, 10),
+          time: adminAppointmentFormData.time.length === 5 ? `${adminAppointmentFormData.time}:00` : adminAppointmentFormData.time,
+          totalCost: (adminAppointmentFormData.userId && adminAppointmentFormData.totalCost !== '' && !isNaN(parseFloat(adminAppointmentFormData.totalCost))) ? parseFloat(adminAppointmentFormData.totalCost) : null,
+          category: 'FISIOTERAPIA' // Categoria fixa para este modal
       };
-      if (data.time && data.durationMinutes) {
-        const [hours, minutes] = data.time.split(':').map(Number);
-        const endMoment = moment().hours(hours).minutes(minutes).add(parseInt(data.durationMinutes, 10), 'minutes');
-        seriesPayload.endTime = endMoment.format('HH:mm:ss');
-      }
-      // Validações
-      if (!seriesPayload.seriesStartDate || !seriesPayload.seriesEndDate || !seriesPayload.instructorId) {
-        setAdminTrainingModalError("Para treinos recorrentes, preencha nome, instrutor, datas de início/fim da série e hora.");
-        setAdminTrainingFormLoading(false);
-        return;
-      }
       try {
-        await createTrainingSeriesService(seriesPayload, authState.token);
-        setPageSuccessMessage('Série de treinos recorrentes criada com sucesso!');
-        fetchPageData(); 
-        handleCloseAdminCreateTrainingModal();
-      } catch (err) {
-        setAdminTrainingModalError(err.message || 'Falha ao criar série de treinos.');
-      } finally {
-        setAdminTrainingFormLoading(false);
-      }
-    } else {
-      const trainingPayload = {
-          name: data.name, description: data.description, date: data.date,
-          time: data.time.length === 5 ? `${data.time}:00` : data.time,
-          capacity: parseInt(data.capacity, 10),
-          instructorId: parseInt(data.instructorId, 10),
-          durationMinutes: parseInt(data.durationMinutes, 10),
-      };
-      try {
-          // Assume que não estamos a editar aqui, apenas a criar
-          await adminCreateTraining(trainingPayload, authState.token);
-          setPageSuccessMessage('Novo treino criado com sucesso!');
+          await adminCreateAppointment(dataToSend, authState.token);
+          setPageSuccessMessage('Nova consulta criada com sucesso a partir do calendário!');
           fetchPageData();
-          handleCloseAdminCreateTrainingModal();
+          handleCloseAdminCreateAppointmentModal();
       } catch (err) {
-          setAdminTrainingModalError(err.message || 'Falha ao criar treino.');
+          setAdminAppointmentModalError(err.message || 'Falha ao criar consulta.');
       } finally {
-          setAdminTrainingFormLoading(false);
+          setAdminAppointmentFormLoading(false);
       }
-  }
-};
+  };
 
   const handleOpenSubscribeToSeriesModal = (trainingResource) => {
     if (!trainingResource || !trainingResource.trainingSeriesId) {
