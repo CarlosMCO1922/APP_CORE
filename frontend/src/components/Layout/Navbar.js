@@ -133,7 +133,7 @@ const DropdownContent = styled.div`
   }
 `;
 
-const DropdownLink = styled(Link)`
+const DropdownLink = styled.a`
   color: ${({ theme }) => theme.colors.textMain};
   padding: 10px 20px;
   text-decoration: none;
@@ -141,6 +141,8 @@ const DropdownLink = styled(Link)`
   align-items: center;
   gap: 0.75rem;
   font-size: 0.9rem;
+  cursor: pointer; // Adicionado cursor de ponteiro
+
   &:hover {
     background-color: #333;
     color: ${({ theme }) => theme.colors.primary};
@@ -255,6 +257,11 @@ function Navbar() {
     logout();
     navigate('/login');
   };
+
+  const handleDropdownLinkClick = (path) => {
+    navigate(path); 
+    closeAllMenus(); 
+  };
   
   const handleNotificationClick = (notification) => {
     if (!notification.isRead) markNotificationAsRead(notification.id);
@@ -275,11 +282,11 @@ function Navbar() {
           <FaUserCircle /> Minha Área {clientDropdownOpen ? '▴' : '▾'}
         </DropdownButton>
         <DropdownContent isOpen={clientDropdownOpen}>
-          <DropdownLink to="/meus-treinos" onClick={closeAllMenus}><FaDumbbell /> Meus Treinos</DropdownLink>
-          <DropdownLink to="/meu-progresso-detalhado" onClick={closeAllMenus}><FaChartLine /> Meu Progresso</DropdownLink>
-          <DropdownLink to="/meus-pagamentos" onClick={closeAllMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-          <DropdownLink to="/explorar-planos" onClick={closeAllMenus}><FaListOl /> Explorar Planos</DropdownLink>
-          <DropdownLink to="/definicoes" onClick={closeAllMenus}><FaCog /> Definições</DropdownLink>
+          <DropdownLink href="/meus-treinos" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/meus-treinos'); }}><FaDumbbell /> Meus Treinos</DropdownLink>
+          <DropdownLink href="/meu-progresso-detalhado" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/meu-progresso-detalhado'); }}><FaChartLine /> Meu Progresso</DropdownLink>
+          <DropdownLink href="/meus-pagamentos" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/meus-pagamentos'); }}><FaMoneyBillWave /> Pagamentos</DropdownLink>
+          <DropdownLink href="/explorar-planos" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/explorar-planos'); }}><FaListOl /> Explorar Planos</DropdownLink>
+          <DropdownLink href="/definicoes" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/definicoes'); }}><FaCog /> Definições</DropdownLink>
         </DropdownContent>
       </NavItem>
     </>
@@ -299,15 +306,15 @@ function Navbar() {
         <FaCog /> Gestão {adminDropdownOpen ? '▴' : '▾'}
       </DropdownButton>
       <DropdownContent isOpen={adminDropdownOpen}>
-        <DropdownLink to="/admin/manage-users" onClick={closeAllMenus}><FaUsers /> Clientes</DropdownLink>
-        <DropdownLink to="/admin/progresso-clientes" onClick={closeAllMenus}><FaChartLine /> Progresso Clientes</DropdownLink>
-        <DropdownLink to="/admin/manage-staff" onClick={closeAllMenus}><FaUserTie /> Equipa</DropdownLink>
-        <DropdownLink to="/admin/manage-trainings" onClick={closeAllMenus}><FaDumbbell /> Treinos</DropdownLink>
-        <DropdownLink to="/admin/training-series" onClick={closeAllMenus}><FaCalendarPlus /> Séries</DropdownLink>
-        <DropdownLink to="/admin/manage-appointments" onClick={closeAllMenus}><FaCalendarCheck /> Consultas</DropdownLink>
-        <DropdownLink to="/admin/manage-payments" onClick={closeAllMenus}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-        <DropdownLink to="/admin/manage-exercises" onClick={closeAllMenus}><FaListOl /> Exercícios</DropdownLink>
-        <DropdownLink to="/admin/manage-global-plans" onClick={closeAllMenus}><FaClipboardList /> Planos Modelo</DropdownLink>
+        <DropdownLink href="/admin/manage-users" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/manage-users'); }}><FaUsers /> Clientes</DropdownLink>
+        <DropdownLink href="/admin/progresso-clientes" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/progresso-clientes'); }}><FaChartLine /> Progresso Clientes</DropdownLink>
+        <DropdownLink href="/admin/manage-staff" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/manage-staff'); }}><FaUserTie /> Equipa</DropdownLink>
+        <DropdownLink href="/admin/manage-trainings" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/manage-trainings'); }}><FaDumbbell /> Treinos</DropdownLink>
+        <DropdownLink href="/admin/training-series" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/training-series'); }}><FaCalendarPlus /> Séries</DropdownLink>
+        <DropdownLink href="/admin/manage-appointments" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/manage-appointments'); }}><FaCalendarCheck /> Consultas</DropdownLink>
+        <DropdownLink href="/admin/manage-payments" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/manage-payments'); }}><FaMoneyBillWave /> Pagamentos</DropdownLink>
+        <DropdownLink href="/admin/manage-exercises" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/manage-exercises'); }}><FaListOl /> Exercícios</DropdownLink>
+        <DropdownLink href="/admin/manage-global-plans" onClick={(e) => { e.preventDefault(); handleDropdownLinkClick('/admin/manage-global-plans'); }}><FaClipboardList /> Planos Modelo</DropdownLink>
       </DropdownContent>
     </NavItem>
   );
