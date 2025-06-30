@@ -141,8 +141,7 @@ const DropdownLink = styled.a`
   align-items: center;
   gap: 0.75rem;
   font-size: 0.9rem;
-  cursor: pointer; // Adicionado cursor de ponteiro
-
+  cursor: pointer;
   &:hover {
     background-color: #333;
     color: ${({ theme }) => theme.colors.primary};
@@ -259,8 +258,8 @@ function Navbar() {
   };
 
   const handleDropdownLinkClick = (path) => {
-    navigate(path); 
-    closeAllMenus(); 
+    navigate(path);
+    closeAllMenus();
   };
   
   const handleNotificationClick = (notification) => {
