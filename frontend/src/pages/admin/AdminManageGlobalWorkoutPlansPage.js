@@ -20,7 +20,7 @@ import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
     FaArrowLeft, FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical 
 } from 'react-icons/fa';
-import { theme } from '../../theme';
+
 
 // --- Styled Components ---
 const PageContainer = styled.div`

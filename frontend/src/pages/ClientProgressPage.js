@@ -16,7 +16,7 @@ import {
     FaHistory, FaTimes, FaDumbbell, FaTrash, FaChartLine,
     FaWeightHanging, FaStopwatch, FaCalendarCheck, FaChartBar
 } from 'react-icons/fa';
-import { theme } from '../theme';
+
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
 // --- Styled Components ---

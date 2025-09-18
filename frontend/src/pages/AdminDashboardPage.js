@@ -11,7 +11,7 @@ import {
     FaCalendarAlt, FaUserMd, FaDumbbell, FaCreditCard,
     FaRunning, FaRegCalendarCheck, FaUserPlus, FaCalendarCheck as FaCalendarCheckIcon
 } from 'react-icons/fa';
-import { theme } from '../theme';
+
 
 // --- Styled Components ---
 const PageContainer = styled.div`

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { createTrainingSeriesService } from '../../services/trainingService'; 
 import { getAllStaffForSelection } from '../../services/staffService'; 
 import { FaCalendarPlus, FaListAlt, FaArrowLeft } from 'react-icons/fa';
-import { theme } from '../../theme'; 
+
 import { Link } from 'react-router-dom';
 
 // --- Styled Components ---

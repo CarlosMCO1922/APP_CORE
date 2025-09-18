@@ -16,7 +16,7 @@ import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck,
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
-import { theme } from '../theme'; 
+
 
 // --- Styled Components (do teu ficheiro original) ---
 const PageContainer = styled.div`

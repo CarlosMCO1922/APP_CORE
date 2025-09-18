@@ -10,7 +10,7 @@ import getDay from 'date-fns/getDay';
 import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import moment from 'moment';
-import { theme } from '../theme'; 
+
 
 import { useAuth } from '../context/AuthContext';
 import {

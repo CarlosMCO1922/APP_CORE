@@ -21,7 +21,6 @@ import {
     FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft,
     FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus, FaLevelUpAlt, FaRedoAlt
 } from 'react-icons/fa';
-import { theme } from '../../theme';
 import moment from 'moment';
 
 // --- Styled Components ---

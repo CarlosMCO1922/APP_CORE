@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminGetUserById, adminGetUserTrainingsService, adminGetUserAppointmentsService } from '../../services/userService';
 import { adminGetAllPayments } from '../../services/paymentService'; 
 import { FaArrowLeft, FaUserCircle, FaDumbbell, FaCalendarCheck, FaEnvelope, FaIdCard, FaMoneyBillWave } from 'react-icons/fa';
-import { theme } from '../../theme'; 
+
 
 // --- Styled Components ---
 const PageContainer = styled.div`
