@@ -67,11 +67,6 @@ const Title = styled.h2`
   text-align: center;
   color: ${coreGold};
   margin-bottom: 2rem;
-
-  @media (max-width: 480px) {
-    font-size: 1.75rem; // Tamanho do título ligeiramente menor
-    margin-bottom: 1.5rem;
-  }
 `;
 
 const Form = styled.form`
