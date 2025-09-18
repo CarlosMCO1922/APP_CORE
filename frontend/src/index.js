@@ -13,6 +13,7 @@ import { NotificationProvider } from './context/NotificationContext';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
+import { CustomThemeProvider } from './context/ThemeContext';
 
 console.log('CHAVE STRIPE A SER USADA NO INDEX.JS:', process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
@@ -35,7 +36,7 @@ const GlobalStyle = createGlobalStyle`
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
+    <CustomThemeProvider>
       <GlobalStyle />
       <AuthProvider>
         <NotificationProvider> 
@@ -44,7 +45,7 @@ root.render(
           </Elements>
         </NotificationProvider>
       </AuthProvider>
-    </ThemeProvider>
+    </CustomThemeProvider>
   </React.StrictMode>
 );
 

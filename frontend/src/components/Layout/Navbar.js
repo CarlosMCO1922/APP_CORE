@@ -10,6 +10,7 @@ import {
   FaCog, FaSignOutAlt, FaBars, FaTimes, FaBell, FaCheckDouble,
   FaListOl, FaCalendarPlus, FaUserCircle, FaRegCalendarCheck, FaTrophy, FaChartLine
 } from 'react-icons/fa';
+import ThemeToggler from '../Theme/ThemeToggler';
 import moment from 'moment';
 
 const Nav = styled.nav`
@@ -325,6 +326,9 @@ function Navbar() {
           {role === 'user' && clientLinks}
           {role !== 'user' && role !== 'admin' && staffLinks}
           {role === 'admin' && <>{staffLinks}{adminManagementDropdown}</>}
+
+          <ThemeToggler />
+
           <NavItem ref={notificationsDropdownRef}>
             <DropdownButton onClick={() => setNotificationsDropdownOpen(p => !p)}>
                 <BellIcon />
@@ -360,6 +364,10 @@ function Navbar() {
           <DropdownLink to="/notificacoes" onClick={closeAllMenus}>
             <FaBell /> Notificações {unreadCount > 0 && `(${unreadCount})`}
           </DropdownLink>
+          </NavItem>
+          <NavItem style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: 'calc(100% - 2rem)', margin: '0.5rem 1rem', padding: '1rem', color: theme.colors.textMain}}>
+            <span>Mudar Tema</span>
+            <ThemeToggler />
           </NavItem>
           <LogoutButton onClick={handleLogout} style={{ justifyContent: 'center', margin: '1rem' }}>Sair</LogoutButton>
       </MobileMenuOverlay>
