@@ -53,11 +53,11 @@ const LogoContainer = styled.div`
 `;
 
 const LogoImage = styled.img`
-  height: 80px; // Altura base para desktop
+  height: 150px; // Altura base para desktop
   width: auto;
 
   @media (max-width: 480px) {
-    height: 60px; // Altura reduzida para mobile
+    height: 150px; // Altura reduzida para mobile
   }
 `;
 
@@ -67,6 +67,11 @@ const Title = styled.h2`
   text-align: center;
   color: ${coreGold};
   margin-bottom: 2rem;
+
+  @media (max-width: 480px) {
+    font-size: 1.75rem; // Tamanho do título ligeiramente menor
+    margin-bottom: 1.5rem;
+  }
 `;
 
 const Form = styled.form`

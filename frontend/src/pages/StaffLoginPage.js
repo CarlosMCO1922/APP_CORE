@@ -38,8 +38,12 @@ const LogoContainer = styled.div`
 `;
 
 const LogoImage = styled.img`
-  height: 80px;
+  height: 150px;
   width: auto;
+
+  @media (max-width: 480px) {
+    height: 150px; // Altura reduzida para mobile
+  }
 `;
 
 const Title = styled.h2`
@@ -48,6 +52,11 @@ const Title = styled.h2`
   text-align: center;
   color: ${coreGold};
   margin-bottom: 2rem;
+
+  @media (max-width: 480px) {
+    font-size: 1.75rem; // Tamanho do título ligeiramente menor
+    margin-bottom: 1.5rem;
+  }
 `;
 
 const Form = styled.form`
@@ -168,7 +177,7 @@ function StaffLoginPage() {
                 <LogoContainer>
                     <LogoImage src="logo_core.png" alt='CORE Logo'/>
                 </LogoContainer>
-                <Title>Área de Funcionários</Title>
+                <Title>Funcionários</Title>
 
                 <Form onSubmit={handleSubmit}>
                     <FormGroup>
