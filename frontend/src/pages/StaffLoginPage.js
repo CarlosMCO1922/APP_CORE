@@ -166,7 +166,7 @@ function StaffLoginPage() {
         <PageContainer>
             <LoginBox>
                 <LogoContainer>
-                    <LogoImage src="../../public/logo_core.png" alt='CORE Logo'/>
+                    <LogoImage src="logo_core.png" alt='CORE Logo'/>
                 </LogoContainer>
                 <Title>Área de Funcionários</Title>
 
