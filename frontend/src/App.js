@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext';
 
 // Componentes de Página 
 import LoginPage from './pages/LoginPage';
+import StaffLoginPage from './pages/StaffLoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import RegisterPage from './pages/RegisterPage';
@@ -71,22 +72,9 @@ function App() {
       {authState.isAuthenticated && <Navbar />}
       <div className="main-content-area"> 
         <Routes>
-          <Route
-            path="/login"
-            element={
-              !authState.isAuthenticated
-                ? <LoginPage />
-                : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              !authState.isAuthenticated
-                ? <RegisterPage />
-                : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
-            }
-          />
+          <Route path="/login" element={ !authState.isAuthenticated ? <LoginPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)}/>
+          <Route path="/register" element={ !authState.isAuthenticated ? <RegisterPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)}/>
+          <Route path='/login-staff' element={ !authState.isAuthenticated ? <StaffLoginPage/> : <Navigate to="/admin/dashboard" replace/>}/>
           {/* Rotas de Cliente */}
           <Route element={<ProtectedRoute allowedRoles={['user']} />}>
             <Route path="/dashboard" element={<DashboardPage />} />

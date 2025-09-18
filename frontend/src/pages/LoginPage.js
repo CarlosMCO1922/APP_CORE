@@ -174,30 +174,6 @@ const ToggleContainer = styled.div`
   }
 `;
 
-const CheckboxLabel = styled.label`
-  margin-right: 0.5rem;
-  cursor: pointer;
-  user-select: none;
-  @media (max-width: 480px) {
-    margin-right: 0; // Remove margem quando empilhado
-  }
-`;
-
-const Checkbox = styled.input`
-  vertical-align: middle;
-  margin-left: 0.5rem; 
-  accent-color: ${coreGold}; 
-  cursor: pointer;
-  transform: scale(1.2);
-  &:focus {
-    outline: 2px solid ${coreGold}80;
-    outline-offset: 2px;
-  }
-  @media (max-width: 480px) {
-    margin-left: 0.3rem; // Ajusta margem
-  }
-`;
-
 const RegisterLinkText = styled.p`
   margin-top: 2rem;
   text-align: center;
@@ -207,6 +183,13 @@ const RegisterLinkText = styled.p`
     margin-top: 1.5rem;
     font-size: 0.85rem;
   }
+`;
+
+const StaffLoginLinkContainer = styled.div`
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid ${inputBorderColor};
 `;
 
 const StyledLink = styled(Link)`
@@ -232,19 +215,17 @@ const FooterText = styled.footer`
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isStaffLogin, setIsStaffLogin] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(email, password, isStaffLogin); 
+      await login(email, password, false); 
     } catch (err) {
       setError(err.message || 'Falha no login. Verifica as tuas credenciais.');
     } finally {
@@ -258,21 +239,9 @@ function LoginPage() {
         <LogoContainer>
           <LogoImage src="/logo_core.png" alt="CORE Logo" />
         </LogoContainer>
-        <Title>Bem-vindo ao CORE</Title>
+        <Title>CORE</Title>
         
         <Form onSubmit={handleSubmit}>
-          <ToggleContainer>
-            <CheckboxLabel htmlFor="staffLoginToggle">
-              Entrar como Funcionário:
-            </CheckboxLabel>
-            <Checkbox
-              type="checkbox"
-              id="staffLoginToggle"
-              checked={isStaffLogin}
-              onChange={() => setIsStaffLogin(!isStaffLogin)}
-            />
-          </ToggleContainer>
-
           <FormGroup>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -296,29 +265,26 @@ function LoginPage() {
             />
           </FormGroup>
 
-          {error && (
-            <ErrorMessage>
-              {error}
-            </ErrorMessage>
-          )}
+          {error && (<ErrorMessage> {error} </ErrorMessage>)}
 
           <FormGroup> 
-            <SubmitButton
-              type="submit"
-              disabled={loading}
-            >
+            <SubmitButton type="submit" disabled={loading}>
               {loading ? 'A entrar...' : (isStaffLogin ? 'Entrar (Funcionário)' : 'Entrar (Cliente)')}
             </SubmitButton>
           </FormGroup>
         </Form>
-        {!isStaffLogin && (
-          <RegisterLinkText>
-            Não tens conta de cliente?{' '}
-            <StyledLink to="/register">
-              Regista-te aqui
-            </StyledLink>
-          </RegisterLinkText>
-        )}
+
+        <RegisterLinkText>
+          Não tens conta de cliente?{' '}
+          <StyledLink to="/register">
+            Regista-te aqui
+          </StyledLink>
+        </RegisterLinkText>
+
+        <StaffLoginLinkContainer>
+          <StyledLink to="/login-staff">Aceder à área de funcionários</StyledLink>
+        </StaffLoginLinkContainer>
+
       </LoginBox>
       <FooterText>
           &copy; {new Date().getFullYear()} CORE Studio. Todos os direitos reservados.
