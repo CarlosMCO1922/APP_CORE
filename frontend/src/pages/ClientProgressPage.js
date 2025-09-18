@@ -18,7 +18,6 @@ import {
 } from 'react-icons/fa';
 
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
-import React from 'react';
 
 // --- Styled Components ---
 const PageContainer = styled.div`

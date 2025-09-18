@@ -8,7 +8,7 @@ import { adminGetRecordsForUserService, adminGetFullExerciseHistoryForUserServic
 import { adminGetUserById } from '../../services/userService';
 import { FaTrophy, FaArrowLeft, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
 import AdvancedProgressChart from '../../components/Workout/AdvancedProgressChart';
-import React from 'react';
+
 
 
 // --- Styled Components ---

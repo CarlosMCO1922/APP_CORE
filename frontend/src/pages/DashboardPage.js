@@ -16,7 +16,6 @@ import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck,
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
-import React from 'react';
 
 
 // --- Styled Components (do teu ficheiro original) ---

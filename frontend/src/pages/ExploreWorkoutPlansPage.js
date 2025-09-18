@@ -5,7 +5,7 @@ import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getVisibleWorkoutPlansService } from '../services/workoutPlanService'; 
 import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle } from 'react-icons/fa';
-import React from 'react';
+
 
 
 // --- Styled Components ---

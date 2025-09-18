@@ -7,7 +7,6 @@ import { useAuth } from '../context/AuthContext';
 import { getMyRecordsService, getMyPerformanceHistoryForExerciseService } from '../services/progressService';
 import { FaTrophy, FaArrowLeft, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
 import AdvancedProgressChart from '../components/Workout/AdvancedProgressChart';
-import React from 'react';
 
 
 // --- Styled Components (podes copiar os estilos da AdminClientProgressDetailPage) ---
