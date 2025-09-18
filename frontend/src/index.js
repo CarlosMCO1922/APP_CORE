@@ -6,7 +6,6 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
-import { theme } from './theme'; 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration'; 
 import { NotificationProvider } from './context/NotificationContext';
 

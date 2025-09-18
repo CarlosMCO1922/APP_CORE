@@ -1,7 +1,7 @@
 // src/components/Layout/Navbar.js
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import {
@@ -222,6 +222,7 @@ const ViewAllNotificationsLink = styled(Link)`
 `;
 
 function Navbar() {
+  const theme = useTheme();
   const { authState, logout } = useAuth();
   const { notifications, unreadCount, markNotificationAsRead, markAllNotificationsAsRead, totalNotifications } = useNotifications();
   const navigate = useNavigate();
