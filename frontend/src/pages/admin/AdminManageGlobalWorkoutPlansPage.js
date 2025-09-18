@@ -1,7 +1,7 @@
 // src/pages/admin/AdminManageGlobalWorkoutPlansPage.js
 import React, { useEffect, useState, useCallback, useMemo} from 'react';
 import { Link } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
     adminGetAllGlobalWorkoutPlans,
@@ -20,6 +20,7 @@ import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
     FaArrowLeft, FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical 
 } from 'react-icons/fa';
+import React from 'react';
 
 
 // --- Styled Components ---
@@ -238,6 +239,7 @@ const initialPlanState = { name: '', notes: '', isVisible: false, exercises: [] 
 const initialExerciseState = { exerciseId: '', order: 0, sets: '', reps: '', durationSeconds: '', restSeconds: '', notes: '' };
 
 const AdminManageGlobalWorkoutPlansPage = () => {
+  const theme = useTheme();
   const { authState } = useAuth();
   const [plans, setPlans] = useState([]);
   const [allExercises, setAllExercises] = useState([]); 

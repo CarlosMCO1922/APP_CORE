@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyRecordsService, getMyPerformanceHistoryForExerciseService } from '../services/progressService';
 import { FaTrophy, FaArrowLeft, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
 import AdvancedProgressChart from '../components/Workout/AdvancedProgressChart';
+import React from 'react';
 
 
 // --- Styled Components (podes copiar os estilos da AdminClientProgressDetailPage) ---
@@ -92,6 +93,7 @@ const ChartMetricSelector = styled.div`
 `;
 
 const ClientProgressOverviewPage = () => {
+  const theme = useTheme();
   const { authState } = useAuth();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);

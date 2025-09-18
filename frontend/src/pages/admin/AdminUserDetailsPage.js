@@ -1,11 +1,12 @@
 // src/pages/admin/AdminUserDetailsPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetUserById, adminGetUserTrainingsService, adminGetUserAppointmentsService } from '../../services/userService';
 import { adminGetAllPayments } from '../../services/paymentService'; 
 import { FaArrowLeft, FaUserCircle, FaDumbbell, FaCalendarCheck, FaEnvelope, FaIdCard, FaMoneyBillWave } from 'react-icons/fa';
+import React from 'react';
 
 
 // --- Styled Components ---
@@ -142,6 +143,7 @@ const EmptyText = styled.p`
 
 
 const AdminUserDetailsPage = () => {
+  const theme = useTheme();
   const { userId } = useParams();
   const { authState } = useAuth();
   const navigate = useNavigate();

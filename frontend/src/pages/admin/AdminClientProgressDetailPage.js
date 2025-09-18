@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetRecordsForUserService, adminGetFullExerciseHistoryForUserService } from '../../services/progressService';
 import { adminGetUserById } from '../../services/userService';
 import { FaTrophy, FaArrowLeft, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
 import AdvancedProgressChart from '../../components/Workout/AdvancedProgressChart';
+import React from 'react';
 
 
 // --- Styled Components ---
@@ -155,6 +156,7 @@ const ChartMetricSelector = styled.div`
 `;
 
 const AdminClientProgressDetailPage = () => {
+    const theme = useTheme();
     const { userId } = useParams();
     const { authState } = useAuth();
     const [client, setClient] = useState(null);

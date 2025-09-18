@@ -1,7 +1,7 @@
 // src/pages/admin/AdminManageTrainingsPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
     getAllTrainings,
@@ -22,6 +22,7 @@ import {
     FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus, FaLevelUpAlt, FaRedoAlt
 } from 'react-icons/fa';
 import moment from 'moment';
+import React from 'react';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -502,6 +503,7 @@ const initialTrainingFormState = {
 };
 
 const AdminManageTrainingsPage = () => {
+  const theme = useTheme();
   const { authState } = useAuth();
   const navigate = useNavigate();
   const [trainings, setTrainings] = useState([]);

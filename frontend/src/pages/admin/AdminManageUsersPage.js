@@ -1,7 +1,7 @@
 // src/pages/admin/AdminManageUsersPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
     adminGetAllUsers,
@@ -10,6 +10,7 @@ import {
     adminDeleteUser
 } from '../../services/userService';
 import { FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes, FaEye, FaUserPlus } from 'react-icons/fa';
+import React from 'react';
 
 
 // --- Styled Components ---
@@ -323,6 +324,7 @@ const initialUserFormState = {
 };
 
 const AdminManageUsersPage = () => {
+  const theme = useTheme();
   const { authState } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);

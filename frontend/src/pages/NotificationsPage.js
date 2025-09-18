@@ -1,10 +1,11 @@
 // src/pages/NotificationsPage.js
 import React, { useEffect, Fragment } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { FaBell, FaCheckDouble, FaArrowLeft, FaExternalLinkAlt, FaRegClock } from 'react-icons/fa';
+import React from 'react';
 
 
 // --- Styled Components ---
@@ -165,6 +166,7 @@ const EmptyStateText = styled.p`
 `;
 
 const NotificationsPage = () => {
+  const theme = useTheme();
   const { authState } = useAuth();
   const navigate = useNavigate();
   const {

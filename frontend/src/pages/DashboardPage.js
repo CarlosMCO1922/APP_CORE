@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.js
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
 import { clientGetMyPendingPaymentsService } from '../services/paymentService';
@@ -16,6 +16,7 @@ import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck,
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
+import React from 'react';
 
 
 // --- Styled Components (do teu ficheiro original) ---
@@ -419,6 +420,7 @@ const CancelButton = styled.button`
 const NoItemsText = styled.p`text-align: center; color: #888; padding: 20px;`;
 
 const DashboardPage = () => {
+    const theme = useTheme();
     const { authState } = useAuth();
     const [bookings, setBookings] = useState({ trainings: [], appointments: [] });
     const [pendingPayments, setPendingPayments] = useState([]);

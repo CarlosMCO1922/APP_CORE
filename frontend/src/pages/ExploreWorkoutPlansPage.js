@@ -1,10 +1,11 @@
 // src/pages/ExploreWorkoutPlansPage.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getVisibleWorkoutPlansService } from '../services/workoutPlanService'; 
 import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle } from 'react-icons/fa';
+import React from 'react';
 
 
 // --- Styled Components ---
@@ -171,6 +172,7 @@ const ErrorText = styled.p` text-align: center; font-size: 1rem; color: ${({ the
 const NoItemsText = styled.p` text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.textMuted}; padding: 30px 15px; background-color: rgba(0,0,0,0.1); border-radius: ${({ theme }) => theme.borderRadius}; `;
 
 const ExploreWorkoutPlansPage = () => {
+  const theme = useTheme();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

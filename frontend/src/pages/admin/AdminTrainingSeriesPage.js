@@ -1,12 +1,13 @@
 // src/pages/admin/AdminTrainingSeriesPage.js
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext'; 
 import { createTrainingSeriesService } from '../../services/trainingService'; 
 import { getAllStaffForSelection } from '../../services/staffService'; 
 import { FaCalendarPlus, FaListAlt, FaArrowLeft } from 'react-icons/fa';
 
 import { Link } from 'react-router-dom';
+import React from 'react';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -179,6 +180,7 @@ const Message = styled.p`
 // --- Fim Styled Components ---
 
 const AdminTrainingSeriesPage = () => {
+  const theme = useTheme();
   const { authState } = useAuth();
   const [seriesData, setSeriesData] = useState({
     name: '',

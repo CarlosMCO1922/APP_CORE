@@ -1,7 +1,7 @@
 // src/pages/ClientProgressPage.js
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
 import { getWorkoutPlansByTrainingId, getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService';
@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fa';
 
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
+import React from 'react';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -632,6 +633,7 @@ const calculateAggregateStats = (performanceLogs, workoutPlans, allPlanExercises
 };
 
 const ClientProgressPage = () => {
+    const theme = useTheme();
     const { authState } = useAuth();
     const navigate = useNavigate();
     const { globalPlanId } = useParams();

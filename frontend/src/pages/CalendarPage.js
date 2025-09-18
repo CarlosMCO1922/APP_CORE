@@ -1,7 +1,7 @@
 // src/pages/CalendarPage.js
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme} from 'styled-components';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
@@ -542,6 +542,7 @@ const CustomEventComponent = ({ event }) => (
 
 // --- Componente Principal ---
 const CalendarPage = () => {
+  const theme = useTheme();
   const { authState } = useAuth();
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);

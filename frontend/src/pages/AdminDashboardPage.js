@@ -1,7 +1,7 @@
 // src/pages/admin/AdminDashboardPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { adminGetTotalPaid } from '../services/paymentService';
 import { adminGetCurrentWeekSignups, adminGetTodayTrainingsCount } from '../services/trainingService'; 
@@ -178,6 +178,7 @@ const ErrorText = styled.p`
 `;
 
 const AdminDashboardPage = () => {
+  const theme = useTheme();
   const { authState } = useAuth();
   const [totalPaidThisMonth, setTotalPaidThisMonth] = useState(null);
   const [weeklySignups, setWeeklySignups] = useState(null);
