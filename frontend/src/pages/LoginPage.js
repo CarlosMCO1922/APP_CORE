@@ -269,7 +269,7 @@ function LoginPage() {
 
           <FormGroup> 
             <SubmitButton type="submit" disabled={loading}>
-              {loading ? 'A entrar...' : (isStaffLogin ? 'Entrar (Funcionário)' : 'Entrar (Cliente)')}
+              {loading ? 'A entrar...' : 'Entrar'}
             </SubmitButton>
           </FormGroup>
         </Form>
