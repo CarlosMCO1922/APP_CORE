@@ -55,16 +55,16 @@ const LogoContainer = styled.div`
 `;
 
 const LogoImage = styled.img`
-  height: 70px; // Altura base para desktop
+  height: 100px; // Altura base para desktop
   width: auto;
 
   @media (max-width: 480px) {
-    height: 55px; // Altura reduzida para mobile
+    height: 80px; // Altura reduzida para mobile
   }
 `;
 
 const Title = styled.h2`
-  font-size: 1.8rem; // Ligeiramente menor que o login, pode ser questão de preferência
+  font-size: 2rem; // Ligeiramente menor que o login, pode ser questão de preferência
   font-weight: bold;
   text-align: center;
   color: ${coreGold};
@@ -235,7 +235,7 @@ function RegisterPage() {
     <PageContainer>
       <FormBox>
         <LogoContainer>
-          <LogoImage src="/logo_core.png" alt="CORE Logo" />
+          <LogoImage src="/logo_core_without_back.png" alt="CORE Logo" />
         </LogoContainer>
         <Title>Criar Conta de Cliente</Title>
 
