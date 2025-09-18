@@ -67,7 +67,8 @@ const NotificationItem = styled.div`
   padding: 15px;
   margin-bottom: 12px;
   border-radius: 8px;
-  border-left: 4px solid ${props => props.$isRead ? theme.colors.textMuted : theme.colors.primary};
+  /* LINHA 70 CORRIGIDA */
+  border-left: 4px solid ${props => props.$isRead ? props.theme.colors.textMuted : props.theme.colors.primary};
   cursor: pointer;
   transition: background-color 0.2s, border-color 0.2s;
 
@@ -84,7 +85,8 @@ const NotificationItem = styled.div`
     margin: 0 0 8px 0;
     font-size: 0.9rem;
     line-height: 1.5;
-    color: ${props => props.$isRead ? theme.colors.textMuted : theme.colors.textMain};
+    /* LINHA 87 CORRIGIDA */
+    color: ${props => props.$isRead ? props.theme.colors.textMuted : props.theme.colors.textMain};
   }
 
   small {
