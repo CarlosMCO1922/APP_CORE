@@ -359,7 +359,6 @@ const ItemList = styled.ul`
 const ItemCard = styled.li`
   background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
   padding: 20px;
-  border-radius: ${({ theme }) => theme.borderRadius || '10px'};
   border-left: 5px solid ${({ theme, itemType }) => 
     itemType === 'series' ? (theme.colors.success || '#66BB6A') : (theme.colors.primary || '#D4AF37')};
   box-shadow: ${({ theme }) => theme.boxShadow || '0 4px 12px rgba(0,0,0,0.4)'};
@@ -651,8 +650,8 @@ const DashboardPage = () => {
                     <SliderContainer>
                       {upcomingEvents.length > 3 && (
                         <>
-                          <NavButton className='left' onClick={() => scroll('left')}>&#8249</NavButton>
-                          <NavButton className='right' onClick={() => scroll('right')}>&#8250</NavButton>
+                          <NavButton className='left' onClick={() => scroll('left')}>→</NavButton>
+                          <NavButton className='right' onClick={() => scroll('right')}>←</NavButton>
                         </>
                       )}
 
