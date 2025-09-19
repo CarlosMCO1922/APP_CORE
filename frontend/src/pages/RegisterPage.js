@@ -103,17 +103,19 @@ const Label = styled.label`
 const Input = styled.input`
   display: block;
   width: 100%;
-  padding: 0.9rem 1.1rem;
-  background-color: ${({ theme }) => theme.colors.textMain};
-  border: 1px solid ${({ theme }) => theme.colors.textMain};
+  padding: 0.9rem 1.1rem; 
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; 
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder}; 
   border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  &::placeholder { color: ${({ theme }) => theme.colors.textMain}; }
+  color: ${({ theme }) => theme.colors.textMain}; 
+  font-size: 1rem; 
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.textMuted}; 
+  }
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};;
-    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.textMain};;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primary}40; 
   }
 `;
 
