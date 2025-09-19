@@ -187,7 +187,7 @@ const ToggleContainer = styled.div`
 const RegisterLinkText = styled.p`
   margin-top: 2rem;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: ${({ theme }) => theme.colors.textWhite};
   @media (max-width: 480px) {
     margin-top: 1.5rem;
@@ -204,6 +204,7 @@ const StaffLoginLinkContainer = styled.div`
 
 const StyledLink = styled(Link)`
   font-weight: 600;
+  font-size: 1rem;
   padding: 5px 10px;
   border: 2px solid transparent;
   border-radius: 5px;
