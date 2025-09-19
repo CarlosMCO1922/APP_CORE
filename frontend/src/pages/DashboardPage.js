@@ -348,6 +348,11 @@ const ModalMessageText = styled.p`
   &.error { color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border: 1px solid ${({ theme }) => theme.colors.error};}
 `;
 
+const Text1 = styled.p`
+  font-size: 1.25rem;
+  color: rgb(102 187 106);
+`;
+
 const ItemList = styled.ul`
   list-style: none;
   padding: 0;
@@ -361,7 +366,7 @@ const ItemCard = styled.li`
   padding: 20px;
   border-left: 5px solid ${({ theme, itemType }) => 
     itemType === 'series' ? (theme.colors.success || '#66BB6A') : (theme.colors.primary || '#D4AF37')};
-  box-shadow: ${({ theme }) => theme.boxShadow || '0 4px 12px rgba(0,0,0,0.4)'};
+  box-shadow: '0 4px 12px rgba(0,0,0,0.4)'};
   transition: transform 0.2s ease-in-out;
   min-height: 180px;
   display: flex;
@@ -650,8 +655,8 @@ const DashboardPage = () => {
                     <SliderContainer>
                       {upcomingEvents.length > 3 && (
                         <>
-                          <NavButton className='left' onClick={() => scroll('left')}>→</NavButton>
-                          <NavButton className='right' onClick={() => scroll('right')}>←</NavButton>
+                          <NavButton className='left' onClick={() => scroll('left')}>←</NavButton>
+                          <NavButton className='right' onClick={() => scroll('right')}>→</NavButton>
                         </>
                       )}
 
@@ -659,9 +664,9 @@ const DashboardPage = () => {
                           {upcomingEvents.map(event => (
                               <UpcomingEventItem key={event.uniqueKey}>
                                   <div>
-                                      <h3>{event.icon} {event.name || event.title}</h3>
-                                      <p><span>Data:</span> {moment(event.dateObj).locale('pt').format('dddd, D/MM/YYYY [às] HH:mm')}</p>
-                                      <p><span>Com:</span> {event.instructor?.firstName || event.professional?.firstName || 'N/A'}</p>
+                                      <Text1>{event.icon} {event.name || event.title}</Text1>
+                                      <p><FaRegClock />{moment(event.dateObj).locale('pt').format('dddd, D/MM/YYYY [às] HH:mm')}</p>
+                                      <p><span>Instrutor:</span> {event.instructor?.firstName || event.professional?.firstName || 'N/A'}</p>
                                   </div>
                                   <EventActions>
                                       {event.link ? <PlanLink to={event.link}><FaEye /> Ver Plano</PlanLink> : <span />}
@@ -692,7 +697,7 @@ const DashboardPage = () => {
                             {availableSeries.map(series => (
                                 <ItemCard key={series.id} itemType="series">
                                     <div>
-                                        <h3>{series.name}</h3>
+                                        <h3>{series.icon} {series.name}</h3>
                                         <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
                                         {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
                                     </div>
