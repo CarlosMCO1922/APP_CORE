@@ -211,8 +211,9 @@ const StyledLink = styled(Link)`
   text-decoration: none;
   transition: all 0.2s ease-in-out;
   &:hover {
+    background-color: ${({theme}) => theme.colors.primary};
     border-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.background};
     text-decoration: none;
   }
 `;
