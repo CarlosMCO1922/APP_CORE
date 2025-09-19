@@ -35,11 +35,6 @@ const TogglerContainer = styled.div`
   top: 25px;
   right: 25px;
   z-index: 10;
-
-  @media (max-width: 480px) {
-    margin-bottom: 1rem;
-    flex-direction: column; // Empilha em ecrãs muito pequenos
-    gap: 0.5rem;
 `;
 
 const LoginBox = styled.div`
@@ -172,6 +167,20 @@ const SubmitButton = styled.button`
   }
 `;
 
+const ToggleContainer = styled.div`
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${lightTextColor};
+  font-size: 0.9rem;
+
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
+    flex-direction: column; // Empilha em ecrãs muito pequenos
+    gap: 0.5rem;
+  }
+`;
 
 const RegisterLinkText = styled.p`
   margin-top: 2rem;
@@ -234,9 +243,9 @@ function LoginPage() {
 
   return (
     <PageContainer>
-      <ToggleContainer>
+      <TogglerContainer>
         <ThemeToggler />
-      </ToggleContainer>
+      </TogglerContainer>
       <LoginBox>
         <LogoContainer>
           <LogoImage src="/logo_core_without_back.png" alt="CORE Logo" />
