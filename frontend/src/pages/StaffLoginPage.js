@@ -31,7 +31,7 @@ const TogglerContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background-color: ${({ theme }) => theme.colors.cardBackgound};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 35px 45px;
   border-radius: 12px;
   box-shadow: 0 10px 30px ${({ theme }) => theme.colors.primary};
@@ -55,15 +55,15 @@ const LogoImage = styled.img`
 `;
 
 const Title = styled.h2`
-  font-size: 0.5rem;
+  font-size: 1.5rem;
   font-weight: bold;
   text-align: center;
   color: ${({ theme }) => theme.colors.primary};
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
 
   @media (max-width: 480px) {
-    font-size: 1.75rem; // Tamanho do título ligeiramente menor
-    margin-bottom: 1.5rem;
+    font-size: 1.25rem; 
+    margin-bottom: 0.5rem;
   }
 `;
 
@@ -143,8 +143,12 @@ const ClientLoginLinkText = styled.p`
 
 const StyledLink = styled(Link)`
   font-weight: 600;
+  padding: 5px 10px;
+  border: 2px solid transparent;
+  border-radius: 5px;
   color: ${({ theme }) => theme.colors.primary};
   text-decoration: none;
+  transition: all 0.2s ease-in-out;
   &:hover {
     background-color: ${({theme}) => theme.colors.primary};
     border-color: ${({ theme }) => theme.colors.primary};
