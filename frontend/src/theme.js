@@ -11,6 +11,7 @@ const common = {
 // Tema Escuro (o seu tema original)
 export const darkTheme = {
   ...common,
+  logoUrl: '/logo_core_dark.png',
   colors: {
     primary: '#D4AF37', // Dourado
     background: '#1A1A1A', // Preto
@@ -32,6 +33,7 @@ export const darkTheme = {
 // Novo Tema Claro
 export const lightTheme = {
   ...common,
+  logoUrl: '/logo_core_light.png',
   colors: {
     primary: '#C7A32C', // Dourado um pouco mais escuro para contraste
     background: '#F4F7FC', // Branco suave

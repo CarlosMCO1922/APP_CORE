@@ -186,7 +186,7 @@ function StaffLoginPage() {
             </TogglerContainer>
             <LoginBox>
                 <LogoContainer>
-                    <LogoImage src="/logo_core_without_back.png" alt='CORE Logo'/>
+                    <LogoImage src={theme.logoUrl} alt='CORE Logo'/>
                 </LogoContainer>
                 <Title>Funcionários</Title>
 
