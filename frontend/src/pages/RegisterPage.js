@@ -261,7 +261,7 @@ function RegisterPage() {
         <LogoContainer>
           <LogoImage src={theme.logoUrl} alt="CORE Logo" />
         </LogoContainer>
-        <Title>Criar Conta de Cliente</Title>
+        <Title>Nova conta</Title>
 
         {message.text && <MessageText className={message.type}>{message.text}</MessageText>}
 
@@ -270,19 +270,15 @@ function RegisterPage() {
             <Input type="text" name="firstName" id="firstName" value={formData.firstName} onChange={handleChange} required placeholder='Primeiro nome' />
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="lastName">Apelido</Label>
             <Input type="text" name="lastName" id="lastName" value={formData.lastName} onChange={handleChange} required placeholder='Último nome' />
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="email">Email</Label>
             <Input type="email" name="email" id="email" value={formData.email} onChange={handleChange} required placeholder='Email' />
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="password">Password</Label>
             <Input type="password" name="password" id="password" value={formData.password} onChange={handleChange} required placeholder="Password (Min. 6 caracteres)" />
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="confirmPassword">Confirmar Password</Label>
             <Input type="password" name="confirmPassword" id="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required placeholder='Password' />
           </FormGroup>
           <SubmitButton type="submit" disabled={loading}>
