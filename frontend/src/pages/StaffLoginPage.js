@@ -37,6 +37,11 @@ const LoginBox = styled.div`
   box-shadow: 0 10px 30px ${({ theme }) => theme.colors.primary};
   width: 100%;
   max-width: 450px;
+  transition: background-color 0.3s ease;
+
+  @media (max-width: 480px) {
+    padding: 25px 20px; 
+  }
 `;
 
 const LogoContainer = styled.div`
@@ -196,7 +201,6 @@ function StaffLoginPage() {
                 <LogoContainer>
                     <LogoImage src={theme.logoUrl} alt='CORE Logo'/>
                 </LogoContainer>
-                <Title>Staff</Title>
                 <Form onSubmit={handleSubmit}>
                     <FormGroup>
                         <Input type='email' id='email' value={email} onChange={(e) => setEmail(e.target.value)} require placeholder="o.seu@email.com"/>
