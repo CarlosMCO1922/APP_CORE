@@ -26,7 +26,7 @@ export const darkTheme = {
     successBg: 'rgba(102,187,106,0.15)',
     buttonSecondaryBg: '#4A4A4A',
     buttonSecondaryHoverBg: '#5A5A5A',
-    textWhite: 'rgba(255, 255, 255, 1)',
+    textSmall: 'rgba(255, 255, 255, 1)',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };
@@ -36,9 +36,9 @@ export const lightTheme = {
   ...common,
   logoUrl: '/logo_core_light.png',
   colors: {
-    primary: '#C7A32C', // Dourado um pouco mais escuro para contraste
-    background: '#F4F7FC', // Branco suave
-    cardBackground: '#FFFFFF', // Branco puro
+    primary: 'rgba(252, 181, 53, 1)', // Dourado um pouco mais escuro para contraste
+    background: '#faf1e0', // Branco suave
+    cardBackground: 'rgb(253 246 215)',
     cardBorder: '#DEE2E6', // Borda cinza claro
     textMain: '#212529', // Texto escuro
     textMuted: '#6C757D', // Texto secundário
@@ -49,7 +49,7 @@ export const lightTheme = {
     successBg: 'rgba(56, 142, 60, 0.1)',
     buttonSecondaryBg: '#E9ECEF',
     buttonSecondaryHoverBg: '#DDE2E7',
-    textWhite: 'rgba(255, 255, 255, 1)',
+    textSmall: 'black',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };

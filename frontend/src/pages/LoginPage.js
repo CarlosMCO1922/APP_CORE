@@ -291,7 +291,7 @@ function LoginPage() {
         </Form>
 
         <RegisterLinkText>
-          Não tens conta de cliente?{' '}
+          Não tens conta de cliente?{'  '}
           <StyledLink to="/register">Regista-te aqui</StyledLink>
         </RegisterLinkText>
 
