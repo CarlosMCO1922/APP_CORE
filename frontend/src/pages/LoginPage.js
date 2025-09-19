@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext'; 
 import { useNavigate, Link } from 'react-router-dom';
+import ThemeToggler from '../components/Theme/ThemeToggler';
 
 // --- Definição das Cores ---
 const coreGold = '#D4AF37';
@@ -27,6 +28,13 @@ const PageContainer = styled.div`
   @media (max-width: 480px) {
     padding: 15px; // Padding ligeiramente menor em ecrãs muito pequenos
   }
+`;
+
+const TogglerContainer = styled.div`
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  z-index: 10;
 `;
 
 const LoginBox = styled.div`
@@ -235,6 +243,9 @@ function LoginPage() {
 
   return (
     <PageContainer>
+      <ToggleContainer>
+        <ThemeToggler />
+      </ToggleContainer>
       <LoginBox>
         <LogoContainer>
           <LogoImage src="/logo_core_without_back.png" alt="CORE Logo" />

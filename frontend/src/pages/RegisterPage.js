@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { registerUserAPI } from '../services/authService'; 
+import ThemeToggler from '../components/Theme/ThemeToggler';
 
 // --- Definição das Cores  ---
 const coreGold = '#D4AF37';
@@ -29,6 +30,13 @@ const PageContainer = styled.div`
   @media (max-width: 480px) {
     padding: 15px; // Padding ligeiramente menor em ecrãs muito pequenos
   }
+`;
+
+const TogglerContainer = styled.div`
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  z-index: 10;
 `;
 
 const FormBox = styled.div`
@@ -233,6 +241,9 @@ function RegisterPage() {
 
   return (
     <PageContainer>
+      <TogglerContainer>
+        <ThemeToggler />
+      </TogglerContainer>
       <FormBox>
         <LogoContainer>
           <LogoImage src="/logo_core_without_back.png" alt="CORE Logo" />
