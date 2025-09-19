@@ -664,7 +664,7 @@ const DashboardPage = () => {
                           {upcomingEvents.map(event => (
                               <UpcomingEventItem key={event.uniqueKey}>
                                   <div>
-                                      <Text1>{event.icon} {event.name || event.title}</Text1>
+                                      <h3>{event.icon} {event.name || event.title}</h3>
                                       <p><FaRegClock />{moment(event.dateObj).locale('pt').format('dddd, D/MM/YYYY [às] HH:mm')}</p>
                                       <p><span>Instrutor:</span> {event.instructor?.firstName || event.professional?.firstName || 'N/A'}</p>
                                   </div>

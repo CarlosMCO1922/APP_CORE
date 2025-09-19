@@ -319,7 +319,7 @@ function Navbar() {
     <>
       <Nav>
         <NavLogoLink to={role === 'user' ? "/dashboard" : "/admin/dashboard"} onClick={closeAllMenus}>
-          <LogoImage src="/logo_core_dark.png" alt="CORE Logo" />
+          <LogoImage src={theme.logoUrl1} alt="CORE Logo" />
         </NavLogoLink>
         <DesktopNavLinks>
           <UserInfo>Olá, {user?.firstName}!</UserInfo>

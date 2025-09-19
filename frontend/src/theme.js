@@ -12,6 +12,7 @@ const common = {
 export const darkTheme = {
   ...common,
   logoUrl: '/logo_core_dark.png',
+  logoUrl1: '/logo_core_dark_short.png',
   colors: {
     primary: 'rgba(252, 181, 53, 1)', // Dourado
     background: '#1A1A1A', // Preto
@@ -35,6 +36,7 @@ export const darkTheme = {
 export const lightTheme = {
   ...common,
   logoUrl: '/logo_core_light.png',
+  logoUrl1: '/logo_core_light_short.png',
   colors: {
     primary: 'rgba(252, 181, 53, 1)', // Dourado um pouco mais escuro para contraste
     background: '#faf1e0', // Branco suave
