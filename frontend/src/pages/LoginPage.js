@@ -17,13 +17,13 @@ const errorBackground = 'rgba(94, 46, 46, 0.8)';
 // --- Styled Components ---
 const PageContainer = styled.div`
   min-height: 100vh;
-  background-color: ${coreBlack};
+  background-color: ${({ theme }) => theme.colores.background};
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 20px; /* Padding base */
-  font-family: 'Inter', sans-serif;
+  font-family: ${({ theme }) => theme.fonts.main};
 
   @media (max-width: 480px) {
     padding: 15px; // Padding ligeiramente menor em ecrãs muito pequenos
@@ -38,12 +38,14 @@ const TogglerContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background-color: #252525;
+  background-color: ${({ theme }) => theme.colors.cardBackground}; // <--- MUDOU
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: ${({ theme }) => theme.boxShadow}; // <--- MUDOU
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder}; // <--- MUDOU
   width: 100%;
   max-width: 450px;
+  transition: background-color 0.3s ease;
 
   @media (max-width: 480px) {
     padding: 25px 20px; // Padding reduzido para ecrãs pequenos
@@ -73,7 +75,7 @@ const Title = styled.h2`
   font-size: 2rem;
   font-weight: bold;
   text-align: center;
-  color: ${coreGold};
+  color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 2rem;
 
   @media (max-width: 480px) {
@@ -97,7 +99,7 @@ const Label = styled.label`
   display: block;
   font-size: 0.9rem;
   font-weight: 500;
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   margin-bottom: 0.5rem; 
 `;
 
@@ -105,31 +107,31 @@ const Input = styled.input`
   display: block;
   width: 100%;
   padding: 0.9rem 1.1rem; 
-  background-color: ${inputBackground};
-  border: 1px solid ${inputBorderColor};
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; // <--- MUDOU (Exemplo)
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder}; // <--- MUDOU
   border-radius: 8px;
-  color: white;
+  color: ${({ theme }) => theme.colors.textMain}; // <--- MUDOU
   font-size: 1rem; 
   &::placeholder {
-    color: #78716c;
+    color: ${({ theme }) => theme.colors.textMuted}; // <--- MUDOU
   }
   &:focus {
     outline: none;
-    border-color: ${coreGold};
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primary}40; // Adiciona alfa à cor primária
   }
 `;
 
 const ErrorMessage = styled.p`
   font-size: 0.9rem;
-  color: white;
-  background-color: ${errorBackground};
+  color: white; // Pode manter-se se o fundo for sempre escuro
+  background-color: ${({ theme }) => theme.colors.errorBg}; // <--- MUDOU
   padding: 0.85rem 1rem;
   border-radius: 8px;
   text-align: center;
-  border: 1px solid ${errorColor};
+  border: 1px solid ${({ theme }) => theme.colors.error}; // <--- MUDOU
   margin-top: 0;
-  margin-bottom: 1rem; // Adicionado para espaçar do botão se o erro estiver acima
+  margin-bottom: 1rem;
 `;
 
 const SubmitButton = styled.button`
@@ -143,13 +145,13 @@ const SubmitButton = styled.button`
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
   font-size: 1rem; 
   font-weight: 600; 
-  color: ${coreBlack};
-  background-color: ${coreGold};
+  color: ${({ theme }) => theme.colors.textDark};
+  background-color: ${({ theme }) => theme.colors.primary};
   transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background-color: #e6c358; 
+    background-color: ${({ theme }) => theme.colors.primary}; 
     transform: translateY(-1px);
   }
   &:active:not(:disabled) {
@@ -157,7 +159,7 @@ const SubmitButton = styled.button`
   }
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 3px ${coreGold}55;
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primary}55;
   }
   &:disabled {
     background-color: #5d5d5d;
@@ -172,7 +174,7 @@ const ToggleContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMuted};
   font-size: 0.9rem;
 
   @media (max-width: 480px) {
@@ -197,7 +199,7 @@ const StaffLoginLinkContainer = styled.div`
   text-align: center;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid ${inputBorderColor};
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
 
 const StyledLink = styled(Link)`
@@ -205,14 +207,14 @@ const StyledLink = styled(Link)`
   color: ${coreGold};
   text-decoration: none;
   &:hover {
-    color: #e6c358;
+    color: #${({ theme }) => theme.colors.primary};
     text-decoration: underline;
   }
 `;
 
 const FooterText = styled.footer`
   text-align: center;
-  color: #71717a;
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-top: 3rem;
   padding-bottom: 1rem;
   @media (max-width: 480px) {

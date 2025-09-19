@@ -14,7 +14,7 @@ const errorBackground = 'rgba(94, 46, 46, 0.8)';
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background-color: ${coreBlack};
+  background-color: ${({ theme }) => theme.colors.primary};
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -31,10 +31,10 @@ const TogglerContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background-color: #252525;
+  background-color: #${({ theme }) => theme.colors.background};
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 30px ${({ theme }) => theme.colors.background};
   width: 100%;
   max-width: 450px;
 `;
@@ -58,7 +58,7 @@ const Title = styled.h2`
   font-size: 2rem;
   font-weight: bold;
   text-align: center;
-  color: ${coreGold};
+  color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 2rem;
 
   @media (max-width: 480px) {
@@ -79,7 +79,7 @@ const Label = styled.label`
   display: block;
   font-size: 0.9rem;
   font-weight: 500;
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};
   margin-bottom: 0.5rem; 
 `;
 
@@ -87,8 +87,8 @@ const Input = styled.input`
   display: block;
   width: 100%;
   padding: 0.9rem 1.1rem; 
-  background-color: ${inputBackground};
-  border: 1px solid ${inputBorderColor};
+  background-color: ${({ theme }) => theme.colors.background};
+  border: 1px solid ${({ theme }) => theme.colors.background};
   border-radius: 8px;
   color: white;
   font-size: 1rem; 
@@ -97,7 +97,7 @@ const Input = styled.input`
   }
   &:focus {
     outline: none;
-    border-color: ${coreGold};
+    border-color: ${({ theme }) => theme.colors.primary};
     box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
   }
 `;
@@ -105,11 +105,11 @@ const Input = styled.input`
 const ErrorMessage = styled.p`
   font-size: 0.9rem;
   color: white;
-  background-color: ${errorBackground};
+  background-color: ${({ theme }) => theme.colors.error};
   padding: 0.85rem 1rem;
   border-radius: 8px;
   text-align: center;
-  border: 1px solid ${errorColor};
+  border: 1px solid ${({ theme }) => theme.colors.error};
   margin-top: 0;
   margin-bottom: 1rem;
 `;
@@ -121,15 +121,15 @@ const SubmitButton = styled.button`
   border-radius: 8px;
   font-size: 1rem; 
   font-weight: 600; 
-  color: ${coreBlack};
-  background-color: ${coreGold};
+  color: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.primary};
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
   &:hover:not(:disabled) {
-    background-color: #e6c358; 
+    background-color: ${({ theme }) => theme.colors.primary};
   }
   &:disabled {
-    background-color: #5d5d5d;
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
     cursor: not-allowed;
   }
 `;
@@ -143,17 +143,17 @@ const ClientLoginLinkText = styled.p`
 
 const StyledLink = styled(Link)`
   font-weight: 600;
-  color: ${coreGold};
+  color: ${({ theme }) => theme.colors.primary};
   text-decoration: none;
   &:hover {
-    color: #e6c358;
+    color: ${({ theme }) => theme.colors.primary};
     text-decoration: underline;
   }
 `;
 
 const FooterText = styled.footer`
   text-align: center;
-  color: #71717a;
+  color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
   margin-top: 3rem;
   padding-bottom: 1rem;
 `;

@@ -19,7 +19,7 @@ const successBackground = 'rgba(102, 187, 106, 0.2)';
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background-color: ${coreBlack};
+  background-color: ${({ theme }) => theme.colors.background};
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -40,10 +40,10 @@ const TogglerContainer = styled.div`
 `;
 
 const FormBox = styled.div`
-  background-color: #252525;
+  background-color: ${({ theme }) => theme.colors.background};
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 30px ${({ theme }) => theme.colors.background};
   width: 100%;
   max-width: 500px; // Pode ser um pouco maior para o registo se houver mais campos
 
@@ -75,7 +75,7 @@ const Title = styled.h2`
   font-size: 2rem; // Ligeiramente menor que o login, pode ser questão de preferência
   font-weight: bold;
   text-align: center;
-  color: ${coreGold};
+  color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 1.5rem;
 
   @media (max-width: 480px) {
@@ -96,7 +96,7 @@ const Label = styled.label`
   display: block;
   font-size: 0.9rem;
   font-weight: 500;
-  color: ${lightTextColor};
+  color: ${({ theme }) => theme.colors.textMain};;
   margin-bottom: 0.5rem;
 `;
 
@@ -104,16 +104,16 @@ const Input = styled.input`
   display: block;
   width: 100%;
   padding: 0.9rem 1.1rem;
-  background-color: ${inputBackground};
-  border: 1px solid ${inputBorderColor};
+  background-color: ${({ theme }) => theme.colors.textMain};
+  border: 1px solid ${({ theme }) => theme.colors.textMain};
   border-radius: 8px;
   color: white;
   font-size: 1rem;
-  &::placeholder { color: #78716c; }
+  &::placeholder { color: ${({ theme }) => theme.colors.textMain}; }
   &:focus {
     outline: none;
-    border-color: ${coreGold};
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+    border-color: ${({ theme }) => theme.colors.primary};;
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.textMain};;
   }
 `;
 
@@ -128,14 +128,14 @@ const MessageText = styled.p`
   border-style: solid;
 
   &.success {
-    color: ${successColor};
-    background-color: ${successBackground};
-    border-color: ${successColor};
+    color: ${({ theme }) => theme.colors.sucess};
+    background-color: ${({ theme }) => theme.colors.sucessBg};;
+    border-color: ${({ theme }) => theme.colors.sucess};;
   }
   &.error {
     color: white;
-    background-color: ${errorBackground};
-    border-color: ${errorColor};
+    background-color: ${({ theme }) => theme.colors.errorBg};;
+    border-color: ${({ theme }) => theme.colors.error};;
   }
 `;
 
@@ -149,16 +149,16 @@ const SubmitButton = styled.button`
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
-  color: ${coreBlack};
-  background-color: ${coreGold};
+  color: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.primary};
   transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
   margin-top: 0.5rem;
   cursor: pointer;
 
-  &:hover:not(:disabled) { background-color: #e6c358; transform: translateY(-1px); }
+  &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.primary}; transform: translateY(-1px); }
   &:disabled { 
-    background-color: #5d5d5d;
-    color: #9e9e9e;
+    background-color: ${({ theme }) => theme.colors.background};
+    color: ${({ theme }) => theme.colors.background};;
     cursor: not-allowed; 
     transform: translateY(0px); 
   }
@@ -168,7 +168,7 @@ const LoginLinkText = styled.p`
   margin-top: 1.5rem;
   text-align: center;
   font-size: 0.9rem;
-  color: #a1a1aa;
+  color: ${({ theme }) => theme.colors.textMain};
   @media (max-width: 480px) {
     font-size: 0.85rem;
   }
@@ -176,14 +176,14 @@ const LoginLinkText = styled.p`
 
 const StyledLink = styled(Link)`
   font-weight: 600;
-  color: ${coreGold};
+  color: ${({ theme }) => theme.colors.primary};
   text-decoration: none;
-  &:hover { color: #e6c358; text-decoration: underline; }
+  &:hover { color: ${({ theme }) => theme.colors.primary};; text-decoration: underline; }
 `;
 
 const FooterText = styled.footer`
   text-align: center;
-  color: #71717a;
+  color: ${({ theme }) => theme.colors.textMain};
   margin-top: 3rem;
   padding-bottom: 1rem;
   @media (max-width: 480px) {
