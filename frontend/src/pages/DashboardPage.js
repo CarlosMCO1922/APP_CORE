@@ -1,5 +1,5 @@
 // src/pages/DashboardPage.js
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -90,11 +90,16 @@ const SectionTitle = styled.h2`
 const BookingList = styled.ul`
   list-style: none;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: flex;
   gap: 20px;
+  overflow-x: auto; 
+  scroll-snap-type: x mandatory; 
+  -webkit-overflow-scrolling: touch; 
+  scrollbar-width: none; 
+  &::-webkit-scrollbar {
+    display: none; 
+  }
 `;
-
 const BookingItem = styled.li`
   background-color: #252525;
   padding: 20px;
@@ -144,6 +149,19 @@ const UpcomingEventItem = styled.li`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+
+  /* Linhas adicionadas para o slider */
+  flex-shrink: 0; // Impede que os itens encolham
+  width: calc(100% / 3 - 14px); // Mostra 3 itens de cada vez (ajusta o 14px se o 'gap' for diferente de 20px)
+  scroll-snap-align: start; // Define o ponto de "íman"
+
+  @media (max-width: 1024px) {
+    width: calc(100% / 2 - 10px); // Mostra 2 itens em tablets
+  }
+  @media (max-width: 768px) {
+    width: 80%; // Mostra 1 item de cada vez em mobile, com um vislumbre do próximo
+  }
+
 
   h3 { font-size: 1.1rem; color: #00A9FF; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;}
   p { font-size: 0.9rem; margin: 4px 0; color: #a0a0a0; }
@@ -248,12 +266,12 @@ const PendingPaymentItem = styled.li`
 `;
 
 const PayNowButton = styled(Link)`
-  background-color: ${({ theme }) => theme.colors.success || '#4CAF50'};
-  color: white;
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: black;
   padding: 8px 15px;
   border-radius: 5px;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.85rem;
   transition: background-color 0.2s;
   display: inline-flex;
@@ -384,6 +402,51 @@ const EventActions = styled.div`
   align-items: center;
 `;
 
+const SliderContainer = styled.div`
+  position: relative; 
+`;
+
+const NavButton = styled.button`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(37, 37, 37, 0.8); 
+  border: 1px solid #444;
+  color: white;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.background};
+    color: ${({ theme }) => theme.colors.textDark};
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  // Posicionamento específico para cada botão
+  &.left {
+    left: -20px;
+  }
+
+  &.right {
+    right: -20px;
+  }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
+`;
+
 const PlanLink = styled(Link)`
   color: ${({ theme }) => theme.colors.primary};
   text-decoration: none;
@@ -420,6 +483,7 @@ const NoItemsText = styled.p`text-align: center; color: #888; padding: 20px;`;
 
 const DashboardPage = () => {
     const theme = useTheme();
+    const sliderRef = useRef(null);
     const { authState } = useAuth();
     const [bookings, setBookings] = useState({ trainings: [], appointments: [] });
     const [pendingPayments, setPendingPayments] = useState([]);
@@ -495,6 +559,16 @@ const DashboardPage = () => {
         }
     };
 
+    const scroll = (direction) => {
+      if (sliderRef.current) {
+        const scrollAmount = sliderRef.current.offseWidth /3;
+        sliderRef.current.scrollBy({
+          left: direction === 'left' ? -scrollAmount : scrollAmount,
+          behavior: 'smooth'
+        });
+      }
+    }
+
     const handleOpenSeriesSubscriptionModal = (series) => {
         setSelectedSeriesForSubscription(series);
         setClientSubscriptionEndDate(series.seriesEndDate); 
@@ -542,7 +616,6 @@ const DashboardPage = () => {
     return (
         <PageContainer>
             <Header>
-                <Title>Meu Painel CORE</Title>
                 <WelcomeMessage>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</WelcomeMessage>
             </Header>
 
@@ -575,36 +648,45 @@ const DashboardPage = () => {
             <Section>
                 <SectionTitle><FaRegCalendarCheck /> Próximos Eventos</SectionTitle>
                 {!loading && upcomingEvents.length > 0 ? (
-                    <BookingList>
-                        {upcomingEvents.map(event => (
-                            <UpcomingEventItem key={event.uniqueKey}>
-                                <div>
-                                    <h3>{event.icon} {event.name || event.title}</h3>
-                                    <p><span>Data:</span> {moment(event.dateObj).locale('pt').format('dddd, D/MM/YYYY [às] HH:mm')}</p>
-                                    <p><span>Com:</span> {event.instructor?.firstName || event.professional?.firstName || 'N/A'}</p>
-                                </div>
-                                <EventActions>
-                                    {event.link ? <PlanLink to={event.link}><FaEye /> Ver Plano</PlanLink> : <span />}
-                                    {event.eventType === 'Treino' && (
-                                        <CancelButton 
-                                            onClick={() => handleCancelTraining(event.id)}
-                                            disabled={actionLoading === event.id}
-                                            title="Cancelar inscrição"
-                                        >
-                                            {actionLoading === event.id ? 'A cancelar...' : <FaTrashAlt />}
-                                        </CancelButton>
-                                    )}
-                                </EventActions>
-                            </UpcomingEventItem>
-                        ))}
-                    </BookingList>
+                    <SliderContainer>
+                      {upcomingEvents.length > 3 && (
+                        <>
+                          <NavButton className='left' onClick={() => scroll('left')}>&#8249</NavButton>
+                          <NavButton className='right' onClick={() => scroll('right')}>&#8250</NavButton>
+                        </>
+                      )}
+
+                      <BookingList ref={sliderRef}>
+                          {upcomingEvents.map(event => (
+                              <UpcomingEventItem key={event.uniqueKey}>
+                                  <div>
+                                      <h3>{event.icon} {event.name || event.title}</h3>
+                                      <p><span>Data:</span> {moment(event.dateObj).locale('pt').format('dddd, D/MM/YYYY [às] HH:mm')}</p>
+                                      <p><span>Com:</span> {event.instructor?.firstName || event.professional?.firstName || 'N/A'}</p>
+                                  </div>
+                                  <EventActions>
+                                      {event.link ? <PlanLink to={event.link}><FaEye /> Ver Plano</PlanLink> : <span />}
+                                      {event.eventType === 'Treino' && (
+                                          <CancelButton 
+                                              onClick={() => handleCancelTraining(event.id)}
+                                              disabled={actionLoading === event.id}
+                                              title="Cancelar inscrição"
+                                          >
+                                              {actionLoading === event.id ? 'A cancelar...' : <FaTrashAlt />}
+                                          </CancelButton>
+                                      )}
+                                  </EventActions>
+                              </UpcomingEventItem>
+                          ))}
+                      </BookingList>
+                    </SliderContainer>
                 ) : (
-                    !loading && <NoBookingsText>Não tens eventos futuros agendados.</NoBookingsText>
+                    !loading && <NoBookingsText>Não existe eventos futuros.</NoBookingsText>
                 )}
             </Section>
 
             <Section>
-                <SectionTitle><FaUsers /> Descobrir Programas Semanais</SectionTitle>
+                <SectionTitle><FaUsers /> Programas Semanais</SectionTitle>
                 {loadingSeries ? <LoadingText>A carregar programas...</LoadingText> : seriesError ? <ErrorText>{seriesError}</ErrorText> : (
                     availableSeries.length > 0 ? (
                         <ItemList>

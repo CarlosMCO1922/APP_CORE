@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
-import {
+import { FaHome,
   FaTachometerAlt, FaCalendarAlt, FaClipboardList, FaUsers,
   FaUserTie, FaDumbbell, FaCalendarCheck, FaMoneyBillWave,
   FaCog, FaSignOutAlt, FaBars, FaTimes, FaBell, FaCheckDouble,
@@ -271,11 +271,11 @@ function Navbar() {
 
   const clientLinks = (
     <>
-      <NavItem><NavLinkStyled to="/dashboard" onClick={closeAllMenus}><FaTachometerAlt /> Painel</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/dashboard" onClick={closeAllMenus}><FaHome /> Início</NavLinkStyled></NavItem>
       <NavItem><NavLinkStyled to="/calendario" onClick={closeAllMenus}><FaCalendarAlt /> Agendar</NavLinkStyled></NavItem>
       <NavItem ref={clientDropdownRef}>
         <DropdownButton onClick={() => setClientDropdownOpen(p => !p)} className={clientDropdownOpen ? 'active' : ''}>
-          <FaUserCircle /> Minha Área {clientDropdownOpen ? '▴' : '▾'}
+          <FaUserCircle /> Minha área {clientDropdownOpen ? '▴' : '▾'}
         </DropdownButton>
         <DropdownContent isOpen={clientDropdownOpen}>
            <DropdownLink to="/meus-treinos" onClick={() => setTimeout(closeAllMenus, 150)}><FaDumbbell /> Meus Treinos</DropdownLink>
@@ -290,8 +290,8 @@ function Navbar() {
 
   const staffLinks = (
     <>
-      <NavItem><NavLinkStyled to="/admin/dashboard" onClick={closeAllMenus}><FaTachometerAlt /> Painel Staff</NavLinkStyled></NavItem>
-      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={closeAllMenus}><FaCalendarAlt /> Calendário Geral</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/dashboard" onClick={closeAllMenus}><FaHome /> Início</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={closeAllMenus}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
       <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={closeAllMenus}><FaRegCalendarCheck /> Pedidos</NavLinkStyled></NavItem>
     </>
   );
@@ -319,8 +319,7 @@ function Navbar() {
     <>
       <Nav>
         <NavLogoLink to={role === 'user' ? "/dashboard" : "/admin/dashboard"} onClick={closeAllMenus}>
-          <LogoImage src="/logo_core.png" alt="CORE Logo" />
-          <LogoText>CORE</LogoText>
+          <LogoImage src="/logo_core_dark.png" alt="CORE Logo" />
         </NavLogoLink>
         <DesktopNavLinks>
           <UserInfo>Olá, {user?.firstName}!</UserInfo>
