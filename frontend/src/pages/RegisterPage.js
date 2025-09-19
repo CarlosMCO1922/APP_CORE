@@ -40,10 +40,10 @@ const TogglerContainer = styled.div`
 `;
 
 const FormBox = styled.div`
-  background-color: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px ${({ theme }) => theme.colors.background};
+  box-shadow: 0 10px 30px ${({ theme }) => theme.colors.primary};
   width: 100%;
   max-width: 500px; // Pode ser um pouco maior para o registo se houver mais campos
 
@@ -63,11 +63,11 @@ const LogoContainer = styled.div`
 `;
 
 const LogoImage = styled.img`
-  height: 100px; // Altura base para desktop
+  height: 200px; // Altura base para desktop
   width: auto;
 
   @media (max-width: 480px) {
-    height: 80px; // Altura reduzida para mobile
+    height: 100px; // Altura reduzida para mobile
   }
 `;
 
@@ -176,9 +176,19 @@ const LoginLinkText = styled.p`
 
 const StyledLink = styled(Link)`
   font-weight: 600;
+  font-size: 1rem;
+  padding: 5px 10px;
+  border: 2px solid transparent;
+  border-radius: 5px;
   color: ${({ theme }) => theme.colors.primary};
   text-decoration: none;
-  &:hover { color: ${({ theme }) => theme.colors.primary};; text-decoration: underline; }
+  transition: all 0.2s ease-in-out;
+  &:hover {
+    background-color: ${({theme}) => theme.colors.primary};
+    border-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.background};
+    text-decoration: none;
+  }
 `;
 
 const FooterText = styled.footer`
