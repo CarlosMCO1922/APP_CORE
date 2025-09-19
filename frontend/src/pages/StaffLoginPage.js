@@ -14,7 +14,7 @@ const errorBackground = 'rgba(94, 46, 46, 0.8)';
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: ${({ theme }) => theme.colors.background};
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -31,7 +31,7 @@ const TogglerContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background: #${({ theme }) => theme.colors.background};
+  background: ${({ theme }) => theme.colors.cardBackgound};
   padding: 35px 45px;
   border-radius: 12px;
   box-shadow: 0 10px 30px ${({ theme }) => theme.colors.primary};
