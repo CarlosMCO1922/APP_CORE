@@ -31,7 +31,7 @@ const TogglerContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background: ${({ theme }) => theme.colors.cardBackgound};
+  background-color: ${({ theme }) => theme.colors.cardBackgound};
   padding: 35px 45px;
   border-radius: 12px;
   box-shadow: 0 10px 30px ${({ theme }) => theme.colors.primary};
@@ -55,7 +55,7 @@ const LogoImage = styled.img`
 `;
 
 const Title = styled.h2`
-  font-size: 2rem;
+  font-size: 0.5rem;
   font-weight: bold;
   text-align: center;
   color: ${({ theme }) => theme.colors.primary};
@@ -191,14 +191,12 @@ function StaffLoginPage() {
                 <LogoContainer>
                     <LogoImage src={theme.logoUrl} alt='CORE Logo'/>
                 </LogoContainer>
-                <Title>Funcionários</Title>
+                <Title>Staff</Title>
                 <Form onSubmit={handleSubmit}>
                     <FormGroup>
-                        <Label htmlFor='email'>Email</Label>
                         <Input type='email' id='email' value={email} onChange={(e) => setEmail(e.target.value)} require placeholder="o.seu@email.com"/>
                     </FormGroup>
                     <FormGroup>
-                        <Label htmlFor='password'>Password</Label>
                         <Input type='password' id='password' value={password} onChange={(e) => setPassword(e.target.value)} required placeholder='Password'/>
                     </FormGroup>
 
