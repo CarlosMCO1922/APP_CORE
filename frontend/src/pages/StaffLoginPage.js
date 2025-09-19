@@ -203,7 +203,7 @@ function StaffLoginPage() {
                 </LogoContainer>
                 <Form onSubmit={handleSubmit}>
                     <FormGroup>
-                        <Input type='email' id='email' value={email} onChange={(e) => setEmail(e.target.value)} require placeholder="o.seu@email.com"/>
+                        <Input type='email' id='email' value={email} onChange={(e) => setEmail(e.target.value)} require placeholder="Email"/>
                     </FormGroup>
                     <FormGroup>
                         <Input type='password' id='password' value={password} onChange={(e) => setPassword(e.target.value)} required placeholder='Password'/>
