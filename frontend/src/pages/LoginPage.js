@@ -17,7 +17,7 @@ const errorBackground = 'rgba(94, 46, 46, 0.8)';
 // --- Styled Components ---
 const PageContainer = styled.div`
   min-height: 100vh;
-  background-color: ${({ theme }) => theme.colores.background};
+  background-color: ${({ theme }) => theme.colors.background};
   display: flex;
   flex-direction: column;
   justify-content: center;
