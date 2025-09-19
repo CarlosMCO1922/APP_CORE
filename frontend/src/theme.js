@@ -13,7 +13,7 @@ export const darkTheme = {
   ...common,
   logoUrl: '/logo_core_dark.png',
   colors: {
-    primary: '#D4AF37', // Dourado
+    primary: rgba(252, 181, 53, 1), // Dourado
     background: '#1A1A1A', // Preto
     cardBackground: '#252525', // Cinza escuro
     cardBorder: '#383838', // Borda cinza
@@ -26,8 +26,9 @@ export const darkTheme = {
     successBg: 'rgba(102,187,106,0.15)',
     buttonSecondaryBg: '#4A4A4A',
     buttonSecondaryHoverBg: '#5A5A5A',
+    textWhite: rgba(255, 255, 255, 1),
   },
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+  boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };
 
 // Novo Tema Claro
@@ -48,6 +49,7 @@ export const lightTheme = {
     successBg: 'rgba(56, 142, 60, 0.1)',
     buttonSecondaryBg: '#E9ECEF',
     buttonSecondaryHoverBg: '#DDE2E7',
+    textWhite: rgba(255, 255, 255, 1),
   },
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+  boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };

@@ -38,17 +38,17 @@ const TogglerContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background-color: ${({ theme }) => theme.colors.cardBackground}; // <--- MUDOU
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: ${({ theme }) => theme.boxShadow}; // <--- MUDOU
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder}; // <--- MUDOU
+  box-shadow: ${({ theme }) => theme.boxShadow}; 
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   width: 100%;
   max-width: 450px;
   transition: background-color 0.3s ease;
 
   @media (max-width: 480px) {
-    padding: 25px 20px; // Padding reduzido para ecrãs pequenos
+    padding: 25px 20px; 
   }
 `;
 
@@ -63,11 +63,11 @@ const LogoContainer = styled.div`
 `;
 
 const LogoImage = styled.img`
-  height: 150px; // Altura base para desktop
+  height: 200px; 
   width: auto;
 
   @media (max-width: 480px) {
-    height: 150px; // Altura reduzida para mobile
+    height: 150px; 
   }
 `;
 
@@ -188,7 +188,7 @@ const RegisterLinkText = styled.p`
   margin-top: 2rem;
   text-align: center;
   font-size: 0.9rem;
-  color: #a1a1aa;
+  color: ${({ theme }) => theme.colors.textWhite};
   @media (max-width: 480px) {
     margin-top: 1.5rem;
     font-size: 0.85rem;
@@ -204,11 +204,16 @@ const StaffLoginLinkContainer = styled.div`
 
 const StyledLink = styled(Link)`
   font-weight: 600;
-  color: ${coreGold};
+  padding: 5px 10px;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  color: ${({ theme }) => theme.colors.primary};
   text-decoration: none;
+  transition: all 0.2s ease-in-out;
   &:hover {
-    color: #${({ theme }) => theme.colors.primary};
-    text-decoration: underline;
+    border-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.primary};
+    text-decoration: none;
   }
 `;
 
@@ -252,30 +257,26 @@ function LoginPage() {
       <LoginBox>
         <LogoContainer>
           <LogoImage src={theme.logoUrl} alt="CORE Logo" />
-        </LogoContainer>
-        <Title>CORE</Title>
-        
+        </LogoContainer>        
         <Form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label htmlFor="email">Email</Label>
             <Input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="o.seu@email.com"
+              placeholder="Email"
             />
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="password">Password</Label>
             <Input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="A sua password"
+              placeholder="Password"
             />
           </FormGroup>
 
@@ -290,9 +291,7 @@ function LoginPage() {
 
         <RegisterLinkText>
           Não tens conta de cliente?{' '}
-          <StyledLink to="/register">
-            Regista-te aqui
-          </StyledLink>
+          <StyledLink to="/register">Regista-te aqui</StyledLink>
         </RegisterLinkText>
 
         <StaffLoginLinkContainer>
