@@ -1,7 +1,7 @@
 // src/pages/RegisterPage.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { useTheme }from 'styled-components';
 import { registerUserAPI } from '../services/authService'; 
 import ThemeToggler from '../components/Theme/ThemeToggler';
 
@@ -193,6 +193,7 @@ const FooterText = styled.footer`
 
 
 function RegisterPage() {
+  const theme = useTheme();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',

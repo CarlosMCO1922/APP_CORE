@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme }from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import ThemeToggler from '../components/Theme/ThemeToggler';
@@ -159,6 +159,7 @@ const FooterText = styled.footer`
 `;
 
 function StaffLoginPage() {
+    const theme =useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
