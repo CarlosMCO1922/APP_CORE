@@ -31,10 +31,10 @@ const TogglerContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background-color: #${({ theme }) => theme.colors.background};
+  background: #${({ theme }) => theme.colors.background};
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px ${({ theme }) => theme.colors.background};
+  box-shadow: 0 10px 30px ${({ theme }) => theme.colors.primary};
   width: 100%;
   max-width: 450px;
 `;
@@ -46,7 +46,7 @@ const LogoContainer = styled.div`
 `;
 
 const LogoImage = styled.img`
-  height: 150px;
+  height: 200px;
   width: auto;
 
   @media (max-width: 480px) {
@@ -146,8 +146,10 @@ const StyledLink = styled(Link)`
   color: ${({ theme }) => theme.colors.primary};
   text-decoration: none;
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-    text-decoration: underline;
+    background-color: ${({theme}) => theme.colors.primary};
+    border-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.background};
+    text-decoration: none;
   }
 `;
 
@@ -190,7 +192,6 @@ function StaffLoginPage() {
                     <LogoImage src={theme.logoUrl} alt='CORE Logo'/>
                 </LogoContainer>
                 <Title>Funcionários</Title>
-
                 <Form onSubmit={handleSubmit}>
                     <FormGroup>
                         <Label htmlFor='email'>Email</Label>
@@ -208,8 +209,8 @@ function StaffLoginPage() {
                     </FormGroup>
                 </Form>
                 <ClientLoginLinkText>
-                    Não é funcionário? {' '}
-                    <StyledLink to="/login"> Login de Cliente </StyledLink>
+                    Não é funcionário? {'  '}
+                    <StyledLink to="/login"> Sou Cliente </StyledLink>
                 </ClientLoginLinkText>
             </LoginBox>
             <FooterText>
