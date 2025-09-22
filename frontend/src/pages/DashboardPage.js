@@ -695,7 +695,7 @@ const DashboardPage = () => {
                         </>
                       )}
 
-                      <BookingList ref={sliderRef}>
+                      <BookingList ref={eventsSliderRef}>
                           {upcomingEvents.map(event => (
                               <UpcomingEventItem key={event.uniqueKey}>
                                   <div>
