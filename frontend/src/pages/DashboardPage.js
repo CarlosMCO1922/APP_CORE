@@ -375,8 +375,7 @@ const ItemCard = styled.li`
   background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
   padding: 20px;
   border-radius: ${({ theme }) => theme.borderRadius || '10px'}
-  border-left: 5px solid ${({ theme, itemType }) => 
-    itemType === 'series' ? (theme.colors.success || '#66BB6A') : (theme.colors.primary || '#D4AF37')};
+  border-left: 5px solid #66BB6A;
   box-shadow: ${({ theme }) => '0 4px 12px rgba(0,0,0,0.4)'};
   transition: transform 0.2s ease-in-out;
   min-height: 180px;
