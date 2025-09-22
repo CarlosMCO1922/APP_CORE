@@ -321,7 +321,6 @@ function Navbar() {
           <LogoImage src={theme.logoUrl1} alt="CORE Logo" />
         </NavLogoLink>
         <DesktopNavLinks>
-          <UserInfo>Olá, {user?.firstName}!</UserInfo>
           {role === 'user' && clientLinks}
           {role !== 'user' && role !== 'admin' && staffLinks}
           {role === 'admin' && <>{staffLinks}{adminManagementDropdown}</>}

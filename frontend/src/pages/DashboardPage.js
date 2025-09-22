@@ -55,7 +55,7 @@ const Title = styled.h1`
 
 const WelcomeMessage = styled.p`
   font-size: 1.1rem;
-  color: #b0b0b0;
+  color: ${({ theme }) => theme.colors.textMain};
   @media (max-width: 480px) {
     font-size: 1rem;
   }
@@ -136,7 +136,7 @@ const BookingItem = styled.li`
   }
   span {
     font-weight: 600;
-    color: #c8c8c8;
+    color: ${({ theme }) => theme.colors.textMain};
   }
 `;
 
@@ -181,7 +181,7 @@ const UpcomingEventItem = styled.li`
     align-items: center;
     gap:8px
   }
-  span { font-weight: 600; color: #c8c8c8; }
+  span { font-weight: 600; color: ${({ theme }) => theme.colors.textMain} }
 `;
 
 const LoadingText = styled.p`
@@ -229,7 +229,7 @@ const NoBookingsText = styled.p`
 const StyledLinkButton = styled(Link)`
   display: inline-block;
   background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.textDark};
+  color: ${({ theme }) => theme.colors.textMain};
   padding: 12px 22px;
   border-radius: 8px;
   text-decoration: none;
@@ -411,7 +411,7 @@ const ItemCard = styled.li`
   h3 { margin-top: 0; margin-bottom: 12px; color: ${({ theme }) => theme.colors.success || '#66BB6A'}; font-size: 1.25rem; }
   p { margin: 6px 0; font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'}; line-height: 1.5; display: flex; align-items: center; gap: 6px; }
   p svg { color: ${({ theme }) => theme.colors.primary}; margin-right: 4px; }
-  span { font-weight: 600; color: ${({ theme }) => theme.colors.textMain || '#c8c8c8'}; }
+  span { font-weight: 600; color: ${({ theme }) => theme.colors.textMain }}
 `;
 
 const ViewDetailsButton = styled.button`
@@ -754,7 +754,7 @@ const DashboardPage = () => {
                       <SliderContainer> {/* << Envolvido no SliderContainer */}
                           {availableSeries.length > 3 && (
                               <>
-                                  <NavButton className="left" onClick={() => handleScroll(seriesSliderRef, 'left')}>←;</NavButton>
+                                  <NavButton className="left" onClick={() => handleScroll(seriesSliderRef, 'left')}>←</NavButton>
                                   <NavButton className="right" onClick={() => handleScroll(seriesSliderRef, 'right')}>→</NavButton>
                               </>
                           )}
@@ -765,7 +765,7 @@ const DashboardPage = () => {
                                       <div>
                                           <h3>{series.name}</h3>
                                           <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
-                                          {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
+                                          {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName}</p>}
                                       </div>
                                       <EventActions>
                                           <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
