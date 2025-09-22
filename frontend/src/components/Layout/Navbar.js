@@ -154,8 +154,14 @@ const HamburgerIcon = styled.div`
 `;
 
 const MobileMenuOverlay = styled.div`
-  display: flex; flex-direction: column; background-color: #1c1c1c;
-  position: fixed; top: 60px; left: 0; right: 0; bottom: 0;
+  display: flex; 
+  flex-direction: column; 
+  background-color: ${({ theme }) => theme.colors.background}};
+  position: fixed; 
+  top: 60px;
+  left: 0; 
+  right: 0; 
+  bottom: 0;
   padding: 1rem 0; z-index: 999;
   transform: ${props => props.isOpen ? 'translateX(0)' : 'translateX(-100%)'};
   transition: transform 0.3s ease-in-out;
