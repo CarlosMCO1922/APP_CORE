@@ -149,6 +149,7 @@ const UpcomingEventItem = styled.li`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+   min-height: 210px;
 
   /* Linhas adicionadas para o slider */
   flex-shrink: 0; // Impede que os itens encolham
@@ -384,7 +385,7 @@ const ItemCard = styled.li`
   border-left: 5px solid #66BB6A;
   box-shadow: ${({ theme }) => '0 4px 12px rgba(0,0,0,0.4)'};
   transition: transform 0.2s ease-in-out;
-  min-height: 180px;
+  min-height: 210px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
