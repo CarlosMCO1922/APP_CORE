@@ -374,6 +374,7 @@ const ItemList = styled.ul`
 const ItemCard = styled.li`
   background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
   padding: 20px;
+  border-radius: ${({ theme }) => theme.borderRadius || '10px'}
   border-left: 5px solid ${({ theme, itemType }) => 
     itemType === 'series' ? (theme.colors.success || '#66BB6A') : (theme.colors.primary || '#D4AF37')};
   box-shadow: ${({ theme }) => '0 4px 12px rgba(0,0,0,0.4)'};
@@ -701,7 +702,7 @@ const DashboardPage = () => {
                                   <div>
                                       <h3>{event.icon} {event.name || event.title}</h3>
                                       <p><FaRegClock />{moment(event.dateObj).locale('pt').format('dddd, D/MM/YYYY [às] HH:mm')}</p>
-                                      <p><span>Instrutor:</span> {event.instructor?.firstName || event.professional?.firstName || 'N/A'}</p>
+                                      <p><span>Instrutor:</span> {event.instructor?.firstName.lastName || event.professional?.firstName || 'N/A'}</p>
                                   </div>
                                   <EventActions>
                                       {event.link ? <PlanLink to={event.link}><FaEye /> Ver Plano</PlanLink> : <span />}
@@ -742,7 +743,7 @@ const DashboardPage = () => {
                                       <div>
                                           <h3>{series.name}</h3>
                                           <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
-                                          {series.instructor && <p><strong>Instrutor:</strong> {series.instructor.firstName} {series.instructor.lastName}</p>}
+                                          {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
                                       </div>
                                       
                                       {/* O botão antigo foi substituído por este novo */}
