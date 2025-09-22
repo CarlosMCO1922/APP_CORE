@@ -1,7 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaUserMd, FaDumbbell, FaChevronDown, FaArrowLeft } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+import { getAllTrainings, bookTraining } from '../services/trainingService';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/react-calendar.css'; // Estilos para o calendário
+import moment from 'moment';
+import 'moment/locale/pt';
+import { 
+    FaUserMd, 
+    FaDumbbell, 
+    FaChevronDown, 
+    FaArrowLeft, 
+    FaRegCalendarCheck, 
+    FaUsers, 
+    FaClock, 
+    FaUserTie 
+} from 'react-icons/fa';
 
 const serviceData = [
   {
