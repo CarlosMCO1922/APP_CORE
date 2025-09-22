@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getAllTrainings, bookTraining } from '../services/trainingService';
+import '../styles/calendar.css'; 
 import Calendar from 'react-calendar';
 //import 'react-calendar/dist/react-calendar.css'; // Estilos para o calendário
 import moment from 'moment';
@@ -150,34 +151,29 @@ const DetailsHeader = styled.h3`
 `;
 
 const TrainingAccordion = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+  gap: 15px;
 `;
 
 const TrainingHeader = styled.button`
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  color: ${({ theme }) => theme.colors.textMain};
+  background-color: ${({ theme, isOpen }) => (isOpen ? theme.colors.primary : theme.colors.cardBackground)};
+  color: ${({ theme, isOpen }) => (isOpen ? theme.colors.textDark : theme.colors.textMain)};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: 8px;
-  padding: 15px;
+  border-radius: 25px; 
+  padding: 12px;
   width: 100%;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.2rem; 
+  font-weight: 700;
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
+  justify-content: center; 
   align-items: center;
-  transition: border-color 0.2s;
+  transition: all 0.3s ease;
   
   &:hover {
     border-color: ${({ theme }) => theme.colors.primary};
-  }
-
-  svg {
-    transition: transform 0.3s ease;
-    transform: ${props => (props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)')};
-    color: ${({ theme }) => theme.colors.primary};
+    transform: scale(1.05);
   }
 `;
 
