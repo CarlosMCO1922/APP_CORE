@@ -516,7 +516,8 @@ const NoItemsText = styled.p`text-align: center; color: #888; padding: 20px;`;
 
 const DashboardPage = () => {
     const theme = useTheme();
-    const sliderRef = useRef(null);
+    const eventsSliderRef = useRef(null); 
+    const seriesSliderRef = useRef(null);
     const { authState } = useAuth();
     const [bookings, setBookings] = useState({ trainings: [], appointments: [] });
     const [pendingPayments, setPendingPayments] = useState([]);
@@ -689,8 +690,8 @@ const DashboardPage = () => {
                     <SliderContainer>
                       {upcomingEvents.length > 3 && (
                         <>
-                          <NavButton className='left' onClick={() => handleScroll(seriesSliderRef, 'left')}>←</NavButton>
-                          <NavButton className='right' onClick={() => handleScroll(seriesSliderRef, 'right')}>→</NavButton>
+                          <NavButton className='left' onClick={() => handleScroll(eventsSliderRef, 'left')}>←</NavButton>
+                          <NavButton className='right' onClick={() => handleScroll(eventsSliderRef, 'right')}>→</NavButton>
                         </>
                       )}
 
