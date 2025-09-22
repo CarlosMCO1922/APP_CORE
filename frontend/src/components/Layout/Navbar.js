@@ -14,12 +14,11 @@ import ThemeToggler from '../Theme/ThemeToggler';
 import moment from 'moment';
 
 const Nav = styled.nav`
-  background-color: ${({ theme }) => theme.colors.cardBackground};
+  background-color: ${({ theme }) => theme.colors.Background};
   padding: 0.75rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   position: sticky;
   top: 0;
   z-index: 1000;

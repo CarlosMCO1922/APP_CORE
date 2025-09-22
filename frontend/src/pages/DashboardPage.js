@@ -163,8 +163,23 @@ const UpcomingEventItem = styled.li`
   }
 
 
-  h3 { font-size: 1.1rem; color: #00A9FF; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;}
-  p { font-size: 0.9rem; margin: 4px 0; color: #a0a0a0; }
+  h3 { 
+    font-size: 1.1rem;
+    color: #00A9FF; 
+    margin: 0 0 8px 0; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px;
+  }
+
+  p { 
+    font-size: 0.9rem; 
+    margin: 4px 0; 
+    color: #a0a0a0; 
+    display: flex;
+    align-items: center;
+    gap:8px
+  }
   span { font-weight: 600; color: #c8c8c8; }
 `;
 
@@ -370,7 +385,7 @@ const ItemCard = styled.li`
 
   &:hover { transform: translateY(-3px); }
 
-  h3 { margin-top: 0; margin-bottom: 12px; color: ${({ theme }) => theme.colors.textMain}; font-size: 1.25rem; }
+  h3 { margin-top: 0; margin-bottom: 12px; color: ${({ theme, itemType }) => itemType === 'series' ? (theme.colors.success || '#66BB6A') : theme.colors.textMain}; font-size: 1.25rem; }
   p { margin: 6px 0; font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'}; line-height: 1.5; display: flex; align-items: center; gap: 6px; }
   p svg { color: ${({ theme }) => theme.colors.primary}; margin-right: 4px; }
   span { font-weight: 600; color: ${({ theme }) => theme.colors.textMain || '#c8c8c8'}; }
@@ -443,6 +458,25 @@ const NavButton = styled.button`
 
   @media (max-width: 480px) {
     display: none;
+  }
+`;
+
+const LinkStyleButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.primary};
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0; // Remove qualquer padding extra
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+    color: #e6c358;
   }
 `;
 
@@ -558,15 +592,6 @@ const DashboardPage = () => {
         }
     };
 
-    const scroll = (direction) => {
-      if (sliderRef.current) {
-        const scrollAmount = sliderRef.current.offseWidth /3;
-        sliderRef.current.scrollBy({
-          left: direction === 'left' ? -scrollAmount : scrollAmount,
-          behavior: 'smooth'
-        });
-      }
-    }
 
     const handleOpenSeriesSubscriptionModal = (series) => {
         setSelectedSeriesForSubscription(series);
@@ -607,6 +632,20 @@ const DashboardPage = () => {
           setSubscribingToSeries(false);
         }
     };
+
+    const handleScroll = (sliderRef, direction) => {
+    if (sliderRef.current) {
+        // Esta nova lógica calcula a largura exata de um item + o espaçamento
+        const firstItem = sliderRef.current.querySelector('li');
+        if (firstItem) {
+            const scrollAmount = firstItem.offsetWidth + 20; // 20 é o valor do 'gap'
+            sliderRef.current.scrollBy({
+                left: direction === 'left' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    }
+};
 
     if (loading) {
         return <PageContainer><LoadingText>A carregar o seu dashboard...</LoadingText></PageContainer>;
@@ -650,8 +689,8 @@ const DashboardPage = () => {
                     <SliderContainer>
                       {upcomingEvents.length > 3 && (
                         <>
-                          <NavButton className='left' onClick={() => scroll('left')}>←</NavButton>
-                          <NavButton className='right' onClick={() => scroll('right')}>→</NavButton>
+                          <NavButton className='left' onClick={() => handleScroll(seriesSliderRef, 'left')}>←</NavButton>
+                          <NavButton className='right' onClick={() => handleScroll(seriesSliderRef, 'right')}>→</NavButton>
                         </>
                       )}
 
@@ -685,27 +724,39 @@ const DashboardPage = () => {
             </Section>
 
             <Section>
-                <SectionTitle><FaUsers /> Programas Semanais</SectionTitle>
-                {loadingSeries ? <LoadingText>A carregar programas...</LoadingText> : seriesError ? <ErrorText>{seriesError}</ErrorText> : (
-                    availableSeries.length > 0 ? (
-                        <ItemList>
-                            {availableSeries.map(series => (
-                                <ItemCard key={series.id} itemType="series">
-                                    <div>
-                                        <h3>{series.name}</h3>
-                                        <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
-                                        {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
-                                    </div>
-                                    <ViewDetailsButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
-                                        <FaInfoCircle /> Ver Detalhes e Inscrever
-                                    </ViewDetailsButton>
-                                </ItemCard>
-                            ))}
-                        </ItemList>
-                    ) : (
-                        <NoItemsText>De momento, não há programas semanais com inscrições abertas.</NoItemsText>
-                    )
-                )}
+              <SectionTitle><FaUsers /> Programas Semanais</SectionTitle>
+              {loadingSeries ? <LoadingText>A carregar programas...</LoadingText> : seriesError ? <ErrorText>{seriesError}</ErrorText> : (
+                  availableSeries.length > 0 ? (
+                      <SliderContainer> {/* << Envolvido no SliderContainer */}
+                          {availableSeries.length > 3 && (
+                              <>
+                                  <NavButton className="left" onClick={() => handleScroll(seriesSliderRef, 'left')}>&#8249;</NavButton>
+                                  <NavButton className="right" onClick={() => handleScroll(seriesSliderRef, 'right')}>&#8250;</NavButton>
+                              </>
+                          )}
+
+                          <ItemList ref={seriesSliderRef}> {/* << Adicionada a ref */}
+                              {availableSeries.map(series => (
+                                  <ItemCard key={series.id} itemType="series">
+                                      <div>
+                                          <h3>{series.name}</h3>
+                                          <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
+                                          {series.instructor && <p><strong>Instrutor:</strong> {series.instructor.firstName} {series.instructor.lastName}</p>}
+                                      </div>
+                                      
+                                      {/* O botão antigo foi substituído por este novo */}
+                                      <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
+                                          <FaInfoCircle /> Ver Detalhes e Inscrever
+                                      </LinkStyleButton>
+
+                                  </ItemCard>
+                              ))}
+                          </ItemList>
+                      </SliderContainer>
+                  ) : (
+                      <NoItemsText>De momento, não há programas semanais com inscrições abertas.</NoItemsText>
+                  )
+              )}
             </Section>
 
             {showSeriesModal && selectedSeriesForSubscription && (
