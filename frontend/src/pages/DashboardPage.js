@@ -701,7 +701,7 @@ const DashboardPage = () => {
                                   <div>
                                       <h3>{event.icon} {event.name || event.title}</h3>
                                       <p><FaRegClock />{moment(event.dateObj).locale('pt').format('dddd, D/MM/YYYY [às] HH:mm')}</p>
-                                      <p><span>Instrutor:</span> {event.instructor?.firstName.lastName || event.professional?.firstName || 'N/A'}</p>
+                                      <p><span>Instrutor:</span> {event.instructor?.firstName|| event.professional?.firstName || 'N/A'}</p>
                                   </div>
                                   <EventActions>
                                       {event.link ? <PlanLink to={event.link}><FaEye /> Ver Plano</PlanLink> : <span />}
@@ -742,7 +742,7 @@ const DashboardPage = () => {
                                       <div>
                                           <h3>{series.name}</h3>
                                           <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
-                                          {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
+                                          {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName}</p>}
                                       </div>
                                       
                                       {/* O botão antigo foi substituído por este novo */}
