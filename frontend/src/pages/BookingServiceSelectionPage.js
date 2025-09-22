@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getAllTrainings, bookTraining } from '../services/trainingService';
-import '../styles/calendar.css'; 
 import Calendar from 'react-calendar';
 //import 'react-calendar/dist/react-calendar.css'; // Estilos para o calendário
 import moment from 'moment';
@@ -151,29 +150,38 @@ const DetailsHeader = styled.h3`
 `;
 
 const TrainingAccordion = styled.div`
-  display: grid; 
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-  gap: 15px;
+  display: flex;          
+  flex-direction: column; 
+  gap: 10px;
+  max-width: 450px;       
+  margin: 0 auto;   
 `;
 
 const TrainingHeader = styled.button`
   background-color: ${({ theme, isOpen }) => (isOpen ? theme.colors.primary : theme.colors.cardBackground)};
   color: ${({ theme, isOpen }) => (isOpen ? theme.colors.textDark : theme.colors.textMain)};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: 25px; 
+  border-radius: ${props => (props.isOpen ? '8px 8px 0 0' : '8px')};
   padding: 12px;
   width: 100%;
   font-size: 1.2rem; 
   font-weight: 700;
   cursor: pointer;
   display: flex;
-  justify-content: center; 
+  justify-content: space-between; 
   align-items: center;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
   
   &:hover {
     border-color: ${({ theme }) => theme.colors.primary};
     transform: scale(1.05);
+  }
+  svg {
+    font-size: 0.9em; /* Torna a seta mais pequena em relação ao texto */
+    transition: transform 0.3s ease;
+    transform: ${props => (props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)')};
   }
 `;
 
@@ -182,7 +190,7 @@ const TrainingDetails = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-top: none;
   border-radius: 0 0 8px 8px;
-  margin-top: -8px;
+  margin-top: -1px;
   overflow: hidden;
   max-height: ${props => (props.isOpen ? '300px' : '0')};
   transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out;
