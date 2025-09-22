@@ -80,7 +80,7 @@ const internalCreateSignalPayment = async (appointmentInstance, staffIdRequestin
       paymentDate: format(today, 'yyyy-MM-dd'),
       referenceMonth: referenceMonth,
       category: 'sinal_consulta',
-      description: `Sinal (20%) para consulta ID ${appointmentInstance.id} com ${professionalForDesc?.firstName || 'N/A'} em ${format(appointmentDate, 'dd/MM/yyyy')}`,
+      description: `Sinal (20%) para consulta com ${professionalForDesc?.firstName || 'N/A'} em ${format(appointmentDate, 'dd/MM/yyyy')}`,
       status: 'pendente',
       staffId: staffIdRequesting || appointmentInstance.staffId,
       relatedResourceId: appointmentInstance.id,

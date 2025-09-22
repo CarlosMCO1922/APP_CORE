@@ -378,11 +378,15 @@ const ItemList = styled.ul`
   }
 `;
 
+// Dentro de DashboardPage.js
+
 const ItemCard = styled.li`
   background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
   padding: 20px;
-  border-radius: ${({ theme }) => theme.borderRadius || '10px'}
-  border-left: 5px solid #66BB6A;
+  border-radius: ${({ theme }) => theme.borderRadius || '10px'};
+  
+  border-left: 5px solid ${({ theme }) => theme.colors.success || '#66BB6A'};
+
   box-shadow: ${({ theme }) => '0 4px 12px rgba(0,0,0,0.4)'};
   transition: transform 0.2s ease-in-out;
   min-height: 210px;
@@ -390,9 +394,21 @@ const ItemCard = styled.li`
   flex-direction: column;
   justify-content: space-between;
 
+  /* ... resto dos estilos (flex-shrink, width, etc.) ... */
+  flex-shrink: 0;
+  width: calc(100% / 3 - 14px);
+  scroll-snap-align: start;
+
+  @media (max-width: 1024px) {
+    width: calc(100% / 2 - 10px);
+  }
+  @media (max-width: 768px) {
+    width: 80%;
+  }
+
   &:hover { transform: translateY(-3px); }
 
-  h3 { margin-top: 0; margin-bottom: 12px; color: ${({ theme, itemType }) => itemType === 'series' ? (theme.colors.success || '#66BB6A') : theme.colors.textMain}; font-size: 1.25rem; }
+  h3 { margin-top: 0; margin-bottom: 12px; color: ${({ theme }) => theme.colors.success || '#66BB6A'}; font-size: 1.25rem; }
   p { margin: 6px 0; font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'}; line-height: 1.5; display: flex; align-items: center; gap: 6px; }
   p svg { color: ${({ theme }) => theme.colors.primary}; margin-right: 4px; }
   span { font-weight: 600; color: ${({ theme }) => theme.colors.textMain || '#c8c8c8'}; }
@@ -738,24 +754,25 @@ const DashboardPage = () => {
                       <SliderContainer> {/* << Envolvido no SliderContainer */}
                           {availableSeries.length > 3 && (
                               <>
-                                  <NavButton className="left" onClick={() => handleScroll(seriesSliderRef, 'left')}>&#8249;</NavButton>
-                                  <NavButton className="right" onClick={() => handleScroll(seriesSliderRef, 'right')}>&#8250;</NavButton>
+                                  <NavButton className="left" onClick={() => handleScroll(seriesSliderRef, 'left')}>←;</NavButton>
+                                  <NavButton className="right" onClick={() => handleScroll(seriesSliderRef, 'right')}>→</NavButton>
                               </>
                           )}
 
-                          <ItemList ref={seriesSliderRef}> {/* << Adicionada a ref */}
+                          <ItemList ref={seriesSliderRef}>
                               {availableSeries.map(series => (
                                   <ItemCard key={series.id} itemType="series">
                                       <div>
                                           <h3>{series.name}</h3>
                                           <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
-                                          {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName}</p>}
+                                          {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName} {series.instructor.lastName}</p>}
                                       </div>
-                                      
-                                      {/* O botão antigo foi substituído por este novo */}
-                                      <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
-                                          <FaInfoCircle /> Ver Detalhes e Inscrever
-                                      </LinkStyleButton>
+                                      <EventActions>
+                                          <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
+                                              <FaInfoCircle /> Ver Detalhes e Inscrever
+                                          </LinkStyleButton>
+                                          <span /> 
+                                      </EventActions>
 
                                   </ItemCard>
                               ))}
