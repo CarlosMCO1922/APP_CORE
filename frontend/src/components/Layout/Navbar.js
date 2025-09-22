@@ -14,7 +14,7 @@ import ThemeToggler from '../Theme/ThemeToggler';
 import moment from 'moment';
 
 const Nav = styled.nav`
-  background-color: ${({ theme }) => theme.colors.Background};
+  background-color: ${({ theme }) => theme.colors.background};
   padding: 0.75rem 1.5rem;
   display: flex;
   justify-content: space-between;
