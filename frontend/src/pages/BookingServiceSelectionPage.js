@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getAllTrainings, bookTraining } from '../services/trainingService';
 import Calendar from 'react-calendar';
-//import 'react-calendar/dist/react-calendar.css'; // Estilos para o calendário
+
 import moment from 'moment';
 import 'moment/locale/pt';
 import { 
@@ -176,7 +176,6 @@ const TrainingHeader = styled.button`
   
   &:hover {
     border-color: ${({ theme }) => theme.colors.primary};
-    transform: scale(1.05);
   }
   svg {
     font-size: 0.9em; /* Torna a seta mais pequena em relação ao texto */
