@@ -229,7 +229,7 @@ const NoBookingsText = styled.p`
 const StyledLinkButton = styled(Link)`
   display: inline-block;
   background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.color.textButton};
+  color: ${({ theme }) => theme.colors.textButton};
   padding: 12px 22px;
   border-radius: 8px;
   text-decoration: none;
