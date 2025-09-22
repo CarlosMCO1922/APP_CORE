@@ -15,7 +15,7 @@ export const darkTheme = {
   logoUrl1: '/logo_core_dark_short.png',
   colors: {
     primary: 'rgba(252, 181, 53, 1)', // Dourado
-    background: '##282828', // Preto
+    background: '#1A1A1A', // Preto
     cardBackground: '#252525', // Cinza escuro
     cardBorder: '#383838', // Borda cinza
     textMain: '#E0E0E0', // Texto claro
@@ -39,7 +39,7 @@ export const lightTheme = {
   logoUrl1: '/logo_core_light_short.png',
   colors: {
     primary: 'rgba(252, 181, 53, 1)', // Dourado um pouco mais escuro para contraste
-    background: '##fdf6d6', // Branco suave
+    background: '#faf1e0', // Branco suave
     cardBackground: 'rgb(253 246 215)',
     cardBorder: '#DEE2E6', // Borda cinza claro
     textMain: '#212529', // Texto escuro
