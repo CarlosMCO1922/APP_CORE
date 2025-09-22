@@ -141,11 +141,11 @@ const BookingItem = styled.li`
 `;
 
 const UpcomingEventItem = styled.li`
-  background-color: #252525;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px;
   border-radius: 10px;
   border-left: 5px solid #00A9FF;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 12px ${({ theme }) => theme.colors.borderShadow};
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -229,7 +229,7 @@ const NoBookingsText = styled.p`
 const StyledLinkButton = styled(Link)`
   display: inline-block;
   background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.textMain};
+  color: ${({ theme }) => theme.color.textButton};
   padding: 12px 22px;
   border-radius: 8px;
   text-decoration: none;

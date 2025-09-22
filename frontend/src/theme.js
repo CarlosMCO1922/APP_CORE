@@ -20,14 +20,16 @@ export const darkTheme = {
     cardBorder: '#383838', // Borda cinza
     textMain: '#E0E0E0', // Texto claro
     textMuted: '#a0a0a0', // Texto secundário
-    textDark: '#1A1A1A', // Texto para fundos claros (botões)
-    error: '#FF6B6B',
-    errorBg: 'rgba(255,107,107,0.1)',
+    textDark: '#1A1A1A',
+    textButton: '#212529', // Texto para fundos claros (botões)
+    error: '#D32F2F',
+    errorBg: 'rgba(29, 24, 24, 0.1)',
     success: '#66BB6A',
     successBg: 'rgba(102,187,106,0.15)',
     buttonSecondaryBg: '#4A4A4A',
     buttonSecondaryHoverBg: '#5A5A5A',
     textSmall: 'rgba(255, 255, 255, 1)',
+    borderShadow: '#252525',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };
@@ -44,6 +46,7 @@ export const lightTheme = {
     cardBorder: '#DEE2E6', // Borda cinza claro
     textMain: '#212529', // Texto escuro
     textMuted: '#6C757D', // Texto secundário
+    textButton: '#212529',
     textDark: '#FFFFFF', // Texto para fundos escuros (botões)
     error: '#D32F2F',
     errorBg: 'rgba(211, 47, 47, 0.1)',
@@ -52,6 +55,7 @@ export const lightTheme = {
     buttonSecondaryBg: '#E9ECEF',
     buttonSecondaryHoverBg: '#DDE2E7',
     textSmall: 'black',
+    borderShadow: 'rgb(253 246 215)',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };
