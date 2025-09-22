@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getAllTrainings, bookTraining } from '../services/trainingService';
 import Calendar from 'react-calendar';
-import 'react-calendar/dist/react-calendar.css'; // Estilos para o calendário
+//import 'react-calendar/dist/react-calendar.css'; // Estilos para o calendário
 import moment from 'moment';
 import 'moment/locale/pt';
 import { 
