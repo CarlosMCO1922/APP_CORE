@@ -44,7 +44,6 @@ const FormContainer = styled.form`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: clamp(20px, 4vw, 30px);
   border-radius: ${({ theme }) => theme.borderRadius};
-  box-shadow: ${({ theme }) => theme.boxShadow};
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -84,15 +83,53 @@ const inputStyles = css`
 `;
 
 const Input = styled.input`
-  ${inputStyles}
+  padding: 12px 15px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  background-color: ${({ theme }) => theme.colors.backgroundSelect};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.primary};
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  }
 `;
 
 const Select = styled.select`
-  ${inputStyles}
+  padding: 12px 15px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  background-color: ${({ theme }) => theme.colors.backgroundSelect};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.primary};
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  }
 `;
 
 const Textarea = styled.textarea`
-  ${inputStyles}
+  padding: 12px 15px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  background-color: ${({ theme }) => theme.colors.backgroundSelect};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.primary};
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  }
   min-height: 100px;
   resize: vertical;
 `;
@@ -203,7 +240,7 @@ const IndividualPTRequestPage = () => {
         <FormGroup>
           <Label htmlFor="staffId"><FaUserTie /> Personal Trainer</Label>
           <Select id="staffId" name="staffId" value={formData.staffId} onChange={handleChange} required>
-            <option value="">Selecione um treinador...</option>
+            <option value="">Selecione um treinador</option>
             {trainers.map(trainer => (
               <option key={trainer.id} value={trainer.id}>{trainer.firstName} {trainer.lastName}</option>
             ))}
@@ -212,24 +249,24 @@ const IndividualPTRequestPage = () => {
 
         <div style={{display: 'flex', gap: '20px', flexWrap: 'wrap'}}>
           <FormGroup style={{flex: 1, minWidth: '200px'}}>
-            <Label htmlFor="date"><FaCalendarAlt /> Data Desejada</Label>
+            <Label htmlFor="date"><FaCalendarAlt /> Data</Label>
             <Input type="date" id="date" name="date" value={formData.date} onChange={handleChange} required min={new Date().toISOString().split('T')[0]}/>
           </FormGroup>
           <FormGroup style={{flex: 1, minWidth: '200px'}}>
-            <Label htmlFor="time"><FaClock /> Hora Desejada</Label>
+            <Label htmlFor="time"><FaClock /> Hora</Label>
             <Input type="time" id="time" name="time" value={formData.time} onChange={handleChange} required />
           </FormGroup>
         </div>
 
         <FormGroup>
-          <Label htmlFor="notes"><FaStickyNote /> Notas Adicionais (opcional)</Label>
+          <Label htmlFor="notes"><FaStickyNote /> Observações (opcional)</Label>
           <Textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} rows="4" placeholder="Ex: Foco em membros inferiores, objetivos específicos, etc." />
         </FormGroup>
 
         {error && <ErrorText>{error}</ErrorText>}
 
         <SubmitButton type="submit" disabled={loading}>
-          <FaPaperPlane /> {loading ? 'A Enviar Pedido...' : 'Enviar Pedido de Sessão'}
+          <FaPaperPlane /> {loading ? 'A Enviar Pedido...' : 'Confirmar pedido'}
         </SubmitButton>
       </FormContainer>
     </PageContainer>

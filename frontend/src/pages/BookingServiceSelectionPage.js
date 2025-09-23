@@ -92,28 +92,64 @@ const AccordionContainer = styled.div`
 
 const CategoryHeader = styled.button`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  color: ${({ theme }) => theme.colors.textMain}; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: 8px; padding: 18px 20px; width: 100%; text-align: left;
-  font-size: 1.2rem; font-weight: 600; cursor: pointer; display: flex;
-  justify-content: space-between; align-items: center; transition: border-color 0.2s;
-  &:hover { border-color: ${({ theme }) => theme.colors.primary}; }
-  svg { transition: transform 0.3s ease; transform: ${props => (props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)')}; }
+  color: ${({ theme }) => theme.colors.primary}; 
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 8px; 
+  padding: 18px 20px; 
+  width: 100%; 
+  text-align: left;
+  font-size: 1.2rem; 
+  font-weight: 600; 
+  cursor: pointer; 
+  display: flex;
+  justify-content: space-between; 
+  align-items: center; 
+  transition: border-color 0.2s;
+
+  &:hover { 
+    border-color: ${({ theme }) => theme.colors.primary}; 
+  }
+
+  svg { 
+    transition: transform 0.3s ease; 
+    transform: ${props => (props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)')}; 
+  }
 `;
 
 const ServiceList = styled.div`
-  background-color: #1c1c1c; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-top: none; border-radius: 0 0 8px 8px; margin-top: -8px;
-  overflow: hidden; max-height: ${props => (props.isOpen ? '1000px' : '0')};
-  transition: all 0.4s ease-in-out; padding: ${props => (props.isOpen ? '10px' : '0 10px')};
+  background-color: ${({ theme }) => theme.colors.background}; 
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-top: none; 
+  border-radius: 0 0 8px 8px; 
+  margin-top: -8px;
+  overflow: hidden; 
+  max-height: ${props => (props.isOpen ? '1000px' : '0')};
+  transition: all 0.4s ease-in-out; 
+  padding: ${props => (props.isOpen ? '10px' : '0 10px')};
 `;
 
 const ServiceItem = styled.div`
-  padding: 15px; display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha}; cursor: pointer;
-  &:last-child { border-bottom: none; }
-  &:hover { background-color: ${({ theme }) => theme.colors.cardBackgroundDarker}; }
-  .service-text h4 { margin: 0 0 4px 0; font-size: 1rem; }
-  .service-text p { margin: 0; font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; }
+  padding: 15px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha}; 
+  cursor: pointer;
+  &:last-child { 
+    border-bottom: none; 
+  }
+  &:hover { 
+    background-color: ${({ theme }) => theme.colors.background}; 
+  }
+  .service-text h4 { 
+    margin: 0 0 4px 0; 
+    font-size: 1rem; 
+  }
+
+  .service-text p { 
+    margin: 0; 
+    font-size: 0.85rem; 
+    color: ${({ theme }) => theme.colors.textMuted}; }
 `;
 
 const RadioInput = styled.input`

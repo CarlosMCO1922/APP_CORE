@@ -462,7 +462,7 @@ const NavButton = styled.button`
   top: 50%;
   transform: translateY(-50%);
   background-color: ${({ theme }) => theme.colors.sliderButton}; 
-  border: 1px solid #444;
+  border: 0.5px solid ${({ theme }) => theme.colors.sliderButton};
   color: white;
   border-radius: 50%;
   width: 40px;

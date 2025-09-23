@@ -31,7 +31,8 @@ export const darkTheme = {
     textSmall: 'rgba(255, 255, 255, 1)',
     borderShadow: '#252525',
     sliderButton: 'rgb(37 37 37 / 80%)',
-    sliderButtonHover: 'rgb(37 37 37 / 40%)'
+    sliderButtonHover: 'rgb(37 37 37 / 40%)',
+    backgoundSelect: 'rgb(51, 51, 51)',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };
@@ -60,6 +61,7 @@ export const lightTheme = {
     borderShadow: 'rgb(253 246 215)',
     sliderButton: 'rgb(252 181 53 / 61%)',
     sliderButtonHover: 'rgb(252 181 53 / 40%)',
+    backgoundSelect: 'rgb(250 241 224)',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };
