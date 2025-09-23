@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import styled from 'styled-components';
+import styled , {css} from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { clientRequestNewAppointment } from '../services/appointmentService';
 import { getAllStaffForSelection } from '../services/staffService';
@@ -66,7 +66,7 @@ const Label = styled.label`
   gap: 8px;
 `;
 
-const inputStyles = `
+const inputStyles = css`
   padding: 12px 15px;
   border-radius: ${({ theme }) => theme.borderRadius};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
