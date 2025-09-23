@@ -33,7 +33,7 @@ const LeftColumn = styled.div`
   display: flex; flex-direction: column; gap: 20px;
 `;
 const ProfessionalSelector = styled.div`
-  background-color: ${({ theme }) => theme.colors.cardBackground};
+  background-color: ${({ theme }) => theme.colors.backgroundSelect};
   padding: 20px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   label { display: block; margin-bottom: 10px; font-weight: 500; color: ${({ theme }) => theme.colors.primary}; display: flex; align-items: center; gap: 8px;}
   select { width: 100%; padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; }
@@ -44,7 +44,7 @@ const CalendarContainer = styled.div`
   padding: 20px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
 const TimeSlotsContainer = styled.div`
-  background-color: ${({ theme }) => theme.colors.cardBackground};
+  background-color: ${({ theme }) => theme.colors.backgroundSelect};
   padding: 25px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; min-height: 400px;
 `;
 const TimeSlotsHeader = styled.h3`
