@@ -14,7 +14,7 @@ export const darkTheme = {
   logoUrl: '/logo_core_dark.png',
   logoUrl1: '/logo_core_short_without_back.png',
   colors: {
-    primary: 'rgba(252, 181, 53, 1)', // Dourado
+    primary: '#fcb535ff', // Dourado
     background: '#1A1A1A', // Preto
     cardBackground: '#252525', // Cinza escuro
     cardBorder: '#383838', // Borda cinza

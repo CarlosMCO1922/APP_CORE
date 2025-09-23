@@ -172,7 +172,7 @@ const CalendarWrapper = styled.div`
     width: 100%;
     max-width: 400px;
     background: ${({ theme }) => theme.colors.cardBackground};
-    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    border: 1px solid ${({ theme }) => theme.colors.primary};
     border-radius: 8px;
     padding: 10px;
   }
@@ -221,7 +221,7 @@ const TrainingHeader = styled.button`
 `;
 
 const TrainingDetails = styled.div`
-  background-color: #1c1c1c;
+  background-color: ${({ theme }) => theme.colors.backgroundSelect};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-top: none;
   border-radius: 0 0 8px 8px;

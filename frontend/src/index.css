@@ -39,7 +39,7 @@ code {
   min-width: 44px;
   background: none;
   border: 0;
-  color: #D4AF37; /* Cor Primária */
+  color: #fcb535ff; /* Cor Primária */
   font-size: 1.2rem;
   font-weight: bold;
   cursor: pointer;
@@ -57,7 +57,7 @@ code {
   text-transform: uppercase;
   font-weight: bold;
   font-size: 0.75em;
-  color: #a0a0a0; /* Cor de Texto Muted */
+  color: rgb(252, 181, 53); /* Cor de Texto Muted */
 }
 
 .react-calendar__month-view__weekdays__weekday {
@@ -65,7 +65,7 @@ code {
 }
 
 .react-calendar__month-view__days__day--weekend {
-  color: #D4AF37; /* Cor Primária */
+  color: rgb(252, 181, 53); /* Cor Primária */
 }
 .react-calendar__month-view__days__day--neighboringMonth {
   color: #4A4A4A; /* Cor Desativada */
@@ -80,13 +80,13 @@ code {
   font-size: 0.9rem;
   border: 2px solid transparent;
   border-radius: 6px;
-  color: #E0E0E0; /* Cor de Texto Principal */
+  color: rgb(252, 181, 53); /* Cor de Texto Principal */
   cursor: pointer;
 }
 
 .react-calendar__tile:disabled {
   background-color: transparent;
-  color: #4A4A4A;
+  color: rgb(252 181 53 / 43%);
   cursor: default;
 }
 
@@ -106,7 +106,7 @@ code {
 }
 
 .react-calendar__tile--active {
-  background: #D4AF37 !important;
+  background: rgb(252, 181, 53) !important;
   color: #1A1A1A !important;
   font-weight: bold;
 }

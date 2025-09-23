@@ -69,8 +69,8 @@ const NavLinkStyled = styled(Link)`
   white-space: nowrap;
   transition: all 0.2s ease-in-out;
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-    background-color: #333;
+    color: ${({ theme }) => theme.colors.textButton};
+    background-color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
