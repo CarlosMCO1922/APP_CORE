@@ -283,7 +283,7 @@ const PendingPaymentItem = styled.li`
 
 const PayNowButton = styled(Link)`
   background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => ThemeConsumer.colors.textButton};
+  color: ${({ theme }) => theme.colors.textButton};
   padding: 8px 15px;
   border-radius: 5px;
   text-decoration: none;
