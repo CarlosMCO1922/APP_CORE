@@ -176,7 +176,7 @@ const UpcomingEventItem = styled.li`
   p { 
     font-size: 0.9rem; 
     margin: 4px 0; 
-    color: #a0a0a0; 
+    color: ${({ theme }) => theme.colors.textMuted}; 
     display: flex;
     align-items: center;
     gap:8px
@@ -258,7 +258,7 @@ const PendingPaymentsSection = styled(Section)`
 `;
 
 const PendingPaymentItem = styled.li`
-  list-style: none; /* Adicionado para garantir que não há bullets */
+  list-style: none; 
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 12px 15px;
   border-radius: 8px;
@@ -276,7 +276,7 @@ const PendingPaymentItem = styled.li`
     color: ${({ theme }) => theme.colors.textMuted};
     span {
       font-weight: 600;
-      color: ${({ theme }) => theme.colors.textMain};
+      color: ${({ theme }) => theme.colors.primary};
     }
   }
 `;
@@ -461,7 +461,7 @@ const NavButton = styled.button`
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background-color: rgba(37, 37, 37, 0.8); 
+  background-color: ${({ theme }) => theme.colors.sliderButton}; 
   border: 1px solid #444;
   color: white;
   border-radius: 50%;
