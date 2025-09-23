@@ -196,7 +196,7 @@ const IndividualPTRequestPage = () => {
     <PageContainer>
       <Header>
         <BackButton to="/calendario"><FaArrowLeft /></BackButton>
-        <Title>Pedir Sessão de PT Individual Teste</Title>
+        <Title>Pedir Sessão de PT Individual</Title>
       </Header>
 
       <FormContainer onSubmit={handleSubmit}>
