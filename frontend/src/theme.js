@@ -46,7 +46,7 @@ export const lightTheme = {
     cardBorder: '#DEE2E6', // Borda cinza claro
     textMain: '#212529', // Texto escuro
     textMuted: '#6C757D', // Texto secundário
-    textButton: '#212529',
+    textButton: '#ffffffe8',
     textDark: '#FFFFFF', // Texto para fundos escuros (botões)
     error: '#D32F2F',
     errorBg: 'rgba(211, 47, 47, 0.1)',

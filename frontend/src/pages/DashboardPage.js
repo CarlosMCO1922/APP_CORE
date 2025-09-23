@@ -283,7 +283,7 @@ const PendingPaymentItem = styled.li`
 
 const PayNowButton = styled(Link)`
   background-color: ${({ theme }) => theme.colors.primary};
-  color: black;
+  color: ${({ theme }) => ThemeConsumer.colors.textButton};
   padding: 8px 15px;
   border-radius: 5px;
   text-decoration: none;
@@ -384,10 +384,7 @@ const ItemCard = styled.li`
   background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
   padding: 20px;
   border-radius: ${({ theme }) => theme.borderRadius || '10px'};
-  
   border-left: 5px solid ${({ theme }) => theme.colors.success || '#66BB6A'};
-
-  box-shadow: ${({ theme }) => '0 4px 12px rgba(0,0,0,0.4)'};
   transition: transform 0.2s ease-in-out;
   min-height: 210px;
   display: flex;
@@ -406,12 +403,10 @@ const ItemCard = styled.li`
     width: 80%;
   }
 
-  &:hover { transform: translateY(-3px); }
-
   h3 { margin-top: 0; margin-bottom: 12px; color: ${({ theme }) => theme.colors.success || '#66BB6A'}; font-size: 1.25rem; }
   p { margin: 6px 0; font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'}; line-height: 1.5; display: flex; align-items: center; gap: 6px; }
-  p svg { color: ${({ theme }) => theme.colors.primary}; margin-right: 4px; }
-  span { font-weight: 600; color: ${({ theme }) => theme.colors.textMain }}
+  p svg { color: ${({ theme }) => theme.colors.textMuted}; margin-right: 4px; }
+  span { font-weight: 600; color: ${({ theme }) => theme.colors.primary }}
 `;
 
 const ViewDetailsButton = styled.button`
@@ -678,7 +673,7 @@ const DashboardPage = () => {
     return (
         <PageContainer>
             <Header>
-                <WelcomeMessage>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</WelcomeMessage>
+                <WelcomeMessage><strong>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</strong></WelcomeMessage>
             </Header>
 
             <ActionsSection>
