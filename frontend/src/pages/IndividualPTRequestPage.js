@@ -60,7 +60,7 @@ const FormGroup = styled.div`
 const Label = styled.label`
   font-weight: 500;
   font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.textMain};
   display: flex;
   align-items: center;
   gap: 8px;
