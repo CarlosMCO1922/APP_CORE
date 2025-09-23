@@ -185,7 +185,7 @@ const BellIcon = styled(FaBell)`
   color: ${({ theme }) => theme.colors.textMain};
   cursor: pointer;
   transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.colors.primary}; }
+  &:hover { color: ${({ theme }) => theme.colors.backgroundSelect}; }
 `;
 const UnreadBadge = styled.span`
   position: absolute; top: -5px; right: -8px;
