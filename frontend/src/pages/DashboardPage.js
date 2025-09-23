@@ -181,7 +181,7 @@ const UpcomingEventItem = styled.li`
     align-items: center;
     gap:8px
   }
-  span { font-weight: 600; color: ${({ theme }) => theme.colors.textMain} }
+  span { font-weight: 600; color: ${({ theme }) => theme.colors.primary} }
 `;
 
 const LoadingText = styled.p`
@@ -403,10 +403,29 @@ const ItemCard = styled.li`
     width: 80%;
   }
 
-  h3 { margin-top: 0; margin-bottom: 12px; color: ${({ theme }) => theme.colors.success || '#66BB6A'}; font-size: 1.25rem; }
-  p { margin: 6px 0; font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'}; line-height: 1.5; display: flex; align-items: center; gap: 6px; }
-  p svg { color: ${({ theme }) => theme.colors.textMuted}; margin-right: 4px; }
-  span { font-weight: 600; color: ${({ theme }) => theme.colors.primary }}
+  h3 { 
+    margin-top: 0; 
+    margin-bottom: 12px; color: ${({ theme }) => theme.colors.success || '#66BB6A'}; 
+    font-size: 1.25rem; 
+  }
+
+  p { 
+    margin: 6px 0; 
+    font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'}; 
+    line-height: 1.5; 
+    display: flex; align-items: center; 
+    gap: 6px; 
+  }
+
+  p svg { 
+    color: ${({ theme }) => theme.colors.textMuted}; 
+    margin-right: 4px; 
+  }
+
+  span { 
+    font-weight: 600; 
+    color: ${({ theme }) => theme.colors.primary }
+  }
 `;
 
 const ViewDetailsButton = styled.button`
