@@ -151,12 +151,12 @@ const SubmitButton = styled.button`
   transition: background-color 0.2s, transform 0.15s ease;
 
   &:disabled {
-    background-color: #555;
+    background-color: ${({ theme }) => theme.colors.disabledColor};
     cursor: not-allowed;
     color: #999;
   }
   &:not(:disabled):hover {
-    background-color: #e6c358;
+    background-color: rgba(230, 195, 88, 0.83);
     transform: translateY(-2px);
   }
 `;
