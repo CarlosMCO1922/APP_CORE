@@ -172,7 +172,7 @@ const CalendarWrapper = styled.div`
     width: 100%;
     max-width: 400px;
     background: ${({ theme }) => theme.colors.cardBackground};
-    border: 1px solid ${({ theme }) => theme.colors.primary};
+    border: 1px solid ${({ theme }) => theme.colors.background};
     border-radius: 8px;
     padding: 10px;
   }

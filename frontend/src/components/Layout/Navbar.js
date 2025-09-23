@@ -108,8 +108,8 @@ const DropdownButton = styled.button`
   border-radius: 6px;
   transition: all 0.2s ease-in-out;
   &:hover, &.active {
-    color: ${({ theme }) => theme.colors.primary};
-    background-color: #333;
+    color: ${({ theme }) => theme.colors.textButton};
+    background-color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
