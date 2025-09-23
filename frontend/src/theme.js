@@ -32,7 +32,7 @@ export const darkTheme = {
     borderShadow: '#252525',
     sliderButton: 'rgb(37 37 37 / 80%)',
     sliderButtonHover: 'rgb(37 37 37 / 40%)',
-    backgoundSelect: 'rgb(51, 51, 51)',
+    backgroundSelect: 'rgb(51, 51, 51)',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };

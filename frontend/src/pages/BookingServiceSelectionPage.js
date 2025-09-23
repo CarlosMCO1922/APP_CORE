@@ -253,8 +253,8 @@ const BookButton = styled.button`
   cursor: pointer;
   font-weight: 600;
   transition: background-color 0.2s;
-  &:hover:not(:disabled) { background-color: #e6c358; }
-  &:disabled { background-color: #555; color: #999; cursor: not-allowed; }
+  &:hover:not(:disabled) { background-color: #e6c358ff; }
+  &:disabled { background-color: #e6c358b9; color: #999; cursor: not-allowed; }
 `;
 
 const LoadingText = styled.p`text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.primary};`;
