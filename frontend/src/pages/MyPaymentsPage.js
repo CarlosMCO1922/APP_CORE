@@ -143,12 +143,27 @@ const ConfirmButton = styled(ActionButton)`
     }
 `;
 
-const RefreshButton = styled(ActionButton)`
-  background-color: ${props => props.theme.colors.primary};
-  color: ${props => props.theme.colors.textButton};
-  margin-top: 10px;
+const RefreshButton = styled.button`
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  border-radius: ${props => props.theme.borderRadius};
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+  min-width: 80px;
+  margin: 2px;
+  
+  background-color: ${({ theme }) => theme.colors.primary}; 
+  color: ${({ theme }) => theme.colors.textButton};
+
   &:hover:not(:disabled) {
-    background-color: #e6c358;
+    filter: brightness(1.1);
+  }
+  &:disabled {
+    background-color: ${props => props.theme.colors.buttonSecondaryBg};
+    color: ${props => props.theme.colors.textMuted};
+    cursor: not-allowed;
   }
 `;
 
@@ -175,6 +190,12 @@ const LoadingText = styled.p`
   padding: 20px;
   color: ${props => props.theme.colors.primary};
 `;
+
+const HeaderActions = styled.div`
+  text-align: center;
+  margin-bottom: 20px;
+`;
+
 const ErrorText = styled.p`
   font-size: 1rem;
   text-align: center;
@@ -247,6 +268,7 @@ const Header = styled.div`
   align-items: center;
   gap: 15px;
   margin-bottom: 30px;
+  justify-content: space-between;
 `;
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
@@ -384,17 +406,12 @@ const MyPaymentsPage = () => {
       <Header>
         <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
         <Title>Pagamentos</Title>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <HeaderActions>
           <RefreshButton onClick={handleRefreshPayments} disabled={loading}>
             {loading ? 'A atualizar...' : 'Atualizar Lista'}
           </RefreshButton>
-        </div>
+        </HeaderActions>
       </Header>
-      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-        <StyledLink to="/dashboard">
-            ‹ Voltar ao Meu Painel
-        </StyledLink>
-      </div>
 
       {pageError && !showStripeModal && <ErrorText>{pageError}</ErrorText>}
       {pageSuccessMessage && !showStripeModal && <MessageText>{pageSuccessMessage}</MessageText>}
