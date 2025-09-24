@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getVisibleWorkoutPlansService } from '../services/workoutPlanService'; 
-import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle } from 'react-icons/fa';
+import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronCircleDown } from 'react-icons/fa';
 
 
 
@@ -34,21 +34,15 @@ const Title = styled.h1`
   gap: 10px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 15px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-  font-size: 0.9rem;
-
+const BackButton = styled.button` // MUDOU de Link para button
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
   &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
@@ -56,7 +50,7 @@ const SearchContainer = styled.form`
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
+  background-color: ${({ theme }) => theme.colors.background};
   padding: 15px;
   border-radius: ${({ theme }) => theme.borderRadius};
   box-shadow: ${({ theme }) => theme.boxShadow};
@@ -107,6 +101,7 @@ const PlanCard = styled.div`
   border-left: 4px solid ${({ theme }) => theme.colors.primary};
   display: flex;
   flex-direction: column;
+  cursor: pointer;
   justify-content: space-between;
   transition: transform 0.2s, box-shadow 0.2s;
 
@@ -121,6 +116,15 @@ const PlanCardTitle = styled.h3`
   margin-top: 0;
   margin-bottom: 10px;
   font-size: 1.25rem;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+`;
+
+const ChevronIcon = styled(FaChevronDown)`
+  transition: transform 0.3s ease;
+  transform: ${props => (props.isOpen ? 'rotate(180deg)' : 'rotate(0deg)')};
+  font-size: 0.9em;
 `;
 
 const PlanCardNotes = styled.p`
@@ -148,8 +152,8 @@ const ExercisePreviewItem = styled.li`
 `;
 
 const UsePlanButton = styled.button`
-  background-color: ${({ theme }) => theme.colors.success};
-  color: white;
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textButton};
   padding: 10px 15px;
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
@@ -163,8 +167,15 @@ const UsePlanButton = styled.button`
   transition: background-color 0.2s;
   width: 100%;
   &:hover {
-    background-color: #5cb85c;
+    background-color: ${({ theme }) => theme.colors.backgroundSelect};
   }
+`;
+
+const ExpandableContent = styled.div`
+  overflow: hidden;
+  transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out;
+  max-height: ${props => (props.isOpen ? '500px' : '0')};
+  opacity: ${props => (props.isOpen ? '1' : '0')};
 `;
 
 const LoadingText = styled.p` text-align: center; font-size: 1.1rem; color: ${({ theme }) => theme.colors.primary}; padding: 20px; font-style: italic; `;
@@ -179,6 +190,11 @@ const ExploreWorkoutPlansPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { authState } = useAuth();
   const navigate = useNavigate();
+  const [expandedPlanId, setExpandedPlanId] = useState(null);
+
+  const handleToggleExpand = (planId) => {
+    setExpandedPlanId(prevId => (prevId === planId ? null : planId));
+  };
 
   const fetchPlans = useCallback(async (term = '') => {
     if (!authState.token) {
@@ -208,6 +224,11 @@ const ExploreWorkoutPlansPage = () => {
     fetchPlans(searchTerm);
   };
 
+  const handleBack = () => {
+    setViewDirection('left');
+    navigate('/dashboard');
+  };
+
   const handleUseThisPlan = (planId) => {
     navigate(`/meu-progresso/usar-plano/${planId}`);
   };
@@ -217,8 +238,8 @@ const ExploreWorkoutPlansPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
+        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
         <Title><FaClipboardList /> Explorar Planos de Treino</Title>
-        <BackLink to="/dashboard"><FaArrowLeft /> Voltar ao Painel</BackLink>
       </HeaderContainer>
 
       <SearchContainer onSubmit={handleSearchSubmit}>
@@ -238,29 +259,40 @@ const ExploreWorkoutPlansPage = () => {
       )}
 
       <PlanList>
-        {plans.map(plan => (
-          <PlanCard key={plan.id}>
-            <div>
-              <PlanCardTitle>{plan.name}</PlanCardTitle>
-              {plan.notes && <PlanCardNotes><i><FaInfoCircle /> {plan.notes}</i></PlanCardNotes>}
-              {plan.planExercises && plan.planExercises.length > 0 && (
-                <ExercisePreviewList>
-                  {plan.planExercises.slice(0, 3).map(ex => (
-                     <ExercisePreviewItem key={ex.id}>
-                       {ex.exerciseDetails?.name || 'Exercício desconhecido'}
-                       {ex.reps && ` - ${ex.reps} reps`}
-                       {ex.sets && ` (${ex.sets} séries)`}
-                     </ExercisePreviewItem>
-                  ))}
-                  {plan.planExercises.length > 3 && <li>... e mais.</li>}
-                </ExercisePreviewList>
-              )}
-            </div>
-            <UsePlanButton as={Link} to={`/treino-ao-vivo/plano/${plan.id}`}>
-                Iniciar Treino com este Plano
-            </UsePlanButton>
-          </PlanCard>
-        ))}
+        {plans.map(plan => {
+          const isExpanded = expandedPlanId === plan.id;
+
+          return (
+            <PlanCard key={plan.id} onClick={() => handleToggleExpand(plan.id)}>
+              <div>
+                <PlanCardTitle>
+                  {plan.name}
+                  <ChevronIcon isOpen={isExpanded} /> {/* Seta adicionada */}
+                </PlanCardTitle>
+                {plan.notes && <PlanCardNotes><i><FaInfoCircle /> {plan.notes}</i></PlanCardNotes>}
+              </div>
+              
+              {/* Conteúdo que expande e colapsa */}
+              <ExpandableContent isOpen={isExpanded}>
+                {plan.planExercises && plan.planExercises.length > 0 && (
+                  <ExercisePreviewList>
+                    {plan.planExercises.slice(0, 3).map(ex => (
+                      <ExercisePreviewItem key={ex.id}>
+                        {ex.exerciseDetails?.name || 'Exercício desconhecido'}
+                        {ex.reps && ` - ${ex.reps} reps`}
+                        {ex.sets && ` (${ex.sets} séries)`}
+                      </ExercisePreviewItem>
+                    ))}
+                    {plan.planExercises.length > 3 && <li>... e mais.</li>}
+                  </ExercisePreviewList>
+                )}
+                <UsePlanButton as={Link} to={`/treino-ao-vivo/plano/${plan.id}`} onClick={(e) => e.stopPropagation()}>
+                    Iniciar treino
+                </UsePlanButton>
+              </ExpandableContent>
+            </PlanCard>
+          );
+        })}
       </PlanList>
     </PageContainer>
   );
