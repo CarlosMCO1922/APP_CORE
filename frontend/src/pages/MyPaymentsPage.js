@@ -9,6 +9,7 @@ import { clientGetMyPayments, createStripePaymentIntentForSignal, clientConfirmM
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
+import { FaArrowLeft} from 'react-icons/fa';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -24,7 +25,7 @@ const PageContainer = styled.div`
 
 const Title = styled.h1`
   font-size: 2.2rem;
-  color: ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.textMain};
   margin-bottom: 25px;
   text-align: center;
   @media (max-width: 480px) {
@@ -64,22 +65,21 @@ const Table = styled.table`
   }
 
   th {
-    background-color: #303030;
+    background-color: ${ props => props.theme.colors.cardBackground};
     color: ${props => props.theme.colors.primary};
     font-weight: 600;
     position: sticky;
-    top: 0px; // == AJUSTE AQUI == Se tiver Navbar fixa, use a altura dela (ex: 60px). Senão, 0px.
     z-index: 10;
   }
 
   thead {
-      background-color: #303030;
+      background-color: ${ props => props.theme.colors.cardBackground};
   }
 
   tbody tr {
-      background-color: ${props => props.theme.colors.cardBackground};
+      background-color: ${props => props.theme.colors.background};
       &:hover {
-         background-color: #2a2a2a;
+         background-color: ${ props => props.theme.colors.backgroundSelect};
       }
   }
 
@@ -108,8 +108,8 @@ const ActionButton = styled.button`
   cursor: pointer;
   border: none;
   transition: background-color 0.2s ease;
-  background-color: ${props => props.theme.colors.primary};
-  color: ${props => props.theme.colors.textDark};
+  background-color: ${({ theme }) => theme.colors.primary}; 
+  color: ${({ theme }) => theme.colors.textDark};
   font-weight: 500;
   min-width: 80px;
   margin: 2px;
@@ -132,11 +132,11 @@ const ConfirmButton = styled(ActionButton)`
 `;
 
 const RefreshButton = styled(ActionButton)`
-  background-color: ${props => props.theme.colors.buttonSecondaryBg};
-  color: ${props => props.theme.colors.textMain};
+  background-color: ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.textButton};
   margin-top: 10px;
   &:hover:not(:disabled) {
-    background-color: ${props => props.theme.colors.buttonSecondaryHoverBg};
+    background-color: #e6c358;
   }
 `;
 
@@ -228,6 +228,13 @@ const CloseButton = styled.button`
   background: transparent; border: none;
   color: #aaa; font-size: 1.8rem; cursor: pointer;
   &:hover { color: #fff; }
+`;
+
+const Header = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
 `;
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
@@ -326,6 +333,11 @@ const MyPaymentsPage = () => {
     }
   };
 
+  const handleBack = () => {
+    setViewDirection('left');
+    navigate('/dashboard');
+  };
+
 
   const handleStripePaymentSuccess = (paymentIntent) => {
     setShowStripeModal(false);
@@ -356,16 +368,19 @@ const MyPaymentsPage = () => {
 
   return (
     <PageContainer>
-      <Title>Meus Pagamentos</Title>
+      <Header>
+        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
+        <Title>Pagamentos</Title>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <RefreshButton onClick={handleRefreshPayments} disabled={loading}>
+            {loading ? 'A atualizar...' : 'Atualizar Lista'}
+          </RefreshButton>
+        </div>
+      </Header>
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
         <StyledLink to="/dashboard">
             ‹ Voltar ao Meu Painel
         </StyledLink>
-      </div>
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <RefreshButton onClick={handleRefreshPayments} disabled={loading}>
-          {loading ? 'A atualizar...' : 'Atualizar Lista'}
-        </RefreshButton>
       </div>
 
       {pageError && !showStripeModal && <ErrorText>{pageError}</ErrorText>}
@@ -377,7 +392,6 @@ const MyPaymentsPage = () => {
           <Table>
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Data Registo</th>
                 <th>Mês Ref.</th>
                 <th>Descrição</th>
@@ -390,7 +404,6 @@ const MyPaymentsPage = () => {
             <tbody>
               {payments.map(payment => (
                 <tr key={payment.id}>
-                  <td>{payment.id}</td>
                   <td>{new Date(payment.paymentDate).toLocaleDateString('pt-PT')}</td>
                   <td>{payment.referenceMonth || 'N/A'}</td>
                   <td>{payment.description || 'N/A'}</td>

@@ -52,11 +52,11 @@ const internalCreateSignalPayment = async (appointmentInstance, staffIdRequestin
     });
 
     if (existingSignalPayment && existingSignalPayment.status === 'pendente') {
-      console.log(`Pagamento de sinal pendente (ID: ${existingSignalPayment.id}) já existe para consulta ID ${appointmentInstance.id}.`);
+      console.log(`Pagamento de sinal pendente já existe para consulta.`);
       return existingSignalPayment;
     }
     if (existingSignalPayment && existingSignalPayment.status === 'pago') {
-        console.log(`Pagamento de sinal (ID: ${existingSignalPayment.id}) já está pago para consulta ID ${appointmentInstance.id}.`);
+        console.log(`Pagamento de sinal já está pago para consulta.`);
         if (!appointmentInstance.signalPaid || appointmentInstance.status === 'agendada') {
             appointmentInstance.signalPaid = true;
             appointmentInstance.status = 'confirmada';
@@ -86,7 +86,7 @@ const internalCreateSignalPayment = async (appointmentInstance, staffIdRequestin
       relatedResourceId: appointmentInstance.id,
       relatedResourceType: 'appointment',
     });
-    console.log(`Pagamento de sinal ID ${signalPayment.id} criado para consulta ID ${appointmentInstance.id}.`);
+    console.log(`Pagamento de sinal criado para consulta.`);
     return signalPayment;
   } catch (error) {
     console.error(`Erro ao criar pagamento de sinal para consulta ${appointmentInstance.id}:`, error);

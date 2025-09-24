@@ -697,8 +697,8 @@ const DashboardPage = () => {
 
             <ActionsSection>
                 <StyledLinkButton to="/calendario">Agendar</StyledLinkButton>
-                <StyledLinkButton to="/meus-treinos">Meus Treinos</StyledLinkButton>
-                <StyledLinkButton to="/meus-pagamentos">Meus Pagamentos</StyledLinkButton>
+                <StyledLinkButton to="/meus-treinos">Treinos</StyledLinkButton>
+                <StyledLinkButton to="/meus-pagamentos">Pagamentos</StyledLinkButton>
             </ActionsSection>
 
             {error && <ErrorText>{error}</ErrorText>}
