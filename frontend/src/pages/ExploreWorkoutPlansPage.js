@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getVisibleWorkoutPlansService } from '../services/workoutPlanService'; 
-import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronCircleDown } from 'react-icons/fa';
+import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
 
 
 
@@ -191,6 +191,7 @@ const ExploreWorkoutPlansPage = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
   const [expandedPlanId, setExpandedPlanId] = useState(null);
+  const [viewDirection, setViewDirection] = useState('right');
 
   const handleToggleExpand = (planId) => {
     setExpandedPlanId(prevId => (prevId === planId ? null : planId));
