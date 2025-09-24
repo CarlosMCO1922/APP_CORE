@@ -10,6 +10,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 import { FaArrowLeft} from 'react-icons/fa';
+import React from 'react';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -121,6 +122,18 @@ const ActionButton = styled.button`
     background-color: ${props => props.theme.colors.buttonSecondaryBg};
     color: ${props => props.theme.colors.textMuted};
     cursor: not-allowed;
+  }
+`;
+
+const BackButton = styled.button` // MUDOU de Link para button
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
@@ -250,6 +263,7 @@ const MyPaymentsPage = () => {
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState(null);
   const [currentPaymentDetails, setCurrentPaymentDetails] = useState(null);
+  const [viewDirection, setViewDirection] = useState('right');
 
   const location = useLocation();
   const navigate = useNavigate();
