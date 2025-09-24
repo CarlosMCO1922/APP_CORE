@@ -27,7 +27,7 @@ const HeaderContainer = styled.div`
 
 const Title = styled.h1`
   font-size: clamp(1.8rem, 4vw, 2.4rem);
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textMain};
   margin: 0;
   display: flex;
   align-items: center;
@@ -95,14 +95,13 @@ const PlanList = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
-  align-items: starts;
+  align-items: start;
 `;
 
 const PlanCard = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px;
   border-radius: ${({ theme }) => theme.borderRadius};
-  box-shadow: ${({ theme }) => theme.boxShadow};
   border-left: 4px solid ${({ theme }) => theme.colors.primary};
   display: flex;
   flex-direction: column;
@@ -172,7 +171,7 @@ const UsePlanButton = styled.button`
   transition: background-color 0.2s;
   width: 100%;
   text-decoration: none;
-  
+
   &:hover {
     background-color: ${({ theme }) => theme.colors.backgroundSelect};
   }
