@@ -236,12 +236,6 @@ function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null); 
 
-  const closeAllMenus = () => {
-    setAdminDropdownOpen(false);
-    setClientDropdownOpen(false);
-    setNotificationsDropdownOpen(false);
-    setIsMobileMenuOpen(false);
-  };
 
   const handleDropdownToggle = (dropdownName) => {
     setOpenDropdown(prevOpenDropdown => (prevOpenDropdown === dropdownName ? null : dropdownName));
@@ -267,7 +261,7 @@ function Navbar() {
     <>
       <NavItem><NavLinkStyled to="/dashboard" onClick={closeAllMenus}><FaHome /> Início</NavLinkStyled></NavItem>
       <NavItem><NavLinkStyled to="/calendario" onClick={closeAllMenus}><FaCalendarAlt /> Agendar</NavLinkStyled></NavItem>
-      <NavItem ref={clientDropdownRef}>
+      <NavItem>
         <DropdownButton onClick={() => handleDropdownToggle('client')} className={openDropdown === 'client' ? 'active' : ''}>
           <FaUserCircle /> Minha área {openDropdown === 'client' ? '▴' : '▾'}
         </DropdownButton>
@@ -291,7 +285,7 @@ function Navbar() {
   );
   
   const adminManagementDropdown = (
-    <NavItem ref={adminDropdownRef}>
+    <NavItem>
       <DropdownButton onClick={() => handleDropdownToggle('admin')} className={openDropdown === 'admin' ? 'active' : ''}>
         <FaCog /> Gestão {openDropdown === 'admin' ? '▴' : '▾'}
       </DropdownButton>
@@ -322,7 +316,7 @@ function Navbar() {
 
           <ThemeToggler />
 
-          <NavItem ref={notificationsDropdownRef}>
+          <NavItem>
             <DropdownButton onClick={() => handleDropdownToggle('notifications')}>
               <BellIcon />
               {unreadCount > 0 && <UnreadBadge>{unreadCount}</UnreadBadge>}
