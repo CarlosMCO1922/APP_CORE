@@ -241,11 +241,17 @@ function Navbar() {
     setOpenDropdown(prevOpenDropdown => (prevOpenDropdown === dropdownName ? null : dropdownName));
   };
 
+    const closeAllMenus = () => {
+      setOpenDropdown(null);
+      setIsMobileMenuOpen(false);
+    };
+
   const handleLogout = () => {
     closeAllMenus();
     logout();
     navigate('/login');
   };
+
   
   const handleNotificationClick = (notification) => {
     if (!notification.isRead) markNotificationAsRead(notification.id);
