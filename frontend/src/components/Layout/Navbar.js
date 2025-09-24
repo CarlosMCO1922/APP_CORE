@@ -234,13 +234,7 @@ function Navbar() {
   const navigate = useNavigate();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
-  const [clientDropdownOpen, setClientDropdownOpen] = useState(false);
-  const [notificationsDropdownOpen, setNotificationsDropdownOpen] = useState(false);
-
-  const adminDropdownRef = useRef(null);
-  const clientDropdownRef = useRef(null);
-  const notificationsDropdownRef = useRef(null);
+  const [openDropdown, setOpenDropdown] = useState(null); 
 
   const closeAllMenus = () => {
     setAdminDropdownOpen(false);
@@ -249,15 +243,9 @@ function Navbar() {
     setIsMobileMenuOpen(false);
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (adminDropdownRef.current && !adminDropdownRef.current.contains(event.target)) setAdminDropdownOpen(false);
-      if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target)) setClientDropdownOpen(false);
-      if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target)) setNotificationsDropdownOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const handleDropdownToggle = (dropdownName) => {
+    setOpenDropdown(prevOpenDropdown => (prevOpenDropdown === dropdownName ? null : dropdownName));
+  };
 
   const handleLogout = () => {
     closeAllMenus();
@@ -280,10 +268,10 @@ function Navbar() {
       <NavItem><NavLinkStyled to="/dashboard" onClick={closeAllMenus}><FaHome /> Início</NavLinkStyled></NavItem>
       <NavItem><NavLinkStyled to="/calendario" onClick={closeAllMenus}><FaCalendarAlt /> Agendar</NavLinkStyled></NavItem>
       <NavItem ref={clientDropdownRef}>
-        <DropdownButton onClick={() => setClientDropdownOpen(p => !p)} className={clientDropdownOpen ? 'active' : ''}>
-          <FaUserCircle /> Minha área {clientDropdownOpen ? '▴' : '▾'}
+        <DropdownButton onClick={() => handleDropdownToggle('client')} className={openDropdown === 'client' ? 'active' : ''}>
+          <FaUserCircle /> Minha área {openDropdown === 'client' ? '▴' : '▾'}
         </DropdownButton>
-        <DropdownContent isOpen={clientDropdownOpen}>
+        <DropdownContent isOpen={openDropdown === 'client'}>
            <DropdownLink to="/meus-treinos" onClick={() => setTimeout(closeAllMenus, 150)}><FaDumbbell /> Meus Treinos</DropdownLink>
           <DropdownLink to="/meu-progresso-detalhado" onClick={() => setTimeout(closeAllMenus, 150)}><FaChartLine /> Meu Progresso</DropdownLink>
           <DropdownLink to="/meus-pagamentos" onClick={() => setTimeout(closeAllMenus, 150)}><FaMoneyBillWave /> Pagamentos</DropdownLink>
@@ -304,10 +292,10 @@ function Navbar() {
   
   const adminManagementDropdown = (
     <NavItem ref={adminDropdownRef}>
-      <DropdownButton onClick={() => setAdminDropdownOpen(p => !p)} className={adminDropdownOpen ? 'active' : ''}>
-        <FaCog /> Gestão {adminDropdownOpen ? '▴' : '▾'}
+      <DropdownButton onClick={() => handleDropdownToggle('admin')} className={openDropdown === 'admin' ? 'active' : ''}>
+        <FaCog /> Gestão {openDropdown === 'admin' ? '▴' : '▾'}
       </DropdownButton>
-      <DropdownContent isOpen={adminDropdownOpen}>
+      <DropdownContent isOpen={openDropdown === 'admin'}>
        <DropdownLink to="/admin/manage-users" onClick={() => setTimeout(closeAllMenus, 150)}><FaUsers /> Clientes</DropdownLink>
         <DropdownLink to="/admin/progresso-clientes" onClick={() => setTimeout(closeAllMenus, 150)}><FaChartLine /> Progresso Clientes</DropdownLink>
         <DropdownLink to="/admin/manage-staff" onClick={() => setTimeout(closeAllMenus, 150)}><FaUserTie /> Equipa</DropdownLink>
@@ -335,11 +323,11 @@ function Navbar() {
           <ThemeToggler />
 
           <NavItem ref={notificationsDropdownRef}>
-            <DropdownButton onClick={() => setNotificationsDropdownOpen(p => !p)}>
-                <BellIcon />
-                {unreadCount > 0 && <UnreadBadge>{unreadCount}</UnreadBadge>}
+            <DropdownButton onClick={() => handleDropdownToggle('notifications')}>
+              <BellIcon />
+              {unreadCount > 0 && <UnreadBadge>{unreadCount}</UnreadBadge>}
             </DropdownButton>
-            <NotificationsDropdownContent isOpen={notificationsDropdownOpen}>
+            <NotificationsDropdownContent isOpen={openDropdown === 'notifications'}>
                 <NotificationHeader>
                     <h4>Notificações</h4>
                     {unreadCount > 0 && <MarkAllReadButton onClick={markAllNotificationsAsRead}>Marcar todas como lidas</MarkAllReadButton>}
