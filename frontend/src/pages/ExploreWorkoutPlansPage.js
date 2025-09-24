@@ -18,11 +18,11 @@ const PageContainer = styled.div`
 `;
 
 const HeaderContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
+  display: grid; 
+  grid-template-columns: auto 1fr auto; 
   align-items: center;
   margin-bottom: 20px;
-  flex-wrap: wrap;
+  gap: 15px; 
 `;
 
 const Title = styled.h1`
@@ -32,6 +32,8 @@ const Title = styled.h1`
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-content:center;
+  text-align: center;
 `;
 
 const BackButton = styled.button` // MUDOU de Link para button
@@ -46,6 +48,8 @@ const BackButton = styled.button` // MUDOU de Link para button
   }
 `;
 
+const HeaderSpacer = styled.div``;
+
 const SearchContainer = styled.form`
   display: flex;
   gap: 10px;
@@ -59,7 +63,7 @@ const SearchContainer = styled.form`
 const SearchInput = styled.input`
   flex-grow: 1;
   padding: 10px 14px;
-  background-color: ${({ theme }) => theme.colors.inputBg || '#333'};
+  background-color: ${({ theme }) => theme.colors.background};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
@@ -91,6 +95,7 @@ const PlanList = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  align-items: starts;
 `;
 
 const PlanCard = styled.div`
@@ -157,7 +162,7 @@ const UsePlanButton = styled.button`
   padding: 10px 15px;
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
-  cursor: pointer;
+  cursor: none;
   font-weight: 600;
   margin-top: 10px;
   display: flex;
@@ -166,6 +171,8 @@ const UsePlanButton = styled.button`
   gap: 8px;
   transition: background-color 0.2s;
   width: 100%;
+  text-decoration: none;
+  
   &:hover {
     background-color: ${({ theme }) => theme.colors.backgroundSelect};
   }
@@ -241,6 +248,7 @@ const ExploreWorkoutPlansPage = () => {
       <HeaderContainer>
         <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
         <Title><FaClipboardList /> Explorar Planos de Treino</Title>
+        <HeaderSpacer />
       </HeaderContainer>
 
       <SearchContainer onSubmit={handleSearchSubmit}>
