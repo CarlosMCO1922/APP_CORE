@@ -10,7 +10,6 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 import { FaArrowLeft} from 'react-icons/fa';
-import React from 'react';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
