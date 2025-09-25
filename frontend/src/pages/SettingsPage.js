@@ -55,7 +55,7 @@ const Label = styled.label`
   display: block;
   font-size: 0.95rem; /* Aumentado */
   font-weight: 500;
-  color: #b0b0b0;
+  color: ${({ theme }) => theme.colors.textMain};
   margin-bottom: 8px;
 `;
 
