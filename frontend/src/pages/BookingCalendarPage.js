@@ -36,7 +36,7 @@ const ProfessionalSelector = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   label { display: block; margin-bottom: 10px; font-weight: 500; color: ${({ theme }) => theme.colors.primary}; display: flex; align-items: center; gap: 8px;}
-  select { width: 100%; padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; }
+  select { width: 100%; padding: 10px 14px; background-color: ${({ theme }) => theme.colors.background}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; }
 `;
 const CalendarContainer = styled.div`
   display: flex; justify-content: center; align-items: flex-start;

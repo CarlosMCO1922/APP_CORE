@@ -77,7 +77,7 @@ const Input = styled.input`
     box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
   }
   &:disabled {
-    background-color: #383838;
+    background-color: ${({ theme }) => theme.colors.disabledColor};
     cursor: not-allowed;
   }
 `;
