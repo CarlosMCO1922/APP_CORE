@@ -8,7 +8,7 @@ import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown } f
 
 // --- Styled Components ---
 const PageContainer = styled.div`
-  background-color: ${({ theme }) => theme.colors.primary}; 
+  background-color: ${({ theme }) => theme.colors.background}; 
   color: #E0E0E0; 
   min-height: 100vh;
   padding: 30px 40px;
