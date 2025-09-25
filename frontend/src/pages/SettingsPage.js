@@ -39,7 +39,7 @@ const SectionTitle = styled.h2`
 `;
 
 const SettingsForm = styled.form`
-  background-color: #252525;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 35px 40px; /* Aumentado padding */
   border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.5);
