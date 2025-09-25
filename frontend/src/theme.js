@@ -62,7 +62,7 @@ export const lightTheme = {
     borderShadow: 'rgb(253 246 215)',
     sliderButton: 'rgb(252 181 53 / 61%)',
     sliderButtonHover: 'rgb(252 181 53 / 40%)',
-    backgoundSelect: 'rgb(250 241 224)',
+    backgroundSelect: 'rgb(250 241 224)',
     disabledColor: '#e6c358d4'
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',

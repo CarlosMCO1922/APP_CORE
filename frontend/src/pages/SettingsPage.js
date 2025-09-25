@@ -48,7 +48,7 @@ const SettingsForm = styled.form`
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 25px; /* Aumentado espaçamento */
+  margin-bottom: 25px; 
 `;
 
 const Label = styled.label`
@@ -63,13 +63,13 @@ const Input = styled.input`
   display: block;
   width: 100%;
   padding: 12px 15px;
-  background-color: #2C2C2C;
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   border: 1px solid #4A4A4A;
   border-radius: 8px;
-  color: white;
+  color: ${({ theme }) => theme.colors.textMain};
   font-size: 1rem;
   &::placeholder {
-    color: #78716c;
+    color: ${({ theme }) => theme.colors.textMuted};
   }
   &:focus {
     outline: none;
@@ -273,7 +273,7 @@ const SettingsPage = () => {
     <PageContainer>
       <HeaderContainer>
         <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
-        <Title>Explorar Planos de Treino</Title>
+        <Title>Definições</Title>
         <HeaderSpacer />
       </HeaderContainer>
 
