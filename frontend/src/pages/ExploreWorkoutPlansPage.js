@@ -54,7 +54,7 @@ const SearchContainer = styled.form`
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
-  background-color: ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 15px;
   border-radius: ${({ theme }) => theme.borderRadius};
   box-shadow: ${({ theme }) => theme.boxShadow};
