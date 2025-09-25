@@ -1,9 +1,10 @@
 // src/pages/SettingsPage.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyProfile, updateMyProfile } from '../services/userService';
+import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -13,6 +14,8 @@ const PageContainer = styled.div`
   padding: 30px 40px;
   font-family: 'Inter', sans-serif;
 `;
+
+const HeaderSpacer = styled.div``;
 
 const Title = styled.h1`
   font-size: 2.5rem;
@@ -164,6 +167,8 @@ const StyledInternalLink = styled(Link)`
 
 const SettingsPage = () => {
   const { authState, login: refreshAuthData } = useAuth(); 
+  const navigate = useNavigate();
+  const [viewDirection, setViewDirection] = useState('right');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
