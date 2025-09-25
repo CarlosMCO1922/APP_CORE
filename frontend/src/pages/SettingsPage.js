@@ -7,7 +7,7 @@ import { getMyProfile, updateMyProfile } from '../services/userService';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
-  background-color: #1A1A1A; 
+  background-color: ${({ theme }) => theme.colors.primary}; 
   color: #E0E0E0; 
   min-height: 100vh;
   padding: 30px 40px;
@@ -16,14 +16,14 @@ const PageContainer = styled.div`
 
 const Title = styled.h1`
   font-size: 2.5rem;
-  color: #D4AF37; 
+  color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 30px;
   text-align: center;
 `;
 
 const SectionTitle = styled.h2`
   font-size: 1.6rem; /* Aumentado */
-  color: #D4AF37; 
+  color: ${({ theme }) => theme.colors.primary};
   margin-top: 30px; 
   margin-bottom: 20px; 
   padding-bottom: 10px;
@@ -70,7 +70,7 @@ const Input = styled.input`
   }
   &:focus {
     outline: none;
-    border-color: #D4AF37;
+    border-color: ${({ theme }) => theme.colors.primary};
     box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
   }
   &:disabled {
@@ -79,21 +79,41 @@ const Input = styled.input`
   }
 `;
 
+const HeaderContainer = styled.div`
+  display: grid; 
+  grid-template-columns: auto 1fr auto; 
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 15px; 
+`;
+
+const BackButton = styled.button` // MUDOU de Link para button
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
 const SubmitButton = styled.button`
-  background-color: #D4AF37;
-  color: #1A1A1A;
-  padding: 12px 25px; /* Aumentado padding */
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textButton};
+  padding: 12px 25px; 
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 1.05rem; /* Aumentado */
+  font-size: 1.05rem; 
   transition: background-color 0.2s ease-in-out, transform 0.1s ease;
   width: 100%;
   margin-top: 15px; 
 
   &:hover:not(:disabled) {
-    background-color: #e6c358;
+    background-color: ${({ theme }) => theme.colors.disabledColor};
     transform: translateY(-2px);
   }
   &:disabled {
@@ -191,6 +211,11 @@ const SettingsPage = () => {
     setPasswordData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleBack = () => {
+    setViewDirection('left');
+    navigate('/dashboard');
+  };
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setUpdating(true);
@@ -241,12 +266,11 @@ const SettingsPage = () => {
 
   return (
     <PageContainer>
-      <Title>Minhas Definições</Title>
-      <div style={{ textAlign: 'center'}}>
-        <StyledInternalLink to="/dashboard">
-            ‹ Voltar ao Meu Painel
-        </StyledInternalLink>
-      </div>
+      <HeaderContainer>
+        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
+        <Title>Explorar Planos de Treino</Title>
+        <HeaderSpacer />
+      </HeaderContainer>
 
       <SettingsForm onSubmit={handleProfileUpdate}>
         {message.text && <MessageText className={message.type}>{message.text}</MessageText>}

@@ -246,7 +246,7 @@ const ExploreWorkoutPlansPage = () => {
     <PageContainer>
       <HeaderContainer>
         <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
-        <Title><FaClipboardList /> Explorar Planos de Treino</Title>
+        <Title>Explorar Planos de Treino</Title>
         <HeaderSpacer />
       </HeaderContainer>
 
