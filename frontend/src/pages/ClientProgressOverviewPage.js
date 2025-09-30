@@ -35,7 +35,6 @@ const RecordsGrid = styled.div`display: flex; flex-direction: column; gap: 25px;
 const ExerciseRecordCard = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px; border-radius: ${({ theme }) => theme.borderRadius};
-  box-shadow: ${({ theme }) => theme.boxShadow};
   border-left: 4px solid ${({ theme }) => theme.colors.primary};
   h2 { font-size: 1.5rem; color: ${({ theme }) => theme.colors.primary}; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; display: flex; justify-content: space-between; align-items: center; }
 `;

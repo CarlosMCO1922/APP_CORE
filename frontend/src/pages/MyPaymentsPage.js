@@ -39,7 +39,6 @@ const TableWrapper = styled.div`
   -webkit-overflow-scrolling: touch;
   margin-top: 20px;
   border-radius: ${props => props.theme.borderRadius};
-  box-shadow: ${props => props.theme.boxShadow};
   position: relative;
   background-color: ${props => props.theme.colors.cardBackground};
 

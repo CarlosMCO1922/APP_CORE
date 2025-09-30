@@ -19,7 +19,7 @@ const HeaderSpacer = styled.div``;
 
 const Title = styled.h1`
   font-size: 2.5rem;
-  color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: 30px;
   text-align: center;
 `;
@@ -28,7 +28,6 @@ const SectionTitle = styled.h2`
   font-size: 1.6rem; /* Aumentado */
   color: ${({ theme }) => theme.colors.primary};
   margin-top: 30px; 
-  margin-bottom: 20px; 
   padding-bottom: 10px;
   border-bottom: 1px solid #3a3a3a; 
   font-weight: 600;
