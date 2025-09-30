@@ -202,7 +202,7 @@ const ExploreWorkoutPlansPage = () => {
     setExpandedPlanId(prevId => (prevId === planId ? null : planId));
   };
 
-  const fetchPlans = useCallback(async (term = '') => {
+  const fetchPlans = useCallback(async () => {
     if (!authState.token) {
       setError("Autenticação necessária.");
       setLoading(false);
@@ -211,7 +211,7 @@ const ExploreWorkoutPlansPage = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await getVisibleWorkoutPlansService(authState.token, term);
+      const data = await getVisibleWorkoutPlansService(authState.token, searchTerm);
       setPlans(data || []);
     } catch (err) {
       setError(err.message || 'Erro ao carregar planos de treino.');
@@ -219,7 +219,7 @@ const ExploreWorkoutPlansPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [authState.token]);
+  }, [authState.token, searchTerm]);
 
   useEffect(() => {
     fetchPlans();
@@ -227,7 +227,6 @@ const ExploreWorkoutPlansPage = () => {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    fetchPlans(searchTerm);
   };
 
   const handleBack = () => {

@@ -45,7 +45,7 @@ const RecordItem = styled.li`
   font-size: 1rem; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.08)'};
   &:last-child { border-bottom: none; }
   span:first-child { color: ${({ theme }) => theme.colors.textMuted}; }
-  span:last-child { font-weight: 600; color: white; }
+  span:last-child { font-weight: 600; color: ${({ theme }) => theme.colors.textMuted}; }
 `;
 const ViewChartButton = styled.button`
   background-color: transparent;
