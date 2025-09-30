@@ -138,7 +138,10 @@ const ActionButton = styled.button`
 // --- Componente SetRow ---
 const SetRow = ({
   setId, setNumber, onSetComplete, trainingId, workoutPlanId, planExerciseId,
-  restSeconds, lastWeight, lastReps, onLogDeleted, hasPreviousData
+  restSeconds, lastWeight, lastReps, onLogDeleted,
+  onDuplicateSet, 
+  initialWeight, 
+  initialReps    
 }) => {
   const { authState } = useAuth();
   const [weight, setWeight] = useState(lastWeight || '');
@@ -152,6 +155,17 @@ const SetRow = ({
 
   const SWIPE_THRESHOLD = 90; // Aumentei o limiar para um deslize maior
   const MAX_SWIPE = 100; // Limite máximo para o deslize visual
+  
+  const handleClear = () => {
+    setWeight('');
+    setReps('');
+    resetSwipe();
+  };
+
+  const handleDuplicate = () => {
+    onDuplicateSet(weight, reps);
+    resetSwipe();
+  };
 
   useEffect(() => {
     if (lastWeight !== undefined && lastReps !== undefined) {
@@ -204,31 +218,22 @@ const SetRow = ({
 
   const handlers = useSwipeable({
     onSwiping: (eventData) => {
-      // Só permite deslizar se a série estiver completa E não estiver a carregar
-      if(!isCompleted || isLoading) return; 
-
-      setIsSwiping(true);
-      // Limita o deslize para não ir demasiado longe
-      const newTransformX = Math.max(-MAX_SWIPE, Math.min(MAX_SWIPE, eventData.deltaX));
-      setTransformX(newTransformX);
+      // SÓ PERMITE deslizar se a série NÃO estiver completa
+      if (isCompleted || isLoading) return;
+      setTransformX(eventData.deltaX);
     },
     onSwiped: (eventData) => {
-      setIsSwiping(false); // Para remover a sombra e resetar transição
-      
-      if (eventData.deltaX > SWIPE_THRESHOLD) { // Deslizar para a direita -> Desfazer
-        handleUndoComplete();
-      } else if (eventData.deltaX < -SWIPE_THRESHOLD) { // Deslizar para a esquerda -> Marcar como Falha
-        handleMarkAsFailure();
+      if (eventData.deltaX > SWIPE_THRESHOLD) { // Deslizar para a direita -> Limpar
+        handleClear();
+      } else if (eventData.deltaX < -SWIPE_THRESHOLD) { // Deslizar para a esquerda -> Duplicar
+        handleDuplicate();
       } else {
-        resetSwipe(); // Voltar à posição inicial se não atingir o limiar
+        resetSwipe();
       }
     },
-    onSwipeEnd: () => {
-      if (!isSwiping) resetSwipe(); // Assegura que volta à posição se soltar sem atingir o limiar
-    },
-    trackMouse: true, // Permite arrastar com o rato
-    preventScrollOnSwipe: true, // Impede scroll indesejado em dispositivos móveis
-    delta: 10, // Pequena distância antes de começar a considerar um swipe
+    trackMouse: true,
+    preventScrollOnSwipe: true,
+    delta: 10,
   });
 
   const handleComplete = async () => {
