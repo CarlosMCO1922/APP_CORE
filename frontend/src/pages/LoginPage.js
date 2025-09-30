@@ -24,7 +24,6 @@ const PageContainer = styled.div`
   align-items: center;
   padding: 20px; /* Padding base */
   font-family: ${({ theme }) => theme.fonts.main};
-
   @media (max-width: 480px) {
     padding: 15px; // Padding ligeiramente menor em ecrãs muito pequenos
   }
@@ -41,7 +40,6 @@ const LoginBox = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: ${({ theme }) => theme.boxShadow}; 
   width: 100%;
   max-width: 450px;
   transition: background-color 0.3s ease;
