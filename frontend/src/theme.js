@@ -35,6 +35,7 @@ export const darkTheme = {
     backgroundSelect: 'rgb(51, 51, 51)',
     disbaledColor: 'rgb(85, 85, 85)',
     lightGray: '#cccccc',
+    hoverUnselected: '#fcb535ff',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };
@@ -66,6 +67,7 @@ export const lightTheme = {
     backgroundSelect: 'rgb(250 241 224)',
     disabledColor: '#e6c358d4',
     lightGray: 'rgb(165 165 165)',
+    hoverUnselected: '#fcb535ff',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };

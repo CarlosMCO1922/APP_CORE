@@ -13,7 +13,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: #2C2C2C;
+  background-color: ${({ theme }) => theme.colors.cardBackground}; 
   padding: 25px 35px;
   border-radius: 10px;
   width: 100%;
@@ -35,9 +35,11 @@ const ModalTitle = styled.h2`
 const CloseButton = styled.button`
   position: absolute; top: 15px; right: 15px;
   background: transparent; border: none;
-  color: #888; font-size: 1.8rem;
-  cursor: pointer; &:hover { color: #fff; }
+  color: ${({ theme }) => theme.colors.textMuted}; 
+  font-size: 1.8rem;
+  cursor: pointer; &:hover { color: ${({ theme }) => theme.colors.textMain}; } 
 `;
+
 
 const ContentBody = styled.div`
   display: flex;
@@ -51,7 +53,7 @@ const MediaContainer = styled.div`
   img, video {
     max-width: 100%;
     border-radius: 8px;
-    background-color: #1a1a1a;
+    background-color: ${({ theme }) => theme.colors.background}; /* MUDOU */
   }
 `;
 

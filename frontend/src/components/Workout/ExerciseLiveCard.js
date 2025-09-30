@@ -31,7 +31,6 @@ const HeaderInfo = styled.div`
     flex-grow: 1;
 `;
 
-
 const ExerciseName = styled.h2`
   color: ${({ theme }) => theme.colors.primary};
   font-size: 1.6rem;
@@ -39,11 +38,11 @@ const ExerciseName = styled.h2`
   display: flex;
   align-items: center;
   gap: 10px;
-  cursor: pointer; // Adicionar cursor de ponteiro
+  cursor: pointer;
   transition: color 0.2s;
 
   &:hover {
-    color: #e6c358; // Um pouco mais claro no hover
+    filter: brightness(1.1);
   }
 `;
 
@@ -58,8 +57,8 @@ const LastPerformance = styled.p`
 `;
 
 const AddSetButton = styled.button`
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.textButton};
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; /* MUDOU */
+  color: ${({ theme }) => theme.colors.textMain}; /* MUDOU */
   padding: 8px 15px;
   border-radius: 5px;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
