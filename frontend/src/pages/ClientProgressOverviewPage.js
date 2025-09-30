@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { getMyRecordsService, getMyPerformanceHistoryForExerciseService } from '../services/progressService';
 import { FaTrophy, FaArrowLeft, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
 import AdvancedProgressChart from '../components/Workout/AdvancedProgressChart';
+import { useNavigate } from 'react-router-dom';
 
 
 // --- Styled Components (podes copiar os estilos da AdminClientProgressDetailPage) ---
@@ -103,6 +104,42 @@ const ChartMetricSelector = styled.div`
     color: ${({ theme }) => theme.colors.textMain}; font-size: 0.9rem;
     &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; }
   }
+`;
+
+const HeaderContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+`;
+
+const BackButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 8px 0 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
+`;
+
+const HeaderSpacer = styled.div`
+  width: 32px;
+  height: 32px;
+`;
+
+const Title = styled.h1`
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  color: ${({ theme }) => theme.colors.textMain};
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content:center;
+  text-align: center;
 `;
 
 const ClientProgressOverviewPage = () => {

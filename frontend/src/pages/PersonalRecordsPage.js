@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styled, { css } from 'styled-components';
 import { getMyRecordsService } from '../services/progressService';
-import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
+import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown, FaDumbbell} from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const PageContainer = styled.div`
   max-width: 900px;
@@ -133,6 +134,31 @@ const RecordItem = styled.li`
 
   span:first-child { color: ${({ theme }) => theme.colors.textMuted}; }
   span:last-child { font-weight: 600; color: white; }
+`;
+
+const HeaderContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+`;
+
+const BackButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 8px 0 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
+`;
+
+const HeaderSpacer = styled.div`
+  width: 32px;
+  height: 32px;
 `;
 
 const Title = styled.h1`
