@@ -33,7 +33,7 @@ const SetLabel = styled.span`
 const Input = styled.input`
   width: 100%;
   padding: 12px;
-  background-color: #383838;
+  background-color: ${({ theme }) => theme.colors.backgroundSelect};}
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
@@ -191,7 +191,7 @@ const SetRow = ({ setId, setNumber, onSetComplete, trainingId, workoutPlanId, pl
       );
     }
     return (
-      <ActionButton as="button" onClick={handleComplete} disabled={isLoading || isCompleted} style={{width: '45px', height: '45px', border: `2px solid ${'#4A4A4A'}`, borderRadius: '50%'}}>
+      <ActionButton as="button" onClick={handleComplete} disabled={isLoading || isCompleted} style={{ borderRadius: '50%'}}>
         <FaCheck />
       </ActionButton>
     );

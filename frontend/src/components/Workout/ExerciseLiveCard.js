@@ -58,8 +58,8 @@ const LastPerformance = styled.p`
 `;
 
 const AddSetButton = styled.button`
-  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
-  color: ${({ theme }) => theme.colors.textMain};
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textButton};
   padding: 8px 15px;
   border-radius: 5px;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -67,7 +67,6 @@ const AddSetButton = styled.button`
   font-weight: 500;
   margin-top: 15px;
   transition: background-color 0.2s;
-
   &:hover {
     background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
   }

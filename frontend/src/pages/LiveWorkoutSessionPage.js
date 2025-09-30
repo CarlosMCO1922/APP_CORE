@@ -83,7 +83,7 @@ const FinishWorkoutButton = styled.button`
 `;
 
 const SupersetBlock = styled.div`
-  background-color: ${({ theme }) => theme.colors.cardBackground}; /* MUDOU */
+  background-color: ${({ theme }) => theme.colors.background}; 
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   padding: 15px;
