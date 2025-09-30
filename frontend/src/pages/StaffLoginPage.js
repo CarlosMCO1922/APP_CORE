@@ -31,10 +31,8 @@ const TogglerContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px ${({ theme }) => theme.colors.primary};
   width: 100%;
   max-width: 450px;
   transition: background-color 0.3s ease;
