@@ -200,7 +200,7 @@ const ExploreWorkoutPlansPage = () => {
     <PageContainer>
       <HeaderContainer>
         <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
-        <Title>Explorar Planos de Treino</Title>
+        <Title>Planos de Treino</Title>
         <HeaderSpacer />
       </HeaderContainer>
 

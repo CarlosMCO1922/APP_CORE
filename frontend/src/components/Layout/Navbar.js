@@ -272,10 +272,10 @@ function Navbar() {
           <FaUserCircle /> Minha área {openDropdown === 'client' ? '▴' : '▾'}
         </DropdownButton>
         <DropdownContent isOpen={openDropdown === 'client'}>
-           <DropdownLink to="/meus-treinos" onClick={() => setTimeout(closeAllMenus, 150)}><FaDumbbell /> Meus Treinos</DropdownLink>
-          <DropdownLink to="/meu-progresso-detalhado" onClick={() => setTimeout(closeAllMenus, 150)}><FaChartLine /> Meu Progresso</DropdownLink>
-          <DropdownLink to="/meus-pagamentos" onClick={() => setTimeout(closeAllMenus, 150)}><FaMoneyBillWave /> Pagamentos</DropdownLink>
-          <DropdownLink to="/explorar-planos" onClick={() => setTimeout(closeAllMenus, 150)}><FaListOl /> Explorar Planos</DropdownLink>
+           <DropdownLink to="/meus-treinos" onClick={() => setTimeout(closeAllMenus, 150)}><FaDumbbell />Treinos</DropdownLink>
+          <DropdownLink to="/meu-progresso-detalhado" onClick={() => setTimeout(closeAllMenus, 150)}><FaChartLine /> Progresso</DropdownLink>
+          <DropdownLink to="/meus-pagamentos" onClick={() => setTimeout(closeAllMenus, 150)}><FaMoneyBillWave />Pagamentos</DropdownLink>
+          <DropdownLink to="/explorar-planos" onClick={() => setTimeout(closeAllMenus, 150)}><FaListOl />Planos de treino</DropdownLink>
           <DropdownLink to="/definicoes" onClick={() => setTimeout(closeAllMenus, 150)}><FaCog /> Definições</DropdownLink>
         </DropdownContent>
       </NavItem>

@@ -16,7 +16,8 @@ const PageContainer = styled.div`
   margin: 20px auto;
   padding: 20px clamp(15px, 4vw, 40px);
   font-family: ${({ theme }) => theme.fonts.main};
-  color: ${({ theme }) => theme.colors.textMain};
+  /* A cor de fundo principal virá do body, mas definimos o texto */
+  color: ${({ theme }) => theme.colors.textMain}; 
 `;
 
 const SessionHeader = styled.header`
@@ -54,12 +55,12 @@ const BackLink = styled(Link)`
   &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
 
-const LoadingText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.primary}; padding: 40px; font-size: 1.2rem;`;
-const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error}; padding: 20px; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; border-radius: 8px;`;
+const LoadingText = styled.p`/* ... (sem alterações de cor) ... */`;
+const ErrorText = styled.p`/* ... (sem alterações de cor) ... */`;
 
 const FinishWorkoutButton = styled.button`
   background-color: ${({ theme }) => theme.colors.success};
-  color: white;
+  color: white; // Cor do texto mantém-se branca em ambos os temas para contraste
   width: 100%;
   max-width: 300px;
   padding: 12px 20px;
@@ -68,7 +69,7 @@ const FinishWorkoutButton = styled.button`
   font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,12 +77,13 @@ const FinishWorkoutButton = styled.button`
   margin: 40px auto 0 auto;
 
   &:hover {
-    background-color: #5cb85c;
+    filter: brightness(1.1); /* Escurece/aclara ligeiramente a cor do tema */
+    transform: translateY(-2px);
   }
 `;
 
 const SupersetBlock = styled.div`
-  background-color: #202020;
+  background-color: ${({ theme }) => theme.colors.cardBackground}; /* MUDOU */
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   padding: 15px;
