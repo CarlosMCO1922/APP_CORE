@@ -50,46 +50,7 @@ const BackButton = styled.button` // MUDOU de Link para button
 
 const HeaderSpacer = styled.div``;
 
-const SearchContainer = styled.form`
-  display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: 15px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  box-shadow: ${({ theme }) => theme.boxShadow};
-`;
 
-const SearchInput = styled.input`
-  flex-grow: 1;
-  padding: 10px 14px;
-  background-color: ${({ theme }) => theme.colors.background};
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain};
-  font-size: 0.95rem;
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-  }
-`;
-
-const SearchButton = styled.button`
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.textDark};
-  padding: 10px 20px;
-  border: none;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  cursor: pointer;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background-color 0.2s;
-  &:hover {
-    background-color: #e6c358; 
-  }
-`;
 
 const PlanList = styled.div`
   display: flex;
@@ -192,7 +153,6 @@ const ExploreWorkoutPlansPage = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
   const { authState } = useAuth();
   const navigate = useNavigate();
   const [expandedPlanId, setExpandedPlanId] = useState(null);
@@ -211,7 +171,7 @@ const ExploreWorkoutPlansPage = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await getVisibleWorkoutPlansService(authState.token, searchTerm);
+      const data = await getVisibleWorkoutPlansService(authState.token);
       setPlans(data || []);
     } catch (err) {
       setError(err.message || 'Erro ao carregar planos de treino.');
@@ -219,15 +179,11 @@ const ExploreWorkoutPlansPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [authState.token, searchTerm]);
+  }, [authState.token]);
 
   useEffect(() => {
     fetchPlans();
   }, [fetchPlans]);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-  };
 
   const handleBack = () => {
     setViewDirection('left');
@@ -247,16 +203,6 @@ const ExploreWorkoutPlansPage = () => {
         <Title>Explorar Planos de Treino</Title>
         <HeaderSpacer />
       </HeaderContainer>
-
-      <SearchContainer onSubmit={handleSearchSubmit}>
-        <SearchInput
-          type="text"
-          placeholder="Pesquisar planos por nome ou notas..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <SearchButton type="submit"><FaSearch /> Pesquisar</SearchButton>
-      </SearchContainer>
 
       {error && <ErrorText>{error}</ErrorText>}
 
