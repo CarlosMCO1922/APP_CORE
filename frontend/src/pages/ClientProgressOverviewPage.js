@@ -57,27 +57,41 @@ const ViewChartButton = styled.button`
 `;
 const ModalOverlay = styled.div`
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0,0,0,0.88); display: flex;
+    background-color: rgba(0,0,0,0.75); display: flex;
     justify-content: center; align-items: center;
     z-index: 2100; padding: 20px;
 `;
 const ModalContent = styled.div`
-    background-color: #2C2C2C; padding: 25px 35px;
-    border-radius: 10px; width: 100%; max-width: 800px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative;
-    max-height: 90vh; display: flex; flex-direction: column;
-    border-top: 3px solid ${({ theme }) => theme.colors.primary};
+  background: ${({ theme }) => theme.colors.cardBackground};
+  padding: 32px 36px 28px 28px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow}, 0 8px 32px rgba(0,0,0,0.18);
+  border-left: 5px solid ${({ theme }) => theme.colors.primary};
+  width: 100%; max-width: 540px;
+  position: relative;
+  display: flex; flex-direction: column;
+  max-height: 90vh; overflow-y: auto;
+  transition: background 0.2s;
 `;
+
 const ModalTitle = styled.h2`
-    color: ${({ theme }) => theme.colors.primary}; margin-top: 0; margin-bottom: 20px;
-    font-size: 1.6rem; text-align: center;
+  color: ${({ theme }) => theme.colors.primary};
+  margin: 0 0 18px 0;
+  font-size: 1.35rem;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 `;
+
 const CloseButton = styled.button`
-    position: absolute; top: 15px; right: 15px; background: transparent; border: none;
-    color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1;
-    transition: color 0.2s;
-    &:hover { color: #fff; }
+  position: absolute; top: 18px; right: 18px;
+  background: transparent; border: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 2rem; cursor: pointer; line-height: 1;
+  transition: color 0.2s;
+  &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
+
 const ChartMetricSelector = styled.div`
   display: flex; justify-content: center; align-items: center;
   gap: 10px; margin-bottom: 20px;
@@ -97,7 +111,8 @@ const ClientProgressOverviewPage = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+  const navigate = useNavigate();
+  const [viewDirection, setViewDirection] = useState('right');
   const [showChartModal, setShowChartModal] = useState(false);
   const [chartData, setChartData] = useState({ exerciseName: '', history: [] });
   const [loadingChart, setLoadingChart] = useState(false);
@@ -140,16 +155,22 @@ const ClientProgressOverviewPage = () => {
     setChartData({ exerciseName: '', history: [] });
   };
 
+  const handleBack = () => {
+    setViewDirection('left');
+    navigate('/dashboard');
+  };
+
   if (loading) return <PageContainer><LoadingText>A carregar o teu progresso...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
 
   return (
     <>
       <PageContainer>
-        <BackLink to="/dashboard">‹ Voltar ao Painel</BackLink>
-        <Header>
-          <h1><FaTrophy /> Meu Progresso e Recordes</h1>
-        </Header>
+        <HeaderContainer>
+          <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
+          <Title>Progresso e Recordes</Title>
+          <HeaderSpacer />
+        </HeaderContainer>
         
         {records.length > 0 ? (
           <RecordsGrid>

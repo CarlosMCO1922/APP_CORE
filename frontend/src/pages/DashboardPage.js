@@ -144,7 +144,7 @@ const UpcomingEventItem = styled.li`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px;
   border-radius: 10px;
-  border-left: 5px solid #00A9FF;
+  border-left: 5px solid ${({ theme }) => theme.colors.primary};
   box-shadow: 0 4px 12px ${({ theme }) => theme.colors.borderShadow};
   display: flex;
   flex-direction: column;
@@ -166,7 +166,7 @@ const UpcomingEventItem = styled.li`
 
   h3 { 
     font-size: 1.1rem;
-    color: #00A9FF; 
+    color: ${({ theme }) => theme.colors.primary}; 
     margin: 0 0 8px 0; 
     display: flex; 
     align-items: center; 
@@ -384,7 +384,7 @@ const ItemCard = styled.li`
   background-color: ${({ theme }) => theme.colors.cardBackground || '#252525'};
   padding: 20px;
   border-radius: ${({ theme }) => theme.borderRadius || '10px'};
-  border-left: 5px solid ${({ theme }) => theme.colors.success || '#66BB6A'};
+  border-left: 5px solid ${({ theme }) => theme.colors.lightGray|| '#cccccc'};
   transition: transform 0.2s ease-in-out;
   min-height: 210px;
   display: flex;
@@ -405,13 +405,13 @@ const ItemCard = styled.li`
 
   h3 { 
     margin-top: 0; 
-    margin-bottom: 12px; color: ${({ theme }) => theme.colors.success || '#66BB6A'}; 
+    margin-bottom: 12px; color: ${({ theme }) => theme.colors.lightGray|| '#cccccc'};
     font-size: 1.25rem; 
   }
 
   p { 
     margin: 6px 0; 
-    font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted || '#a0a0a0'}; 
+    font-size: 0.95rem; color: ${({ theme }) => theme.colors.lightGray|| '#cccccc'}; 
     line-height: 1.5; 
     display: flex; align-items: center; 
     gap: 6px; 

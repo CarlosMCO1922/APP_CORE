@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styled, { css } from 'styled-components';
 import { getMyRecordsService } from '../services/progressService';
-import { FaTrophy, FaArrowLeft, FaDumbbell, FaSearch } from 'react-icons/fa';
+import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
 
 const PageContainer = styled.div`
   max-width: 900px;
@@ -135,12 +135,25 @@ const RecordItem = styled.li`
   span:last-child { font-weight: 600; color: white; }
 `;
 
+const Title = styled.h1`
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  color: ${({ theme }) => theme.colors.textMain};
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content:center;
+  text-align: center;
+`;
+
 const PersonalRecordsPage = () => {
   const { authState } = useAuth();
   const [allRecords, setAllRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+  const [viewDirection, setViewDirection] = useState('right');
 
   const fetchRecords = useCallback(async () => {
     if (!authState.token) return;
@@ -169,15 +182,21 @@ const PersonalRecordsPage = () => {
     );
   }, [allRecords, searchTerm]);
 
+  const handleBack = () => {
+    setViewDirection('left');
+    navigate('/dashboard');
+  };
+
   if (loading) return <PageContainer><LoadingText>A carregar recordes...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
 
   return (
     <PageContainer>
-      <BackLink to="/dashboard">‹ Voltar ao Painel</BackLink>
-      <Header>
-        <h1><FaTrophy /> Meus Recordes Pessoais</h1>
-      </Header>
+      <HeaderContainer>
+        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
+        <Title>Progresso e Recordes</Title>
+        <HeaderSpacer />
+      </HeaderContainer>
       
       {allRecords.length > 0 && (
         <FilterContainer>
