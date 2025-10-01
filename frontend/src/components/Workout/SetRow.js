@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { logExercisePerformanceService } from '../../services/progressService';
-import { FaCheck, FaTrashAlt } from 'react-icons/fa';
+import { logExercisePerformanceService, updateExercisePerformanceService } from '../../services/progressService';
+import { FaCheck, FaTrashAlt, FaPencilAlt } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 
 // --- Keyframes para animação de shake (se a ação falhar ou for inválida) ---
@@ -125,6 +125,7 @@ const SetRow = ({ setId, setNumber, onDeleteSet, onSetComplete, lastWeight, last
   const [reps, setReps] = useState(lastReps || '');
   const [isCompleted, setIsCompleted] = useState(false);
   const [transformX, setTransformX] = useState(0);
+  const [performanceId, setPerformanceId] = useState(null);
 
   useEffect(() => {
     if (lastWeight !== undefined && lastReps !== undefined) {
@@ -140,18 +141,35 @@ const SetRow = ({ setId, setNumber, onDeleteSet, onSetComplete, lastWeight, last
     setTransformX(0);
   };
 
+  const handleEdit = () => {
+    setIsCompleted(false); // Isto irá reativar os inputs e mudar o ícone do botão
+  };
+
   const handleComplete = async () => {
-    if (isCompleted || (!weight && !reps)) return;
+    if ((isCompleted && !performanceId) || (!weight && !reps)) return;
+
     const performanceData = {
       trainingId: trainingId || null, workoutPlanId, planExerciseId,
       performedAt: new Date().toISOString(), setNumber,
       performedReps: reps ? parseInt(reps, 10) : null,
       performedWeight: weight ? parseFloat(weight) : null,
     };
+
     try {
-      const result = await logExercisePerformanceService(performanceData, authState.token);
+      let result;
+      if (performanceId) {
+        // Se já temos um ID, estamos a ATUALIZAR
+        result = await updateExercisePerformanceService(performanceId, performanceData, authState.token);
+      } else {
+        // Se não temos um ID, estamos a CRIAR
+        result = await logExercisePerformanceService(performanceData, authState.token);
+        setPerformanceId(result.performance.id); // Guardamos o ID do novo registo
+      }
+      
       setIsCompleted(true);
-      if (onSetComplete) onSetComplete(result.performance, restSeconds);
+      if (onSetComplete && !performanceId) { // Só ativa o rest timer na primeira conclusão
+          onSetComplete(result.performance, restSeconds);
+      }
     } catch (error) {
       alert(`Falha ao registar a série: ${error.message}`);
     }
@@ -190,8 +208,8 @@ const SetRow = ({ setId, setNumber, onDeleteSet, onSetComplete, lastWeight, last
         <SetLabel>{setNumber}</SetLabel>
         <Input type="number" placeholder="-" value={weight} onChange={e => setWeight(e.target.value)} disabled={isCompleted} />
         <Input type="number" placeholder="-" value={reps} onChange={e => setReps(e.target.value)} disabled={isCompleted} />
-        <ActionButton onClick={handleComplete} isCompleted={isCompleted} disabled={isCompleted || (!weight && !reps)}>
-          <FaCheck />
+        <ActionButton onClick={isCompleted ? handleEdit : handleComplete} isCompleted={isCompleted} disabled={!isCompleted && (!weight && !reps)}>
+          {isCompleted ? <FaPencilAlt /> : <FaCheck />}
         </ActionButton>
       </SwipeableContent>
     </SwipeableRowContainer>

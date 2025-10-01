@@ -252,3 +252,26 @@ export const adminGetFullExerciseHistoryForUserService = async (userId, planExer
     throw error;
   }
 };
+
+export const updateExercisePerformanceService = async (performanceId, performanceData, token) => {
+  try {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/progress/performance/${performanceId}`, {
+      method: 'PUT', // ou 'PATCH', dependendo da sua API
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(performanceData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Falha ao atualizar a performance do exercício.');
+    }
+
+    const updatedPerformance = await response.json();
+    return { success: true, performance: updatedPerformance };
+  } catch (error) {
+    console.error('Erro no serviço de atualização de performance:', error);
+    throw error;
+  }
+};
