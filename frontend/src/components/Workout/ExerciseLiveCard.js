@@ -34,7 +34,17 @@ const DropdownMenu = styled.div`
   }
 `;
 
-const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete, onLogDeleted }) => {
+const ExerciseLiveCard = ({ 
+  planExercise, 
+  trainingId, 
+  workoutPlanId, 
+  onSetComplete, 
+  onLogDeleted,
+  onStartSuperset, 
+  isSelectionModeActive, 
+  isSelected, 
+  onToggleSelect 
+}) => {
   const { authState } = useAuth();
   const [sets, setSets] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,6 +64,13 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuRef]);
+
+    const handleCardClick = () => {
+    if (isSelectionModeActive) {
+      onToggleSelect(planExercise.id);
+    }
+    // Se não estiver em modo de seleção, pode abrir o modal de detalhes, por exemplo.
+  };
   
   const handleAddSet = () => { setSets(prevSets => [...prevSets, { id: Date.now() }]); };
   const handleDeleteSet = (setIdToDelete) => {

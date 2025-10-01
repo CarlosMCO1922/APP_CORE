@@ -7,6 +7,7 @@ import { getWorkoutPlansByTrainingId, getGlobalWorkoutPlanByIdClient } from '../
 import { FaArrowLeft, FaStopwatch, FaFlagCheckered } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard';
 import RestTimer from '../components/Workout/RestTimer';
+import SupersetCard from '../components/Workout/SupersetCard';
 import { checkPersonalRecordsService } from '../services/progressService'; 
 
 // --- Styled Components ---
@@ -99,7 +100,10 @@ const LiveWorkoutSessionPage = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [activeRestTimer, setActiveRestTimer] = useState({ active: false, duration: 90, key: 0 });
   const [completedSets, setCompletedSets] = useState([]);
-  
+  const [isSelectionModeActive, setSelectionModeActive] = useState(false);
+  const [supersetSelection, setSupersetSelection] = useState([]);
+  const [supersetGroups, setSupersetGroups] = useState([]);
+
   const fetchPlan = useCallback(async () => {
     if (!authState.token) return;
     setLoading(true);
@@ -175,10 +179,38 @@ const LiveWorkoutSessionPage = () => {
     }
   };
 
+  const handleStartSuperset = (exerciseId) => {
+    setSelectionModeActive(true);
+    setSupersetSelection([exerciseId]); // Começa a seleção com o exercício que foi clicado
+  };
+
+  const handleToggleExerciseSelection = (exerciseId) => {
+    if (!supersetSelection.includes(exerciseId)) {
+        setSupersetSelection(prev => [...prev, exerciseId]); // Seleciona
+    }
+  };
+
+  const handleConfirmSuperset = () => {
+    if (supersetSelection.length > 1) {
+      setSupersetGroups(prev => [...prev, supersetSelection]);
+    }
+    // Reset
+    setSelectionModeActive(false);
+    setSupersetSelection([]);
+  };
+
+  const handleCancelSuperset = () => {
+    setSelectionModeActive(false);
+    setSupersetSelection([]);
+  }
+
   const sortedPlanExercises = useMemo(() => {
     if (!workoutPlan?.planExercises) return [];
     return [...workoutPlan.planExercises].sort((a, b) => a.order - b.order);
   }, [workoutPlan]);
+
+  const exerciseIdsInSupersets = useMemo(() => supersetGroups.flat(), [supersetGroups]);
+  const regularExercises = useMemo(() => sortedPlanExercises.filter(ex => !exerciseIdsInSupersets.includes(ex.id)), [sortedPlanExercises, exerciseIdsInSupersets]);
 
   if (loading) return <PageContainer><LoadingText>A carregar sessão...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
@@ -193,7 +225,21 @@ const LiveWorkoutSessionPage = () => {
       <PageContainer>
         <SessionTitle>{sessionName}</SessionTitle>
 
-        {sortedPlanExercises.map(exercise => (
+        {/* Renderizar os grupos de superséries */}
+        {supersetGroups.map((groupIds, index) => {
+          const groupExercises = groupIds.map(id => sortedPlanExercises.find(ex => ex.id === id)).filter(Boolean); // .filter(Boolean) para segurança
+          if (groupExercises.length === 0) return null;
+          return <SupersetCard 
+                    key={`superset-${index}`} 
+                    group={groupExercises} 
+                    trainingId={trainingId}
+                    workoutPlanId={workoutPlan?.id}
+                    onSetComplete={handleSetComplete}
+                 />;
+        })}
+
+        {/* Renderizar os exercícios normais */}
+        {regularExercises.map(exercise => (
           <ExerciseLiveCard
             key={exercise.id}
             planExercise={exercise}
@@ -201,12 +247,25 @@ const LiveWorkoutSessionPage = () => {
             workoutPlanId={workoutPlan?.id}
             onSetComplete={handleSetComplete}
             onLogDeleted={handleLogDeleted}
+            onStartSuperset={handleStartSuperset}
+            isSelectionModeActive={isSelectionModeActive}
+            isSelected={supersetSelection.includes(exercise.id)}
+            onToggleSelect={handleToggleExerciseSelection}
           />
         ))}
       </PageContainer>
       
       <Footer>
-        <FinishWorkoutButton onClick={handleFinishWorkout}>Concluir Treino</FinishWorkoutButton>
+        {isSelectionModeActive ? (
+            <>
+                <FinishWorkoutButton onClick={handleCancelSuperset}>Cancelar</FinishWorkoutButton>
+                <FinishWorkoutButton onClick={handleConfirmSuperset} primary>
+                    Agrupar {supersetSelection.length} Exercícios
+                </FinishWorkoutButton>
+            </>
+        ) : (
+             <FinishWorkoutButton onClick={handleFinishWorkout}>Concluir Treino</FinishWorkoutButton>
+        )}
       </Footer>
       
       {activeRestTimer.active && ( <RestTimer key={activeRestTimer.key} duration={activeRestTimer.duration} onFinish={() => setActiveRestTimer(prev => ({ ...prev, active: false }))} /> )}
