@@ -86,7 +86,12 @@ const ExerciseLiveCard = ({
           <MoreActionsButton onClick={() => setMenuOpen(prev => !prev)}><FaEllipsisH /></MoreActionsButton>
           {menuOpen && (
             <DropdownMenu>
-              <button onClick={() => { alert('Funcionalidade de Supersérie em desenvolvimento!'); setMenuOpen(false); }}>Criar Supersérie</button>
+              <button onClick={() => { 
+                onStartSuperset(planExercise.id); 
+                setMenuOpen(false); 
+              }}>
+                Criar Supersérie
+              </button>
             </DropdownMenu>
           )}
         </div>
