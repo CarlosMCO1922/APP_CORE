@@ -79,7 +79,7 @@ const ExerciseLiveCard = ({
   };
   
   return (
-    <CardContainer>
+    <CardContainer onClick={handleCardClick} style={{ border: isSelected ? '2px solid #007BFF' : 'none', cursor: isSelectionModeActive ? 'pointer' : 'default' }}>
       <CardHeader>
         <ExerciseName>{planExercise.exerciseDetails.name}</ExerciseName>
         <div style={{ position: 'relative' }} ref={menuRef}>
