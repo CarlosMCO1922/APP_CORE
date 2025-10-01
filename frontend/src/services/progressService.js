@@ -255,21 +255,31 @@ export const adminGetFullExerciseHistoryForUserService = async (userId, planExer
 
 export const updateExercisePerformanceService = async (performanceId, performanceData, token) => {
   try {
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/progress/performance/${performanceId}`, {
-      method: 'PUT', // ou 'PATCH', dependendo da sua API
+    const url = `${API_URL}/progress/log/${performanceId}`;
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(performanceData),
     });
 
+    // O resto da lógica de tratamento da resposta pode ser mais simples
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({ message: 'Falha ao ler a resposta de erro.' }));
       throw new Error(errorData.message || 'Falha ao atualizar a performance do exercício.');
     }
 
+    // Se o backend responder com 204 (No Content) ou um JSON, isto funciona
+    if (response.status === 204) {
+        return { success: true, performance: {} };
+    }
+    
     const updatedPerformance = await response.json();
     return { success: true, performance: updatedPerformance };
+
   } catch (error) {
     console.error('Erro no serviço de atualização de performance:', error);
     throw error;
