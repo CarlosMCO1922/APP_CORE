@@ -1,26 +1,16 @@
 // src/components/Workout/SetRow.js - VERSÃO POLIDA E INTUITIVA
-
-import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import React, { useState } from 'react';
+import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { logExercisePerformanceService, deleteExercisePerformanceLogService } from '../../services/progressService';
-import { FaCheck, FaTimes, FaDumbbell, FaTrashAlt } from 'react-icons/fa';
+import { logExercisePerformanceService } from '../../services/progressService';
+import { FaCheck, FaTrashAlt } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 
 // --- Keyframes para animação de shake (se a ação falhar ou for inválida) ---
-const shake = keyframes`
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
-`;
-
-// --- Styled Components ATUALIZADOS ---
-
 const SwipeableRowContainer = styled.div`
   position: relative;
   overflow: hidden;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 `;
 
 const ActionBackground = styled.div`
@@ -28,12 +18,14 @@ const ActionBackground = styled.div`
   top: 0;
   bottom: 0;
   right: 0;
-  width: 90px;
+  left: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end; /* Ícone fica à direita */
+  padding-right: 30px;
   color: white;
-  background-color: #D32F2F; /* Vermelho para apagar */
+  background-color: #D32F2F;
+  border-radius: ${({ theme }) => theme.borderRadius};
   z-index: 1;
 `;
 
@@ -47,15 +39,15 @@ const SwipeableContent = styled.div`
   display: grid;
   grid-template-columns: 50px 1fr 1fr 60px;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: 10px;
+  padding: 4px 10px;
   background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 2px solid ${({ theme, isCompleted }) => isCompleted ? theme.colors.success : theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
   position: relative;
   z-index: 2;
   cursor: grab;
   transition: transform 0.3s ease-out;
-
-  /* Aplica a transformação baseada no estado do swipe */
   transform: translateX(${({ transformX }) => transformX}px);
 `;
 
@@ -127,24 +119,13 @@ const DeleteButton = styled.button`
 `;
 
 // --- Componente SetRow ---
-const SetRow = ({
-  setId, setNumber, onSetComplete, trainingId, workoutPlanId, planExerciseId,
-  restSeconds, lastWeight, lastReps, onLogDeleted,
-  onDuplicateSet, onDeleteSet,
-  initialWeight, 
-  initialReps    
-}) => {
+const SetRow = ({ setId, setNumber, onDeleteSet, onSetComplete, lastWeight, lastReps, planExerciseId, trainingId, workoutPlanId, restSeconds }) => {
   const { authState } = useAuth();
   const [weight, setWeight] = useState(lastWeight || '');
   const [reps, setReps] = useState(lastReps || '');
   const [isCompleted, setIsCompleted] = useState(false);
-  const [completedLog, setCompletedLog] = useState(null);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [transformX, setTransformX] = useState(0); // Para controlar a posição do swipe
-  const [isLoading, setIsLoading] = useState(false);
-  const [animateShake, setAnimateShake] = useState(false);
+  const [transformX, setTransformX] = useState(0);
 
-  const SWIPE_THRESHOLD = 90; // Aumentei o limiar para um deslize maior
   
   const handleClear = () => {
     setWeight('');
@@ -195,57 +176,40 @@ const SetRow = ({
 
 
   const handleComplete = async () => {
-    // Validação para não permitir registar uma série vazia
-    if (!weight && !reps) {
-        alert("Por favor, preencha o peso ou as repetições.");
-        return;
-    }
-
-    setIsLoading(true); // Ativa o estado de loading
-
+    if (isCompleted || (!weight && !reps)) return;
     const performanceData = {
-      trainingId: trainingId || null,
-      workoutPlanId: workoutPlanId,
-      planExerciseId: planExerciseId,
-      performedAt: new Date().toISOString(),
-      setNumber: setNumber,
+      trainingId: trainingId || null, workoutPlanId, planExerciseId,
+      performedAt: new Date().toISOString(), setNumber,
       performedReps: reps ? parseInt(reps, 10) : null,
       performedWeight: weight ? parseFloat(weight) : null,
     };
-
     try {
       const result = await logExercisePerformanceService(performanceData, authState.token);
-      setCompletedLog(result.performance); // Guarda os dados da série concluída
-      setIsCompleted(true); // Atualiza o estado visual para "concluída"
-      
-      // Chama a função do componente pai para iniciar o temporizador de descanso
-      if (onSetComplete) {
-        onSetComplete(result.performance, restSeconds);
-      }
-
+      setIsCompleted(true);
+      if (onSetComplete) onSetComplete(result.performance, restSeconds);
     } catch (error) {
       alert(`Falha ao registar a série: ${error.message}`);
-    } finally {
-      setIsLoading(false); // Desativa o estado de loading
     }
   };
 
   const handlers = useSwipeable({
     onSwiping: (eventData) => {
-      // Permite deslizar apenas para a esquerda (valores negativos)
-      if (eventData.deltaX < 0) {
-        setTransformX(Math.max(eventData.deltaX, -90)); // Limita o deslize a 90px
+      if (eventData.deltaX < 0) { setTransformX(eventData.deltaX); }
+    },
+    onSwipedLeft: () => {
+      // SWIPE COMPLETO: aciona a ação diretamente
+      if (window.confirm("Tem a certeza que quer apagar esta série?")) {
+        onDeleteSet();
       }
+      // Animação de volta à posição inicial
+      setTimeout(() => setTransformX(0), 100);
     },
     onSwiped: () => {
-      // Se o deslize foi pequeno, volta ao início. Se foi grande, fica aberto.
-      if (transformX < -45) { // Metade da largura da ação de fundo
-        setTransformX(-90);
-      } else {
+      // Se não acionou a ação, volta ao início
+      if (transformX !== 0) {
         setTransformX(0);
       }
     },
-    onTap: () => setTransformX(0), // Clicar na linha fecha o swipe
     trackMouse: true,
     preventScrollOnSwipe: true,
   });
@@ -255,33 +219,16 @@ const SetRow = ({
   return (
     <SwipeableRowContainer>
       <ActionBackground>
-        <DeleteButton onClick={onDeleteSet}>
-          <FaTrashAlt />
-        </DeleteButton>
+        <FaTrashAlt />
       </ActionBackground>
 
-      <SwipeableContent {...handlers} transformX={transformX}>
-        <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
-        
-        {isCompleted ? (
-          <>
-            <CompletedText>{weight || '-'} kg</CompletedText>
-            <CompletedText>{reps || '-'}</CompletedText>
-          </>
-        ) : (
-          <>
-            <Input type="number" placeholder="Peso" value={weight} onChange={e => setWeight(e.target.value)} />
-            <Input type="number" placeholder="Reps" value={reps} onChange={e => setReps(e.target.value)} />
-          </>
-        )}
-        
-        <div>
-          {isCompleted ? (
-             <ActionButton disabled style={{ backgroundColor: 'transparent', color: '#4CAF50' }}><FaCheck /></ActionButton>
-          ) : (
-            <ActionButton onClick={handleComplete} disabled={!weight && !reps}><FaCheck /></ActionButton>
-          )}
-        </div>
+      <SwipeableContent {...handlers} transformX={transformX} isCompleted={isCompleted}>
+        <SetLabel>{setNumber}</SetLabel>
+        <Input type="number" placeholder="-" value={weight} onChange={e => setWeight(e.target.value)} disabled={isCompleted} />
+        <Input type="number" placeholder="-" value={reps} onChange={e => setReps(e.target.value)} disabled={isCompleted} />
+        <ActionButton onClick={handleComplete} isCompleted={isCompleted} disabled={isCompleted || (!weight && !reps)}>
+          <FaCheck />
+        </ActionButton>
       </SwipeableContent>
     </SwipeableRowContainer>
   );

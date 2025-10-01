@@ -1,5 +1,4 @@
 // src/pages/LiveWorkoutSessionPage.js - VERSÃO "STRONG"
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -207,9 +206,7 @@ const LiveWorkoutSessionPage = () => {
       </PageContainer>
       
       <Footer>
-        <FinishWorkoutButton onClick={handleFinishWorkout}>
-            Concluir Treino
-        </FinishWorkoutButton>
+        <FinishWorkoutButton onClick={handleFinishWorkout}>Concluir Treino</FinishWorkoutButton>
       </Footer>
       
       {activeRestTimer.active && ( <RestTimer key={activeRestTimer.key} duration={activeRestTimer.duration} onFinish={() => setActiveRestTimer(prev => ({ ...prev, active: false }))} /> )}

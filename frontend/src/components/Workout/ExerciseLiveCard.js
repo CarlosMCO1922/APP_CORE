@@ -1,13 +1,9 @@
 // src/components/Workout/ExerciseLiveCard.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../../context/AuthContext';
-import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
-import { FaDumbbell, FaHistory, FaCalculator, FaPlus } from 'react-icons/fa';
+import { FaPlus, FaEllipsisH } from 'react-icons/fa';
 import SetRow from './SetRow';
-import PlateCalculatorModal from './PlateCalculatorModal';
-import ExerciseDetailModal from './ExerciseDetailModal';
 
 const CardContainer = styled.div`
   margin-bottom: 35px;
@@ -20,9 +16,6 @@ const CardHeader = styled.div`
   margin-bottom: 15px;
 `;
 
-const HeaderInfo = styled.div`
-    flex-grow: 1;
-`;
 
 const ExerciseName = styled.h2`
   color: ${({ theme }) => theme.colors.textMain};
@@ -96,24 +89,67 @@ const SetsGridHeader = styled.div`
   span:last-child { text-align: right; }
 `;
 
-const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete, onLogDeleted}) => {
-  const { authState } = useAuth();
+const MoreActionsButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.cardBackground};
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  right: 0;
+  top: 30px;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#1F1F1F'};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 10;
+  overflow: hidden;
+
+  button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: ${({ theme }) => theme.colors.textMain};
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    &:hover {
+      background-color: ${({ theme }) => theme.colors.primary};
+      color: ${({ theme }) => theme.colors.textDark};
+    }
+  }
+`;
+
+const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete, onLogDeleted }) => {
   const [sets, setSets] = useState([]);
-  const [lastPerformanceText, setLastPerformanceText] = useState('A carregar histórico...');
-  const [lastPerformanceData, setLastPerformanceData] = useState({ weight: '', reps: '' });
-  const [historyError, setHistoryError] = useState('');
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [sharedWeight, setSharedWeight] = useState(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
-    const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({
-      id: i,
-      setNumber: i + 1,
-      prescribedReps: planExercise.reps,
-    }));
+    const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));
     setSets(initialSets);
   }, [planExercise]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuRef]);
 
   const fetchHistory = useCallback(async () => {
     if (!authState.token || !planExercise.id) return;
@@ -172,52 +208,42 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   };
 
   
-  return (
-    <>
-      <CardContainer>
-        <CardHeader>
-          <ExerciseName onClick={() => setIsDetailModalOpen(true)}>
-            {planExercise.exerciseDetails.name}
-          </ExerciseName>
-        </CardHeader>
-        <LastPerformance><FaHistory /> {historyError || lastPerformanceText}</LastPerformance>
-        
-        <SetsGridHeader>
-          <span>Série</span>
-          <span>Peso (kg)</span>
-          <span>Reps</span>
-          <span></span>
-        </SetsGridHeader>
-        
-        <div>
-          {sets.map((set, index) => (
-            <SetRow
-              key={set.id}
-              setId={set.id}
-              setNumber={index + 1}
-              // ...outras props...
-              onDeleteSet={() => handleDeleteSet(set.id)}
-            />
-          ))}
+return (
+    <CardContainer>
+      <CardHeader>
+        <ExerciseName>{planExercise.exerciseDetails.name}</ExerciseName>
+        <div style={{ position: 'relative' }} ref={menuRef}>
+          <MoreActionsButton onClick={() => setMenuOpen(prev => !prev)}>
+            <FaEllipsisH />
+          </MoreActionsButton>
+          {menuOpen && (
+            <DropdownMenu>
+              <button onClick={() => { console.log('Criar Supersérie!'); setMenuOpen(false); }}>Criar Supersérie</button>
+              {/* Outras opções podem ser adicionadas aqui no futuro */}
+            </DropdownMenu>
+          )}
         </div>
+      </CardHeader>
+      
+      <SetsGridHeader><span>Série</span><span>KG</span><span>Reps</span><span></span></SetsGridHeader>
+      
+      <div>
+        {sets.map((set, index) => (
+          <SetRow
+            key={set.id}
+            setId={set.id}
+            setNumber={index + 1}
+            planExerciseId={planExercise.id}
+            trainingId={trainingId}
+            workoutPlanId={workoutPlanId}
+            onSetComplete={onSetComplete}
+            onDeleteSet={() => handleDeleteSet(set.id)}
+          />
+        ))}
+      </div>
 
-        <AddSetButton onClick={handleAddSet}><FaPlus /> Adicionar Série</AddSetButton>
-      </CardContainer>
-
-      {showCalculator && (
-        <PlateCalculatorModal
-          onClose={() => setShowCalculator(false)}
-          onSelectWeight={handleWeightFromCalculator}
-        />
-      )}
-
-      {isDetailModalOpen && (
-        <ExerciseDetailModal
-          exercise={planExercise.exerciseDetails}
-          onClose={() => setIsDetailModalOpen(false)}
-        />
-      )}
-    </>
+      <AddSetButton onClick={handleAddSet}><FaPlus /> Adicionar Série</AddSetButton>
+    </CardContainer>
   );
 };
 
