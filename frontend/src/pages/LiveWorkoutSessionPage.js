@@ -1,58 +1,68 @@
 // src/pages/LiveWorkoutSessionPage.js
 
-import React, { useState, useEffect, useCallback, useMemo} from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getWorkoutPlansByTrainingId, getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService';
-import { FaArrowLeft, FaStopwatch, FaFlagCheckered, FaLayerGroup, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaArrowLeft, FaStopwatch, FaFlagCheckered } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard';
 import RestTimer from '../components/Workout/RestTimer';
-import { checkPersonalRecordsService } from '../services/progressService'; 
+import { checkPersonalRecordsService } from '../services/progressService';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
   max-width: 800px;
-  margin: 20px auto;
-  padding: 20px clamp(15px, 4vw, 40px);
+  margin: 0 auto;
+  padding: 20px clamp(15px, 4vw, 40px) 100px; /* Mais padding no fundo */
   font-family: ${({ theme }) => theme.fonts.main};
-  /* A cor de fundo principal virá do body, mas definimos o texto */
-  color: ${({ theme }) => theme.colors.textMain}; 
+  color: ${({ theme }) => theme.colors.textMain};
 `;
 
 const SessionHeader = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 10px 0;
+  margin-bottom: 10px;
+  position: sticky;
+  top: 60px; /* Abaixo da Navbar */
+  background-color: ${({ theme }) => theme.colors.background};
+  z-index: 900;
 `;
 
 const SessionTitle = styled.h1`
   font-size: clamp(1.8rem, 4vw, 2.4rem);
   color: ${({ theme }) => theme.colors.primary};
-  margin: 0 0 20px 0;
+  margin: 0;
   text-align: center;
+  width: 100%;
 `;
 
 const SessionTimer = styled.div`
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.primary};
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: 8px 15px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textMain};
 `;
 
 const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.textMuted};
+  color: ${({ theme }) => theme.colors.textMain};
   font-size: 1.5rem;
   transition: color 0.2s;
   &:hover { color: ${({ theme }) => theme.colors.primary}; }
+`;
+
+const Footer = styled.div`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 15px;
+  background-color: ${({ theme }) => theme.colors.background};
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
 `;
 
 const LoadingText = styled.p`/* ... (sem alterações de cor) ... */`;
@@ -60,25 +70,23 @@ const ErrorText = styled.p`/* ... (sem alterações de cor) ... */`;
 
 const FinishWorkoutButton = styled.button`
   background-color: ${({ theme }) => theme.colors.success};
-  color: white; // Cor do texto mantém-se branca em ambos os temas para contraste
+  color: white;
   width: 100%;
-  max-width: 300px;
-  padding: 12px 20px;
+  max-width: 400px;
+  padding: 15px 20px;
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
   font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: filter 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin: 40px auto 0 auto;
 
   &:hover {
-    filter: brightness(1.1); /* Escurece/aclara ligeiramente a cor do tema */
-    transform: translateY(-2px);
+    filter: brightness(1.1);
   }
 `;
 
@@ -248,10 +256,10 @@ const LiveWorkoutSessionPage = () => {
     if (!workoutPlan?.planExercises) return [];
 
     const groups = new Map();
-    const sortedPlanExercises = [...workoutPlan.planExercises].sort((a, b) => {
-        if (a.supersetGroup !== b.supersetGroup) return a.supersetGroup - b.supersetGroup;
-        return a.order - b.order;
-    });
+    const sortedPlanExercises = useMemo(() => {
+      if (!workoutPlan?.planExercises) return [];
+      return [...workoutPlan.planExercises].sort((a, b) => a.order - b.order);
+    }, [workoutPlan]);
 
     sortedPlanExercises.forEach(ex => {
       const groupKey = ex.supersetGroup;
@@ -278,54 +286,44 @@ const LiveWorkoutSessionPage = () => {
 
   return (
     <>
-            <PageContainer>
-                <SessionHeader>
-                    <BackLink to="/meu-progresso" title="Voltar"><FaArrowLeft /></BackLink>
-                    <SessionTimer><FaStopwatch /> {formatTime(elapsedTime)}</SessionTimer>
-                </SessionHeader>
-                <SessionTitle>{sessionName}</SessionTitle>
+      <PageContainer>
+        <SessionHeader>
+          <BackLink to="/dashboard" title="Sair do Treino"><FaArrowLeft /></BackLink>
+          <SessionTimer><FaStopwatch /> {formatTime(elapsedTime)}</SessionTimer>
+        </SessionHeader>
+        <SessionTitle>{sessionName}</SessionTitle>
 
-                {groupedExercises.length > 0 && currentGroup ? (
-                    <WorkoutPager>
-                        <NavigationControls>
-                            <NavButton onClick={goToPreviousExercise} disabled={currentExerciseIndex === 0}> <FaChevronLeft /> </NavButton>
-                            <ProgressIndicator> Bloco {currentExerciseIndex + 1} de {groupedExercises.length} </ProgressIndicator>
-                            <NavButton onClick={goToNextExercise} disabled={currentExerciseIndex === groupedExercises.length - 1}> <FaChevronRight /> </NavButton>
-                        </NavigationControls>
-
-                        <SupersetBlock>
-                            <h3>
-                                <FaLayerGroup /> 
-                                {currentGroup.length > 1 ? `Superset` : `Exercício Único`}
-                            </h3>
-                            {currentGroup.map(exercise => (
-                                <ExerciseLiveCard
-                                    key={exercise.id}
-                                    planExercise={exercise}
-                                    isStandalone={currentGroup.length === 1} // Prop para saber se é único
-                                    trainingId={trainingId}
-                                    workoutPlanId={workoutPlan.id}
-                                    onSetComplete={handleSetComplete}
-                                    onLogDeleted={handleLogDeleted}
-                                />
-                            ))}
-                        </SupersetBlock>
-                    </WorkoutPager>
-                ) : ( !loading && <p>Nenhum exercício encontrado neste plano.</p> )}
-                
-                <FinishWorkoutButton onClick={handleFinishWorkout}>
-                    <FaFlagCheckered /> Concluir Treino
-                </FinishWorkoutButton>
-            </PageContainer>
-            
-            {activeRestTimer.active && (
-                <RestTimer
-                    key={activeRestTimer.key}
-                    duration={activeRestTimer.duration}
-                    onFinish={() => setActiveRestTimer(prev => ({ ...prev, active: false }))}
-                />
-            )}
-        </>
+        {sortedPlanExercises.length > 0 ? (
+          <div>
+            {sortedPlanExercises.map(exercise => (
+              <ExerciseLiveCard
+                key={exercise.id}
+                planExercise={exercise}
+                trainingId={trainingId}
+                workoutPlanId={workoutPlan.id}
+                onSetComplete={handleSetComplete}
+                onLogDeleted={handleLogDeleted}
+              />
+            ))}
+          </div>
+        ) : ( !loading && <p>Nenhum exercício encontrado neste plano.</p> )}
+        
+      </PageContainer>
+      
+      <Footer>
+        <FinishWorkoutButton onClick={handleFinishWorkout}>
+            <FaFlagCheckered /> Concluir Treino
+        </FinishWorkoutButton>
+      </Footer>
+      
+      {activeRestTimer.active && (
+          <RestTimer
+              key={activeRestTimer.key}
+              duration={activeRestTimer.duration}
+              onFinish={() => setActiveRestTimer(prev => ({ ...prev, active: false }))}
+          />
+      )}
+    </>
   );
 };
 

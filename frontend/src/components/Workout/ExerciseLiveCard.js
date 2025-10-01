@@ -10,21 +10,14 @@ import PlateCalculatorModal from './PlateCalculatorModal';
 import ExerciseDetailModal from './ExerciseDetailModal';
 
 const CardContainer = styled.div`
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  border-radius: ${({ theme }) => theme.borderRadius};
-  border-left: 5px solid ${({ theme }) => theme.colors.primary};
-  padding: 20px;
-  margin-bottom: 25px;
-  box-shadow: ${({ theme }) => theme.boxShadow};
+  margin-bottom: 35px;
 `;
 
 const CardHeader = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
 
 const HeaderInfo = styled.div`
@@ -32,18 +25,11 @@ const HeaderInfo = styled.div`
 `;
 
 const ExerciseName = styled.h2`
-  color: ${({ theme }) => theme.colors.primary};
-  font-size: 1.6rem;
-  margin: 0 0 5px 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 1.4rem;
+  margin: 0;
   cursor: pointer;
-  transition: color 0.2s;
-
-  &:hover {
-    filter: brightness(1.1);
-  }
+  &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
 
 const LastPerformance = styled.p`
@@ -57,17 +43,24 @@ const LastPerformance = styled.p`
 `;
 
 const AddSetButton = styled.button`
-  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; /* MUDOU */
-  color: ${({ theme }) => theme.colors.textMain}; /* MUDOU */
+  background-color: transparent;
+  color: ${({ theme }) => theme.colors.primary};
   padding: 8px 15px;
-  border-radius: 5px;
+  border-radius: 20px;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   margin-top: 15px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+
   &:hover {
-    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    background-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.textDark};
   }
 `;
 
@@ -149,7 +142,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   const handleAddSet = () => {
     setSets(prevSets => [
       ...prevSets,
-      { id: Date.now(), setNumber: prevSets.length + 1, prescribedReps: planExercise.reps } // Usar Date.now() para um ID único
+      { id: Date.now(), setNumber: prevSets.length + 1, prescribedReps: planExercise.reps }
     ]);
   };
 
@@ -168,14 +161,9 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
   };
   
   const handleDeleteSet = (setIdToDelete) => {
-    setSets(prevSets => {
-      const filteredSets = prevSets.filter(set => set.id !== setIdToDelete);
-      // Re-numera as séries para manter a ordem correta
-      return filteredSets.map((set, index) => ({
-        ...set,
-        setNumber: index + 1
-      }));
-    });
+    setSets(prevSets => prevSets.filter(set => set.id !== setIdToDelete));
+    // Também remove o log do estado da página principal
+    onLogDeleted(setIdToDelete);
   };
 
   const handleWeightFromCalculator = (selectedWeight) => {
@@ -188,20 +176,17 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
     <>
       <CardContainer>
         <CardHeader>
-          <HeaderInfo>
-            <ExerciseName onClick={() => setIsDetailModalOpen(true)}>
-              <FaDumbbell /> {planExercise.exerciseDetails.name}
-            </ExerciseName>
-            <LastPerformance>
-              <FaHistory /> {historyError || lastPerformanceText}
-            </LastPerformance>
-          </HeaderInfo>
+          <ExerciseName onClick={() => setIsDetailModalOpen(true)}>
+            {planExercise.exerciseDetails.name}
+          </ExerciseName>
         </CardHeader>
+        <LastPerformance><FaHistory /> {historyError || lastPerformanceText}</LastPerformance>
+        
         <SetsGridHeader>
           <span>Série</span>
           <span>Peso (kg)</span>
           <span>Reps</span>
-          <span></span> {/* Espaço para os botões de ação */}
+          <span></span>
         </SetsGridHeader>
         
         <div>
@@ -210,31 +195,22 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
               key={set.id}
               setId={set.id}
               setNumber={index + 1}
-              prescribedReps={set.prescribedReps}
-              trainingId={trainingId}
-              workoutPlanId={workoutPlanId}
-              planExerciseId={planExercise.id}
-              onSetComplete={onSetComplete}
-              restSeconds={planExercise.restSeconds}
-              lastWeight={sharedWeight !== null ? sharedWeight : lastPerformanceData.weight}
-              lastReps={lastPerformanceData.reps}
-              onDeleteSet={handleDeleteSet}
-              onLogDeleted={onLogDeleted}
-              initialWeight={set.initialWeight} // Passa os valores iniciais
-              initialReps={set.initialReps}
-              onDuplicateSet={handleDuplicateSet} 
+              // ...outras props...
+              onDeleteSet={() => handleDeleteSet(set.id)}
             />
           ))}
         </div>
 
-        <AddSetButton onClick={handleAddSet}>+ Adicionar Série</AddSetButton>
+        <AddSetButton onClick={handleAddSet}><FaPlus /> Adicionar Série</AddSetButton>
       </CardContainer>
+
       {showCalculator && (
         <PlateCalculatorModal
           onClose={() => setShowCalculator(false)}
           onSelectWeight={handleWeightFromCalculator}
         />
       )}
+      
       {isDetailModalOpen && (
         <ExerciseDetailModal
           exercise={planExercise.exerciseDetails}

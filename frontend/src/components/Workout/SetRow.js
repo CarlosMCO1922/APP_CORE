@@ -21,24 +21,22 @@ const SwipeableRowContainer = styled.div`
   overflow: hidden;
   border-radius: ${({ theme }) => theme.borderRadius};
   margin-bottom: 8px;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
 `;
 
 const ActionBackground = styled.div`
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 100px; /* Largura da área de ação visível */
+  right: 0;
+  width: 90px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: ${({ textColor }) => textColor};
+  color: white;
+  background-color: #D32F2F; /* Vermelho para apagar */
   z-index: 1;
-  background-color: ${({ color }) => color};
-  
-  ${({ side }) => side === 'left' ? 'left: 0;' : 'right: 0;'}
 `;
+
 
 const ActionText = styled.span`
   font-size: 1.5rem;
@@ -53,15 +51,12 @@ const SwipeableContent = styled.div`
   padding: 8px 10px;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   position: relative;
-  z-index: 2; /* Fica SEMPRE por cima das ações de fundo */
+  z-index: 2;
   cursor: grab;
   transition: transform 0.3s ease-out;
-  
-  ${({ isSwiping, transformX }) => isSwiping && `
-    cursor: grabbing;
-    transform: translateX(${transformX}px);
-    transition: none;
-  `}
+
+  /* Aplica a transformação baseada no estado do swipe */
+  transform: translateX(${({ transformX }) => transformX}px);
 `;
 
 const SetLabel = styled.span`
@@ -115,6 +110,19 @@ const ActionButton = styled.button`
     cursor: not-allowed;
     background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
     color: ${({ theme }) => theme.colors.textMuted};
+  }
+`;
+
+const DeleteButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 10px;
+  
+  &:hover {
+    transform: scale(1.1);
   }
 `;
 
@@ -185,101 +193,93 @@ const SetRow = ({
     }
   };
 
-  const handleMarkAsFailure = async () => {
-    if (!completedLog) {
-        setAnimateShake(true); // Animação de shake se não houver log para marcar
-        setTimeout(() => setAnimateShake(false), 500);
-        return;
-    }
-    console.log(`Marcando a série ${completedLog.id} como 'Até à Falha'`);
-    // Aqui você faria uma chamada à API para atualizar o 'set'
-    // Exemplo: await updatePerformanceLogService(completedLog.id, { setToFailure: true }, authState.token);
-    alert('Funcionalidade "Falha" ainda não implementada com API.'); // Feedback temporário
-    resetSwipe();
-  };
-
-  const handlers = useSwipeable({
-    onSwiping: (eventData) => {
-      // SÓ PERMITE deslizar se a série NÃO estiver completa
-      if (isCompleted || isLoading) return;
-      setTransformX(eventData.deltaX);
-    },
-    onSwiped: (eventData) => {
-      if (isCompleted) return;
-      if (eventData.deltaX > SWIPE_THRESHOLD) { // Deslizar para a direita -> Limpar
-        handleClear();
-      } else if (eventData.deltaX < -SWIPE_THRESHOLD) { // Deslizar para a esquerda -> Duplicar
-        handleDuplicate();
-      } else {
-        resetSwipe(); // Volta ao centro se não deslizar o suficiente
-      }
-    },
-    trackMouse: true,
-    preventScrollOnSwipe: true,
-    delta: 10,
-  });
 
   const handleComplete = async () => {
+    // Validação para não permitir registar uma série vazia
     if (!weight && !reps) {
-        setAnimateShake(true);
-        setTimeout(() => setAnimateShake(false), 500);
         alert("Por favor, preencha o peso ou as repetições.");
         return;
     }
 
-    setIsLoading(true);
+    setIsLoading(true); // Ativa o estado de loading
+
     const performanceData = {
-      trainingId: trainingId || null, workoutPlanId, planExerciseId,
-      performedAt: new Date().toISOString(), setNumber,
+      trainingId: trainingId || null,
+      workoutPlanId: workoutPlanId,
+      planExerciseId: planExerciseId,
+      performedAt: new Date().toISOString(),
+      setNumber: setNumber,
       performedReps: reps ? parseInt(reps, 10) : null,
       performedWeight: weight ? parseFloat(weight) : null,
     };
+
     try {
       const result = await logExercisePerformanceService(performanceData, authState.token);
-      setCompletedLog(result.performance);
-      setIsCompleted(true);
-      onSetComplete(result.performance, restSeconds);
+      setCompletedLog(result.performance); // Guarda os dados da série concluída
+      setIsCompleted(true); // Atualiza o estado visual para "concluída"
+      
+      // Chama a função do componente pai para iniciar o temporizador de descanso
+      if (onSetComplete) {
+        onSetComplete(result.performance, restSeconds);
+      }
+
     } catch (error) {
       alert(`Falha ao registar a série: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Desativa o estado de loading
     }
   };
+
+  const handlers = useSwipeable({
+    onSwiping: (eventData) => {
+      // Permite deslizar apenas para a esquerda (valores negativos)
+      if (eventData.deltaX < 0) {
+        setTransformX(Math.max(eventData.deltaX, -90)); // Limita o deslize a 90px
+      }
+    },
+    onSwiped: () => {
+      // Se o deslize foi pequeno, volta ao início. Se foi grande, fica aberto.
+      if (transformX < -45) { // Metade da largura da ação de fundo
+        setTransformX(-90);
+      } else {
+        setTransformX(0);
+      }
+    },
+    onTap: () => setTransformX(0), // Clicar na linha fecha o swipe
+    trackMouse: true,
+    preventScrollOnSwipe: true,
+  });
+
+
   
   return (
     <SwipeableRowContainer>
-      {/* As duas ações de fundo, agora corretamente configuradas */}
-      <ActionBackground side="left" color="#D32F2F" textColor="white">
-        <FaTimes />
-      </ActionBackground>
-      <ActionBackground side="right" color={({ theme }) => theme.colors.primary} textColor={({ theme }) => theme.colors.textDark}>
-        <ActionText>x2</ActionText>
+      <ActionBackground>
+        <DeleteButton onClick={onDeleteSet}>
+          <FaTrashAlt />
+        </DeleteButton>
       </ActionBackground>
 
-      <SwipeableContent {...handlers} transformX={transformX} isCompleted={isCompleted}>
+      <SwipeableContent {...handlers} transformX={transformX}>
         <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
         
         {isCompleted ? (
           <>
-            <CompletedText>{completedLog?.performedWeight || weight || '-'} kg</CompletedText>
-            <CompletedText>{completedLog?.performedReps || reps || '-'}</CompletedText>
+            <CompletedText>{weight || '-'} kg</CompletedText>
+            <CompletedText>{reps || '-'}</CompletedText>
           </>
         ) : (
           <>
-            <Input type="number" placeholder="Peso" value={weight} onChange={e => setWeight(e.target.value)} disabled={isLoading} />
-            <Input type="number" placeholder="Reps" value={reps} onChange={e => setReps(e.target.value)} disabled={isLoading} />
+            <Input type="number" placeholder="Peso" value={weight} onChange={e => setWeight(e.target.value)} />
+            <Input type="number" placeholder="Reps" value={reps} onChange={e => setReps(e.target.value)} />
           </>
         )}
         
         <div>
           {isCompleted ? (
-             <ActionButton disabled style={{ backgroundColor: 'transparent', color: '#4CAF50' }}>
-               <FaCheck />
-             </ActionButton>
+             <ActionButton disabled style={{ backgroundColor: 'transparent', color: '#4CAF50' }}><FaCheck /></ActionButton>
           ) : (
-            <ActionButton onClick={handleComplete} disabled={isLoading || (!weight && !reps)}>
-              {isLoading ? <FaDumbbell /> : <FaCheck />}
-            </ActionButton>
+            <ActionButton onClick={handleComplete} disabled={!weight && !reps}><FaCheck /></ActionButton>
           )}
         </div>
       </SwipeableContent>
