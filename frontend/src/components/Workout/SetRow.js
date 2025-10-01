@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService, deleteExercisePerformanceLogService } from '../../services/progressService';
-import { FaCheck, FaTimes, FaDumbbell } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaDumbbell, FaTrashAlt } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 
 // --- Keyframes para animação de shake (se a ação falhar ou for inválida) ---
@@ -130,7 +130,7 @@ const DeleteButton = styled.button`
 const SetRow = ({
   setId, setNumber, onSetComplete, trainingId, workoutPlanId, planExerciseId,
   restSeconds, lastWeight, lastReps, onLogDeleted,
-  onDuplicateSet, 
+  onDuplicateSet, onDeleteSet,
   initialWeight, 
   initialReps    
 }) => {

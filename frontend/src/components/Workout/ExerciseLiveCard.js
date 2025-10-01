@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
-import { FaDumbbell, FaHistory, FaCalculator} from 'react-icons/fa';
+import { FaDumbbell, FaHistory, FaCalculator, FaPlus } from 'react-icons/fa';
 import SetRow from './SetRow';
 import PlateCalculatorModal from './PlateCalculatorModal';
 import ExerciseDetailModal from './ExerciseDetailModal';
@@ -210,7 +210,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
           onSelectWeight={handleWeightFromCalculator}
         />
       )}
-      
+
       {isDetailModalOpen && (
         <ExerciseDetailModal
           exercise={planExercise.exerciseDetails}
