@@ -48,6 +48,18 @@ const ExerciseList = styled.ul`
   overflow: hidden;
 `;
 
+const MessageBaseStyles = css`
+  text-align: center;
+  padding: 12px 18px;
+  margin: 10px auto;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border-width: 1px;
+  border-style: solid;
+  max-width: 100%;
+  font-size: 0.9rem;
+  font-weight: 500;
+`;
+
 const ExerciseItem = styled.li`
   padding: 15px 20px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
