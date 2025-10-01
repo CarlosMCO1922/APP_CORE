@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService, deleteExercisePerformanceLogService } from '../../services/progressService';
-import { FaCheck, FaTimes, FaRedo, FaWeightHanging, FaDumbbell, FaExclamationTriangle } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaDumbbell } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 
 // --- Keyframes para animação de shake (se a ação falhar ou for inválida) ---
@@ -21,63 +21,46 @@ const SwipeableRowContainer = styled.div`
   overflow: hidden;
   border-radius: ${({ theme }) => theme.borderRadius};
   margin-bottom: 8px;
-  background-color: ${({ theme }) => theme.colors.cardBackground}; /* Fundo padrão da linha */
-  box-shadow: ${({ theme }) => theme.boxShadowLight};
-
-  &:last-child {
-      margin-bottom: 0;
-  }
+  background-color: ${({ theme }) => theme.colors.cardBackground};
 `;
 
 const ActionBackground = styled.div`
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 100%; /* Ocupa toda a largura, mas os ícones ficam nos cantos */
+  width: 100px; /* Largura da área de ação visível */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: ${({ side }) => side === 'left' ? 'flex-start' : 'flex-end'};
-  padding: 0 20px;
-  color: white;
-  font-size: 1.6rem;
-  z-index: 1; /* Abaixo do SwipeableContent */
+  justify-content: center;
+  color: ${({ textColor }) => textColor};
+  z-index: 1;
   background-color: ${({ color }) => color};
   
-  /* Esconde os ícones até o deslize começar */
-  svg {
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
+  ${({ side }) => side === 'left' ? 'left: 0;' : 'right: 0;'}
+`;
+
+const ActionText = styled.span`
+  font-size: 1.5rem;
+  font-weight: bold;
 `;
 
 const SwipeableContent = styled.div`
   display: grid;
-  grid-template-columns: 50px 1fr 1fr 60px; /* SÉRIE | PESO | REPS | AÇÃO */
+  grid-template-columns: 50px 1fr 1fr 60px;
   align-items: center;
   gap: 12px;
   padding: 8px 10px;
-  background-color: ${({ theme }) => theme.colors.cardBackground}; /* Fundo do conteúdo principal */
-  border-radius: ${({ theme }) => theme.borderRadius};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   position: relative;
-  z-index: 2; /* Sempre por cima das ações de fundo */
-  cursor: grab; /* Indica que pode ser arrastado */
-  transition: transform 0.3s ease-out; /* Transição para o movimento de snap */
+  z-index: 2; /* Fica SEMPRE por cima das ações de fundo */
+  cursor: grab;
+  transition: transform 0.3s ease-out;
   
   ${({ isSwiping, transformX }) => isSwiping && `
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     cursor: grabbing;
-    transform: translateX(${transformX}px); /* Controla o deslize dinamicamente */
-    transition: none; /* Desativa a transição durante o deslize ativo */
-  `}
-  
-  /* Mostra os ícones das ações de fundo quando há algum deslize */
-  ${({ transformX }) => (transformX !== 0 && transformX !== undefined) && `
-    & + ${ActionBackground} svg { opacity: 1; }
-  `}
-
-  /* Animação de shake para feedback de erro */
-  ${({ animateShake }) => animateShake && `
-    animation: ${shake} 0.5s ease-in-out;
+    transform: translateX(${transformX}px);
+    transition: none;
   `}
 `;
 
@@ -151,10 +134,8 @@ const SetRow = ({
   const [isSwiping, setIsSwiping] = useState(false);
   const [transformX, setTransformX] = useState(0); // Para controlar a posição do swipe
   const [isLoading, setIsLoading] = useState(false);
-  const [animateShake, setAnimateShake] = useState(false); // Estado para animação de shake
 
   const SWIPE_THRESHOLD = 90; // Aumentei o limiar para um deslize maior
-  const MAX_SWIPE = 100; // Limite máximo para o deslize visual
   
   const handleClear = () => {
     setWeight('');
@@ -223,12 +204,13 @@ const SetRow = ({
       setTransformX(eventData.deltaX);
     },
     onSwiped: (eventData) => {
+      if (isCompleted) return;
       if (eventData.deltaX > SWIPE_THRESHOLD) { // Deslizar para a direita -> Limpar
         handleClear();
       } else if (eventData.deltaX < -SWIPE_THRESHOLD) { // Deslizar para a esquerda -> Duplicar
         handleDuplicate();
       } else {
-        resetSwipe();
+        resetSwipe(); // Volta ao centro se não deslizar o suficiente
       }
     },
     trackMouse: true,
@@ -265,23 +247,21 @@ const SetRow = ({
   
   return (
     <SwipeableRowContainer>
-      {/* As ações de fundo agora têm um fundo discreto da cor do tema */}
-      <ActionBackground side="left" color="#D32F2F">
-        <FaRedo />
+      {/* As duas ações de fundo, agora corretamente configuradas */}
+      <ActionBackground side="left" color="#D32F2F" textColor="white">
+        <FaTimes />
       </ActionBackground>
-      <ActionBackground side="right" color="#1976D2">
-        <FaExclamationTriangle />
+      <ActionBackground side="right" color={({ theme }) => theme.colors.primary} textColor={({ theme }) => theme.colors.textDark}>
+        <ActionText>x2</ActionText>
       </ActionBackground>
 
-      <SwipeableContent className="swipe-content" {...handlers}
-                       isCompleted={isCompleted} isSwiping={isSwiping} transformX={transformX}
-                       animateShake={animateShake}>
+      <SwipeableContent {...handlers} transformX={transformX} isCompleted={isCompleted}>
         <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
         
         {isCompleted ? (
           <>
-            <CompletedText>{completedLog?.performedWeight || lastWeight || '-'} kg</CompletedText>
-            <CompletedText>{completedLog?.performedReps || lastReps || '-'}</CompletedText>
+            <CompletedText>{completedLog?.performedWeight || weight || '-'} kg</CompletedText>
+            <CompletedText>{completedLog?.performedReps || reps || '-'}</CompletedText>
           </>
         ) : (
           <>
@@ -291,16 +271,15 @@ const SetRow = ({
         )}
         
         <div>
-          {!isCompleted && (
-            <ActionButton onClick={handleComplete} disabled={isLoading || (!weight && !reps)}>
-              {isLoading ? <FaDumbbell /> : <FaCheck />} {/* Ícone de loading */}
-            </ActionButton>
-          )}
-           {isCompleted && ( /* Adiciona um ícone de "concluído" discreto */
+          {isCompleted ? (
              <ActionButton disabled style={{ backgroundColor: 'transparent', color: '#4CAF50' }}>
                <FaCheck />
              </ActionButton>
-           )}
+          ) : (
+            <ActionButton onClick={handleComplete} disabled={isLoading || (!weight && !reps)}>
+              {isLoading ? <FaDumbbell /> : <FaCheck />}
+            </ActionButton>
+          )}
         </div>
       </SwipeableContent>
     </SwipeableRowContainer>

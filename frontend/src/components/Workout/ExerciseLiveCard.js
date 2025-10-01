@@ -161,11 +161,11 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
         setNumber: prevSets.length + 1, 
         prescribedReps: planExercise.reps,
         // Adicionamos valores iniciais para a nova linha
-        initialWeight: baseWeight,
-        initialReps: baseReps
+        lastWeight: baseWeight,
+        lastReps: baseReps
       }
     ]);
-};
+  };
   
   const handleDeleteSet = (setIdToDelete) => {
     setSets(prevSets => {
@@ -209,7 +209,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
             <SetRow
               key={set.id}
               setId={set.id}
-              setNumber={set.setNumber}
+              setNumber={index + 1}
               prescribedReps={set.prescribedReps}
               trainingId={trainingId}
               workoutPlanId={workoutPlanId}
@@ -222,7 +222,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
               onLogDeleted={onLogDeleted}
               initialWeight={set.initialWeight} // Passa os valores iniciais
               initialReps={set.initialReps}
-              onDuplicateSet={() => handleDuplicateSet(set.weight, set.reps)} // <-- NOVA PROP
+              onDuplicateSet={handleDuplicateSet} 
             />
           ))}
         </div>
