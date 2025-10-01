@@ -22,6 +22,7 @@ import PersonalRecordsPage from './pages/PersonalRecordsPage';
 import GroupTrainingCalendarPage from './pages/GroupTrainingCalendarPage';
 import IndividualPTRequestPage from './pages/IndividualPTRequestPage';
 import ClientProgressOverviewPage from './pages/ClientProgressOverviewPage';
+import WorkoutPlanSummaryPage from './pages/WorkoutPlanSummaryPage';
 
 import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
 import AdminUserDetailsPage from './pages/admin/AdminUserDetailsPage';
@@ -92,6 +93,7 @@ function App() {
             <Route path="/treino-ao-vivo/treino/:trainingId" element={<LiveWorkoutSessionPage />} />
             <Route path="/meu-progresso-detalhado" element={<ClientProgressOverviewPage />} />
             <Route path="/pedir-pt-individual" element={<IndividualPTRequestPage />} />
+            <Route path="/plano/:globalPlanId/resumo" element={<WorkoutPlanSummaryPage />} />
           </Route>
           {/* Rotas de Staff/Admin */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'trainer', 'physiotherapist', 'employee']} />}>

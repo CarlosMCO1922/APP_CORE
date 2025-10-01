@@ -238,8 +238,8 @@ const ExploreWorkoutPlansPage = () => {
                     {plan.planExercises.length > 3 && <li>... e mais.</li>}
                   </ExercisePreviewList>
                 )}
-                <UsePlanButton as={Link} to={`/treino-ao-vivo/plano/${plan.id}`} onClick={(e) => e.stopPropagation()}>
-                    Iniciar treino
+                <UsePlanButton as={Link} to={`/plano/${plan.id}/resumo`} onClick={(e) => e.stopPropagation()}>
+                  Iniciar treino
                 </UsePlanButton>
               </ExpandableContent>
             </PlanCard>
