@@ -1,9 +1,12 @@
 // src/components/Workout/ExerciseLiveCard.js
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { FaPlus, FaEllipsisH } from 'react-icons/fa';
 import SetRow from './SetRow';
+import { useAuth } from '../../context/AuthContext';
+import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
+
 
 const CardContainer = styled.div`
   margin-bottom: 35px;
@@ -132,9 +135,12 @@ const DropdownMenu = styled.div`
 `;
 
 const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComplete, onLogDeleted }) => {
-  const [sets, setSets] = useState([]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
+const { authState } = useAuth();
+const [lastPerformanceText, setLastPerformanceText] = useState('');
+const [lastPerformanceData, setLastPerformanceData] = useState({ weight: '', reps: '' });
+const [historyError, setHistoryError] = useState('');
+const [sharedWeight, setSharedWeight] = useState('');
+const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));

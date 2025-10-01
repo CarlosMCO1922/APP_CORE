@@ -1,5 +1,5 @@
 // src/components/Workout/SetRow.js - VERSÃO POLIDA E INTUITIVA
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService } from '../../services/progressService';
@@ -126,18 +126,6 @@ const SetRow = ({ setId, setNumber, onDeleteSet, onSetComplete, lastWeight, last
   const [isCompleted, setIsCompleted] = useState(false);
   const [transformX, setTransformX] = useState(0);
 
-  
-  const handleClear = () => {
-    setWeight('');
-    setReps('');
-    resetSwipe();
-  };
-
-  const handleDuplicate = () => {
-    onDuplicateSet(weight, reps);
-    resetSwipe();
-  };
-
   useEffect(() => {
     if (lastWeight !== undefined && lastReps !== undefined) {
       // Se a série já foi completada, não redefina os valores
@@ -150,30 +138,7 @@ const SetRow = ({ setId, setNumber, onDeleteSet, onSetComplete, lastWeight, last
 
   const resetSwipe = () => {
     setTransformX(0);
-    setIsSwiping(false);
   };
-
-  const handleUndoComplete = async () => {
-    if (!completedLog) {
-        setAnimateShake(true); // Animação de shake se não houver log para desfazer
-        setTimeout(() => setAnimateShake(false), 500);
-        return;
-    }
-    try {
-      await deleteExercisePerformanceLogService(completedLog.id, authState.token);
-      onLogDeleted(completedLog.id);
-      setIsCompleted(false);
-      setCompletedLog(null);
-      // Redefinir para os últimos valores ou vazio
-      setWeight(lastWeight || '');
-      setReps(lastReps || '');
-    } catch(err) {
-      alert("Falha ao desfazer a série.");
-    } finally {
-      resetSwipe();
-    }
-  };
-
 
   const handleComplete = async () => {
     if (isCompleted || (!weight && !reps)) return;
@@ -213,7 +178,6 @@ const SetRow = ({ setId, setNumber, onDeleteSet, onSetComplete, lastWeight, last
     trackMouse: true,
     preventScrollOnSwipe: true,
   });
-
 
   
   return (
