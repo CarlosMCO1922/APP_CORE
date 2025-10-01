@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import styled, { useTheme } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService'; 
 import { FaArrowLeft, FaDumbbell, FaChevronRight } from 'react-icons/fa';
