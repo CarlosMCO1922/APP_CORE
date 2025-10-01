@@ -134,6 +134,7 @@ const SetRow = ({
   const [isSwiping, setIsSwiping] = useState(false);
   const [transformX, setTransformX] = useState(0); // Para controlar a posição do swipe
   const [isLoading, setIsLoading] = useState(false);
+  const [animateShake, setAnimateShake] = useState(false);
 
   const SWIPE_THRESHOLD = 90; // Aumentei o limiar para um deslize maior
   

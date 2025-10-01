@@ -205,7 +205,7 @@ const ExerciseLiveCard = ({ planExercise, trainingId, workoutPlanId, onSetComple
         </SetsGridHeader>
         
         <div>
-          {sets.map((set) => (
+          {sets.map((set, index) => (
             <SetRow
               key={set.id}
               setId={set.id}
