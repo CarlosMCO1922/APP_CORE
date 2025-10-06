@@ -286,7 +286,7 @@ function LoginPage() {
             </SubmitButton>
           </FormGroup>
 
-          <Link to="/reset-password" style={{ color: 'white', marginTop: '15px', display: 'block', textAlign: 'center' }}>
+          <Link to="/reset-password" style={{ color: '#fcb535', marginTop: '15px', textDecoration: 'none', display: 'block', textAlign: 'center' }}>
             Esqueci-me da palavra-passe
           </Link>
         </Form>
