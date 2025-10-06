@@ -209,13 +209,17 @@ const getWorkoutPlansForTraining = async (req, res) => {
 
     const associatedPlans = await training.getWorkoutPlans({
       include: [{
-        model: db.WorkoutPlanExercise, as: 'planExercises', order: [['order', 'ASC']],
+        model: db.WorkoutPlanExercise,
+        as: 'planExercises',
+        // --- LINHA CORRIGIDA ---
+        order: [['supersetGroup', 'ASC'], ['order', 'ASC']],
+        // -----------------------
         include: [{ model: db.Exercise, as: 'exerciseDetails' }]
       }],
       joinTableAttributes: ['orderInTraining'],
       order: [
-        db.sequelize.literal(`"${db.TrainingWorkoutPlan.name}"."orderInTraining"`), 
-        ['order','ASC']
+        db.sequelize.literal(`"TrainingWorkoutPlans"."orderInTraining"`),
+        ['order', 'ASC']
       ]
     });
     res.status(200).json(associatedPlans);
