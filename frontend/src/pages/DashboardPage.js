@@ -774,22 +774,34 @@ const DashboardPage = () => {
                           )}
 
                           <ItemList ref={seriesSliderRef}>
-                              {availableSeries.map(series => (
-                                  <ItemCard key={series.id} itemType="series">
-                                      <div>
-                                          <h3>{series.name}</h3>
-                                          <p><FaRegClock /> Todas as {moment().day(series.dayOfWeek).format('dddd')}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
-                                          {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName}</p>}
-                                      </div>
-                                      <EventActions>
-                                          <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
-                                              <FaInfoCircle /> Ver Detalhes e Inscrever
-                                          </LinkStyleButton>
-                                          <span /> 
-                                      </EventActions>
+                              {availableSeries.map(series => {
+                                // --- LÓGICA DE VERIFICAÇÃO ADICIONADA AQUI ---
+                                let diaDaSemanaFormatado = 'Dia inválido'; // Um valor padrão
+                                // Verificamos se dayOfWeek não é nulo e é um número válido (0-6)
+                                if (series.dayOfWeek != null && series.dayOfWeek >= 0 && series.dayOfWeek <= 6) {
+                                    diaDaSemanaFormatado = moment().day(series.dayOfWeek).format('dddd');
+                                }
+                                // --- FIM DA LÓGICA DE VERIFICAÇÃO ---
 
-                                  </ItemCard>
-                              ))}
+                                return (
+                                    <ItemCard key={series.id} itemType="series">
+                                        <div>
+                                            <h3>{series.name}</h3>
+                                            
+                                            {/* Usamos a nossa variável segura aqui */}
+                                            <p><FaRegClock /> Todas as {diaDaSemanaFormatado}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
+                                            
+                                            {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName}</p>}
+                                        </div>
+                                        <EventActions>
+                                            <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
+                                                <FaInfoCircle /> Ver Detalhes e Inscrever
+                                            </LinkStyleButton>
+                                            <span /> 
+                                        </EventActions>
+                                    </ItemCard>
+                                );
+                            })}
                           </ItemList>
                       </SliderContainer>
                   ) : (
