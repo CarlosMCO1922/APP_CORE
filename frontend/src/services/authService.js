@@ -1,6 +1,10 @@
 // src/services/authService.js
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+export const requestPasswordReset = (data) => api.post('/auth/request-password-reset', data);
+export const verifyResetCode = (data) => api.post('/auth/verify-reset-code', data);
+export const resetPassword = (data) => api.post('/auth/reset-password', data);
+
 export const loginAPI = async (email, password, isStaffLogin = false) => {
   const endpoint = isStaffLogin ? '/auth/staff/login' : '/auth/login';
   try {

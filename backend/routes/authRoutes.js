@@ -8,6 +8,10 @@ router.post('/register', authController.registerUser);
 router.post('/login', authController.loginUser);       
 
 router.post('/staff/register', authController.registerStaff); 
-router.post('/staff/login', authController.loginStaff);       
+router.post('/staff/login', authController.loginStaff);    
+
+router.post('/request-password-reset', authController.requestPasswordReset);
+router.post('/verify-reset-code', authController.verifyResetCode);
+router.post('/reset-password', authController.resetPassword);
 
 module.exports = router;

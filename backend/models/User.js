@@ -32,12 +32,23 @@ module.exports = (sequelize) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    // --- NOVOS CAMPOS ADICIONADOS ---
+    passwordResetToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    passwordResetExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    // ---------------------------------
   }, {
     tableName: 'users',
     timestamps: true,
   });
 
   User.associate = (models) => {
+    // ... as suas associações existentes mantêm-se aqui ...
     User.belongsToMany(models.Training, {
       through: 'UserTrainings', 
       foreignKey: 'userId',    
@@ -58,7 +69,7 @@ module.exports = (sequelize) => {
       foreignKey: 'userId',
       as: 'exercisePerformances', 
       onDelete: 'CASCADE',
-});
+    });
   };
 
   return User;

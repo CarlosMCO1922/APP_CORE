@@ -285,6 +285,10 @@ function LoginPage() {
               {loading ? 'A entrar...' : 'Entrar'}
             </SubmitButton>
           </FormGroup>
+
+          <Link to="/reset-password" style={{ color: 'white', marginTop: '15px', display: 'block', textAlign: 'center' }}>
+            Esqueci-me da palavra-passe
+          </Link>
         </Form>
 
         <RegisterLinkText>

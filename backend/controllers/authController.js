@@ -2,6 +2,7 @@
 const db = require('../models'); 
 const { hashPassword, comparePassword } = require('../utils/passwordUtils');
 const { generateToken } = require('../utils/tokenUtils');
+const crypto = require('crypto');
 
 // Registo de um novo Utilizador (Cliente)
 const registerUser = async (req, res) => {
@@ -172,9 +173,76 @@ const loginStaff = async (req, res) => {
 };
 
 
+const requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'O email é obrigatório.' });
+
+  try {
+    const user = await db.User.findOne({ where: { email } });
+    if (user) {
+      const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+      user.passwordResetToken = crypto.createHash('sha256').update(resetCode).digest('hex');
+      user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // Expira em 10 minutos
+      await user.save();
+      
+      // TODO: Implementar a lógica de envio de email aqui
+      // await sendEmail({ to: user.email, subject: 'Código de Recuperação', html: `O seu código é: ${resetCode}` });
+      console.log(`CÓDIGO DE RESET PARA ${user.email}: ${resetCode}`); // Linha temporária para testes
+    }
+    res.status(200).json({ message: 'Se existir uma conta com este email, receberá um código de recuperação.' });
+  } catch (error) {
+    console.error('Erro ao pedir reset de password:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+};
+
+const verifyResetCode = async (req, res) => {
+    const { email, code } = req.body;
+    if (!email || !code) return res.status(400).json({ message: 'Email e código são obrigatórios.' });
+    
+    try {
+        const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+        const user = await db.User.findOne({
+            where: { email, passwordResetToken: hashedCode, passwordResetExpires: { [db.Sequelize.Op.gt]: Date.now() } }
+        });
+        if (!user) return res.status(400).json({ message: 'Código inválido ou expirado.' });
+        res.status(200).json({ message: 'Código verificado com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao verificar código de reset:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    const { email, code, password } = req.body;
+    if (!email || !code || !password) return res.status(400).json({ message: 'Email, código e nova password são obrigatórios.' });
+
+    try {
+        const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+        const user = await db.User.findOne({
+            where: { email, passwordResetToken: hashedCode, passwordResetExpires: { [db.Sequelize.Op.gt]: Date.now() } }
+        });
+        if (!user) return res.status(400).json({ message: 'Pedido de reset inválido ou expirado.' });
+
+        user.password = await hashPassword(password);
+        user.passwordResetToken = null;
+        user.passwordResetExpires = null;
+        await user.save();
+        res.status(200).json({ message: 'Palavra-passe atualizada com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao redefinir password:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+
 module.exports = {
   registerUser,
   loginUser,
   registerStaff,
   loginStaff,
+  // Adicionar as novas funções ao export
+  requestPasswordReset,
+  verifyResetCode,
+  resetPassword,
 };
