@@ -77,6 +77,7 @@ function App() {
           <Route path="/login" element={ !authState.isAuthenticated ? <LoginPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)}/>
           <Route path="/register" element={ !authState.isAuthenticated ? <RegisterPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)}/>
           <Route path='/login-staff' element={ !authState.isAuthenticated ? <StaffLoginPage/> : <Navigate to="/admin/dashboard" replace/>}/>
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           {/* Rotas de Cliente */}
           <Route element={<ProtectedRoute allowedRoles={['user']} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -95,7 +96,6 @@ function App() {
             <Route path="/meu-progresso-detalhado" element={<ClientProgressOverviewPage />} />
             <Route path="/pedir-pt-individual" element={<IndividualPTRequestPage />} />
             <Route path="/plano/:globalPlanId/resumo" element={<WorkoutPlanSummaryPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Route>
           {/* Rotas de Staff/Admin */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'trainer', 'physiotherapist', 'employee']} />}>
