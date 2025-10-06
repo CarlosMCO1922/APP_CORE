@@ -61,8 +61,8 @@ const SetLabel = styled.span`
 const Input = styled.input`
   width: 100%;
   padding: 12px;
-  background-color: ${({ theme }) => theme.colors.inputBackground}; /* MUDOU */
-  border: 1px solid ${({ theme }) => theme.colors.inputBorder}; /* MUDOU */
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; /* MUDOU */
+  border: 1px solid ${({ theme }) => theme.colors.buttonSecondaryBg}; /* MUDOU */
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
   text-align: center;
