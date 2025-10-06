@@ -204,13 +204,28 @@ const LiveWorkoutSessionPage = () => {
     setSupersetSelection([]);
   }
 
-  const sortedPlanExercises = useMemo(() => {
-    if (!workoutPlan?.planExercises) return [];
-    return [...workoutPlan.planExercises].sort((a, b) => a.order - b.order);
+const exerciseBlocks = useMemo(() => {
+    // O workoutPlan pode ser um array, pegamos o primeiro.
+    const currentPlan = Array.isArray(workoutPlan) ? workoutPlan[0] : workoutPlan;
+    const exercises = currentPlan?.planExercises;
+
+    if (!exercises || exercises.length === 0) return [];
+
+    // Usamos um objeto para agrupar exercícios pelo 'supersetGroup'
+    const groups = exercises.reduce((acc, exercise) => {
+      // Usamos o nome de campo correto: supersetGroup
+      const blockId = exercise.supersetGroup;
+      if (!acc[blockId]) {
+        acc[blockId] = [];
+      }
+      acc[blockId].push(exercise);
+      return acc;
+    }, {});
+
+    // Convertemos o objeto de grupos num array de arrays, já ordenado pelas chaves
+    return Object.values(groups);
   }, [workoutPlan]);
 
-  const exerciseIdsInSupersets = useMemo(() => supersetGroups.flat(), [supersetGroups]);
-  const regularExercises = useMemo(() => sortedPlanExercises.filter(ex => !exerciseIdsInSupersets.includes(ex.id)), [sortedPlanExercises, exerciseIdsInSupersets]);
 
   if (loading) return <PageContainer><LoadingText>A carregar sessão...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
@@ -225,34 +240,43 @@ const LiveWorkoutSessionPage = () => {
       <PageContainer>
         <SessionTitle>{sessionName}</SessionTitle>
 
-        {/* Renderizar os grupos de superséries */}
-        {supersetGroups.map((groupIds, index) => {
-          const groupExercises = groupIds.map(id => sortedPlanExercises.find(ex => ex.id === id)).filter(Boolean); // .filter(Boolean) para segurança
-          if (groupExercises.length === 0) return null;
-          return <SupersetCard 
-                    key={`superset-${index}`} 
-                    group={groupExercises} 
-                    trainingId={trainingId}
-                    workoutPlanId={workoutPlan?.id}
-                    onSetComplete={handleSetComplete}
-                 />;
-        })}
+        {/* --- LÓGICA DE RENDERIZAÇÃO CORRIGIDA --- */}
+        {exerciseBlocks.map((block) => {
+          // A key deve ser única para o bloco. Usamos o ID do primeiro exercício do bloco.
+          const blockKey = `block-${block[0].id}`;
 
-        {/* Renderizar os exercícios normais */}
-        {regularExercises.map(exercise => (
-          <ExerciseLiveCard
-            key={exercise.id}
-            planExercise={exercise}
-            trainingId={trainingId}
-            workoutPlanId={workoutPlan?.id}
-            onSetComplete={handleSetComplete}
-            onLogDeleted={handleLogDeleted}
-            onStartSuperset={handleStartSuperset}
-            isSelectionModeActive={isSelectionModeActive}
-            isSelected={supersetSelection.includes(exercise.id)}
-            onToggleSelect={handleToggleExerciseSelection}
-          />
-        ))}
+          if (block.length > 1) {
+            // Se o bloco tem mais de 1 exercício, é uma supersérie
+            return (
+              <SupersetCard 
+                key={blockKey} 
+                group={block}
+                trainingId={trainingId}
+                workoutPlanId={(Array.isArray(workoutPlan) ? workoutPlan[0] : workoutPlan)?.id}
+                onSetComplete={handleSetComplete}
+              />
+            );
+          } else if (block.length === 1) {
+            // Se o bloco tem apenas 1 exercício, é um exercício normal
+            const exercise = block[0];
+            return (
+              <ExerciseLiveCard
+                key={exercise.id}
+                planExercise={exercise}
+                trainingId={trainingId}
+                workoutPlanId={(Array.isArray(workoutPlan) ? workoutPlan[0] : workoutPlan)?.id}
+                onSetComplete={handleSetComplete}
+                onLogDeleted={handleLogDeleted}
+                // Nota: A criação de superséries pelo cliente pode ser desativada se for só o admin a criar
+                onStartSuperset={handleStartSuperset} 
+                isSelectionModeActive={isSelectionModeActive}
+                isSelected={supersetSelection.includes(exercise.id)}
+                onToggleSelect={handleToggleExerciseSelection}
+              />
+            );
+          }
+          return null; // Bloco vazio não renderiza nada
+        })}
       </PageContainer>
       
       <Footer>
