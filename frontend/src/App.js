@@ -94,6 +94,7 @@ function App() {
             <Route path="/meu-progresso-detalhado" element={<ClientProgressOverviewPage />} />
             <Route path="/pedir-pt-individual" element={<IndividualPTRequestPage />} />
             <Route path="/plano/:globalPlanId/resumo" element={<WorkoutPlanSummaryPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Route>
           {/* Rotas de Staff/Admin */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'trainer', 'physiotherapist', 'employee']} />}>
