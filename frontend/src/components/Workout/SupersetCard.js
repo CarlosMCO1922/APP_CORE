@@ -46,7 +46,8 @@ const LastPerformance = styled.p` font-size: 0.8rem; color: ${({ theme }) => the
 
 const SupersetCard = ({ group, trainingId, workoutPlanId, onSetComplete }) => {
   // O 'group' é um array de objetos planExercise
-  const [setsCount, setSetsCount] = useState(1); // Controla quantas "rondas" da supersérie existem
+  const initialSetsCount = group && group.length > 0 ? group[0].sets || 1 : 1;
+  const [setsCount, setSetsCount] = useState(initialSetsCount); // Controla quantas "rondas" da supersérie existem
 
   const handleAddRound = () => {
     setSetsCount(prev => prev + 1);
@@ -65,12 +66,16 @@ const SupersetCard = ({ group, trainingId, workoutPlanId, onSetComplete }) => {
         <span>Série</span><span>KG</span><span>Reps</span><span></span>
       </SetsGridHeader>
 
+      {/* O loop agora vai renderizar o número correto de rondas */}
       {Array.from({ length: setsCount }).map((_, roundIndex) => (
-        <div key={roundIndex} style={{ marginBottom: '25px', borderBottom: '1px solid #333', paddingBottom: '15px' }}>
+        <div key={roundIndex} style={{ 
+            marginBottom: '25px', 
+            borderBottom: roundIndex < setsCount - 1 ? '1px solid #333' : 'none', 
+            paddingBottom: '15px' 
+        }}>
           {group.map((planExercise) => (
             <ExerciseGroup key={planExercise.id}>
                <SetRow
-                  // O ID da série precisa ser único
                   key={`${planExercise.id}-${roundIndex}`}
                   setId={`superset-${planExercise.id}-${roundIndex}`}
                   setNumber={roundIndex + 1}
@@ -78,12 +83,11 @@ const SupersetCard = ({ group, trainingId, workoutPlanId, onSetComplete }) => {
                   trainingId={trainingId}
                   workoutPlanId={workoutPlanId}
                   onSetComplete={onSetComplete}
-                  restSeconds={planExercise.restSeconds} // Idealmente, o descanso é após o grupo
+                  restSeconds={planExercise.restSeconds}
                   onDeleteSet={() => { /* Lógica para apagar uma ronda inteira */ }}
                 />
             </ExerciseGroup>
           ))}
-          {/* O descanso deve ser aplicado após completar todos os exercícios da ronda */}
         </div>
       ))}
 
