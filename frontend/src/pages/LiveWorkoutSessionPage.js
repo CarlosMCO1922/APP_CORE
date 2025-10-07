@@ -118,50 +118,24 @@ const LiveWorkoutSessionPage = () => {
 
   const exerciseBlocks = useMemo(() => {
     if (!activeWorkout || !activeWorkout.planExercises) return [];
-
-    // 1. Garante que os exercícios estão ordenados pela ordem definida pelo admin
     const sortedExercises = [...activeWorkout.planExercises].sort((a, b) => a.order - b.order);
-    
     if (sortedExercises.length === 0) return [];
-
     const blocks = [];
     let currentBlock = [];
-
     sortedExercises.forEach((exercise, index) => {
       const prevExercise = index > 0 ? sortedExercises[index - 1] : null;
-
-      // Condições para iniciar um NOVO bloco:
-      // 1. É o primeiro exercício da lista.
-      // 2. O exercício atual NÃO pertence a uma superset.
-      // 3. O exercício anterior NÃO pertencia a uma superset.
-      // 4. O exercício atual pertence a uma superset DIFERENTE da do exercício anterior.
-      const shouldStartNewBlock = 
-        !prevExercise ||
-        !exercise.supersetGroup ||
-        !prevExercise.supersetGroup ||
-        exercise.supersetGroup !== prevExercise.supersetGroup;
-
+      const shouldStartNewBlock = !prevExercise || !exercise.supersetGroup || !prevExercise.supersetGroup || exercise.supersetGroup !== prevExercise.supersetGroup;
       if (shouldStartNewBlock) {
-        // Se já existe um bloco a ser construído, guarda-o primeiro
-        if (currentBlock.length > 0) {
-          blocks.push(currentBlock);
-        }
-        // Inicia um novo bloco com o exercício atual
+        if (currentBlock.length > 0) blocks.push(currentBlock);
         currentBlock = [exercise];
       } else {
-        // Se o exercício pertence à mesma superset do anterior, adiciona-o ao bloco atual
         currentBlock.push(exercise);
       }
     });
-
-    // Adiciona o último bloco que estava a ser construído à lista final
-    if (currentBlock.length > 0) {
-      blocks.push(currentBlock);
-    }
-
+    if (currentBlock.length > 0) blocks.push(currentBlock);
     return blocks;
   }, [activeWorkout]);
-  // --- FIM DA SOLUÇÃO ---
+  
 
   const handleSetComplete = (performanceData) => {
     const fullSetData = { /* ... (código igual, está correto) ... */ };
@@ -207,73 +181,72 @@ const LiveWorkoutSessionPage = () => {
 
         <SessionTitle>{activeWorkout.name}</SessionTitle>
 
-{exerciseBlocks.map((block, index) => {
-          const isSuperset = block.length > 1;
-          const firstExercise = block[0];
+          {exerciseBlocks.map((block, index) => {
+              const isSuperset = block.length > 1;
 
-          return (
-            <BlockContainer key={`block-${index}`} isSuperset={isSuperset}>
-              <BlockHeader isSuperset={isSuperset}>
-                <BlockTitle isSuperset={isSuperset}>
-                  {isSuperset && <FaLink />}
-                  {isSuperset ? 'Superset' : firstExercise.exerciseDetails.name}
-                </BlockTitle>
-                {!isSuperset && (
-                   <ExerciseActions>
-                    <ActionButton onClick={() => handleShowHistory(firstExercise.exerciseDetails)} title="Ver Histórico">
-                      <FaHistory />
-                    </ActionButton>
-                    <ActionButton onClick={() => alert('Menu de opções do exercício')} title="Opções">
-                      <FaEllipsisV />
-                    </ActionButton>
-                  </ExerciseActions>
-                )}
-              </BlockHeader>
-
-              {block.map(planExercise => (
-                <div key={planExercise.id}>
-                  {isSuperset && (
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
-                      <h4 style={{margin: 0, fontSize: '1.1rem'}}>{planExercise.exerciseDetails.name}</h4>
-                       <ExerciseActions>
-                          <ActionButton onClick={() => handleShowHistory(planExercise.exerciseDetails)} title="Ver Histórico"><FaHistory /></ActionButton>
-                          <ActionButton onClick={() => alert('Menu de opções')} title="Opções"><FaEllipsisV /></ActionButton>
-                       </ExerciseActions>
-                    </div>
-                  )}
-                  <ExerciseLiveCard
-                    planExercise={planExercise}
+              // Se o bloco é uma superset, usamos o componente SupersetCard
+              if (isSuperset) {
+                return (
+                  <SupersetCard
+                    key={`superset-${index}`}
+                    exercises={block} // O SupersetCard recebe o bloco inteiro
                     onSetComplete={handleSetComplete}
+                    onShowHistory={handleShowHistory}
+                    // Passa os IDs necessários para o ExerciseLiveCard dentro da superset
                     trainingId={activeWorkout.trainingId || null}
                     workoutPlanId={activeWorkout.id}
                   />
-                </div>
-              ))}
-            </BlockContainer>
-          )
-        })}
-        
-        <div style={{ height: '80px' }} /> 
+                );
+              } 
+              
+              // Se for um exercício individual, renderiza diretamente
+              else {
+                const planExercise = block[0];
+                return (
+                  <div key={planExercise.id} style={{ marginBottom: '40px' }}>
+                    <ExerciseHeader>
+                      <ExerciseTitle>{planExercise.exerciseDetails.name}</ExerciseTitle>
+                      <ExerciseActions>
+                        <ActionButton onClick={() => handleShowHistory(planExercise.exerciseDetails)} title="Ver Histórico">
+                          <FaHistory />
+                        </ActionButton>
+                        <ActionButton onClick={() => alert('Menu de opções do exercício')} title="Opções">
+                          <FaEllipsisV />
+                        </ActionButton>
+                      </ExerciseActions>
+                    </ExerciseHeader>
+                    <ExerciseLiveCard
+                      planExercise={planExercise}
+                      onSetComplete={handleSetComplete}
+                      trainingId={activeWorkout.trainingId || null}
+                      workoutPlanId={activeWorkout.id}
+                    />
+                  </div>
+                );
+              }
+            })}
+            
+            <div style={{ height: '80px' }} /> 
 
-        <Footer>
-          <CancelButton onClick={cancelWorkout}><FaTimes /> Cancelar</CancelButton>
-          <FinishButton onClick={finishWorkout}>Concluir Treino</FinishButton>
-        </Footer>
+            <Footer>
+              <CancelButton onClick={cancelWorkout}><FaTimes /> Cancelar</CancelButton>
+              <FinishButton onClick={finishWorkout}>Concluir Treino</FinishButton>
+            </Footer>
       </PageContainer>
-      
-      {isHistoryModalOpen && (
-        <ExerciseHistoryModal 
-          isOpen={isHistoryModalOpen}
-          onClose={() => setIsHistoryModalOpen(false)}
-          data={historyData}
-          isLoading={loadingHistory}
-          exerciseName={selectedExerciseName}
-        />
-      )}
+            
+            {isHistoryModalOpen && (
+              <ExerciseHistoryModal 
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                data={historyData}
+                isLoading={loadingHistory}
+                exerciseName={selectedExerciseName}
+              />
+            )}
 
-      {activeRestTimer.active && ( <RestTimer key={activeRestTimer.key} duration={activeRestTimer.duration} onFinish={() => setActiveRestTimer({ ...activeRestTimer, active: false })} /> )}
-    </>
-  );
-};
+            {activeRestTimer.active && ( <RestTimer key={activeRestTimer.key} duration={activeRestTimer.duration} onFinish={() => setActiveRestTimer({ ...activeRestTimer, active: false })} /> )}
+          </>
+        );
+      };
 
 export default LiveWorkoutSessionPage;
