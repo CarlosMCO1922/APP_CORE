@@ -165,6 +165,7 @@ const WorkoutPlanSummaryPage = () => {
 
   const handleStartWorkout = () => {
     if (plan) {
+      console.log('DADOS DO PLANO ENVIADOS PARA O TREINO:', JSON.stringify(plan, null, 2));
       startWorkout(plan);
     }
   };
