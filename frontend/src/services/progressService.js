@@ -1,5 +1,4 @@
 // src/services/progressService.js
-import api from './api';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'; 
 console.log('API_URL em uso no progressService:', API_URL); 
 
