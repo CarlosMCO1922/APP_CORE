@@ -1,4 +1,5 @@
 // src/services/progressService.js
+import api from './api';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'; 
 console.log('API_URL em uso no progressService:', API_URL); 
 
@@ -283,5 +284,21 @@ export const updateExercisePerformanceService = async (performanceId, performanc
   } catch (error) {
     console.error('Erro no serviço de atualização de performance:', error);
     throw error;
+  }
+};
+
+export const getExerciseHistoryService = async (exerciseId, token) => {
+  try {
+    const response = await api.get(`/progress/history/exercise/${exerciseId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    // Imprime um erro mais detalhado na consola para debugging
+    console.error('Erro no serviço ao buscar histórico de exercício:', error.response?.data || error.message);
+    // Lança o erro para que o componente que chamou a função possa tratá-lo
+    throw error.response?.data || new Error('Falha ao comunicar com o servidor.');
   }
 };
