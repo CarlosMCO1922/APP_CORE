@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useWorkout } from './context/WorkoutContext';
+import styled from 'styled-components';
 
 // Componentes de Página 
 import LoginPage from './pages/LoginPage';
@@ -79,7 +80,6 @@ const CancelButton = styled.button`
 // --- Componente ProtectedRoute  ---
 const ProtectedRoute = ({ allowedRoles }) => {
   const { authState } = useAuth();
-  const { activeWorkout, isMinimized, setIsMinimized, cancelWorkout } = useWorkout();
   if (!authState.isAuthenticated) return <Navigate to="/login" replace />;
   const currentRole = authState.role; 
 
@@ -99,6 +99,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
 function App() {
   const { authState } = useAuth();
+  const { activeWorkout, isMinimized, setIsMinimized, cancelWorkout } = useWorkout();
   useEffect(() => {
   }, [authState]);
 
@@ -164,6 +165,7 @@ function App() {
       {activeWorkout && !isMinimized && (
         <LiveWorkoutSessionPage />
       )}
+      
       {activeWorkout && isMinimized && (
         <MinimizedBar onClick={() => setIsMinimized(false)}>
           <span>Treino em Andamento: {activeWorkout.name}</span>

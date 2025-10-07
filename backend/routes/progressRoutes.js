@@ -11,6 +11,7 @@ const {
   updatePerformanceLog,
   adminGetUserRecords,
   adminGetFullExerciseHistoryForUser,
+  getExerciseHistoryForClient,
 } = require('../controllers/progressController');
 
 const { protect, isClientUser, isStaff } = require('../middleware/authMiddleware');
