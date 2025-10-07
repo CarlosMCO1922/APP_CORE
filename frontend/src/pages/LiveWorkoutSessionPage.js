@@ -1,6 +1,7 @@
 // src/pages/LiveWorkoutSessionPage.js - VERSÃO CORRIGIDA E SIMPLIFICADA
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
+import { useAuth } from '../context/AuthContext'; 
 import { useWorkout } from '../context/WorkoutContext';
 import { FaChevronDown, FaStopwatch, FaTimes, FaHistory, FaEllipsisV } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard'; 
@@ -51,10 +52,34 @@ const CancelButton = styled(FooterButton)`
   background-color: ${({ theme }) => theme.colors.error}; color: white;
 `;
 
+const BlockContainer = styled.div`
+  background-color: ${({ theme, isSuperset }) => isSuperset ? theme.colors.cardBackground : 'transparent'};
+  border-left: ${({ theme, isSuperset }) => isSuperset ? `4px solid ${theme.colors.primary}` : 'none'};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  padding: ${({ isSuperset }) => isSuperset ? '20px' : '0'};
+  margin-bottom: 20px;
+  box-shadow: ${({ isSuperset }) => isSuperset ? '0 4px 15px rgba(0,0,0,0.1)' : 'none'};
+`;
+
+const BlockHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: ${({ isSuperset }) => isSuperset ? '10px' : '0'};
+  border-bottom: ${({ theme, isSuperset }) => isSuperset ? `1px solid ${theme.colors.cardBorder}` : 'none'};
+`;
+
+const BlockTitle = styled.h2`
+  color: ${({ theme, isSuperset }) => isSuperset ? theme.colors.primary : theme.colors.textMain};
+  font-size: ${({ isSuperset }) => isSuperset ? '1.2rem' : '1.3rem'};
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
 const ExerciseActions = styled.div`
-  position: absolute;
-  top: 15px;
-  right: 15px;
   display: flex;
   gap: 15px;
   align-items: center;
@@ -67,15 +92,11 @@ const ActionButton = styled.button`
   cursor: pointer;
   font-size: 1.2rem;
   padding: 5px;
-  display: flex;
-  align-items: center;
-  &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-  }
+  &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
 
 const LiveWorkoutSessionPage = () => {
-  // DADOS VÊM EXCLUSIVAMENTE DO CONTEXTO. Sem useParams, sem fetch local.
+  const { authState } = useAuth();
   const { activeWorkout, finishWorkout, cancelWorkout, logSet, setIsMinimized } = useWorkout();
   
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -95,22 +116,23 @@ const LiveWorkoutSessionPage = () => {
     return () => clearInterval(timerInterval);
   }, [activeWorkout]);
 
-  const exerciseBlocks = useMemo(() => {
+const exerciseBlocks = useMemo(() => {
     if (!activeWorkout || !activeWorkout.planExercises) return [];
 
-    // Agrupa exercícios pelo 'supersetGroup'. Exercícios sem grupo ficam sozinhos.
     const groups = activeWorkout.planExercises.reduce((acc, exercise) => {
       const groupId = exercise.supersetGroup || `single_${exercise.id}`;
-      if (!acc[groupId]) {
-        acc[groupId] = [];
-      }
+      if (!acc[groupId]) acc[groupId] = [];
       acc[groupId].push(exercise);
       return acc;
     }, {});
-
-    // Ordena os grupos pela 'order' do primeiro exercício de cada grupo
+    
+    // Para cada grupo, ordena os exercícios DENTRO do grupo
+    for (const groupId in groups) {
+      groups[groupId].sort((a, b) => a.order - b.order);
+    }
     return Object.values(groups).sort((a, b) => a[0].order - b[0].order);
   }, [activeWorkout]);
+  
 
   const handleSetComplete = (performanceData) => {
     const fullSetData = {
@@ -129,7 +151,7 @@ const LiveWorkoutSessionPage = () => {
     setSelectedExerciseName(exercise.name);
     setIsHistoryModalOpen(true);
     try {
-      const data = await getExerciseHistoryService(exercise.id);
+      const data = await getExerciseHistoryService(exercise.id, authState.token);
       setHistoryData(data);
     } catch (error) {
       console.error("Erro ao buscar histórico:", error);
@@ -161,31 +183,50 @@ const LiveWorkoutSessionPage = () => {
 
         <SessionTitle>{activeWorkout.name}</SessionTitle>
 
-        {exerciseBlocks.map((block, index) => {
-          if (block.length === 1) {
-            const planExercise = block[0];
-            return (
-              <div key={planExercise.id} style={{ position: 'relative', marginBottom: '20px' }}>
-                <ExerciseLiveCard
-                  planExercise={planExercise}
-                  onSetComplete={handleSetComplete}
-                />
-                <ExerciseActions>
-                  <ActionButton onClick={() => handleShowHistory(planExercise.exerciseDetails)} title="Ver Histórico">
-                    <FaHistory />
-                  </ActionButton>
-                  <ActionButton onClick={() => alert('Menu de opções do exercício')} title="Opções">
-                    <FaEllipsisV />
-                  </ActionButton>
-                </ExerciseActions>
-              </div>
-            );
-          } 
-          else {
-            return (
-              <SupersetCard key={`superset-${index}`} exercises={block} onSetComplete={handleSetComplete} onShowHistory={handleShowHistory}/>
-            );
-          }
+{exerciseBlocks.map((block, index) => {
+          const isSuperset = block.length > 1;
+          const firstExercise = block[0];
+
+          return (
+            <BlockContainer key={`block-${index}`} isSuperset={isSuperset}>
+              <BlockHeader isSuperset={isSuperset}>
+                <BlockTitle isSuperset={isSuperset}>
+                  {isSuperset && <FaLink />}
+                  {isSuperset ? 'Superset' : firstExercise.exerciseDetails.name}
+                </BlockTitle>
+                {!isSuperset && (
+                   <ExerciseActions>
+                    <ActionButton onClick={() => handleShowHistory(firstExercise.exerciseDetails)} title="Ver Histórico">
+                      <FaHistory />
+                    </ActionButton>
+                    <ActionButton onClick={() => alert('Menu de opções do exercício')} title="Opções">
+                      <FaEllipsisV />
+                    </ActionButton>
+                  </ExerciseActions>
+                )}
+              </BlockHeader>
+
+              {block.map(planExercise => (
+                <div key={planExercise.id}>
+                  {isSuperset && (
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                      <h4 style={{margin: 0, fontSize: '1.1rem'}}>{planExercise.exerciseDetails.name}</h4>
+                       <ExerciseActions>
+                          <ActionButton onClick={() => handleShowHistory(planExercise.exerciseDetails)} title="Ver Histórico"><FaHistory /></ActionButton>
+                          <ActionButton onClick={() => alert('Menu de opções')} title="Opções"><FaEllipsisV /></ActionButton>
+                       </ExerciseActions>
+                    </div>
+                  )}
+                  <ExerciseLiveCard
+                    planExercise={planExercise}
+                    onSetComplete={handleSetComplete}
+                    trainingId={activeWorkout.trainingId || null}
+                    workoutPlanId={activeWorkout.id}
+                  />
+                </div>
+              ))}
+            </BlockContainer>
+          )
         })}
         
         <div style={{ height: '80px' }} /> 

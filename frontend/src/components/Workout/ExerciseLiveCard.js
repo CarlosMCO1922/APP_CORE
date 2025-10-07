@@ -37,66 +37,24 @@ const DropdownMenu = styled.div`
 const ExerciseLiveCard = ({ 
   planExercise, 
   trainingId, 
-  workoutPlanId, 
+  workoutPlanId, // <-- Prop nova
   onSetComplete, 
-  onLogDeleted,
-  onStartSuperset, 
-  isSelectionModeActive, 
-  isSelected, 
-  onToggleSelect 
 }) => {
-  const { authState } = useAuth();
   const [sets, setSets] = useState([]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
   const [lastPerformanceText, setLastPerformanceText] = useState('Sem registos anteriores.');
-  const [lastPerformanceData, setLastPerformanceData] = useState({ weight: '', reps: '' });
-
+  
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));
     setSets(initialSets);
   }, [planExercise]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuRef]);
-
-    const handleCardClick = () => {
-    if (isSelectionModeActive) {
-      onToggleSelect(planExercise.id);
-    }
-    // Se não estiver em modo de seleção, pode abrir o modal de detalhes, por exemplo.
-  };
   
-  const handleAddSet = () => { setSets(prevSets => [...prevSets, { id: Date.now() }]); };
-  const handleDeleteSet = (setIdToDelete) => {
-    setSets(prevSets => prevSets.filter(set => set.id !== setIdToDelete));
-    if (typeof setIdToDelete === 'number') onLogDeleted(setIdToDelete);
-  };
-  
+  const handleAddSet = () => setSets(prev => [...prev, { id: Date.now() }]);
+  const handleDeleteSet = (setIdToDelete) => setSets(prev => prev.filter(set => set.id !== setIdToDelete));
+
   return (
-    <CardContainer onClick={handleCardClick} style={{ border: isSelected ? '2px solid #007BFF' : 'none', cursor: isSelectionModeActive ? 'pointer' : 'default' }}>
-      <CardHeader>
-        <ExerciseName>{planExercise.exerciseDetails.name}</ExerciseName>
-        <div style={{ position: 'relative' }} ref={menuRef}>
-          <MoreActionsButton onClick={() => setMenuOpen(prev => !prev)}><FaEllipsisH /></MoreActionsButton>
-          {menuOpen && (
-            <DropdownMenu>
-              <button onClick={() => { 
-                onStartSuperset(planExercise.id); 
-                setMenuOpen(false); 
-              }}>
-                Criar Supersérie
-              </button>
-            </DropdownMenu>
-          )}
-        </div>
-      </CardHeader>
-      <LastPerformance><FaHistory /> {lastPerformanceText}</LastPerformance>
+    <CardContainer>
+      {/* O Header e os botões de ação foram removidos daqui e movidos para a página principal */}
+      <LastPerformance>{lastPerformanceText}</LastPerformance>
       
       <SetsGridHeader><span>Série</span><span>KG</span><span>Reps</span><span></span></SetsGridHeader>
       
@@ -107,13 +65,12 @@ const ExerciseLiveCard = ({
             setId={set.id}
             setNumber={index + 1}
             planExerciseId={planExercise.id}
-            trainingId={trainingId}
-            workoutPlanId={workoutPlanId}
+            trainingId={trainingId} // Passado para o SetRow
+            workoutPlanId={workoutPlanId} // Passado para o SetRow
             onSetComplete={onSetComplete}
             restSeconds={planExercise.restSeconds}
             onDeleteSet={() => handleDeleteSet(set.id)}
-            lastWeight={lastPerformanceData.weight}
-            lastReps={lastPerformanceData.reps}
+            // lastWeight e lastReps podem vir de uma chamada ao histórico
           />
         ))}
       </div>
