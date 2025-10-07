@@ -111,15 +111,31 @@ const LiveWorkoutSessionPage = () => {
     return () => clearInterval(timerInterval);
   }, [activeWorkout]);
 
-  const exerciseBlocks = useMemo(() => {
+const exerciseBlocks = useMemo(() => {
     if (!activeWorkout || !activeWorkout.planExercises) return [];
-    const sortedExercises = [...activeWorkout.planExercises].sort((a, b) => a.order - b.order);
-    if (sortedExercises.length === 0) return [];
+
+    // IMPORTANTE: Assumimos que a lista planExercises JÁ VEM do backend na ordem correta de apresentação.
+    // NÃO vamos reordená-la aqui para não estragar a sequência.
+    const exercisesInOrder = activeWorkout.planExercises;
+    
+    if (exercisesInOrder.length === 0) return [];
+
     const blocks = [];
     let currentBlock = [];
-    sortedExercises.forEach((exercise, index) => {
-      const prevExercise = index > 0 ? sortedExercises[index - 1] : null;
-      const shouldStartNewBlock = !prevExercise || !exercise.supersetGroup || !prevExercise.supersetGroup || exercise.supersetGroup !== prevExercise.supersetGroup;
+
+    exercisesInOrder.forEach((exercise, index) => {
+      const prevExercise = index > 0 ? exercisesInOrder[index - 1] : null;
+      
+      // A verificação 'supersetGroup == null' trata 'null' e 'undefined', mas ignora o 0.
+      const hasSuperset = exercise.supersetGroup != null;
+      const prevHasSuperset = prevExercise ? prevExercise.supersetGroup != null : false;
+
+      const shouldStartNewBlock = 
+        !prevExercise ||                                     // É o primeiro exercício
+        !hasSuperset ||                                      // O exercício atual é individual
+        !prevHasSuperset ||                                  // O exercício anterior era individual
+        exercise.supersetGroup !== prevExercise.supersetGroup; // A superset mudou
+
       if (shouldStartNewBlock) {
         if (currentBlock.length > 0) blocks.push(currentBlock);
         currentBlock = [exercise];
@@ -127,7 +143,11 @@ const LiveWorkoutSessionPage = () => {
         currentBlock.push(exercise);
       }
     });
-    if (currentBlock.length > 0) blocks.push(currentBlock);
+
+    if (currentBlock.length > 0) {
+      blocks.push(currentBlock);
+    }
+
     return blocks;
   }, [activeWorkout]);
   
