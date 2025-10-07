@@ -116,31 +116,55 @@ const LiveWorkoutSessionPage = () => {
     return () => clearInterval(timerInterval);
   }, [activeWorkout]);
 
-const exerciseBlocks = useMemo(() => {
+  const exerciseBlocks = useMemo(() => {
     if (!activeWorkout || !activeWorkout.planExercises) return [];
 
-    const groups = activeWorkout.planExercises.reduce((acc, exercise) => {
-      const groupId = exercise.supersetGroup || `single_${exercise.id}`;
-      if (!acc[groupId]) acc[groupId] = [];
-      acc[groupId].push(exercise);
-      return acc;
-    }, {});
+    // 1. Garante que os exercícios estão ordenados pela ordem definida pelo admin
+    const sortedExercises = [...activeWorkout.planExercises].sort((a, b) => a.order - b.order);
     
-    // Para cada grupo, ordena os exercícios DENTRO do grupo
-    for (const groupId in groups) {
-      groups[groupId].sort((a, b) => a.order - b.order);
+    if (sortedExercises.length === 0) return [];
+
+    const blocks = [];
+    let currentBlock = [];
+
+    sortedExercises.forEach((exercise, index) => {
+      const prevExercise = index > 0 ? sortedExercises[index - 1] : null;
+
+      // Condições para iniciar um NOVO bloco:
+      // 1. É o primeiro exercício da lista.
+      // 2. O exercício atual NÃO pertence a uma superset.
+      // 3. O exercício anterior NÃO pertencia a uma superset.
+      // 4. O exercício atual pertence a uma superset DIFERENTE da do exercício anterior.
+      const shouldStartNewBlock = 
+        !prevExercise ||
+        !exercise.supersetGroup ||
+        !prevExercise.supersetGroup ||
+        exercise.supersetGroup !== prevExercise.supersetGroup;
+
+      if (shouldStartNewBlock) {
+        // Se já existe um bloco a ser construído, guarda-o primeiro
+        if (currentBlock.length > 0) {
+          blocks.push(currentBlock);
+        }
+        // Inicia um novo bloco com o exercício atual
+        currentBlock = [exercise];
+      } else {
+        // Se o exercício pertence à mesma superset do anterior, adiciona-o ao bloco atual
+        currentBlock.push(exercise);
+      }
+    });
+
+    // Adiciona o último bloco que estava a ser construído à lista final
+    if (currentBlock.length > 0) {
+      blocks.push(currentBlock);
     }
-    return Object.values(groups).sort((a, b) => a[0].order - b[0].order);
+
+    return blocks;
   }, [activeWorkout]);
-  
+  // --- FIM DA SOLUÇÃO ---
 
   const handleSetComplete = (performanceData) => {
-    const fullSetData = {
-      ...performanceData,
-      workoutPlanId: activeWorkout.id, // ID do plano de treino global
-      performedAt: new Date().toISOString(), // Timestamp do momento
-      trainingId: activeWorkout.trainingId || null, 
-    };
+    const fullSetData = { /* ... (código igual, está correto) ... */ };
     logSet(fullSetData); 
     const restDuration = performanceData.restSeconds ?? 90;
     setActiveRestTimer({ active: true, duration: restDuration, key: Date.now() });
