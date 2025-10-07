@@ -104,7 +104,7 @@ function App() {
   }, [authState]);
 
   return (
-    <Router>
+    <>
       {authState.isAuthenticated && <Navbar />}
       <div className="main-content-area"> 
         <Routes>
@@ -174,7 +174,7 @@ function App() {
           </CancelButton>
         </MinimizedBar>
       )}
-  </Router>
+  </>
   );
 }
 export default App;

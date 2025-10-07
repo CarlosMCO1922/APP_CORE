@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
