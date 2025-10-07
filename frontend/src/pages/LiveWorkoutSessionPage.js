@@ -1,10 +1,11 @@
 // src/pages/LiveWorkoutSessionPage.js - VERSÃO CORRIGIDA E SIMPLIFICADA
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { useWorkout } from '../context/WorkoutContext';
-import { FaChevronDown, FaStopwatch, FaTimes, FaHistory } from 'react-icons/fa';
+import { FaChevronDown, FaStopwatch, FaTimes, FaHistory, FaEllipsisV } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard'; 
 import RestTimer from '../components/Workout/RestTimer'; 
+import SupersetCard from '../components/Workout/SupersetCard'; 
 import { getExerciseHistoryService } from '../services/progressService'; 
 import ExerciseHistoryModal from '../components/Workout/ExerciseHistoryModal'; 
 
@@ -50,6 +51,29 @@ const CancelButton = styled(FooterButton)`
   background-color: ${({ theme }) => theme.colors.error}; color: white;
 `;
 
+const ExerciseActions = styled.div`
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+`;
+
+const ActionButton = styled.button`
+  background: transparent;
+  border: none;
+  color: grey;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
 const LiveWorkoutSessionPage = () => {
   // DADOS VÊM EXCLUSIVAMENTE DO CONTEXTO. Sem useParams, sem fetch local.
   const { activeWorkout, finishWorkout, cancelWorkout, logSet, setIsMinimized } = useWorkout();
@@ -71,17 +95,33 @@ const LiveWorkoutSessionPage = () => {
     return () => clearInterval(timerInterval);
   }, [activeWorkout]);
 
-  const formatTime = (totalSeconds) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return `${hours > 0 ? String(hours).padStart(2, '0') + ':' : ''}${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  };
+  const exerciseBlocks = useMemo(() => {
+    if (!activeWorkout || !activeWorkout.planExercises) return [];
 
-  const handleSetComplete = (performanceData, restDuration) => {
-    logSet(performanceData);
-    const duration = restDuration ?? 90;
-    setActiveRestTimer({ active: true, duration: duration, key: Date.now() });
+    // Agrupa exercícios pelo 'supersetGroup'. Exercícios sem grupo ficam sozinhos.
+    const groups = activeWorkout.planExercises.reduce((acc, exercise) => {
+      const groupId = exercise.supersetGroup || `single_${exercise.id}`;
+      if (!acc[groupId]) {
+        acc[groupId] = [];
+      }
+      acc[groupId].push(exercise);
+      return acc;
+    }, {});
+
+    // Ordena os grupos pela 'order' do primeiro exercício de cada grupo
+    return Object.values(groups).sort((a, b) => a[0].order - b[0].order);
+  }, [activeWorkout]);
+
+  const handleSetComplete = (performanceData) => {
+    const fullSetData = {
+      ...performanceData,
+      workoutPlanId: activeWorkout.id, // ID do plano de treino global
+      performedAt: new Date().toISOString(), // Timestamp do momento
+      trainingId: activeWorkout.trainingId || null, 
+    };
+    logSet(fullSetData); 
+    const restDuration = performanceData.restSeconds ?? 90;
+    setActiveRestTimer({ active: true, duration: restDuration, key: Date.now() });
   };
   
   const handleShowHistory = async (exercise) => {
@@ -97,6 +137,13 @@ const LiveWorkoutSessionPage = () => {
     } finally {
       setLoadingHistory(false);
     }
+  };
+
+  const formatTime = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours > 0 ? String(hours).padStart(2, '0') + ':' : ''}${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
   
   // Se não houver treino ativo, o componente não renderiza nada (controlado pelo App.js)
@@ -114,23 +161,33 @@ const LiveWorkoutSessionPage = () => {
 
         <SessionTitle>{activeWorkout.name}</SessionTitle>
 
-        {activeWorkout.planExercises.sort((a,b) => a.order - b.order).map(planExercise => (
-            <div key={planExercise.id} style={{ position: 'relative', marginBottom: '20px' }}>
-              <ExerciseLiveCard
-                planExercise={planExercise}
-                onSetComplete={handleSetComplete}
-              />
-              <button 
-                onClick={() => handleShowHistory(planExercise.exerciseDetails)} 
-                title="Ver Histórico do Exercício"
-                style={{position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: 'grey', cursor: 'pointer', fontSize: '1.2rem'}}
-              >
-                <FaHistory />
-              </button>
-            </div>
-          ))}
+        {exerciseBlocks.map((block, index) => {
+          if (block.length === 1) {
+            const planExercise = block[0];
+            return (
+              <div key={planExercise.id} style={{ position: 'relative', marginBottom: '20px' }}>
+                <ExerciseLiveCard
+                  planExercise={planExercise}
+                  onSetComplete={handleSetComplete}
+                />
+                <ExerciseActions>
+                  <ActionButton onClick={() => handleShowHistory(planExercise.exerciseDetails)} title="Ver Histórico">
+                    <FaHistory />
+                  </ActionButton>
+                  <ActionButton onClick={() => alert('Menu de opções do exercício')} title="Opções">
+                    <FaEllipsisV />
+                  </ActionButton>
+                </ExerciseActions>
+              </div>
+            );
+          } 
+          else {
+            return (
+              <SupersetCard key={`superset-${index}`} exercises={block} onSetComplete={handleSetComplete} onShowHistory={handleShowHistory}/>
+            );
+          }
+        })}
         
-        {/* Espaço extra para não ficar debaixo do footer */}
         <div style={{ height: '80px' }} /> 
 
         <Footer>
