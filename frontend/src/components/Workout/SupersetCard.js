@@ -73,21 +73,24 @@ const SupersetCard = ({ exercises = [], onSetComplete, onShowHistory }) => {
         <SupersetTitle>Superset</SupersetTitle>
       </SupersetHeader>
       
-      {sortedExercises.map((planExercise) => (
+      {/* O .map() agora é seguro porque 'exercises' será sempre uma lista */}
+      {exercises.map((planExercise) => (
         <ExerciseWrapper key={planExercise.id}>
-           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
-              <h4 style={{margin: 0, fontSize: '1.1rem'}}>{planExercise.exerciseDetails.name}</h4>
-              <ExerciseActions>
-                  <ActionButton onClick={() => onShowHistory(planExercise.exerciseDetails)} title="Ver Histórico"><FaHistory /></ActionButton>
-                  <ActionButton onClick={() => alert('Menu de opções')} title="Opções"><FaEllipsisV /></ActionButton>
-              </ExerciseActions>
-            </div>
           <ExerciseLiveCard
             planExercise={planExercise}
             onSetComplete={onSetComplete}
-            trainingId={trainingId}
-            workoutPlanId={workoutPlanId}
           />
+          <ExerciseActions>
+            <ActionButton 
+              onClick={() => onShowHistory && onShowHistory(planExercise.exerciseDetails)} 
+              title="Ver Histórico do Exercício"
+            >
+              <FaHistory />
+            </ActionButton>
+            <ActionButton onClick={() => alert(`Menu de opções para ${planExercise.exerciseDetails.name}`)} title="Opções">
+              <FaEllipsisV />
+            </ActionButton>
+          </ExerciseActions>
         </ExerciseWrapper>
       ))}
     </SupersetContainer>
