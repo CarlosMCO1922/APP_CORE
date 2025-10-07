@@ -287,17 +287,27 @@ export const updateExercisePerformanceService = async (performanceId, performanc
 };
 
 export const getExerciseHistoryService = async (exerciseId, token) => {
+  if (!token) throw new Error('Token não fornecido para getExerciseHistoryService.');
+  if (!exerciseId) throw new Error('ID do Exercício é obrigatório.');
+
   try {
-    const response = await api.get(`/progress/history/exercise/${exerciseId}`, {
+    const url = `${API_URL}/progress/history/exercise/${exerciseId}`;
+    
+    const response = await fetch(url, {
+      method: 'GET', // Método GET
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        'Authorization': `Bearer ${token}`, // Envio do token de autorização
+      },
     });
-    return response.data;
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao buscar o histórico do exercício.');
+    }
+    return data;
+
   } catch (error) {
-    // Imprime um erro mais detalhado na consola para debugging
-    console.error('Erro no serviço ao buscar histórico de exercício:', error.response?.data || error.message);
-    // Lança o erro para que o componente que chamou a função possa tratá-lo
-    throw error.response?.data || new Error('Falha ao comunicar com o servidor.');
+    console.error("Erro em getExerciseHistoryService:", error);
+    throw error;
   }
 };
