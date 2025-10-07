@@ -37,18 +37,20 @@ const GlobalStyle = createGlobalStyle`
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <CustomThemeProvider>
-      <GlobalStyle />
-      <AuthProvider>
-        <WorkoutProvider>
-          <NotificationProvider> 
-            <Elements stripe={stripePromise}>
-              <App />
-            </Elements>
-          </NotificationProvider>
-        </WorkoutProvider>
-      </AuthProvider>
-    </CustomThemeProvider>
+    <Router>
+      <CustomThemeProvider>
+        <GlobalStyle />
+        <AuthProvider>
+          <WorkoutProvider>
+            <NotificationProvider> 
+              <Elements stripe={stripePromise}>
+                <App />
+              </Elements>
+            </NotificationProvider>
+          </WorkoutProvider>
+        </AuthProvider>
+      </CustomThemeProvider>
+    </Router>
   </React.StrictMode>
 );
 
