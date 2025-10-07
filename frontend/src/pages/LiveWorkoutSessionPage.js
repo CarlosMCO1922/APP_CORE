@@ -61,22 +61,17 @@ const BlockContainer = styled.div`
   box-shadow: ${({ isSuperset }) => isSuperset ? '0 4px 15px rgba(0,0,0,0.1)' : 'none'};
 `;
 
-const BlockHeader = styled.div`
+const ExerciseHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  padding-bottom: ${({ isSuperset }) => isSuperset ? '10px' : '0'};
-  border-bottom: ${({ theme, isSuperset }) => isSuperset ? `1px solid ${theme.colors.cardBorder}` : 'none'};
 `;
 
-const BlockTitle = styled.h2`
-  color: ${({ theme, isSuperset }) => isSuperset ? theme.colors.primary : theme.colors.textMain};
-  font-size: ${({ isSuperset }) => isSuperset ? '1.2rem' : '1.3rem'};
+const ExerciseTitle = styled.h2`
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 1.3rem;
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 `;
 
 const ExerciseActions = styled.div`
