@@ -6,6 +6,7 @@ import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService'; 
 import { FaArrowLeft, FaDumbbell, FaChevronRight } from 'react-icons/fa';
+import { useWorkout } from '../context/WorkoutContext';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -103,7 +104,7 @@ const Footer = styled.div`
   margin: 30px -20px -20px -20px; /* Expande para preencher o padding da página */
 `;
 
-const StartButton = styled(Link)`
+const StartButton = styled.button`
   display: block;
   width: 100%;
   background-color: ${({ theme }) => theme.colors.success};
@@ -114,6 +115,8 @@ const StartButton = styled(Link)`
   text-decoration: none;
   font-size: 1.2rem;
   font-weight: bold;
+  border: none; // Adicionado para remover a borda padrão do botão
+  cursor: pointer; // Adicionado para mostrar que é clicável
   transition: filter 0.2s;
 
   &:hover {
@@ -139,6 +142,7 @@ const ErrorText = styled.p`
 const WorkoutPlanSummaryPage = () => {
   const { globalPlanId } = useParams();
   const { authState } = useAuth();
+  const { startWorkout } = useWorkout();
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -158,6 +162,12 @@ const WorkoutPlanSummaryPage = () => {
     };
     fetchPlanDetails();
   }, [globalPlanId, authState.token]);
+
+  const handleStartWorkout = () => {
+    if (plan) {
+      startWorkout(plan);
+    }
+  };
 
   if (loading) return <PageContainer><LoadingText>A carregar plano...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
@@ -187,7 +197,7 @@ const WorkoutPlanSummaryPage = () => {
       </ExerciseList>
 
       <Footer>
-        <StartButton to={`/treino-ao-vivo/plano/${globalPlanId}`}>
+        <StartButton onClick={handleStartWorkout}>
           Iniciar Treino
         </StartButton>
       </Footer>

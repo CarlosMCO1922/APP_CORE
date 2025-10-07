@@ -27,6 +27,7 @@ router.get('/my-history/training/:trainingId/plan/:workoutPlanId', protect, isCl
 router.get('/my-exercise-history/:planExerciseId', protect, isClientUser, getMyPerformanceHistoryForExercise);
 router.post('/check-prs', protect, isClientUser, checkPersonalRecords);
 router.get('/my-records', protect, isClientUser, getMyPersonalRecords);
+router.get('/history/exercise/:exerciseId', protect, isClientUser, getExerciseHistoryForClient);
 
 // --- ROTA DE STAFF/ADMIN ---
 router.get('/admin/user-records/:userId', protect, isStaff, adminGetUserRecords);

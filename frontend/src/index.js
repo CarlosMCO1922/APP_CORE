@@ -13,6 +13,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { CustomThemeProvider } from './context/ThemeContext';
+import { WorkoutProvider } from './context/WorkoutContext';
 
 console.log('CHAVE STRIPE A SER USADA NO INDEX.JS:', process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
@@ -38,11 +39,13 @@ root.render(
     <CustomThemeProvider>
       <GlobalStyle />
       <AuthProvider>
-        <NotificationProvider> 
-          <Elements stripe={stripePromise}>
-            <App />
-          </Elements>
-        </NotificationProvider>
+        <WorkoutProvider>
+          <NotificationProvider> 
+            <Elements stripe={stripePromise}>
+              <App />
+            </Elements>
+          </NotificationProvider>
+        </WorkoutProvider>
       </AuthProvider>
     </CustomThemeProvider>
   </React.StrictMode>

@@ -451,6 +451,44 @@ const adminGetFullExerciseHistoryForUser = async (req, res) => {
     }
 };
 
+const getExerciseHistoryForClient = async (req, res) => {
+  try {
+    // Obtém o ID do exercício a partir do URL (ex: /api/progress/history/exercise/15)
+    const { exerciseId } = req.params;
+    // Obtém o ID do utilizador que está autenticado (através do middleware 'protect')
+    const userId = req.user.id;
+
+    if (!userId) {
+      return res.status(403).json({ message: "Utilizador não autenticado." });
+    }
+
+    // Procura na tabela de performance (ClientExercisePerformance)
+    // A consulta é complexa porque precisamos de encontrar o exerciseId que está noutra tabela
+    const history = await db.ClientExercisePerformance.findAll({
+      where: {
+        userId: userId,
+      },
+      // Inclui a tabela de "exercício do plano" para podermos filtrar pelo ID do exercício base
+      include: [{
+        model: db.WorkoutPlanExercise,
+        as: 'planExerciseDetails',
+        where: {
+          exerciseId: parseInt(exerciseId) // <-- O FILTRO PRINCIPAL
+        },
+        attributes: [] // Não precisamos dos atributos desta tabela, só de a usar para o filtro
+      }],
+      order: [['performedAt', 'DESC']], // Ordena pelos mais recentes
+      limit: 5, // Limita aos últimos 5 registos
+    });
+
+    res.status(200).json(history);
+
+  } catch (error) {
+    console.error('Erro ao obter histórico do exercício para o cliente:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
@@ -460,5 +498,6 @@ module.exports = {
   getMyPersonalRecords,
   updatePerformanceLog,
   adminGetUserRecords,
-  adminGetFullExerciseHistoryForUser
+  adminGetFullExerciseHistoryForUser,
+  getExerciseHistoryForClient
 };

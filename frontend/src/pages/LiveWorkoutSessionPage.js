@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { getWorkoutPlansByTrainingId, getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService';
 import { FaArrowLeft, FaStopwatch, FaFlagCheckered } from 'react-icons/fa';
@@ -57,16 +58,17 @@ const BackLink = styled(Link)`
 `;
 
 const Footer = styled.div`
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 15px;
-  background-color: ${({ theme }) => theme.colors.background};
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 15px;
+    background-color: ${({ theme }) => theme.colors.background};
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+    z-index: 1101; // Z-index alto
+    display: flex;
+    gap: 10px;
+    justify-content: center;
 `;
 
 const FinishWorkoutButton = styled.button`
@@ -84,6 +86,29 @@ const FinishWorkoutButton = styled.button`
   &:hover { filter: brightness(1.1); }
 `;
 
+const FooterButton = styled.button`
+  flex: 1;
+  padding: 15px;
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: filter 0.2s;
+
+  &:hover { filter: brightness(1.1); }
+`;
+
+const FinishButton = styled(FooterButton)`
+  background-color: ${({ theme }) => theme.colors.success};
+  color: white;
+`;
+
+const CancelButton = styled(FooterButton)`
+  background-color: ${({ theme }) => theme.colors.error};
+  color: white;
+`;
+
 const LoadingText = styled.p` text-align: center; color: ${({ theme }) => theme.colors.primary}; padding: 40px; font-size: 1.2rem; `;
 const ErrorText = styled.p` text-align: center; color: ${({ theme }) => theme.colors.error}; padding: 20px; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; border-radius: 8px; `;
 
@@ -91,7 +116,7 @@ const LiveWorkoutSessionPage = () => {
   const { globalPlanId, trainingId } = useParams();
   const { authState } = useAuth();
   const navigate = useNavigate();
-
+  const { activeWorkout, finishWorkout, cancelWorkout, logSet, setIsMinimized } = useWorkout();
   const [workoutPlan, setWorkoutPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -140,6 +165,14 @@ const LiveWorkoutSessionPage = () => {
     return () => clearInterval(timerInterval);
   }, [sessionStartTime]);
 
+  useEffect(() => {
+    if (!activeWorkout) return;
+    const timerInterval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - activeWorkout.startTime) / 1000));
+    }, 1000);
+    return () => clearInterval(timerInterval);
+  }, [activeWorkout]);
+
   const formatTime = (totalSeconds) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -147,9 +180,12 @@ const LiveWorkoutSessionPage = () => {
     return `${hours > 0 ? String(hours).padStart(2, '0') + ':' : ''}${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
 
-  const handleSetComplete = (performanceData, restDuration) => {
-    setCompletedSets(prev => [...prev, performanceData]);
-    const duration = restDuration !== null && restDuration !== undefined ? restDuration : 90;
+   const handleSetComplete = (performanceData, restDuration) => {
+    // A lógica de logSet agora vive no contexto, se quisermos. 
+    // Ou simplesmente atualizamos o progresso aqui.
+    // Vamos chamar o logSet do contexto para centralizar
+    logSet(performanceData); 
+    const duration = restDuration ?? 90;
     setActiveRestTimer({ active: true, duration: duration, key: Date.now() });
   };
 
@@ -226,7 +262,22 @@ const exerciseBlocks = useMemo(() => {
     return Object.values(groups);
   }, [workoutPlan]);
 
+  const handleShowHistory = async (exerciseId) => {
+    setLoadingHistory(true);
+    setIsHistoryModalOpen(true);
+    try {
+      // Esta função no seu service irá chamar o novo endpoint do backend
+      const data = await getExerciseHistoryService(exerciseId);
+      setHistoryData(data);
+    } catch (error) {
+      console.error("Erro ao buscar histórico:", error);
+      setHistoryData([]); // Para mostrar uma mensagem de erro no modal
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
+  if (!activeWorkout) return null; 
   if (loading) return <PageContainer><LoadingText>A carregar sessão...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
 
@@ -234,65 +285,49 @@ const exerciseBlocks = useMemo(() => {
     <>
       <SessionHeader>
         <BackLink to="/dashboard" title="Sair do Treino"><FaArrowLeft /></BackLink>
+        <button onClick={() => setIsMinimized(true)} style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'white'}}><FaChevronDown /></button>
         <SessionTimer><FaStopwatch /> {formatTime(elapsedTime)}</SessionTimer>
       </SessionHeader>
 
       <PageContainer>
-        <SessionTitle>{sessionName}</SessionTitle>
+        <SessionTitle>{activeWorkout.name}</SessionTitle>
 
-        {/* --- LÓGICA DE RENDERIZAÇÃO CORRIGIDA --- */}
-        {exerciseBlocks.map((block) => {
-          // A key deve ser única para o bloco. Usamos o ID do primeiro exercício do bloco.
-          const blockKey = `block-${block[0].id}`;
-
-          if (block.length > 1) {
-            // Se o bloco tem mais de 1 exercício, é uma supersérie
-            return (
-              <SupersetCard 
-                key={blockKey} 
-                group={block}
-                trainingId={trainingId}
-                workoutPlanId={(Array.isArray(workoutPlan) ? workoutPlan[0] : workoutPlan)?.id}
-                onSetComplete={handleSetComplete}
-              />
-            );
-          } else if (block.length === 1) {
-            // Se o bloco tem apenas 1 exercício, é um exercício normal
-            const exercise = block[0];
-            return (
-              <ExerciseLiveCard
-                key={exercise.id}
-                planExercise={exercise}
-                trainingId={trainingId}
-                workoutPlanId={(Array.isArray(workoutPlan) ? workoutPlan[0] : workoutPlan)?.id}
-                onSetComplete={handleSetComplete}
-                onLogDeleted={handleLogDeleted}
-                // Nota: A criação de superséries pelo cliente pode ser desativada se for só o admin a criar
-                onStartSuperset={handleStartSuperset} 
-                isSelectionModeActive={isSelectionModeActive}
-                isSelected={supersetSelection.includes(exercise.id)}
-                onToggleSelect={handleToggleExerciseSelection}
-              />
-            );
-          }
-          return null; // Bloco vazio não renderiza nada
-        })}
-      </PageContainer>
+      
+      {activeWorkout.planExercises.sort((a,b) => a.order - b.order).map(exercise => (
+          <div key={exercise.id}>
+            <button onClick={() => handleShowHistory(exercise.exerciseDetails.id)} title="Ver Histórico">📊</button>
+            <ExerciseLiveCard
+              planExercise={exercise}
+              onSetComplete={handleSetComplete}
+            />
+            <button 
+              onClick={() => handleShowHistory(planExercise.exerciseDetails.id)} 
+              title="Ver Histórico do Exercício"
+              style={{position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: 'grey', cursor: 'pointer', fontSize: '1.2rem'}}
+            >
+              <FaHistory />
+            </button>
+          </div>
+        ))}
       
       <Footer>
-        {isSelectionModeActive ? (
-            <>
-                <FinishWorkoutButton onClick={handleCancelSuperset}>Cancelar</FinishWorkoutButton>
-                <FinishWorkoutButton onClick={handleConfirmSuperset} primary>
-                    Agrupar {supersetSelection.length} Exercícios
-                </FinishWorkoutButton>
-            </>
-        ) : (
-             <FinishWorkoutButton onClick={handleFinishWorkout}>Concluir Treino</FinishWorkoutButton>
-        )}
+        <CancelButton onClick={cancelWorkout}><FaTimes /> Cancelar Sessão</CancelButton>
+        <FinishButton onClick={finishWorkout}>Concluir Treino</FinishButton>
       </Footer>
       
-      {activeRestTimer.active && ( <RestTimer key={activeRestTimer.key} duration={activeRestTimer.duration} onFinish={() => setActiveRestTimer(prev => ({ ...prev, active: false }))} /> )}
+      </PageContainer>
+      
+      {isHistoryModalOpen && (
+        <ExerciseHistoryModal 
+          isOpen={isHistoryModalOpen}
+          onClose={() => setIsHistoryModalOpen(false)}
+          data={historyData}
+          isLoading={loadingHistory}
+          exerciseName={historyData?.[0]?.exercise?.name || ''}
+        />
+      )}
+
+      {activeRestTimer.active && ( <RestTimer key={activeRestTimer.key} duration={activeRestTimer.duration} onFinish={() => setActiveRestTimer({ ...activeRestTimer, active: false })} /> )}
     </>
   );
 };

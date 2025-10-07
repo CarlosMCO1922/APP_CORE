@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { useWorkout } from './context/WorkoutContext';
 
 // Componentes de Página 
 import LoginPage from './pages/LoginPage';
@@ -44,9 +45,41 @@ import AdminClientSelectionPage from './pages/admin/AdminClientSelectionPage';
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
 
+const MinimizedBar = styled.div`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #222;
+  color: white;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border-top: 3px solid ${({ theme }) => theme.colors.primary};
+  z-index: 1000;
+  transition: transform 0.3s ease-in-out;
+
+  &:hover {
+    background-color: #333;
+  }
+`;
+
+const CancelButton = styled.button`
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+`;
+
 // --- Componente ProtectedRoute  ---
 const ProtectedRoute = ({ allowedRoles }) => {
   const { authState } = useAuth();
+  const { activeWorkout, isMinimized, setIsMinimized, cancelWorkout } = useWorkout();
   if (!authState.isAuthenticated) return <Navigate to="/login" replace />;
   const currentRole = authState.role; 
 
@@ -91,8 +124,6 @@ function App() {
             <Route path="/agendar" element={<BookingCalendarPage />} />
             <Route path="/agendar-treino-grupo" element={<GroupTrainingCalendarPage />} />
             <Route path="/treino/resumo" element={<WorkoutSummaryPage />} />
-            <Route path="/treino-ao-vivo/plano/:globalPlanId" element={<LiveWorkoutSessionPage />} />
-            <Route path="/treino-ao-vivo/treino/:trainingId" element={<LiveWorkoutSessionPage />} />
             <Route path="/meu-progresso-detalhado" element={<ClientProgressOverviewPage />} />
             <Route path="/pedir-pt-individual" element={<IndividualPTRequestPage />} />
             <Route path="/plano/:globalPlanId/resumo" element={<WorkoutPlanSummaryPage />} />
@@ -130,6 +161,17 @@ function App() {
           />
         </Routes>
       </div>
+      {activeWorkout && !isMinimized && (
+        <LiveWorkoutSessionPage />
+      )}
+      {activeWorkout && isMinimized && (
+        <MinimizedBar onClick={() => setIsMinimized(false)}>
+          <span>Treino em Andamento: {activeWorkout.name}</span>
+          <CancelButton onClick={(e) => { e.stopPropagation(); cancelWorkout(); }}>
+            Cancelar
+          </CancelButton>
+        </MinimizedBar>
+      )}
   </Router>
   );
 }
