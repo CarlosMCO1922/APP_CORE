@@ -1,12 +1,12 @@
 // src/pages/LiveWorkoutSessionPage.js - VERSÃO CORRIGIDA E SIMPLIFICADA
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
 import { useWorkout } from '../context/WorkoutContext';
-import {FaLink, FaChevronDown, FaStopwatch, FaTimes, FaHistory, FaEllipsisV } from 'react-icons/fa';
+import { FaChevronDown, FaStopwatch, FaTimes, FaHistory, FaEllipsisV } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard'; 
+import SupersetCard from '../components/Workout/SupersetCard';
 import RestTimer from '../components/Workout/RestTimer'; 
-import SupersetCard from '../components/Workout/SupersetCard'; 
 import { getExerciseHistoryService } from '../services/progressService'; 
 import ExerciseHistoryModal from '../components/Workout/ExerciseHistoryModal'; 
 
@@ -111,45 +111,40 @@ const LiveWorkoutSessionPage = () => {
     return () => clearInterval(timerInterval);
   }, [activeWorkout]);
 
-const exerciseBlocks = useMemo(() => {
+  const exerciseBlocks = useMemo(() => {
     if (!activeWorkout || !activeWorkout.planExercises) return [];
+        
+      // A sua observação está correta. A ordem que vem do backend é a que importa.
+      // O erro estava em tentar re-ordenar. Vamos apenas agrupar.
+      const exercisesInOrder = activeWorkout.planExercises;
+        
+      const blocks = [];
+      let i = 0;
+      while (i < exercisesInOrder.length) {
+        const currentExercise = exercisesInOrder[i];
+            
+        // Se o exercício não tem um grupo de superset, é um bloco individual.
+        if (!currentExercise.supersetGroup) {
+          blocks.push([currentExercise]);
+          i++;
+          continue;
+          }
 
-    // IMPORTANTE: Assumimos que a lista planExercises JÁ VEM do backend na ordem correta de apresentação.
-    // NÃO vamos reordená-la aqui para não estragar a sequência.
-    const exercisesInOrder = activeWorkout.planExercises;
-    
-    if (exercisesInOrder.length === 0) return [];
+            // Se tem um grupo, vamos encontrar todos os exercícios que partilham esse mesmo grupo.
+            const currentSupersetGroup = currentExercise.supersetGroup;
+            const exercisesInSuperset = exercisesInOrder.filter(
+                ex => ex.supersetGroup === currentSupersetGroup
+            );
+            
+            blocks.push(exercisesInSuperset);
+            
+            // Avançamos o índice 'i' para depois de todos os exercícios que acabámos de agrupar.
+            i += exercisesInSuperset.length;
+        }
+        
+        return blocks;
 
-    const blocks = [];
-    let currentBlock = [];
-
-    exercisesInOrder.forEach((exercise, index) => {
-      const prevExercise = index > 0 ? exercisesInOrder[index - 1] : null;
-      
-      // A verificação 'supersetGroup == null' trata 'null' e 'undefined', mas ignora o 0.
-      const hasSuperset = exercise.supersetGroup != null;
-      const prevHasSuperset = prevExercise ? prevExercise.supersetGroup != null : false;
-
-      const shouldStartNewBlock = 
-        !prevExercise ||                                     // É o primeiro exercício
-        !hasSuperset ||                                      // O exercício atual é individual
-        !prevHasSuperset ||                                  // O exercício anterior era individual
-        exercise.supersetGroup !== prevExercise.supersetGroup; // A superset mudou
-
-      if (shouldStartNewBlock) {
-        if (currentBlock.length > 0) blocks.push(currentBlock);
-        currentBlock = [exercise];
-      } else {
-        currentBlock.push(exercise);
-      }
-    });
-
-    if (currentBlock.length > 0) {
-      blocks.push(currentBlock);
-    }
-
-    return blocks;
-  }, [activeWorkout]);
+    }, [activeWorkout]);
   
 
   const handleSetComplete = (performanceData) => {
@@ -197,46 +192,37 @@ const exerciseBlocks = useMemo(() => {
         <SessionTitle>{activeWorkout.name}</SessionTitle>
 
           {exerciseBlocks.map((block, index) => {
-              const isSuperset = block.length > 1;
+                    const isSuperset = block.length > 1;
 
-              // Se o bloco é uma superset, usamos o componente SupersetCard
-              if (isSuperset) {
-                return (
-                  <SupersetCard
-                    key={`superset-${index}`}
-                    exercises={block} // O SupersetCard recebe o bloco inteiro
-                    onSetComplete={handleSetComplete}
-                    onShowHistory={handleShowHistory}
-                    // Passa os IDs necessários para o ExerciseLiveCard dentro da superset
-                    trainingId={activeWorkout.trainingId || null}
-                    workoutPlanId={activeWorkout.id}
-                  />
-                );
-              } 
-              
-              // Se for um exercício individual, renderiza diretamente
-              else {
-                const planExercise = block[0];
-                return (
-                  <div key={planExercise.id} style={{ marginBottom: '40px' }}>
-                    <ExerciseHeader>
-                      <ExerciseTitle>{planExercise.exerciseDetails.name}</ExerciseTitle>
-                      <ExerciseActions>
-                        <ActionButton onClick={() => handleShowHistory(planExercise.exerciseDetails)} title="Ver Histórico">
-                          <FaHistory />
-                        </ActionButton>
-                        <ActionButton onClick={() => alert('Menu de opções do exercício')} title="Opções">
-                          <FaEllipsisV />
-                        </ActionButton>
-                      </ExerciseActions>
-                    </ExerciseHeader>
-                    <ExerciseLiveCard
-                      planExercise={planExercise}
-                      onSetComplete={handleSetComplete}
-                      trainingId={activeWorkout.trainingId || null}
-                      workoutPlanId={activeWorkout.id}
-                    />
-                  </div>
+                    if (isSuperset) {
+                        return (
+                            <SupersetCard
+                                key={`superset-${block[0].supersetGroup || index}`}
+                                exercises={block}
+                                onSetComplete={handleSetComplete}
+                                onShowHistory={handleShowHistory}
+                                trainingId={activeWorkout.trainingId || null}
+                                workoutPlanId={activeWorkout.id}
+                            />
+                        );
+                    } else {
+                        const planExercise = block[0];
+                        return (
+                            <div key={planExercise.id} style={{ marginBottom: '40px' }}>
+                                <ExerciseHeader>
+                                    <ExerciseTitle>{planExercise.exerciseDetails.name}</ExerciseTitle>
+                                    <ExerciseActions>
+                                        <ActionButton onClick={() => handleShowHistory(planExercise.exerciseDetails)} title="Ver Histórico"><FaHistory /></ActionButton>
+                                        <ActionButton onClick={() => alert('Menu de opções do exercício')} title="Opções"><FaEllipsisV /></ActionButton>
+                                    </ExerciseActions>
+                                </ExerciseHeader>
+                                <ExerciseLiveCard
+                                    planExercise={planExercise}
+                                    onSetComplete={handleSetComplete}
+                                    trainingId={activeWorkout.trainingId || null}
+                                    workoutPlanId={activeWorkout.id}
+                                />
+                            </div>
                 );
               }
             })}
