@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { FaLink, FaHistory, FaEllipsisV } from 'react-icons/fa';
 import ExerciseLiveCard from './ExerciseLiveCard';
 
-// --- Styled Components  ---
+// --- Styled Components (sem alterações) ---
 const SupersetContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   border-left: 4px solid ${({ theme }) => theme.colors.primary};
@@ -13,7 +13,6 @@ const SupersetContainer = styled.div`
   margin-bottom: 20px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 `;
-
 const SupersetHeader = styled.div`
   display: flex;
   align-items: center;
@@ -23,13 +22,11 @@ const SupersetHeader = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   color: ${({ theme }) => theme.colors.primary};
 `;
-
 const SupersetTitle = styled.h2`
   font-size: 1.2rem;
   margin: 0;
-  line-height: 1.4; // Melhora a legibilidade se o título tiver várias linhas
+  line-height: 1.4;
 `;
-
 const ExerciseWrapper = styled.div`
   position: relative;
   &:not(:last-child) {
@@ -38,16 +35,14 @@ const ExerciseWrapper = styled.div`
     border-bottom: 1px dashed ${({ theme }) => theme.colors.cardBorder};
   }
 `;
-
 const ExerciseActions = styled.div`
   position: absolute;
-  top: -5px; // Ajuste para alinhar com o topo do ExerciseLiveCard
+  top: -5px;
   right: 0;
   display: flex;
   gap: 15px;
   align-items: center;
 `;
-
 const ActionButton = styled.button`
   background: transparent; border: none; color: grey;
   cursor: pointer; font-size: 1.2rem; padding: 5px;

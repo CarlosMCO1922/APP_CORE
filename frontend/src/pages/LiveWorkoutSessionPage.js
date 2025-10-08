@@ -113,38 +113,29 @@ const LiveWorkoutSessionPage = () => {
 
   const exerciseBlocks = useMemo(() => {
     if (!activeWorkout || !activeWorkout.planExercises) return [];
-        
-      // A sua observação está correta. A ordem que vem do backend é a que importa.
-      // O erro estava em tentar re-ordenar. Vamos apenas agrupar.
-      const exercisesInOrder = activeWorkout.planExercises;
-        
-      const blocks = [];
-      let i = 0;
-      while (i < exercisesInOrder.length) {
-        const currentExercise = exercisesInOrder[i];
-            
-        // Se o exercício não tem um grupo de superset, é um bloco individual.
-        if (!currentExercise.supersetGroup) {
-          blocks.push([currentExercise]);
-          i++;
-          continue;
-          }
 
-            // Se tem um grupo, vamos encontrar todos os exercícios que partilham esse mesmo grupo.
-            const currentSupersetGroup = currentExercise.supersetGroup;
-            const exercisesInSuperset = exercisesInOrder.filter(
-                ex => ex.supersetGroup === currentSupersetGroup
-            );
-            
-            blocks.push(exercisesInSuperset);
-            
-            // Avançamos o índice 'i' para depois de todos os exercícios que acabámos de agrupar.
-            i += exercisesInSuperset.length;
-        }
-        
-        return blocks;
+    const sortedExercises = activeWorkout.planExercises;
+    const blocks = [];
+    const processedSupersetGroups = new Set(); // Guarda os IDs dos grupos já processados
 
-    }, [activeWorkout]);
+    sortedExercises.forEach(exercise => {
+            // Se for um exercício individual (supersetGroup é nulo ou 0)
+    if (exercise.supersetGroup == null || exercise.supersetGroup === 0) {
+      blocks.push([exercise]); // Adiciona como um bloco de um só exercício
+    } 
+    else {
+      if (!processedSupersetGroups.has(exercise.supersetGroup)) {
+        // Encontra todos os exercícios que pertencem a este grupo
+        const exercisesInSuperset = sortedExercises.filter(
+          ex => ex.supersetGroup === exercise.supersetGroup
+        );
+        blocks.push(exercisesInSuperset);
+        processedSupersetGroups.add(exercise.supersetGroup);
+      }
+    }
+    });
+  return blocks;
+  }, [activeWorkout]);
   
 
   const handleSetComplete = (performanceData) => {
