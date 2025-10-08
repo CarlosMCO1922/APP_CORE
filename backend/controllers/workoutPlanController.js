@@ -95,72 +95,74 @@ const updateGlobalWorkoutPlan = async (req, res) => {
       return res.status(404).json({ message: 'Plano de treino global não encontrado.' });
     }
 
-    // Atualiza os dados principais do plano
-    if (name !== undefined) workoutPlan.name = name;
-    if (notes !== undefined) workoutPlan.notes = notes;
-    if (isVisible !== undefined) workoutPlan.isVisible = !!isVisible;
-    await workoutPlan.save({ transaction });
+    await workoutPlan.update({ name, notes, isVisible }, { transaction });
 
-    // --- LÓGICA DE ORDENAÇÃO CORRIGIDA ---
     if (exercises && Array.isArray(exercises)) {
-      // 1. Apaga todos os exercícios antigos do plano
       await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: planId }, transaction });
 
-      // 2. Processa a nova lista de exercícios para atribuir o 'order' correto
-      const planExercisesData = [];
-      let blockOrder = 0; // Este será o nosso 'order' sequencial para os blocos
+      // --- LÓGICA DE ORDENAÇÃO FINAL E CORRIGIDA ---
+      const planExercisesToCreate = [];
+      let blockOrder = 0;
+      const processedExercises = new Set();
 
-      // Agrupa os exercícios por 'supersetGroup' para processar como blocos
-      const exerciseBlocks = exercises.reduce((acc, ex) => {
-        const groupId = ex.supersetGroup || `single_${ex.id}`;
-        if (!acc[groupId]) acc[groupId] = [];
-        acc[groupId].push(ex);
-        return acc;
-      }, {});
-
-      // Percorre os exercícios na ordem que vêm do frontend de admin
-      const processedGroups = new Set();
-      for (const ex of exercises) {
-        const groupId = ex.supersetGroup || `single_${ex.id}`;
-
-        if (!processedGroups.has(groupId)) {
-          const block = exerciseBlocks[groupId];
-
-          // Para cada exercício no bloco, atribui o 'order' do bloco
-          // e a sua ordem interna (0, 1, 2...)
-          block.forEach((exerciseInBlock, internalOrder) => {
-            planExercisesData.push({
-              ...exerciseInBlock,
-              order: blockOrder, // <-- ATRIBUI O ORDER DO BLOCO
-              internalOrder: internalOrder, // (Opcional, mas útil) Ordem dentro da superset
-              exerciseId: exerciseInBlock.exerciseId || exerciseInBlock.exerciseDetails?.id,
-              workoutPlanId: parseInt(planId),
-            });
-          });
-
-          processedGroups.add(groupId);
-          blockOrder++; // Incrementa o 'order' para o próximo bloco
+      for (const exercise of exercises) {
+        // Se já processámos este exercício como parte de um bloco anterior, ignora-o.
+        if (processedExercises.has(exercise.id)) {
+          continue;
         }
+
+        // Verifica se o exercício faz parte de uma superset e não foi processado
+        if (exercise.supersetGroup) {
+          const supersetBlock = exercises.filter(ex => ex.supersetGroup === exercise.supersetGroup);
+          
+          supersetBlock.forEach((supersetExercise, internalIndex) => {
+            planExercisesToCreate.push({
+              ...supersetExercise,
+              order: blockOrder, // Atribui o 'order' do bloco atual
+              internalOrder: internalIndex, // Ordem dentro da superset (0, 1, ...)
+              workoutPlanId: parseInt(planId),
+              exerciseId: supersetExercise.exerciseId || supersetExercise.exerciseDetails?.id,
+            });
+            processedExercises.add(supersetExercise.id);
+          });
+        } else {
+          // Se for um exercício individual
+          planExercisesToCreate.push({
+            ...exercise,
+            order: blockOrder, // Atribui o 'order' do bloco atual
+            internalOrder: 0,
+            workoutPlanId: parseInt(planId),
+            exerciseId: exercise.exerciseId || exercise.exerciseDetails?.id,
+          });
+          processedExercises.add(exercise.id);
+        }
+
+        // --- A CORREÇÃO PRINCIPAL ---
+        // Incrementa o 'order' do bloco APENAS DEPOIS de um bloco inteiro ser processado.
+        blockOrder++;
       }
       
-      // 3. Grava a nova lista de exercícios na base de dados com o 'order' correto
-      if(planExercisesData.length > 0) {
-        await db.WorkoutPlanExercise.bulkCreate(planExercisesData, { transaction, validate: true, updateOnDuplicate: ['order', 'sets', 'reps', 'restSeconds', 'notes', 'supersetGroup', 'internalOrder'] });
+      if(planExercisesToCreate.length > 0) {
+        await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
       }
     }
+    // --- FIM DA LÓGICA DE ORDENAÇÃO ---
 
     await transaction.commit();
+    
     const updatedPlan = await db.WorkoutPlan.findByPk(parseInt(planId), {
-        include: [{ model: db.WorkoutPlanExercise, as: 'planExercises', include: [{model: db.Exercise, as: 'exerciseDetails'}] }]
+        include: [{ 
+            model: db.WorkoutPlanExercise, 
+            as: 'planExercises',
+            order: [['order', 'ASC'], ['internalOrder', 'ASC']],
+            include: [{model: db.Exercise, as: 'exerciseDetails'}] 
+        }]
     });
     res.status(200).json(updatedPlan);
 
   } catch (error) {
     await transaction.rollback();
     console.error('Erro (admin) ao atualizar plano de treino global:', error);
-    if (error.name === 'SequelizeValidationError') {
-      return res.status(400).json({ message: 'Erro de validação', errors: error.errors.map(e => e.message) });
-    }
     res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
   }
 };
