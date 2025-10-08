@@ -344,7 +344,12 @@ const getVisibleGlobalWorkoutPlanByIdForClient = async (req, res) => {
             include: [{
                 model: db.WorkoutPlanExercise,
                 as: 'planExercises',
-                order: [['order', 'ASC']],
+                order: [
+                    ['supersetGroup', 'ASC'],
+                    ['order', 'ASC']
+                ],
+                // --- FIM DA ALTERAÇÃO ---
+
                 include: [{ model: db.Exercise, as: 'exerciseDetails' }]
             }]
         });
