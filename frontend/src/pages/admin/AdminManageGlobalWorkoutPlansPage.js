@@ -225,6 +225,20 @@ const ExerciseFieldsGrid = styled.div`
   }
 `;
 
+const ErrorText = styled.p`
+    ${MessageBaseStyles}
+    color: ${({ theme }) => theme.colors.error};
+    background-color: ${({ theme }) => theme.colors.errorBg};
+    border-color: ${({ theme }) => theme.colors.error};
+`;
+
+const MessageText = styled.p`
+  ${MessageBaseStyles}
+  color: ${({ theme }) => theme.colors.success};
+  background-color: ${({ theme }) => theme.colors.successBg};
+  border-color: ${({ theme }) => theme.colors.success};
+`;
+
 const DragHandle = styled.div`
   display: flex;
   align-items: center;
