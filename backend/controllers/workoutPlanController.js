@@ -95,20 +95,57 @@ const updateGlobalWorkoutPlan = async (req, res) => {
       return res.status(404).json({ message: 'Plano de treino global não encontrado.' });
     }
 
+    // Atualiza os dados principais do plano
     if (name !== undefined) workoutPlan.name = name;
     if (notes !== undefined) workoutPlan.notes = notes;
     if (isVisible !== undefined) workoutPlan.isVisible = !!isVisible;
     await workoutPlan.save({ transaction });
 
+    // --- LÓGICA DE ORDENAÇÃO CORRIGIDA ---
     if (exercises && Array.isArray(exercises)) {
+      // 1. Apaga todos os exercícios antigos do plano
       await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: planId }, transaction });
-      const planExercisesData = exercises.map(ex => ({
-        ...ex,
-        exerciseId: ex.exerciseId || ex.exerciseDetails?.id,
-        workoutPlanId: parseInt(planId),
-      }));
+
+      // 2. Processa a nova lista de exercícios para atribuir o 'order' correto
+      const planExercisesData = [];
+      let blockOrder = 0; // Este será o nosso 'order' sequencial para os blocos
+
+      // Agrupa os exercícios por 'supersetGroup' para processar como blocos
+      const exerciseBlocks = exercises.reduce((acc, ex) => {
+        const groupId = ex.supersetGroup || `single_${ex.id}`;
+        if (!acc[groupId]) acc[groupId] = [];
+        acc[groupId].push(ex);
+        return acc;
+      }, {});
+
+      // Percorre os exercícios na ordem que vêm do frontend de admin
+      const processedGroups = new Set();
+      for (const ex of exercises) {
+        const groupId = ex.supersetGroup || `single_${ex.id}`;
+
+        if (!processedGroups.has(groupId)) {
+          const block = exerciseBlocks[groupId];
+
+          // Para cada exercício no bloco, atribui o 'order' do bloco
+          // e a sua ordem interna (0, 1, 2...)
+          block.forEach((exerciseInBlock, internalOrder) => {
+            planExercisesData.push({
+              ...exerciseInBlock,
+              order: blockOrder, // <-- ATRIBUI O ORDER DO BLOCO
+              internalOrder: internalOrder, // (Opcional, mas útil) Ordem dentro da superset
+              exerciseId: exerciseInBlock.exerciseId || exerciseInBlock.exerciseDetails?.id,
+              workoutPlanId: parseInt(planId),
+            });
+          });
+
+          processedGroups.add(groupId);
+          blockOrder++; // Incrementa o 'order' para o próximo bloco
+        }
+      }
+      
+      // 3. Grava a nova lista de exercícios na base de dados com o 'order' correto
       if(planExercisesData.length > 0) {
-        await db.WorkoutPlanExercise.bulkCreate(planExercisesData, { transaction, validate: true });
+        await db.WorkoutPlanExercise.bulkCreate(planExercisesData, { transaction, validate: true, updateOnDuplicate: ['order', 'sets', 'reps', 'restSeconds', 'notes', 'supersetGroup', 'internalOrder'] });
       }
     }
 
@@ -337,31 +374,18 @@ const getVisibleGlobalWorkoutPlanByIdForClient = async (req, res) => {
     const { planId } = req.params;
     try {
         const workoutPlan = await db.WorkoutPlan.findOne({
-            where: {
-                id: parseInt(planId),
-                isVisible: true 
-            },
+            where: { id: parseInt(planId), isVisible: true },
             include: [{
                 model: db.WorkoutPlanExercise,
                 as: 'planExercises',
-                order: [
-                    ['supersetGroup', 'ASC'],
-                    ['order', 'ASC']
-                ],
-                // --- FIM DA ALTERAÇÃO ---
-
+                order: [['order', 'ASC'], ['internalOrder', 'ASC']], 
                 include: [{ model: db.Exercise, as: 'exerciseDetails' }]
             }]
         });
 
-        if (!workoutPlan) {
-            return res.status(404).json({ message: 'Plano de treino visível não encontrado com este ID.' });
-        }
+        if (!workoutPlan) { /* ... */ }
         res.status(200).json(workoutPlan);
-    } catch (error) {
-        console.error('Erro (cliente) ao buscar plano de treino global por ID:', error);
-        res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
-    }
+    } catch (error) { /* ... */ }
 };
 
 module.exports = {
