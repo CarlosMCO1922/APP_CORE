@@ -116,33 +116,28 @@ const LiveWorkoutSessionPage = () => {
       return [];
     }
 
-    // A lista de exercícios já vem ordenada corretamente do backend
+    // A lista de exercícios já vem ordenada corretamente do backend, não mexemos.
     const exercisesInOrder = activeWorkout.planExercises;
     
-    const blocks = [];
-    if (exercisesInOrder.length > 0) {
-      let currentBlock = [exercisesInOrder[0]];
-
-      for (let i = 1; i < exercisesInOrder.length; i++) {
-        const currentExercise = exercisesInOrder[i];
-        const prevExercise = exercisesInOrder[i - 1];
-
-        // A CONDIÇÃO CORRIGIDA PARA AGRUPAR
-        const canBeGrouped = 
-          currentExercise.supersetGroup && // Tem de ter um grupo (não pode ser 0, null ou undefined)
-          currentExercise.supersetGroup === prevExercise.supersetGroup; // O grupo tem de ser o mesmo do anterior
-
-        if (canBeGrouped) {
-          currentBlock.push(currentExercise);
-        } else {
-          blocks.push(currentBlock);
-          currentBlock = [currentExercise];
-        }
+    // Usamos 'reduce' para agrupar por 'order', que agora representa a ordem dos blocos.
+    const blocksByOrder = exercisesInOrder.reduce((acc, exercise) => {
+      const blockOrder = exercise.order;
+      
+      // Se ainda não vimos este bloco, criamos uma nova lista para ele.
+      if (!acc[blockOrder]) {
+        acc[blockOrder] = [];
       }
-      blocks.push(currentBlock);
-    }
-    
-    return blocks;
+      
+      // Adicionamos o exercício ao seu respetivo bloco.
+      acc[blockOrder].push(exercise);
+      
+      return acc;
+    }, {});
+
+    // O resultado de 'reduce' é um objeto. Convertemos para uma lista de blocos.
+    // Object.values() vai devolver os blocos na ordem correta (0, 1, 2...).
+    return Object.values(blocksByOrder);
+
   }, [activeWorkout]);
   
 
