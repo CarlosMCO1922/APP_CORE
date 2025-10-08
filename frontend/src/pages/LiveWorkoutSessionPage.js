@@ -112,30 +112,44 @@ const LiveWorkoutSessionPage = () => {
   }, [activeWorkout]);
 
   const exerciseBlocks = useMemo(() => {
-    if (!activeWorkout || !activeWorkout.planExercises) return [];
+        if (!activeWorkout || !activeWorkout.planExercises || activeWorkout.planExercises.length === 0) {
+            return [];
+        }
 
-    const sortedExercises = activeWorkout.planExercises;
-    const blocks = [];
-    const processedSupersetGroups = new Set(); // Guarda os IDs dos grupos já processados
+        // A lista de exercícios já vem ordenada corretamente do backend
+        const exercisesInOrder = activeWorkout.planExercises;
+        
+        const blocks = [];
+        let currentBlock = [exercisesInOrder[0]]; // Começa o primeiro bloco com o primeiro exercício
 
-    sortedExercises.forEach(exercise => {
-            // Se for um exercício individual (supersetGroup é nulo ou 0)
-    if (exercise.supersetGroup == null || exercise.supersetGroup === 0) {
-      blocks.push([exercise]); // Adiciona como um bloco de um só exercício
-    } 
-    else {
-      if (!processedSupersetGroups.has(exercise.supersetGroup)) {
-        // Encontra todos os exercícios que pertencem a este grupo
-        const exercisesInSuperset = sortedExercises.filter(
-          ex => ex.supersetGroup === exercise.supersetGroup
-        );
-        blocks.push(exercisesInSuperset);
-        processedSupersetGroups.add(exercise.supersetGroup);
-      }
-    }
-    });
-  return blocks;
-  }, [activeWorkout]);
+        // Percorre a lista a partir do segundo exercício
+        for (let i = 1; i < exercisesInOrder.length; i++) {
+            const currentExercise = exercisesInOrder[i];
+            const prevExercise = exercisesInOrder[i - 1];
+
+            // Verifica se o exercício atual pode ser agrupado com o anterior
+            const canBeGrouped = 
+                currentExercise.supersetGroup != null && // Tem de ter um grupo
+                currentExercise.supersetGroup !== 0 &&    // O grupo não pode ser '0' (individual)
+                currentExercise.supersetGroup === prevExercise.supersetGroup; // O grupo tem de ser o mesmo do anterior
+
+            if (canBeGrouped) {
+                // Se pode ser agrupado, adiciona ao bloco atual
+                currentBlock.push(currentExercise);
+            } else {
+                // Se não pode, significa que o bloco anterior terminou. Guarda-o.
+                blocks.push(currentBlock);
+                // E começa um novo bloco com o exercício atual.
+                currentBlock = [currentExercise];
+            }
+        }
+
+        // Adiciona o último bloco que estava a ser construído
+        blocks.push(currentBlock);
+
+        return blocks;
+
+    }, [activeWorkout]);
   
 
   const handleSetComplete = (performanceData) => {
