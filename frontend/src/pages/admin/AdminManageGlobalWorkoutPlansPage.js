@@ -339,37 +339,54 @@ const AdminManageGlobalWorkoutPlansPage = () => {
   };
 
   const handleAddExerciseToGroup = (supersetGroup) => {
-    const exercisesInGroup = currentPlanData.exercises.filter(ex => ex.supersetGroup === supersetGroup);
-    const nextOrder = exercisesInGroup.length;
+    // A lista de exercícios existente
+    const currentExercises = currentPlanData.exercises;
+    
+    // Filtra os exercícios que pertencem a este grupo para saber a ordem interna
+    const exercisesInGroup = currentExercises.filter(ex => ex.supersetGroup === supersetGroup);
+    const nextInternalOrder = exercisesInGroup.length;
+    
+    // O 'order' do bloco é a ordem do primeiro exercício do grupo
+    const blockOrder = (exercisesInGroup.length > 0) ? exercisesInGroup[0].order : (planExercisesGrouped.length);
+
+    const newExercise = {
+      // Usar um ID temporário robusto com base no tempo e um número aleatório
+      tempId: `new_${Date.now()}_${Math.random()}`, 
+      exerciseId: '',
+      // Atribui o 'order' do bloco
+      order: blockOrder,
+      // Ordem interna dentro da superset
+      internalOrder: nextInternalOrder, 
+      supersetGroup: supersetGroup,
+      sets: '', 
+      reps: '', 
+      restSeconds: '', 
+      notes: ''
+    };
         
     setCurrentPlanData(prev => ({
       ...prev,
-      exercises: [...prev.exercises, {
-        tempId: `new-${Date.now()}`, 
-        exerciseId: '',
-        order: nextOrder,
-        supersetGroup: supersetGroup,
-        sets: '', reps: '', restSeconds: '', notes: ''
-      }]
+      exercises: [...prev.exercises, newExercise]
     }));
   };
 
-    const handleAddSupersetGroup = () => {
-      const nextSupersetGroup = currentPlanData.exercises.length > 0
-          ? Math.max(...currentPlanData.exercises.map(ex => ex.supersetGroup)) + 1
-          : 0;
-      
-      setCurrentPlanData(prev => ({
-          ...prev,
-          exercises: [...prev.exercises, {
-              tempId: `new-${Date.now()}`,
-              exerciseId: '',
-              order: 0,
-              supersetGroup: nextSupersetGroup,
-              sets: '', reps: '', restSeconds: '', notes: ''
-          }]
-      }));
-    };
+  const handleAddSupersetGroup = () => {
+    const nextBlockOrder = planExercisesGrouped.length;
+    // O ID da superset deve ser único. Usar o tempo é uma boa forma.
+    const newSupersetId = Date.now(); 
+
+    setCurrentPlanData(prev => ({
+        ...prev,
+        exercises: [...prev.exercises, {
+            tempId: `new_${Date.now()}_${Math.random()}`,
+            exerciseId: '',
+            order: nextBlockOrder, // A ordem do novo bloco
+            internalOrder: 0,
+            supersetGroup: newSupersetId, // ID único para a nova superset
+            sets: '', reps: '', restSeconds: '', notes: ''
+        }]
+    }));
+  };
   
     const handleRemoveExerciseFromCurrentPlan = (originalIndex) => {
       const exerciseToRemove = currentPlanData.exercises[originalIndex];
@@ -568,7 +585,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
 
   if (loading && plans.length === 0) return <PageContainer><p>A carregar planos de treino...</p></PageContainer>;
 
-  return (
+return (
     <PageContainer>
       <BackLink to="/admin/dashboard"><FaArrowLeft /> Voltar ao Painel Admin</BackLink>
       <HeaderContainer>
@@ -576,8 +593,8 @@ const AdminManageGlobalWorkoutPlansPage = () => {
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Criar Novo Plano</CreateButton>
       </HeaderContainer>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
+      {error && <ErrorText>{error}</ErrorText>}
+      {successMessage && <MessageText>{successMessage}</MessageText>}
 
       {plans.length > 0 ? (
         <TableWrapper>
@@ -596,7 +613,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
                 <tr key={plan.id}>
                   <td>{plan.name}</td>
                   <td>{plan.planExercises?.length || 0}</td>
-                  <td>{plan.isVisible ? 'Sim' : 'Não'}</td>
+                  <td>{plan.isVisible ? <FaEye color={theme.colors.success} /> : <FaEye color="#555" />}</td>
                   <td>{plan.notes?.substring(0, 50) || '-'}{plan.notes && plan.notes.length > 50 ? '...' : ''}</td>
                   <td>
                     <ActionButton title="Editar Plano e Exercícios" onClick={() => handleOpenEditModal(plan)}><FaEdit /></ActionButton>
@@ -618,7 +635,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseModalButton onClick={handleCloseModal}><FaTimes /></CloseModalButton>
             <ModalTitle>{isEditingPlan ? 'Editar Plano de Treino Modelo' : 'Criar Novo Plano de Treino Modelo'}</ModalTitle>
-            {error && <p style={{color: 'red'}}>{error}</p>}
+            {error && <ErrorText>{error}</ErrorText>}
             
             <ModalForm onSubmit={handleSavePlan}>
               <ModalLabel htmlFor="planName">Nome do Plano*</ModalLabel>
@@ -641,66 +658,78 @@ const AdminManageGlobalWorkoutPlansPage = () => {
               <PlanEditorContainer>
                 <h4 style={{color: '#D4AF37', marginBottom: '10px'}}>Exercícios do Plano</h4>
 
-                {/* --- INÍCIO DA ESTRUTURA DRAG-AND-DROP --- */}
+                {/* --- INÍCIO DA ESTRUTURA DRAG-AND-DROP CORRIGIDA --- */}
                 <DragDropContext onDragEnd={handleOnDragEnd}>
                   <Droppable droppableId="all-superset-blocks" type="GROUP">
                     {(provided) => (
                       <div {...provided.droppableProps} ref={provided.innerRef}>
-                        {planExercisesGrouped.map((group, groupIndex) => (
-                          <Draggable key={group[0].supersetGroup} draggableId={`group-${group[0].supersetGroup}`} index={groupIndex}>
-                            {(provided) => (
-                              <div ref={provided.innerRef} {...provided.draggableProps}>
-                                <SupersetGroupContainer>
-                                  <SupersetHeader {...provided.dragHandleProps}>
-                                    <h4><FaGripVertical style={{ marginRight: '8px' }} /> Bloco {groupIndex + 1} ({group.length > 1 ? 'Superset' : 'Exercício Único'})</h4>
-                                    <ActionButton danger type="button" onClick={() => handleRemoveSupersetGroup(group[0].supersetGroup)}>
-                                      <FaTrashAlt />
-                                    </ActionButton>
-                                  </SupersetHeader>
+                        {planExercisesGrouped.map((group, groupIndex) => {
+                          // Define a chave única e estável para o bloco
+                          const blockKey = group[0].supersetGroup ? `group-${group[0].supersetGroup}` : `group-single-${group[0].id || group[0].tempId}`;
+                          
+                          return (
+                            <Draggable key={blockKey} draggableId={blockKey} index={groupIndex}>
+                              {(provided) => (
+                                <div ref={provided.innerRef} {...provided.draggableProps}>
+                                  <SupersetGroupContainer>
+                                    <SupersetHeader {...provided.dragHandleProps}>
+                                      <h4><FaGripVertical style={{ marginRight: '8px' }} /> Bloco {groupIndex + 1} ({group.length > 1 ? 'Superset' : 'Exercício Único'})</h4>
+                                      <ActionButton danger type="button" onClick={() => handleRemoveSupersetGroup(group[0].supersetGroup)}>
+                                        <FaTrashAlt />
+                                      </ActionButton>
+                                    </SupersetHeader>
 
-                                  <Droppable droppableId={`block-${groupIndex}`} type="EXERCISE">
-                                    {(providedDroppable) => (
-                                      <div {...providedDroppable.droppableProps} ref={providedDroppable.innerRef}>
-                                        {group.map((ex, exerciseIndex) => (
-                                          <Draggable key={ex.tempId || ex.id} draggableId={String(ex.tempId || ex.id)} index={exerciseIndex}>
-                                            {(providedDraggable) => (
-                                              <div ref={providedDraggable.innerRef} {...providedDraggable.draggableProps} {...providedDraggable.dragHandleProps}>
-                                                <ExerciseEntry>
-                                                  <DragHandle><FaGripVertical /></DragHandle>
-                                                  <div style={{flexGrow: 1}}>
-                                                    <ExerciseFieldsGrid>
-                                                      <div style={{gridColumn: 'span 5'}}>
-                                                        <ModalLabel htmlFor={`exId-${ex.originalIndex}`}>Exercício</ModalLabel>
-                                                        <ModalSelect id={`exId-${ex.originalIndex}`} value={ex.exerciseId} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'exerciseId', e.target.value)} required>
-                                                          <option value="">Selecione...</option>
-                                                          {allExercises.map(baseEx => <option key={baseEx.id} value={baseEx.id}>{baseEx.name}</option>)}
-                                                        </ModalSelect>
+                                    <Droppable droppableId={blockKey} type="EXERCISE">
+                                      {(providedDroppable) => (
+                                        <div {...providedDroppable.droppableProps} ref={providedDroppable.innerRef}>
+                                          {group.map((ex, exerciseIndex) => {
+                                            // Define a chave única e estável para o exercício
+                                            const exerciseKey = String(ex.id || ex.tempId);
+                                            
+                                            return (
+                                              <Draggable key={exerciseKey} draggableId={exerciseKey} index={exerciseIndex}>
+                                                {(providedDraggable) => (
+                                                  <div ref={providedDraggable.innerRef} {...providedDraggable.draggableProps}>
+                                                    <ExerciseEntry>
+                                                      <DragHandle {...providedDraggable.dragHandleProps}>
+                                                        <FaGripVertical />
+                                                      </DragHandle>
+                                                      <div style={{flexGrow: 1}}>
+                                                        <ExerciseFieldsGrid>
+                                                          <div style={{gridColumn: 'span 5'}}>
+                                                            <ModalLabel htmlFor={`exId-${ex.originalIndex}`}>Exercício</ModalLabel>
+                                                            <ModalSelect id={`exId-${ex.originalIndex}`} value={ex.exerciseId} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'exerciseId', e.target.value)} required>
+                                                              <option value="">Selecione...</option>
+                                                              {allExercises.map(baseEx => <option key={baseEx.id} value={baseEx.id}>{baseEx.name}</option>)}
+                                                            </ModalSelect>
+                                                          </div>
+                                                        </ExerciseFieldsGrid>
+                                                        <ExerciseFieldsGrid>
+                                                          <div><ModalLabel>Séries</ModalLabel><ModalInput type="number" value={ex.sets} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'sets', e.target.value)} placeholder="Ex: 3" /></div>
+                                                          <div><ModalLabel>Reps</ModalLabel><ModalInput type="text" value={ex.reps} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'reps', e.target.value)} placeholder="Ex: 8-12" /></div>
+                                                          <div><ModalLabel>Descanso (s)</ModalLabel><ModalInput type="number" value={ex.restSeconds} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'restSeconds', e.target.value)} placeholder="Ex: 60" /></div>
+                                                        </ExerciseFieldsGrid>
                                                       </div>
-                                                    </ExerciseFieldsGrid>
-                                                    <ExerciseFieldsGrid>
-                                                      <div><ModalLabel>Séries</ModalLabel><ModalInput type="number" value={ex.sets} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'sets', e.target.value)} placeholder="Ex: 3" /></div>
-                                                      <div><ModalLabel>Reps</ModalLabel><ModalInput type="text" value={ex.reps} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'reps', e.target.value)} placeholder="Ex: 8-12" /></div>
-                                                      <div><ModalLabel>Descanso (s)</ModalLabel><ModalInput type="number" value={ex.restSeconds} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'restSeconds', e.target.value)} placeholder="Ex: 60" /></div>
-                                                    </ExerciseFieldsGrid>
+                                                      <ActionButton title="Remover Exercício" danger type="button" onClick={() => handleRemoveExerciseFromCurrentPlan(ex.originalIndex)}><FaTimes /></ActionButton>
+                                                    </ExerciseEntry>
                                                   </div>
-                                                  <ActionButton title="Remover Exercício" danger type="button" onClick={() => handleRemoveExerciseFromCurrentPlan(ex.originalIndex)}><FaTimes /></ActionButton>
-                                                </ExerciseEntry>
-                                              </div>
-                                            )}
-                                          </Draggable>
-                                        ))}
-                                        {providedDroppable.placeholder}
-                                      </div>
-                                    )}
-                                  </Droppable>
-                                  <ActionButton primary type="button" onClick={() => handleAddExerciseToGroup(group[0].supersetGroup)} style={{marginTop: '10px'}}>
-                                    <FaPlus /> Adicionar Exercício a este Bloco
-                                  </ActionButton>
-                                </SupersetGroupContainer>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
+                                                )}
+                                              </Draggable>
+                                            );
+                                          })}
+                                          {providedDroppable.placeholder}
+                                        </div>
+                                      )}
+                                    </Droppable>
+                                    <ActionButton primary type="button" onClick={() => handleAddExerciseToGroup(group[0].supersetGroup)} style={{marginTop: '10px'}}>
+                                      <FaPlus /> Adicionar Exercício a este Bloco
+                                    </ActionButton>
+                                  </SupersetGroupContainer>
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
                         {provided.placeholder}
                       </div>
                     )}
@@ -728,7 +757,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseModalButton onClick={handleCloseModal}><FaTimes /></CloseModalButton>
             <ModalTitle>Associar "{planToAssign.name}" a um Treino</ModalTitle>
-            {error && <p style={{color: 'red'}}>{error}</p>}
+            {error && <ErrorText>{error}</ErrorText>}
             <ModalForm onSubmit={handleAssignPlanSubmit}>
               <ModalLabel htmlFor="assignTrainingId">Selecione o Treino*</ModalLabel>
               <ModalSelect id="assignTrainingId" value={selectedTrainingToAssign} onChange={(e) => setSelectedTrainingToAssign(e.target.value)} required>
@@ -740,7 +769,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
               <ModalLabel htmlFor="assignOrder">Ordem do Plano neste Treino (0 para primeiro)</ModalLabel>
               <ModalInput type="number" id="assignOrder" value={assignOrder} onChange={(e) => setAssignOrder(e.target.value)} min="0" />
               <ModalActions>
-                <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
+                <ModalButton type="button" onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
                 <ModalButton type="submit" primary disabled={formLoading}><FaLink /> {formLoading ? 'A associar...' : 'Associar Plano'}</ModalButton>
               </ModalActions>
             </ModalForm>
