@@ -73,6 +73,7 @@ function AdminManageExercisesPage() {
         setError('');
         setSuccessMessage('');
         const data = await getAllExercises(authState.token);
+        data.sort((a, b) => a.id - b.id);
         setExercises(data);
       } catch (err) {
         setError(err.message || 'Não foi possível carregar os exercícios.');
@@ -124,6 +125,17 @@ function AdminManageExercisesPage() {
     if (!currentExerciseData.name) {
         setModalError("O nome do exercício é obrigatório.");
         return;
+    }
+
+    const isDuplicate = exercises.some(
+      ex => 
+        ex.name.trim().toLowerCase() === exerciseName.toLowerCase() &&
+        ex.id !== currentExerciseId 
+    );
+
+    if (isDuplicate) {
+      setModalError('Já existe um exercício com este nome.');
+      return; // Para a execução da função
     }
     setFormLoading(true);
     setModalError(''); setError(''); setSuccessMessage('');
