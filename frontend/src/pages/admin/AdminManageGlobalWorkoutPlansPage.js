@@ -1,7 +1,7 @@
 // src/pages/admin/AdminManageGlobalWorkoutPlansPage.js
 import React, { useEffect, useState, useCallback, useMemo} from 'react';
 import { Link } from 'react-router-dom';
-import styled, { useTheme } from 'styled-components';
+import styled, { useTheme, css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
     adminGetAllGlobalWorkoutPlans,
@@ -30,6 +30,17 @@ const PageContainer = styled.div`
   color: ${({ theme }) => theme.colors.textMain};
   background-color: ${({ theme }) => theme.colors.background};
   min-height: 100vh;
+`;
+
+const MessageBaseStyles = css`
+  text-align: center;
+  padding: 12px;
+  margin: 15px 0;
+  border-radius: 8px;
+  border-width: 1px;
+  border-style: solid;
+  font-size: 1rem;
+  font-weight: 500;
 `;
 
 const HeaderContainer = styled.div`
