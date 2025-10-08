@@ -129,14 +129,15 @@ function AdminManageExercisesPage() {
 
     const isDuplicate = exercises.some(
       ex => 
-        ex.name.trim().toLowerCase() === exerciseName.toLowerCase() &&
-        ex.id !== currentExerciseId 
+        ex.name.trim().toLowerCase() === currentExerciseData.name.toLowerCase() &&
+        ex.id !== currentExerciseData.id 
     );
 
     if (isDuplicate) {
       setModalError('Já existe um exercício com este nome.');
-      return; // Para a execução da função
+      return;
     }
+
     setFormLoading(true);
     setModalError(''); setError(''); setSuccessMessage('');
 
