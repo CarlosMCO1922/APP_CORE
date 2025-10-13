@@ -5,74 +5,54 @@ const { Op } = require('sequelize');
 // --- Funções para ADMIN gerir Planos de Treino "Modelo" / Globais ---
 const createGlobalWorkoutPlan = async (req, res) => {
   const { name, notes, isVisible, exercises } = req.body;
-
-  if (!name) {
-    return res.status(400).json({ message: 'O nome do plano de treino é obrigatório.' });
-  }
+  if (!name) return res.status(400).json({ message: 'O nome do plano de treino é obrigatório.' });
 
   const transaction = await db.sequelize.transaction();
   try {
-    const newWorkoutPlan = await db.WorkoutPlan.create({
-      name,
-      notes,
-      isVisible: !!isVisible,
-    }, { transaction });
+    const newWorkoutPlan = await db.WorkoutPlan.create({ name, notes, isVisible: !!isVisible }, { transaction });
 
-    // --- LÓGICA CORRIGIDA AQUI ---
     if (exercises && exercises.length > 0) {
       const planExercisesToCreate = [];
       let blockOrder = 0;
-      const processedExercises = new Set();
+      let i = 0;
 
-      for (const exercise of exercises) {
-        if (processedExercises.has(exercise.id || exercise.tempId)) continue;
-        
-        const originalSupersetGroup = exercise.supersetGroup;
-        let finalSupersetGroup = null;
+      while (i < exercises.length) {
+        const currentExercise = exercises[i];
+        const currentSupersetGroup = currentExercise.supersetGroup;
 
-        const isSupersetBlock = exercises.filter(ex => ex.supersetGroup === originalSupersetGroup).length > 1;
-
-        if (originalSupersetGroup && isSupersetBlock) {
-          const supersetBlock = exercises.filter(ex => ex.supersetGroup === originalSupersetGroup);
-          finalSupersetGroup = Date.now() + Math.random(); // ID de grupo único
-
-          supersetBlock.forEach((supersetExercise, internalIndex) => {
-            planExercisesToCreate.push({
-              // Mapeamento explícito para ignorar campos como 'tempId'
-              workoutPlanId: newWorkoutPlan.id,
-              exerciseId: supersetExercise.exerciseId,
-              sets: supersetExercise.sets,
-              reps: supersetExercise.reps,
-              restSeconds: supersetExercise.restSeconds,
-              notes: supersetExercise.notes,
-              order: blockOrder,
-              internalOrder: internalIndex,
-              supersetGroup: finalSupersetGroup,
-            });
-            processedExercises.add(supersetExercise.id || supersetExercise.tempId);
-          });
-        } else {
+        // Se for um exercício individual ou o grupo for 0/null
+        if (!currentSupersetGroup) {
           planExercisesToCreate.push({
-            workoutPlanId: newWorkoutPlan.id,
-            exerciseId: exercise.exerciseId,
-            sets: exercise.sets,
-            reps: exercise.reps,
-            restSeconds: exercise.restSeconds,
-            notes: exercise.notes,
+            ...currentExercise,
             order: blockOrder,
             internalOrder: 0,
-            supersetGroup: null,
+            supersetGroup: null, // Garante que é nulo
+            workoutPlanId: newWorkoutPlan.id,
+            exerciseId: currentExercise.exerciseId,
           });
-          processedExercises.add(exercise.id || exercise.tempId);
+          i++; // Avança 1
+        } else {
+          // Se for uma superset, encontra todos os parceiros
+          const supersetBlock = exercises.filter(ex => ex.supersetGroup === currentSupersetGroup);
+          supersetBlock.forEach((supersetExercise, internalIndex) => {
+            planExercisesToCreate.push({
+              ...supersetExercise,
+              order: blockOrder,
+              internalOrder: internalIndex,
+              supersetGroup: currentSupersetGroup,
+              workoutPlanId: newWorkoutPlan.id,
+              exerciseId: supersetExercise.exerciseId,
+            });
+          });
+          i += supersetBlock.length; // Avança o número de exercícios na superset
         }
-        blockOrder++;
+        blockOrder++; // Incrementa a ordem do bloco
       }
       
       if(planExercisesToCreate.length > 0) {
-        await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
+        await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction, ignoreDuplicates: true, fields: Object.keys(planExercisesToCreate[0]) });
       }
     }
-    // --- FIM DA CORREÇÃO ---
 
     await transaction.commit();
     const result = await db.WorkoutPlan.findByPk(newWorkoutPlan.id, {
@@ -150,56 +130,48 @@ const updateGlobalWorkoutPlan = async (req, res) => {
     if (exercises && Array.isArray(exercises)) {
       await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: planId }, transaction });
 
-      // --- LÓGICA DE ORDENAÇÃO FINAL E CORRIGIDA ---
       const planExercisesToCreate = [];
       let blockOrder = 0;
-      const processedExercises = new Set();
+      let i = 0;
 
-      for (const exercise of exercises) {
-        // Se já processámos este exercício como parte de um bloco anterior, ignora-o.
-        if (processedExercises.has(exercise.id)) {
-          continue;
-        }
+      while (i < exercises.length) {
+        const currentExercise = exercises[i];
+        const currentSupersetGroup = currentExercise.supersetGroup;
 
-        // Verifica se o exercício faz parte de uma superset e não foi processado
-        if (exercise.supersetGroup) {
-          const supersetBlock = exercises.filter(ex => ex.supersetGroup === exercise.supersetGroup);
-          
+        if (!currentSupersetGroup) {
+          planExercisesToCreate.push({
+            ...currentExercise,
+            order: blockOrder,
+            internalOrder: 0,
+            supersetGroup: null,
+            workoutPlanId: parseInt(planId),
+            exerciseId: currentExercise.exerciseId || currentExercise.exerciseDetails?.id,
+          });
+          i++;
+        } else {
+          const supersetBlock = exercises.filter(ex => ex.supersetGroup === currentSupersetGroup);
           supersetBlock.forEach((supersetExercise, internalIndex) => {
             planExercisesToCreate.push({
               ...supersetExercise,
-              order: blockOrder, // Atribui o 'order' do bloco atual
-              internalOrder: internalIndex, // Ordem dentro da superset (0, 1, ...)
+              order: blockOrder,
+              internalOrder: internalIndex,
+              supersetGroup: currentSupersetGroup,
               workoutPlanId: parseInt(planId),
               exerciseId: supersetExercise.exerciseId || supersetExercise.exerciseDetails?.id,
             });
-            processedExercises.add(supersetExercise.id);
           });
-        } else {
-          // Se for um exercício individual
-          planExercisesToCreate.push({
-            ...exercise,
-            order: blockOrder, // Atribui o 'order' do bloco atual
-            internalOrder: 0,
-            workoutPlanId: parseInt(planId),
-            exerciseId: exercise.exerciseId || exercise.exerciseDetails?.id,
-          });
-          processedExercises.add(exercise.id);
+          i += supersetBlock.length;
         }
-
-        // --- A CORREÇÃO PRINCIPAL ---
-        // Incrementa o 'order' do bloco APENAS DEPOIS de um bloco inteiro ser processado.
         blockOrder++;
       }
       
       if(planExercisesToCreate.length > 0) {
-        await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
+        // Usamos 'ignoreDuplicates' para robustez e passamos os campos explicitamente
+        await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction, ignoreDuplicates: true, fields: Object.keys(planExercisesToCreate[0]) });
       }
     }
-    // --- FIM DA LÓGICA DE ORDENAÇÃO ---
 
     await transaction.commit();
-    
     const updatedPlan = await db.WorkoutPlan.findByPk(parseInt(planId), {
         include: [{ 
             model: db.WorkoutPlanExercise, 
