@@ -12,11 +12,14 @@ const createGlobalWorkoutPlan = async (req, res) => {
     const newWorkoutPlan = await db.WorkoutPlan.create({ name, notes, isVisible: !!isVisible }, { transaction });
 
     if (exercises && exercises.length > 0) {
-      // --- FILTRAGEM CRÍTICA: Ignora exercícios que não foram selecionados no dropdown ---
       const validExercises = exercises.filter(ex => ex.exerciseId && String(ex.exerciseId).trim() !== '');
       
       if (validExercises.length > 0) {
         const planExercisesToCreate = [];
+        let blockOrder = 0;
+        let supersetIdCounter = 1; // Contador para gerar IDs de superset pequenos e únicos
+        const processedTempGroups = new Map(); // Mapeia IDs temporários para IDs permanentes
+
         const blocks = [];
         const processedExercises = new Set();
 
@@ -34,9 +37,17 @@ const createGlobalWorkoutPlan = async (req, res) => {
           }
         });
 
-        blocks.forEach((block, blockIndex) => {
+        blocks.forEach((block) => {
+          let currentSupersetId = null;
+          if (block.length > 1) {
+            const tempGroupId = block[0].supersetGroup;
+            if (!processedTempGroups.has(tempGroupId)) {
+              processedTempGroups.set(tempGroupId, supersetIdCounter++);
+            }
+            currentSupersetId = processedTempGroups.get(tempGroupId);
+          }
+
           block.forEach((exercise, internalIndex) => {
-            // --- MAPEAMENTO 100% EXPLÍCITO E SEGURO ---
             planExercisesToCreate.push({
               workoutPlanId: newWorkoutPlan.id,
               exerciseId: parseInt(exercise.exerciseId),
@@ -44,11 +55,12 @@ const createGlobalWorkoutPlan = async (req, res) => {
               reps: exercise.reps || null,
               restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
               notes: exercise.notes || null,
-              order: blockIndex,
+              order: blockOrder,
               internalOrder: internalIndex,
-              supersetGroup: exercise.supersetGroup || null,
+              supersetGroup: currentSupersetId,
             });
           });
+          blockOrder++;
         });
         
         await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
@@ -130,12 +142,14 @@ const updateGlobalWorkoutPlan = async (req, res) => {
 
     if (exercises && Array.isArray(exercises)) {
       await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: planId }, transaction });
-
-      // --- FILTRAGEM CRÍTICA: Ignora exercícios que não foram selecionados no dropdown ---
       const validExercises = exercises.filter(ex => ex.exerciseId && String(ex.exerciseId).trim() !== '');
 
       if (validExercises.length > 0) {
         const planExercisesToCreate = [];
+        let blockOrder = 0;
+        let supersetIdCounter = 1;
+        const processedTempGroups = new Map();
+        
         const blocks = [];
         const processedExercises = new Set();
 
@@ -153,9 +167,17 @@ const updateGlobalWorkoutPlan = async (req, res) => {
           }
         });
         
-        blocks.forEach((block, blockIndex) => {
+        blocks.forEach((block) => {
+          let currentSupersetId = null;
+          if (block.length > 1) {
+              const tempGroupId = block[0].supersetGroup;
+              if (!processedTempGroups.has(tempGroupId)) {
+                  processedTempGroups.set(tempGroupId, supersetIdCounter++);
+              }
+              currentSupersetId = processedTempGroups.get(tempGroupId);
+          }
+          
           block.forEach((exercise, internalIndex) => {
-            // --- MAPEAMENTO 100% EXPLÍCITO E SEGURO ---
             planExercisesToCreate.push({
               workoutPlanId: parseInt(planId),
               exerciseId: parseInt(exercise.exerciseId || exercise.exerciseDetails?.id),
@@ -163,11 +185,12 @@ const updateGlobalWorkoutPlan = async (req, res) => {
               reps: exercise.reps || null,
               restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
               notes: exercise.notes || null,
-              order: blockIndex,
+              order: blockOrder,
               internalOrder: internalIndex,
-              supersetGroup: exercise.supersetGroup || null,
+              supersetGroup: currentSupersetId,
             });
           });
+          blockOrder++;
         });
         
         await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
