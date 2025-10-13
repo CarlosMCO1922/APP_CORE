@@ -13,7 +13,7 @@ const createGlobalWorkoutPlan = async (req, res) => {
 
     if (exercises && exercises.length > 0) {
       // --- FILTRAGEM CRÍTICA: Ignora exercícios que não foram selecionados no dropdown ---
-      const validExercises = exercises.filter(ex => ex.exerciseId && ex.exerciseId !== '');
+      const validExercises = exercises.filter(ex => ex.exerciseId && String(ex.exerciseId).trim() !== '');
       
       if (validExercises.length > 0) {
         const planExercisesToCreate = [];
@@ -36,6 +36,7 @@ const createGlobalWorkoutPlan = async (req, res) => {
 
         blocks.forEach((block, blockIndex) => {
           block.forEach((exercise, internalIndex) => {
+            // --- MAPEAMENTO 100% EXPLÍCITO E SEGURO ---
             planExercisesToCreate.push({
               workoutPlanId: newWorkoutPlan.id,
               exerciseId: parseInt(exercise.exerciseId),
@@ -131,7 +132,7 @@ const updateGlobalWorkoutPlan = async (req, res) => {
       await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: planId }, transaction });
 
       // --- FILTRAGEM CRÍTICA: Ignora exercícios que não foram selecionados no dropdown ---
-      const validExercises = exercises.filter(ex => ex.exerciseId && ex.exerciseId !== '');
+      const validExercises = exercises.filter(ex => ex.exerciseId && String(ex.exerciseId).trim() !== '');
 
       if (validExercises.length > 0) {
         const planExercisesToCreate = [];
@@ -154,6 +155,7 @@ const updateGlobalWorkoutPlan = async (req, res) => {
         
         blocks.forEach((block, blockIndex) => {
           block.forEach((exercise, internalIndex) => {
+            // --- MAPEAMENTO 100% EXPLÍCITO E SEGURO ---
             planExercisesToCreate.push({
               workoutPlanId: parseInt(planId),
               exerciseId: parseInt(exercise.exerciseId || exercise.exerciseDetails?.id),
