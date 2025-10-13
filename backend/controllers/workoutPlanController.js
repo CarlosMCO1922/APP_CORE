@@ -31,12 +31,13 @@ const createGlobalWorkoutPlan = async (req, res) => {
 
       blocks.forEach((block, blockIndex) => {
         block.forEach((exercise, internalIndex) => {
+          // --- MAPEAMENTO EXPLÍCITO E SEGURO ---
           planExercisesToCreate.push({
             workoutPlanId: newWorkoutPlan.id,
-            exerciseId: exercise.exerciseId,
-            sets: exercise.sets || null,
+            exerciseId: parseInt(exercise.exerciseId) || null,
+            sets: exercise.sets ? parseInt(exercise.sets) : null,
             reps: exercise.reps || null,
-            restSeconds: exercise.restSeconds || null,
+            restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
             notes: exercise.notes || null,
             order: blockIndex,
             internalOrder: internalIndex,
@@ -145,12 +146,13 @@ const updateGlobalWorkoutPlan = async (req, res) => {
       
       blocks.forEach((block, blockIndex) => {
         block.forEach((exercise, internalIndex) => {
+          // --- MAPEAMENTO EXPLÍCITO E SEGURO ---
           planExercisesToCreate.push({
             workoutPlanId: parseInt(planId),
-            exerciseId: exercise.exerciseId || exercise.exerciseDetails?.id,
-            sets: exercise.sets || null,
+            exerciseId: parseInt(exercise.exerciseId || exercise.exerciseDetails?.id) || null,
+            sets: exercise.sets ? parseInt(exercise.sets) : null,
             reps: exercise.reps || null,
-            restSeconds: exercise.restSeconds || null,
+            restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
             notes: exercise.notes || null,
             order: blockIndex,
             internalOrder: internalIndex,
