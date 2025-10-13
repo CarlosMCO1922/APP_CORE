@@ -16,45 +16,51 @@ const createGlobalWorkoutPlan = async (req, res) => {
       
       if (validExercises.length > 0) {
         const planExercisesToCreate = [];
-        
-        // --- LÓGICA DE ORDENAÇÃO FINAL ---
         let blockOrder = 0;
-        const processedTempGroups = new Set();
-        
+        let supersetIdCounter = 1; // Contador para gerar IDs de superset pequenos e únicos
+        const processedTempGroups = new Map(); // Mapeia IDs temporários para IDs permanentes
+
+        const blocks = [];
+        const processedExercises = new Set();
+
         validExercises.forEach(exercise => {
-          const tempGroupId = exercise.supersetGroup;
+          const identifier = exercise.id || exercise.tempId;
+          if (processedExercises.has(identifier)) return;
 
-          // Se já processámos este grupo, salta (para não duplicar supersets)
-          if (tempGroupId && processedTempGroups.has(tempGroupId)) {
-            return;
-          }
-
-          let block;
-          if (tempGroupId) {
-            // Se tem um grupo, o bloco são todos os exercícios com esse mesmo grupo
-            block = validExercises.filter(ex => ex.supersetGroup === tempGroupId);
-            processedTempGroups.add(tempGroupId);
+          if (exercise.supersetGroup) {
+            const supersetBlock = validExercises.filter(ex => ex.supersetGroup === exercise.supersetGroup);
+            blocks.push(supersetBlock);
+            supersetBlock.forEach(ex => processedExercises.add(ex.id || ex.tempId));
           } else {
-            // Se não tem grupo, o bloco é apenas este exercício
-            block = [exercise];
+            blocks.push([exercise]);
+            processedExercises.add(identifier);
+          }
+        });
+
+        blocks.forEach((block) => {
+          let currentSupersetId = null;
+          if (block.length > 1) {
+            const tempGroupId = block[0].supersetGroup;
+            if (!processedTempGroups.has(tempGroupId)) {
+              processedTempGroups.set(tempGroupId, supersetIdCounter++);
+            }
+            currentSupersetId = processedTempGroups.get(tempGroupId);
           }
 
-          // Processa o bloco (seja individual ou superset)
-          block.forEach((exerciseInBlock, internalIndex) => {
+          block.forEach((exercise, internalIndex) => {
             planExercisesToCreate.push({
               workoutPlanId: newWorkoutPlan.id,
-              exerciseId: parseInt(exerciseInBlock.exerciseId),
-              sets: exerciseInBlock.sets ? parseInt(exerciseInBlock.sets) : null,
-              reps: exerciseInBlock.reps || null,
-              restSeconds: exerciseInBlock.restSeconds ? parseInt(exerciseInBlock.restSeconds) : null,
-              notes: exerciseInBlock.notes || null,
-              order: blockOrder, // A ordem do bloco
-              internalOrder: internalIndex, // A ordem dentro do bloco
-              supersetGroup: tempGroupId || null,
+              exerciseId: parseInt(exercise.exerciseId),
+              sets: exercise.sets ? parseInt(exercise.sets) : null,
+              reps: exercise.reps || null,
+              restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
+              notes: exercise.notes || null,
+              order: blockOrder,
+              internalOrder: internalIndex,
+              supersetGroup: currentSupersetId,
             });
           });
-
-          blockOrder++; // Incrementa para o próximo bloco
+          blockOrder++;
         });
         
         await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
@@ -136,37 +142,52 @@ const updateGlobalWorkoutPlan = async (req, res) => {
 
     if (exercises && Array.isArray(exercises)) {
       await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: planId }, transaction });
-
       const validExercises = exercises.filter(ex => ex.exerciseId && String(ex.exerciseId).trim() !== '');
 
       if (validExercises.length > 0) {
         const planExercisesToCreate = [];
         let blockOrder = 0;
-        const processedTempGroups = new Set();
+        let supersetIdCounter = 1;
+        const processedTempGroups = new Map();
         
+        const blocks = [];
+        const processedExercises = new Set();
+
         validExercises.forEach(exercise => {
-          const tempGroupId = exercise.supersetGroup;
-          if (tempGroupId && processedTempGroups.has(tempGroupId)) return;
+          const identifier = exercise.id || exercise.tempId;
+          if (processedExercises.has(identifier)) return;
 
-          let block;
-          if (tempGroupId) {
-            block = validExercises.filter(ex => ex.supersetGroup === tempGroupId);
-            processedTempGroups.add(tempGroupId);
+          if (exercise.supersetGroup) {
+            const supersetBlock = validExercises.filter(ex => ex.supersetGroup === exercise.supersetGroup);
+            blocks.push(supersetBlock);
+            supersetBlock.forEach(ex => processedExercises.add(ex.id || ex.tempId));
           } else {
-            block = [exercise];
+            blocks.push([exercise]);
+            processedExercises.add(identifier);
           }
-
-          block.forEach((exerciseInBlock, internalIndex) => {
+        });
+        
+        blocks.forEach((block) => {
+          let currentSupersetId = null;
+          if (block.length > 1) {
+              const tempGroupId = block[0].supersetGroup;
+              if (!processedTempGroups.has(tempGroupId)) {
+                  processedTempGroups.set(tempGroupId, supersetIdCounter++);
+              }
+              currentSupersetId = processedTempGroups.get(tempGroupId);
+          }
+          
+          block.forEach((exercise, internalIndex) => {
             planExercisesToCreate.push({
               workoutPlanId: parseInt(planId),
-              exerciseId: parseInt(exerciseInBlock.exerciseId || exerciseInBlock.exerciseDetails?.id),
-              sets: exerciseInBlock.sets ? parseInt(exerciseInBlock.sets) : null,
-              reps: exerciseInBlock.reps || null,
-              restSeconds: exerciseInBlock.restSeconds ? parseInt(exerciseInBlock.restSeconds) : null,
-              notes: exerciseInBlock.notes || null,
+              exerciseId: parseInt(exercise.exerciseId || exercise.exerciseDetails?.id),
+              sets: exercise.sets ? parseInt(exercise.sets) : null,
+              reps: exercise.reps || null,
+              restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
+              notes: exercise.notes || null,
               order: blockOrder,
               internalOrder: internalIndex,
-              supersetGroup: tempGroupId || null,
+              supersetGroup: currentSupersetId,
             });
           });
           blockOrder++;
@@ -193,7 +214,6 @@ const updateGlobalWorkoutPlan = async (req, res) => {
     res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
   }
 };
-
 
 const deleteGlobalWorkoutPlan = async (req, res) => {
   const { planId } = req.params;
