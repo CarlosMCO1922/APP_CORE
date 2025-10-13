@@ -18,26 +18,76 @@ const createGlobalWorkoutPlan = async (req, res) => {
       isVisible: !!isVisible,
     }, { transaction });
 
+    // --- LÓGICA CORRIGIDA AQUI ---
     if (exercises && exercises.length > 0) {
-      const planExercisesData = exercises.map(ex => ({
-        ...ex, 
-        workoutPlanId: newWorkoutPlan.id,
-      }));
-      await db.WorkoutPlanExercise.bulkCreate(planExercisesData, { transaction, validate: true });
+      const planExercisesToCreate = [];
+      let blockOrder = 0;
+      const processedExercises = new Set();
+
+      for (const exercise of exercises) {
+        if (processedExercises.has(exercise.id || exercise.tempId)) continue;
+        
+        const originalSupersetGroup = exercise.supersetGroup;
+        let finalSupersetGroup = null;
+
+        const isSupersetBlock = exercises.filter(ex => ex.supersetGroup === originalSupersetGroup).length > 1;
+
+        if (originalSupersetGroup && isSupersetBlock) {
+          const supersetBlock = exercises.filter(ex => ex.supersetGroup === originalSupersetGroup);
+          finalSupersetGroup = Date.now() + Math.random(); // ID de grupo único
+
+          supersetBlock.forEach((supersetExercise, internalIndex) => {
+            planExercisesToCreate.push({
+              // Mapeamento explícito para ignorar campos como 'tempId'
+              workoutPlanId: newWorkoutPlan.id,
+              exerciseId: supersetExercise.exerciseId,
+              sets: supersetExercise.sets,
+              reps: supersetExercise.reps,
+              restSeconds: supersetExercise.restSeconds,
+              notes: supersetExercise.notes,
+              order: blockOrder,
+              internalOrder: internalIndex,
+              supersetGroup: finalSupersetGroup,
+            });
+            processedExercises.add(supersetExercise.id || supersetExercise.tempId);
+          });
+        } else {
+          planExercisesToCreate.push({
+            workoutPlanId: newWorkoutPlan.id,
+            exerciseId: exercise.exerciseId,
+            sets: exercise.sets,
+            reps: exercise.reps,
+            restSeconds: exercise.restSeconds,
+            notes: exercise.notes,
+            order: blockOrder,
+            internalOrder: 0,
+            supersetGroup: null,
+          });
+          processedExercises.add(exercise.id || exercise.tempId);
+        }
+        blockOrder++;
+      }
+      
+      if(planExercisesToCreate.length > 0) {
+        await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
+      }
     }
+    // --- FIM DA CORREÇÃO ---
 
     await transaction.commit();
     const result = await db.WorkoutPlan.findByPk(newWorkoutPlan.id, {
-        include: [{ model: db.WorkoutPlanExercise, as: 'planExercises', include: [{model: db.Exercise, as: 'exerciseDetails'}] }]
+        include: [{ 
+            model: db.WorkoutPlanExercise, 
+            as: 'planExercises', 
+            order: [['order', 'ASC'], ['internalOrder', 'ASC']],
+            include: [{model: db.Exercise, as: 'exerciseDetails'}] 
+        }]
     });
     res.status(201).json(result);
 
   } catch (error) {
     await transaction.rollback();
     console.error('Erro (admin) ao criar plano de treino global:', error);
-    if (error.name === 'SequelizeValidationError') {
-      return res.status(400).json({ message: 'Erro de validação', errors: error.errors.map(e => e.message) });
-    }
     res.status(500).json({ message: 'Erro interno do servidor ao criar plano de treino global.', error: error.message });
   }
 };
