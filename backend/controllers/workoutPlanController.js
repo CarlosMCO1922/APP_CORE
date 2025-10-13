@@ -12,41 +12,44 @@ const createGlobalWorkoutPlan = async (req, res) => {
     const newWorkoutPlan = await db.WorkoutPlan.create({ name, notes, isVisible: !!isVisible }, { transaction });
 
     if (exercises && exercises.length > 0) {
-      const planExercisesToCreate = [];
-      const blocks = [];
-      const processedExercises = new Set();
+      // --- FILTRAGEM CRÍTICA: Ignora exercícios que não foram selecionados no dropdown ---
+      const validExercises = exercises.filter(ex => ex.exerciseId && ex.exerciseId !== '');
+      
+      if (validExercises.length > 0) {
+        const planExercisesToCreate = [];
+        const blocks = [];
+        const processedExercises = new Set();
 
-      exercises.forEach(exercise => {
-        if (processedExercises.has(exercise.id || exercise.tempId)) return;
+        validExercises.forEach(exercise => {
+          const identifier = exercise.id || exercise.tempId;
+          if (processedExercises.has(identifier)) return;
 
-        if (exercise.supersetGroup) {
-          const supersetBlock = exercises.filter(ex => ex.supersetGroup === exercise.supersetGroup);
-          blocks.push(supersetBlock);
-          supersetBlock.forEach(ex => processedExercises.add(ex.id || ex.tempId));
-        } else {
-          blocks.push([exercise]);
-          processedExercises.add(exercise.id || exercise.tempId);
-        }
-      });
+          if (exercise.supersetGroup) {
+            const supersetBlock = validExercises.filter(ex => ex.supersetGroup === exercise.supersetGroup);
+            blocks.push(supersetBlock);
+            supersetBlock.forEach(ex => processedExercises.add(ex.id || ex.tempId));
+          } else {
+            blocks.push([exercise]);
+            processedExercises.add(identifier);
+          }
+        });
 
-      blocks.forEach((block, blockIndex) => {
-        block.forEach((exercise, internalIndex) => {
-          // --- MAPEAMENTO EXPLÍCITO E SEGURO ---
-          planExercisesToCreate.push({
-            workoutPlanId: newWorkoutPlan.id,
-            exerciseId: parseInt(exercise.exerciseId) || null,
-            sets: exercise.sets ? parseInt(exercise.sets) : null,
-            reps: exercise.reps || null,
-            restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
-            notes: exercise.notes || null,
-            order: blockIndex,
-            internalOrder: internalIndex,
-            supersetGroup: exercise.supersetGroup || null,
+        blocks.forEach((block, blockIndex) => {
+          block.forEach((exercise, internalIndex) => {
+            planExercisesToCreate.push({
+              workoutPlanId: newWorkoutPlan.id,
+              exerciseId: parseInt(exercise.exerciseId),
+              sets: exercise.sets ? parseInt(exercise.sets) : null,
+              reps: exercise.reps || null,
+              restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
+              notes: exercise.notes || null,
+              order: blockIndex,
+              internalOrder: internalIndex,
+              supersetGroup: exercise.supersetGroup || null,
+            });
           });
         });
-      });
-      
-      if(planExercisesToCreate.length > 0) {
+        
         await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
       }
     }
@@ -127,41 +130,44 @@ const updateGlobalWorkoutPlan = async (req, res) => {
     if (exercises && Array.isArray(exercises)) {
       await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: planId }, transaction });
 
-      const planExercisesToCreate = [];
-      const blocks = [];
-      const processedExercises = new Set();
+      // --- FILTRAGEM CRÍTICA: Ignora exercícios que não foram selecionados no dropdown ---
+      const validExercises = exercises.filter(ex => ex.exerciseId && ex.exerciseId !== '');
 
-      exercises.forEach(exercise => {
-        if (processedExercises.has(exercise.id || exercise.tempId)) return;
+      if (validExercises.length > 0) {
+        const planExercisesToCreate = [];
+        const blocks = [];
+        const processedExercises = new Set();
 
-        if (exercise.supersetGroup) {
-          const supersetBlock = exercises.filter(ex => ex.supersetGroup === exercise.supersetGroup);
-          blocks.push(supersetBlock);
-          supersetBlock.forEach(ex => processedExercises.add(ex.id || ex.tempId));
-        } else {
-          blocks.push([exercise]);
-          processedExercises.add(exercise.id || exercise.tempId);
-        }
-      });
-      
-      blocks.forEach((block, blockIndex) => {
-        block.forEach((exercise, internalIndex) => {
-          // --- MAPEAMENTO EXPLÍCITO E SEGURO ---
-          planExercisesToCreate.push({
-            workoutPlanId: parseInt(planId),
-            exerciseId: parseInt(exercise.exerciseId || exercise.exerciseDetails?.id) || null,
-            sets: exercise.sets ? parseInt(exercise.sets) : null,
-            reps: exercise.reps || null,
-            restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
-            notes: exercise.notes || null,
-            order: blockIndex,
-            internalOrder: internalIndex,
-            supersetGroup: exercise.supersetGroup || null,
+        validExercises.forEach(exercise => {
+          const identifier = exercise.id || exercise.tempId;
+          if (processedExercises.has(identifier)) return;
+
+          if (exercise.supersetGroup) {
+            const supersetBlock = validExercises.filter(ex => ex.supersetGroup === exercise.supersetGroup);
+            blocks.push(supersetBlock);
+            supersetBlock.forEach(ex => processedExercises.add(ex.id || ex.tempId));
+          } else {
+            blocks.push([exercise]);
+            processedExercises.add(identifier);
+          }
+        });
+        
+        blocks.forEach((block, blockIndex) => {
+          block.forEach((exercise, internalIndex) => {
+            planExercisesToCreate.push({
+              workoutPlanId: parseInt(planId),
+              exerciseId: parseInt(exercise.exerciseId || exercise.exerciseDetails?.id),
+              sets: exercise.sets ? parseInt(exercise.sets) : null,
+              reps: exercise.reps || null,
+              restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
+              notes: exercise.notes || null,
+              order: blockIndex,
+              internalOrder: internalIndex,
+              supersetGroup: exercise.supersetGroup || null,
+            });
           });
         });
-      });
-      
-      if(planExercisesToCreate.length > 0) {
+        
         await db.WorkoutPlanExercise.bulkCreate(planExercisesToCreate, { transaction });
       }
     }
