@@ -1,5 +1,5 @@
 // src/pages/WorkoutSummaryPage.js
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaCheckCircle, FaStopwatch, FaWeightHanging, FaListOl, FaClipboardList, FaTrophy, FaDumbbell} from 'react-icons/fa';
@@ -160,23 +160,35 @@ const WorkoutSummaryPage = () => {
     sessionData, duration, workoutName, totalVolume, personalRecords, allPlanExercises 
   } = location.state || {};
 
-  if (!sessionData) {
-    return ( <PageContainer><p>Não há dados da sessão de treino para mostrar.</p></PageContainer> );
-  }
-
   const getExerciseName = (planExerciseId) => {
+    // A função find pode falhar se allPlanExercises for nulo. Adicionar uma salvaguarda.
+    if (!allPlanExercises) return 'Exercício Desconhecido';
     const exercise = allPlanExercises.find(ex => ex.id === planExerciseId);
     return exercise?.exerciseDetails?.name || 'Exercício Desconhecido';
   };
   
   const setsByExercise = useMemo(() => {
+    // Se não houver dados, retorna um objeto vazio para não dar erro
+    if (!sessionData) return {}; 
+    
     return sessionData.reduce((acc, set) => {
-      const exerciseName = getExerciseName(set.planExerciseId);
-      if (!acc[exerciseName]) acc[exerciseName] = [];
-      acc[exerciseName].push(set);
+      // Usamos o planExerciseId como chave para ser mais robusto que o nome
+      const exerciseId = set.planExerciseId;
+      if (!acc[exerciseId]) {
+        acc[exerciseId] = {
+          name: getExerciseName(exerciseId),
+          sets: []
+        };
+      }
+      acc[exerciseId].sets.push(set);
       return acc;
     }, {});
   }, [sessionData, allPlanExercises]);
+
+
+  if (!sessionData) {
+    return ( <PageContainer><p>Não há dados da sessão de treino para mostrar.</p></PageContainer> );
+  }
   
   
   const formatTime = (totalSeconds) => {
@@ -215,9 +227,9 @@ const WorkoutSummaryPage = () => {
       
         <DetailsSection>
             <h2>Detalhes do Treino</h2>
-            {Object.entries(setsByExercise).map(([exerciseName, sets]) => (
-                <ExerciseSummaryCard key={exerciseName}>
-                    <h3><FaDumbbell /> {exerciseName}</h3>
+            {Object.values(setsByExercise).map(({ name, sets }) => (
+                <ExerciseSummaryCard key={name}>
+                    <h3><FaDumbbell /> {name}</h3>
                     <SetsTableHeader><span>Série</span><span>Peso (KG)</span><span>Reps</span></SetsTableHeader>
                     <SetsTable>
                         {sets.map((set, index) => (
