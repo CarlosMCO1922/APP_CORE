@@ -47,15 +47,29 @@ const ExerciseLiveCard = ({
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));
     setSets(initialSets);
-  }, [planExercise]);
+  }, [planExercise.sets]);
+
+  useEffect(() => {
+    if (lastPerformance && lastPerformance.performedWeight && lastPerformance.performedReps) {
+        setLastPerformanceText(`Último: ${lastPerformance.performedWeight} kg x ${lastPerformance.performedReps} reps`);
+    } else {
+        setLastPerformanceText('Sem registos anteriores.');
+    }
+  }, [lastPerformance]);
   
   const handleAddSet = () => setSets(prev => [...prev, { id: Date.now() }]);
-  const handleDeleteSet = (setIdToDelete) => setSets(prev => prev.filter(set => set.id !== setIdToDelete));
+
+  const handleDeleteSet = (indexToDelete) => {
+    if (sets.length <= 1) {
+        alert("Não pode remover todas as séries.");
+        return;
+    }
+    setSets(prev => prev.filter((_, index) => index !== indexToDelete));
+  };
 
   return (
     <CardContainer>
-      {/* O Header e os botões de ação foram removidos daqui e movidos para a página principal */}
-      <LastPerformance>{lastPerformanceText}</LastPerformance>
+      <LastPerformance><FaHistory /> {lastPerformanceText}</LastPerformance>
       
       <SetsGridHeader><span>Série</span><span>KG</span><span>Reps</span><span></span></SetsGridHeader>
       
@@ -63,14 +77,13 @@ const ExerciseLiveCard = ({
         {sets.map((set, index) => (
           <SetRow
             key={set.id}
-            setId={set.id}
             setNumber={index + 1}
             planExerciseId={planExercise.id}
             trainingId={trainingId} 
             workoutPlanId={workoutPlanId} 
             onSetComplete={onSetComplete}
             restSeconds={planExercise.restSeconds}
-            onDeleteSet={() => handleDeleteSet(set.id)}
+            onDeleteSet={() => handleDeleteSet(index)} 
             lastWeight={lastPerformance?.performedWeight}
             lastReps={lastPerformance?.performedReps}
           />

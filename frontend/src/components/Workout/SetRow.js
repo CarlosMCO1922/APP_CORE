@@ -12,6 +12,7 @@ const SwipeableRowContainer = styled.div`
   position: relative;
   overflow: hidden;
   margin-bottom: 12px;
+  border-radius: ${({ theme }) => theme.borderRadius};
 `;
 
 const ActionBackground = styled.div`
@@ -128,6 +129,26 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
     const reps = setData.performedReps ?? lastReps ?? '';
     const isCompleted = setData.isCompleted || false;
 
+    const swipeHandlers = useSwipeable({
+        onSwipedLeft: () => {
+            // Se já estiver apagado ou se for a última série, não permite apagar
+            if (transformX === -100 || !onDeleteSet) return;
+            onDeleteSet();
+        },
+        onSwiping: (eventData) => {
+            // Limita o swipe para a esquerda até 100px
+            if (eventData.dir === 'Left' && eventData.deltaX < -30) {
+                 setTransformX(Math.max(-100, eventData.deltaX));
+            }
+        },
+        onSwiped: () => {
+            // Volta à posição inicial se não deslizar o suficiente
+            setTransformX(0);
+        },
+        trackMouse: true,
+        preventDefaultTouchmoveEvent: true,
+    });
+
     const handleComplete = () => {
         if (!weight || !reps) {
             alert("Preencha o peso e as repetições.");
@@ -143,8 +164,11 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
     };
 
     return (
-        <SwipeableRowContainer>
-            <SwipeableContent isCompleted={isCompleted}>
+          <SwipeableRowContainer>
+            <ActionBackground>
+                <FaTrashAlt size="1.5em" />
+            </ActionBackground>
+            <SwipeableContent {...swipeHandlers} transformX={transformX} isCompleted={isCompleted}>
                 <SetLabel>{setNumber}</SetLabel>
                 <Input type="number" placeholder="-" 
                     value={weight} 
@@ -156,11 +180,11 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
                     onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
                     disabled={isCompleted} 
                 />
-                <ActionButton onClick={isCompleted ? handleEdit : handleComplete}>
+                <ActionButton onClick={isCompleted ? handleEdit : handleComplete} disabled={!weight || !reps}>
                     {isCompleted ? <FaPencilAlt /> : <FaCheck />}
                 </ActionButton>
             </SwipeableContent>
-        </SwipeableRowContainer>
+          </SwipeableRowContainer>
     );
 };
 
