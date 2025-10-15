@@ -7,6 +7,9 @@ import { FaCheck, FaTrashAlt, FaPencilAlt } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 import { useWorkout } from '../../context/WorkoutContext';
 
+const SWIPE_DISTANCE = -120; // Aumentado para um deslize mais longo
+const SWIPE_THRESHOLD = -60;
+
 // --- Styled Components (sem alterações) ---
 const SwipeableRowContainer = styled.div`
   position: relative;
@@ -94,6 +97,24 @@ const ActionButton = styled.button`
   }
 `;
 
+const DeleteButton = styled.button`
+  height: 100%;
+  width: 120px; /* Deve corresponder à SWIPE_DISTANCE */
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+  
+  &:hover {
+    background-color: #b71c1c; /* Cor mais escura ao passar o rato */
+  }
+`;
 
 // --- Componente SetRow ---
 // ALTERADO: Adicionado 'onDeleteSet' às props recebidas
@@ -109,17 +130,20 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
     const isCompleted = setData.isCompleted || false;
 
     const swipeHandlers = useSwipeable({
-        onSwipedLeft: () => {
-            if (transformX === -100 || !onDeleteSet) return;
-            onDeleteSet();
-        },
         onSwiping: (eventData) => {
-            if (eventData.dir === 'Left' && eventData.deltaX < -30) {
-                 setTransformX(Math.max(-100, eventData.deltaX));
+            // Permite deslizar apenas para a esquerda e limita a distância
+            if (eventData.deltaX < 0) {
+                const newX = Math.max(SWIPE_DISTANCE, eventData.deltaX);
+                setTransformX(newX);
             }
         },
-        onSwiped: () => {
-            setTransformX(0);
+        onSwiped: (eventData) => {
+            // Ao largar, decide se fica aberto ou fechado
+            if (eventData.deltaX < SWIPE_THRESHOLD) {
+                setTransformX(SWIPE_DISTANCE); // Fica aberto
+            } else {
+                setTransformX(0); // Volta a fechar
+            }
         },
         trackMouse: true,
         preventDefaultTouchmoveEvent: true,
@@ -139,10 +163,18 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
         updateSetData(planExerciseId, setNumber, 'isCompleted', false);
     };
 
+    const handleDeleteConfirm = () => {
+        if (window.confirm("Tem a certeza que quer apagar esta série?")) {
+            onDeleteSet();
+        }
+    };
+
     return (
-          <SwipeableRowContainer>
+        <SwipeableRowContainer onClick={() => transformX !== 0 && setTransformX(0)}>
             <ActionBackground>
-                <FaTrashAlt size="1.5em" />
+                <DeleteButton onClick={handleDeleteConfirm}>
+                    <FaTrashAlt /> Apagar
+                </DeleteButton>
             </ActionBackground>
             <SwipeableContent {...swipeHandlers} transformX={transformX} isCompleted={isCompleted}>
                 <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
@@ -160,7 +192,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
                     {isCompleted ? <FaPencilAlt /> : <FaCheck />}
                 </ActionButton>
             </SwipeableContent>
-          </SwipeableRowContainer>
+        </SwipeableRowContainer>
     );
 };
 
