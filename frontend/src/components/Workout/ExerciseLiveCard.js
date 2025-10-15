@@ -65,12 +65,13 @@ const ExerciseLiveCard = ({
             setId={set.id}
             setNumber={index + 1}
             planExerciseId={planExercise.id}
-            trainingId={trainingId} // Passado para o SetRow
-            workoutPlanId={workoutPlanId} // Passado para o SetRow
+            trainingId={trainingId} 
+            workoutPlanId={workoutPlanId} 
             onSetComplete={onSetComplete}
             restSeconds={planExercise.restSeconds}
             onDeleteSet={() => handleDeleteSet(set.id)}
-            // lastWeight e lastReps podem vir de uma chamada ao histórico
+            lastWeight={lastPerformance?.performedWeight}
+            lastReps={lastPerformance?.performedReps}
           />
         ))}
       </div>

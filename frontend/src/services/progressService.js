@@ -311,3 +311,18 @@ export const getExerciseHistoryService = async (exerciseId, token) => {
     throw error;
   }
 };
+
+export const getMyLastPerformancesService = async (token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/progress/my-last-performances`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar últimas performances.');
+    return data;
+  } catch (error) {
+    console.error("Erro em getMyLastPerformancesService:", error);
+    throw error;
+  }
+};

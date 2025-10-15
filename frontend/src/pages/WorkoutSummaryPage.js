@@ -1,6 +1,5 @@
 // src/pages/WorkoutSummaryPage.js
-
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaCheckCircle, FaStopwatch, FaWeightHanging, FaListOl, FaClipboardList, FaTrophy, FaDumbbell} from 'react-icons/fa';
@@ -158,47 +157,26 @@ const SetsTableHeader = styled(SetRowSummary)`
 const WorkoutSummaryPage = () => {
   const location = useLocation();
   const { 
-    sessionData = [], 
-    duration = 0, 
-    workoutName = 'Treino', 
-    allPlanExercises = [], 
-    personalRecords = [] 
+    sessionData, duration, workoutName, totalVolume, personalRecords, allPlanExercises 
   } = location.state || {};
+
+  if (!sessionData) {
+    return ( <PageContainer><p>Não há dados da sessão de treino para mostrar.</p></PageContainer> );
+  }
 
   const getExerciseName = (planExerciseId) => {
     const exercise = allPlanExercises.find(ex => ex.id === planExerciseId);
     return exercise?.exerciseDetails?.name || 'Exercício Desconhecido';
   };
-
-  // Calcula as estatísticas usando useMemo para eficiência
-  const stats = useMemo(() => {
-    if (!sessionData || sessionData.length === 0) {
-      return { totalSets: 0, totalVolume: 0 };
-    }
-    const totalVolume = sessionData.reduce((acc, set) => {
-      const weight = set.performedWeight || 0;
-      const reps = set.performedReps || 0;
-      return acc + (weight * reps);
-    }, 0);
-
-    return {
-      totalSets: sessionData.length,
-      totalVolume: totalVolume.toFixed(2),
-    };
-  }, [sessionData]);
-
+  
   const setsByExercise = useMemo(() => {
-        if (!sessionData) return new Map();
-        const map = new Map();
-        sessionData.forEach(set => {
-            const name = getExerciseName(set.planExerciseId);
-            if (!map.has(name)) {
-                map.set(name, []);
-            }
-            map.get(name).push(set);
-        });
-        return map;
-    }, [sessionData, getExerciseName]);
+    return sessionData.reduce((acc, set) => {
+      const exerciseName = getExerciseName(set.planExerciseId);
+      if (!acc[exerciseName]) acc[exerciseName] = [];
+      acc[exerciseName].push(set);
+      return acc;
+    }, {});
+  }, [sessionData, allPlanExercises]);
   
   const formatTime = (totalSeconds) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -210,62 +188,49 @@ const WorkoutSummaryPage = () => {
 
   return (
     <PageContainer>
-      <SummaryHeader>
-        <SuccessIcon />
-        <Title>Treino Concluído!</Title>
-        <Subtitle>Bom trabalho em completar o treino "{workoutName}".</Subtitle>
-      </SummaryHeader>
-      <StatsGrid>
-        <StatCard>
-          <FaStopwatch />
-          <h3>Duração Total</h3>
-          <p>{formatTime(duration)}</p>
-        </StatCard>
-        <StatCard>
-          <FaWeightHanging />
-          <h3>Volume Total</h3>
-          <p>{stats.totalVolume} kg</p>
-        </StatCard>
-        <StatCard>
-          <FaListOl />
-          <h3>Séries Completadas</h3>
-          <p>{stats.totalSets}</p>
-        </StatCard>
-      </StatsGrid>
-      {personalRecords && personalRecords.length > 0 && (
-        <PRSection>
-          <h2><FaTrophy /> Novos Recordes Pessoais!</h2>
-          {personalRecords.map((pr, index) => (
-            <PRCard key={index}>
-              <span>{getExerciseName(pr.planExerciseId)}</span>
-              <p>{pr.value}</p>
-            </PRCard>
-          ))}
-        </PRSection>
-      )}
-      <DetailsSection>
-        <h2>Detalhes do Treino</h2>
-        {Array.from(setsByExercise.entries()).map(([exerciseName, sets]) => (
-          <ExerciseSummaryCard key={exerciseName}>
-            <h3><FaDumbbell /> {exerciseName}</h3>
-              <SetsTable>
-                <SetsTableHeader>
-                  <span>Série</span>
-                  <span>Peso (kg)</span>
-                  <span>Reps</span>
-                </SetsTableHeader>
-                {sets.map((set, index) => (
-                  <SetRowSummary key={index}>
-                    <span>{set.setNumber}</span>
-                    <span>{set.performedWeight || '-'}</span>
-                    <span>{set.performedReps || '-'}</span>
-                  </SetRowSummary>
+        <SummaryHeader>
+            <SuccessIcon />
+            <Title>Treino Concluído!</Title>
+            <Subtitle>Bom trabalho em completar o treino "{workoutName}".</Subtitle>
+        </SummaryHeader>
+
+        <StatsGrid>
+            <StatCard><h3>Duração Total</h3><p>{formatTime(duration)}</p></StatCard>
+            <StatCard><h3>Volume Total</h3><p>{totalVolume.toFixed(2)} kg</p></StatCard>
+            <StatCard><h3>Séries Completadas</h3><p>{sessionData.length}</p></StatCard>
+        </StatsGrid>
+
+        {personalRecords && personalRecords.length > 0 && (
+            <PRSection>
+                <h2><FaTrophy /> Novos Recordes Pessoais!</h2>
+                {personalRecords.map((pr, index) => (
+                    <PRCard key={index}>
+                        <span>{getExerciseName(pr.planExerciseId)} - {pr.type}</span>
+                        <p>{pr.value}</p>
+                    </PRCard>
                 ))}
-                </SetsTable>
-          </ExerciseSummaryCard>
-                ))}
-      </DetailsSection>
-      <BackButton to="/dashboard">Voltar ao Painel</BackButton>
+            </PRSection>
+        )}
+      
+        <DetailsSection>
+            <h2>Detalhes do Treino</h2>
+            {Object.entries(setsByExercise).map(([exerciseName, sets]) => (
+                <ExerciseSummaryCard key={exerciseName}>
+                    <h3><FaDumbbell /> {exerciseName}</h3>
+                    <SetsTableHeader><span>Série</span><span>Peso (KG)</span><span>Reps</span></SetsTableHeader>
+                    <SetsTable>
+                        {sets.map((set, index) => (
+                            <SetRowSummary key={index}>
+                                <span>{set.setNumber}</span>
+                                <span>{set.performedWeight}</span>
+                                <span>{set.performedReps}</span>
+                            </SetRowSummary>
+                        ))}
+                    </SetsTable>
+                </ExerciseSummaryCard>
+            ))}
+        </DetailsSection>
+        <BackButton to="/dashboard">Voltar ao Painel</BackButton>
     </PageContainer>
   );
 };

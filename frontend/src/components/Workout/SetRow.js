@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService, updateExercisePerformanceService } from '../../services/progressService';
 import { FaCheck, FaTrashAlt, FaPencilAlt } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
+import { useWorkout } from '../../context/WorkoutContext';
 
 // --- Keyframes para animação de shake (se a ação falhar ou for inválida) ---
 const SwipeableRowContainer = styled.div`
@@ -119,101 +120,50 @@ const DeleteButton = styled.button`
 `;
 
 // --- Componente SetRow ---
-const SetRow = ({ setId, setNumber, onDeleteSet, onSetComplete, lastWeight, lastReps, planExerciseId, trainingId, workoutPlanId, restSeconds }) => {
-  const { authState } = useAuth();
-  const [weight, setWeight] = useState(lastWeight || '');
-  const [reps, setReps] = useState(lastReps || '');
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [transformX, setTransformX] = useState(0);
-  const [performanceId, setPerformanceId] = useState(null);
+const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps }) => {
+    const { activeWorkout, updateSetData } = useWorkout();
 
-  useEffect(() => {
-    if (lastWeight !== undefined && lastReps !== undefined) {
-      // Se a série já foi completada, não redefina os valores
-      if (!isCompleted) {
-        setWeight(lastWeight);
-        setReps(lastReps);
-      }
-    }
-  }, [lastWeight, lastReps, isCompleted]);
+    // Os dados desta série vêm do estado central no WorkoutContext
+    const setData = activeWorkout.setsData[`${planExerciseId}-${setNumber}`] || {};
+    const weight = setData.performedWeight ?? lastWeight ?? '';
+    const reps = setData.performedReps ?? lastReps ?? '';
+    const isCompleted = setData.isCompleted || false;
 
-  const resetSwipe = () => {
-    setTransformX(0);
-  };
-
-  const handleEdit = () => {
-    setIsCompleted(false); // Isto irá reativar os inputs e mudar o ícone do botão
-  };
-
-  const handleComplete = async () => {
-    if ((isCompleted && !performanceId) || (!weight && !reps)) return;
-
-    const performanceData = {
-      trainingId: trainingId || null, workoutPlanId, planExerciseId,
-      performedAt: new Date().toISOString(), setNumber,
-      performedReps: reps ? parseInt(reps, 10) : null,
-      performedWeight: weight ? parseFloat(weight) : null,
+    const handleComplete = () => {
+        if (!weight || !reps) {
+            alert("Preencha o peso e as repetições.");
+            return;
+        }
+        // Atualiza o estado central
+        updateSetData(planExerciseId, setNumber, 'isCompleted', true);
+        // Chama a função da página principal (para o timer, etc.)
+        onSetComplete({ ...setData, performedWeight: weight, performedReps: reps });
+    };
+    
+    const handleEdit = () => {
+        updateSetData(planExerciseId, setNumber, 'isCompleted', false);
     };
 
-    try {
-      let result;
-      if (performanceId) {
-        // Se já temos um ID, estamos a ATUALIZAR
-        result = await updateExercisePerformanceService(performanceId, performanceData, authState.token);
-      } else {
-        // Se não temos um ID, estamos a CRIAR
-        result = await logExercisePerformanceService(performanceData, authState.token);
-        setPerformanceId(result.performance.id); // Guardamos o ID do novo registo
-      }
-      
-      setIsCompleted(true);
-      if (onSetComplete && !performanceId) { // Só ativa o rest timer na primeira conclusão
-          onSetComplete(result.performance, restSeconds);
-      }
-    } catch (error) {
-      alert(`Falha ao registar a série: ${error.message}`);
-    }
-  };
-
-  const handlers = useSwipeable({
-    onSwiping: (eventData) => {
-      if (eventData.deltaX < 0) { setTransformX(eventData.deltaX); }
-    },
-    onSwipedLeft: () => {
-      // SWIPE COMPLETO: aciona a ação diretamente
-      if (window.confirm("Tem a certeza que quer apagar esta série?")) {
-        onDeleteSet();
-      }
-      // Animação de volta à posição inicial
-      setTimeout(() => setTransformX(0), 100);
-    },
-    onSwiped: () => {
-      // Se não acionou a ação, volta ao início
-      if (transformX !== 0) {
-        setTransformX(0);
-      }
-    },
-    trackMouse: true,
-    preventScrollOnSwipe: true,
-  });
-
-  
-  return (
-    <SwipeableRowContainer>
-      <ActionBackground>
-        <FaTrashAlt />
-      </ActionBackground>
-
-      <SwipeableContent {...handlers} transformX={transformX} isCompleted={isCompleted}>
-        <SetLabel>{setNumber}</SetLabel>
-        <Input type="number" placeholder="-" value={weight} onChange={e => setWeight(e.target.value)} disabled={isCompleted} />
-        <Input type="number" placeholder="-" value={reps} onChange={e => setReps(e.target.value)} disabled={isCompleted} />
-        <ActionButton onClick={isCompleted ? handleEdit : handleComplete} isCompleted={isCompleted} disabled={!isCompleted && (!weight && !reps)}>
-          {isCompleted ? <FaPencilAlt /> : <FaCheck />}
-        </ActionButton>
-      </SwipeableContent>
-    </SwipeableRowContainer>
-  );
+    return (
+        <SwipeableRowContainer>
+            <SwipeableContent isCompleted={isCompleted}>
+                <SetLabel>{setNumber}</SetLabel>
+                <Input type="number" placeholder="-" 
+                    value={weight} 
+                    onChange={e => updateSetData(planExerciseId, setNumber, 'performedWeight', e.target.value)} 
+                    disabled={isCompleted} 
+                />
+                <Input type="number" placeholder="-" 
+                    value={reps} 
+                    onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
+                    disabled={isCompleted} 
+                />
+                <ActionButton onClick={isCompleted ? handleEdit : handleComplete}>
+                    {isCompleted ? <FaPencilAlt /> : <FaCheck />}
+                </ActionButton>
+            </SwipeableContent>
+        </SwipeableRowContainer>
+    );
 };
 
 export default SetRow;

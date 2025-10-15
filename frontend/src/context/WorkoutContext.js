@@ -1,45 +1,108 @@
-// src/context/WorkoutContext.js
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getMyLastPerformancesService, checkPersonalRecordsService } from '../services/progressService';
+import { useAuth } from './AuthContext';
 
 const WorkoutContext = createContext();
 
 export const WorkoutProvider = ({ children }) => {
     const [activeWorkout, setActiveWorkout] = useState(null);
     const [isMinimized, setIsMinimized] = useState(true);
+    const [lastPerformances, setLastPerformances] = useState({});
+    const { authState } = useAuth();
     const navigate = useNavigate();
 
-    const startWorkout = (planData) => {
+    useEffect(() => {
+        try {
+            const savedWorkout = localStorage.getItem('activeWorkoutSession');
+            if (savedWorkout) {
+                setActiveWorkout(JSON.parse(savedWorkout));
+                setIsMinimized(true);
+            }
+        } catch (error) {
+            console.error("Falha ao carregar treino do localStorage:", error);
+            localStorage.removeItem('activeWorkoutSession');
+        }
+    }, []);
+
+    useEffect(() => {
+        if (activeWorkout) {
+            localStorage.setItem('activeWorkoutSession', JSON.stringify(activeWorkout));
+        } else {
+            localStorage.removeItem('activeWorkoutSession');
+        }
+    }, [activeWorkout]);
+
+    const startWorkout = async (planData) => {
         if (activeWorkout) {
             alert("Já existe um treino em andamento. Finalize ou cancele o treino atual antes de iniciar um novo.");
-            setIsMinimized(false); // Leva o utilizador para o treino que já está a decorrer
+            setIsMinimized(false);
             return;
         }
-        
-        // Adicionamos um campo 'setsData' para guardar o progresso
+
+        try {
+            const history = await getMyLastPerformancesService(authState.token);
+            const historyMap = history.reduce((acc, perf) => {
+                acc[perf.exerciseId] = perf;
+                return acc;
+            }, {});
+            setLastPerformances(historyMap);
+        } catch (error) {
+            console.error("Não foi possível carregar o histórico de performances:", error);
+            setLastPerformances({});
+        }
+
         const workoutSession = {
             ...planData,
             startTime: Date.now(),
-            setsData: [] 
+            setsData: {}
         };
-
         setActiveWorkout(workoutSession);
         setIsMinimized(false);
     };
 
-    const finishWorkout = () => {
-        console.log("Treino finalizado! A preparar dados para resumo...", activeWorkout);
-        // Navega para a página de resumo, passando os dados
+    const updateSetData = (planExerciseId, setNumber, field, value) => {
+        if (!activeWorkout) return;
+        setActiveWorkout(prev => {
+            const newSetsData = { ...prev.setsData };
+            const key = `${planExerciseId}-${setNumber}`;
+            if (!newSetsData[key]) {
+                newSetsData[key] = { planExerciseId, setNumber };
+            }
+            newSetsData[key][field] = value;
+            return { ...prev, setsData: newSetsData };
+        });
+    };
+
+    const finishWorkout = async () => {
+        if (!activeWorkout) return;
+        const completedSets = Object.values(activeWorkout.setsData).filter(
+            set => set.performedWeight && set.performedReps
+        );
+
+        const totalVolume = completedSets.reduce((sum, set) => {
+            return sum + (parseFloat(set.performedWeight) * parseInt(set.performedReps));
+        }, 0);
+        
+        let personalRecords = [];
+        try {
+            const prResult = await checkPersonalRecordsService(completedSets, authState.token);
+            personalRecords = prResult.records || [];
+        } catch (error) {
+            console.error("Erro ao verificar PRs:", error);
+        }
+
         navigate('/treino/resumo', { 
             state: { 
-                sessionData: activeWorkout.setsData,
+                sessionData: completedSets,
                 duration: Math.floor((Date.now() - activeWorkout.startTime) / 1000),
                 workoutName: activeWorkout.name,
+                totalVolume: totalVolume,
+                personalRecords: personalRecords,
                 allPlanExercises: activeWorkout.planExercises,
-                personalRecords: [] // A lógica de PRs será chamada aqui ou na página de resumo
             } 
         });
-        setActiveWorkout(null); // Limpa o treino ativo
+        setActiveWorkout(null);
     };
 
     const cancelWorkout = () => {
@@ -48,32 +111,18 @@ export const WorkoutProvider = ({ children }) => {
         }
     };
 
-    // Função para atualizar o progresso do treino (ex: registar uma série)
-    const logSet = (setData) => {
-        if (!activeWorkout) return;
-        setActiveWorkout(prevWorkout => ({
-            ...prevWorkout,
-            setsData: [...prevWorkout.setsData, setData]
-        }));
-    };
-
     const value = {
         activeWorkout,
         isMinimized,
+        lastPerformances,
         startWorkout,
         finishWorkout,
         cancelWorkout,
-        logSet,
+        updateSetData,
         setIsMinimized,
     };
 
-    return (
-        <WorkoutContext.Provider value={value}>
-            {children}
-        </WorkoutContext.Provider>
-    );
+    return ( <WorkoutContext.Provider value={value}>{children}</WorkoutContext.Provider> );
 };
 
-export const useWorkout = () => {
-    return useContext(WorkoutContext);
-};
+export const useWorkout = () => useContext(WorkoutContext);

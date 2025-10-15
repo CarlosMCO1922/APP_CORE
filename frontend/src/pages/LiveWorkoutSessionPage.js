@@ -92,7 +92,7 @@ const ActionButton = styled.button`
 
 const LiveWorkoutSessionPage = () => {
   const { authState } = useAuth();
-  const { activeWorkout, finishWorkout, cancelWorkout, logSet, setIsMinimized } = useWorkout();
+  const { activeWorkout, finishWorkout, cancelWorkout, logSet, setIsMinimized, lastPerformances} = useWorkout();
   
   const [elapsedTime, setElapsedTime] = useState(0);
   const [activeRestTimer, setActiveRestTimer] = useState({ active: false, duration: 90, key: 0 });
@@ -215,6 +215,7 @@ const LiveWorkoutSessionPage = () => {
                                     onSetComplete={handleSetComplete}
                                     trainingId={activeWorkout.trainingId || null}
                                     workoutPlanId={activeWorkout.id}
+                                    lastPerformance={lastPerformances[planExercise.exerciseDetails.id]}
                                 />
                             </div>
                 );
