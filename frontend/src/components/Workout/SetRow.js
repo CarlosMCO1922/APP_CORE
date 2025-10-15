@@ -1,5 +1,5 @@
-// src/components/Workout/SetRow.js - VERSÃO POLIDA E INTUITIVA
-import React, { useState, useEffect } from 'react';
+// src/components/Workout/SetRow.js
+import React, { useState } from 'react'; // Importar apenas o useState
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService, updateExercisePerformanceService } from '../../services/progressService';
@@ -7,7 +7,7 @@ import { FaCheck, FaTrashAlt, FaPencilAlt } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 import { useWorkout } from '../../context/WorkoutContext';
 
-// --- Keyframes para animação de shake (se a ação falhar ou for inválida) ---
+// --- Styled Components (sem alterações) ---
 const SwipeableRowContainer = styled.div`
   position: relative;
   overflow: hidden;
@@ -29,12 +29,6 @@ const ActionBackground = styled.div`
   background-color: #D32F2F;
   border-radius: ${({ theme }) => theme.borderRadius};
   z-index: 1;
-`;
-
-
-const ActionText = styled.span`
-  font-size: 1.5rem;
-  font-weight: bold;
 `;
 
 const SwipeableContent = styled.div`
@@ -63,8 +57,8 @@ const SetLabel = styled.span`
 const Input = styled.input`
   width: 100%;
   padding: 12px;
-  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; /* MUDOU */
-  border: 1px solid ${({ theme }) => theme.colors.buttonSecondaryBg}; /* MUDOU */
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  border: 1px solid ${({ theme }) => theme.colors.buttonSecondaryBg};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
   text-align: center;
@@ -73,13 +67,6 @@ const Input = styled.input`
   &::-webkit-outer-spin-button, &::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
   }
-`;
-
-const CompletedText = styled.span`
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 500;
-    color: ${({ theme }) => theme.colors.textMain};
 `;
 
 const ActionButton = styled.button`
@@ -107,22 +94,14 @@ const ActionButton = styled.button`
   }
 `;
 
-const DeleteButton = styled.button`
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  font-size: 1.2rem;
-  padding: 10px;
-  
-  &:hover {
-    transform: scale(1.1);
-  }
-`;
 
 // --- Componente SetRow ---
-const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps }) => {
+// ALTERADO: Adicionado 'onDeleteSet' às props recebidas
+const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps, onDeleteSet }) => {
     const { activeWorkout, updateSetData } = useWorkout();
+    
+    // ALTERADO: Adicionado o estado para controlar a posição do swipe
+    const [transformX, setTransformX] = useState(0);
 
     const setData = activeWorkout.setsData[`${planExerciseId}-${setNumber}`] || {};
     const weight = setData.performedWeight ?? lastWeight ?? '';
@@ -131,18 +110,15 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
 
     const swipeHandlers = useSwipeable({
         onSwipedLeft: () => {
-            // Se já estiver apagado ou se for a última série, não permite apagar
             if (transformX === -100 || !onDeleteSet) return;
             onDeleteSet();
         },
         onSwiping: (eventData) => {
-            // Limita o swipe para a esquerda até 100px
             if (eventData.dir === 'Left' && eventData.deltaX < -30) {
                  setTransformX(Math.max(-100, eventData.deltaX));
             }
         },
         onSwiped: () => {
-            // Volta à posição inicial se não deslizar o suficiente
             setTransformX(0);
         },
         trackMouse: true,
@@ -154,7 +130,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
             alert("Preencha o peso e as repetições.");
             return;
         }
-        const currentSetData = { ...setData, performedWeight: weight, performedReps: reps };
+        const currentSetData = { ...setData, performedWeight: weight, performedReps: reps, planExerciseId, setNumber };
         updateSetData(planExerciseId, setNumber, 'isCompleted', true);
         onSetComplete(currentSetData);
     };
@@ -169,7 +145,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
                 <FaTrashAlt size="1.5em" />
             </ActionBackground>
             <SwipeableContent {...swipeHandlers} transformX={transformX} isCompleted={isCompleted}>
-                <SetLabel>{setNumber}</SetLabel>
+                <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
                 <Input type="number" placeholder="-" 
                     value={weight} 
                     onChange={e => updateSetData(planExerciseId, setNumber, 'performedWeight', e.target.value)} 
