@@ -510,7 +510,6 @@ const getMyLastPerformances = async (req, res) => {
       replacements: { userId: userId },
       type: db.sequelize.QueryTypes.SELECT
     });
-
     res.status(200).json(results);
   } catch (error) {
     console.error('Erro ao obter últimas performances:', error);

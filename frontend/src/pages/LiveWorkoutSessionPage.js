@@ -197,6 +197,7 @@ const LiveWorkoutSessionPage = () => {
                                 onShowHistory={handleShowHistory}
                                 trainingId={activeWorkout.trainingId || null}
                                 workoutPlanId={activeWorkout.id}
+                                lastPerformances={lastPerformances}
                             />
                         );
                     } else {

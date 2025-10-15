@@ -39,6 +39,7 @@ const ExerciseLiveCard = ({
   trainingId, 
   workoutPlanId, // <-- Prop nova
   onSetComplete, 
+  lastPerformance,
 }) => {
   const [sets, setSets] = useState([]);
   const [lastPerformanceText, setLastPerformanceText] = useState('Sem registos anteriores.');

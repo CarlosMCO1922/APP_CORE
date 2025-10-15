@@ -123,7 +123,6 @@ const DeleteButton = styled.button`
 const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps }) => {
     const { activeWorkout, updateSetData } = useWorkout();
 
-    // Os dados desta série vêm do estado central no WorkoutContext
     const setData = activeWorkout.setsData[`${planExerciseId}-${setNumber}`] || {};
     const weight = setData.performedWeight ?? lastWeight ?? '';
     const reps = setData.performedReps ?? lastReps ?? '';
@@ -134,10 +133,9 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
             alert("Preencha o peso e as repetições.");
             return;
         }
-        // Atualiza o estado central
+        const currentSetData = { ...setData, performedWeight: weight, performedReps: reps };
         updateSetData(planExerciseId, setNumber, 'isCompleted', true);
-        // Chama a função da página principal (para o timer, etc.)
-        onSetComplete({ ...setData, performedWeight: weight, performedReps: reps });
+        onSetComplete(currentSetData);
     };
     
     const handleEdit = () => {

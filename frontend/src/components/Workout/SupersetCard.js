@@ -50,7 +50,7 @@ const ActionButton = styled.button`
   &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
 
-const SupersetCard = ({ exercises = [], onSetComplete, onShowHistory, trainingId, workoutPlanId }) => {
+const SupersetCard = ({ exercises = [], onSetComplete, onShowHistory, trainingId, workoutPlanId, lastPerformances }) => {
 
   if (!Array.isArray(exercises) || exercises.length === 0) {
     return null;
@@ -80,6 +80,7 @@ const SupersetCard = ({ exercises = [], onSetComplete, onShowHistory, trainingId
             onSetComplete={onSetComplete}
             trainingId={trainingId}
             workoutPlanId={workoutPlanId}
+            lastPerformance={lastPerformances[planExercise.exerciseDetails.id]}
           />
         </ExerciseWrapper>
       ))}

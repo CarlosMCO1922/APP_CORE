@@ -178,6 +178,7 @@ const WorkoutSummaryPage = () => {
     }, {});
   }, [sessionData, allPlanExercises]);
   
+  
   const formatTime = (totalSeconds) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -186,12 +187,12 @@ const WorkoutSummaryPage = () => {
   };
 
 
-  return (
+   return (
     <PageContainer>
         <SummaryHeader>
             <SuccessIcon />
             <Title>Treino Concluído!</Title>
-            <Subtitle>Bom trabalho em completar o treino "{workoutName}".</Subtitle>
+            <Subtitle>Bom trabalho ao completar o treino "{workoutName}".</Subtitle>
         </SummaryHeader>
 
         <StatsGrid>

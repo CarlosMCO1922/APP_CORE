@@ -12,6 +12,7 @@ export const WorkoutProvider = ({ children }) => {
     const { authState } = useAuth();
     const navigate = useNavigate();
 
+    // Carrega um treino ativo do localStorage ao iniciar a app
     useEffect(() => {
         try {
             const savedWorkout = localStorage.getItem('activeWorkoutSession');
@@ -25,6 +26,7 @@ export const WorkoutProvider = ({ children }) => {
         }
     }, []);
 
+    // Guarda o treino no localStorage sempre que ele muda
     useEffect(() => {
         if (activeWorkout) {
             localStorage.setItem('activeWorkoutSession', JSON.stringify(activeWorkout));
@@ -52,11 +54,7 @@ export const WorkoutProvider = ({ children }) => {
             setLastPerformances({});
         }
 
-        const workoutSession = {
-            ...planData,
-            startTime: Date.now(),
-            setsData: {}
-        };
+        const workoutSession = { ...planData, startTime: Date.now(), setsData: {} };
         setActiveWorkout(workoutSession);
         setIsMinimized(false);
     };
@@ -66,9 +64,7 @@ export const WorkoutProvider = ({ children }) => {
         setActiveWorkout(prev => {
             const newSetsData = { ...prev.setsData };
             const key = `${planExerciseId}-${setNumber}`;
-            if (!newSetsData[key]) {
-                newSetsData[key] = { planExerciseId, setNumber };
-            }
+            if (!newSetsData[key]) newSetsData[key] = { planExerciseId, setNumber };
             newSetsData[key][field] = value;
             return { ...prev, setsData: newSetsData };
         });
@@ -80,16 +76,14 @@ export const WorkoutProvider = ({ children }) => {
             set => set.performedWeight && set.performedReps
         );
 
-        const totalVolume = completedSets.reduce((sum, set) => {
-            return sum + (parseFloat(set.performedWeight) * parseInt(set.performedReps));
-        }, 0);
+        const totalVolume = completedSets.reduce((sum, set) => sum + (parseFloat(set.performedWeight) * parseInt(set.performedReps)), 0);
         
         let personalRecords = [];
-        try {
-            const prResult = await checkPersonalRecordsService(completedSets, authState.token);
-            personalRecords = prResult.records || [];
-        } catch (error) {
-            console.error("Erro ao verificar PRs:", error);
+        if (completedSets.length > 0) {
+            try {
+                const prResult = await checkPersonalRecordsService(completedSets, authState.token);
+                personalRecords = prResult.records || [];
+            } catch (error) { console.error("Erro ao verificar PRs:", error); }
         }
 
         navigate('/treino/resumo', { 
@@ -105,22 +99,9 @@ export const WorkoutProvider = ({ children }) => {
         setActiveWorkout(null);
     };
 
-    const cancelWorkout = () => {
-        if (window.confirm("Tem a certeza que quer cancelar a sessão? Todos os dados registados serão perdidos.")) {
-            setActiveWorkout(null);
-        }
-    };
+    const cancelWorkout = () => { if (window.confirm("Tem a certeza? Todos os dados registados serão perdidos.")) setActiveWorkout(null); };
 
-    const value = {
-        activeWorkout,
-        isMinimized,
-        lastPerformances,
-        startWorkout,
-        finishWorkout,
-        cancelWorkout,
-        updateSetData,
-        setIsMinimized,
-    };
+    const value = { activeWorkout, isMinimized, lastPerformances, startWorkout, finishWorkout, cancelWorkout, updateSetData, setIsMinimized };
 
     return ( <WorkoutContext.Provider value={value}>{children}</WorkoutContext.Provider> );
 };
