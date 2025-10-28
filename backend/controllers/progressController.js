@@ -541,6 +541,5 @@ module.exports = {
   updatePerformanceLog,
   adminGetUserRecords,
   adminGetFullExerciseHistoryForUser,
-  getExerciseHistoryForClient,
-  getMyLastPerformances,
+  getExerciseHistoryForClient
 };
