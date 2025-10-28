@@ -81,7 +81,7 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
   if (!token) throw new Error('Token não fornecido para getMyPerformanceHistoryForExerciseService.');
   if (!planExerciseId) throw new Error('ID do Exercício do Plano (planExerciseId) é obrigatório.');
   try {
-    const url = `${API_URL}/progress/my-exercise-history/${planExerciseId}`;
+    const url = `${API_URL}/progress/my-exercise-history/${planExerciseId}?limit=3`;
     console.log('getMyPerformanceHistoryForExerciseService URL:', url); 
     const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
@@ -291,7 +291,7 @@ export const getExerciseHistoryService = async (exerciseId, token) => {
   if (!exerciseId) throw new Error('ID do Exercício é obrigatório.');
 
   try {
-    const url = `${API_URL}/progress/history/exercise/${exerciseId}`;
+    const url = `${API_URL}/progress/history/exercise/${exerciseId}?limit=3`;
     
     const response = await fetch(url, {
       method: 'GET', // Método GET

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth , useAuthContext } from '../../context/AuthContext';
 import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
 import { FaPlus, FaEllipsisH, FaHistory } from 'react-icons/fa';
 import SetRow from './SetRow';
@@ -42,20 +42,44 @@ const ExerciseLiveCard = ({
   lastPerformance,
 }) => {
   const [sets, setSets] = useState([]);
+  const { token } = useAuthContext();
   const [lastPerformanceText, setLastPerformanceText] = useState('Sem registos anteriores.');
+  const [history, setHistory] = useState([]);
   
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));
     setSets(initialSets);
   }, [planExercise.sets]);
 
-  useEffect(() => {
-    if (lastPerformance && lastPerformance.performedWeight && lastPerformance.performedReps) {
-        setLastPerformanceText(`Último: ${lastPerformance.performedWeight} kg x ${lastPerformance.performedReps} reps`);
-    } else {
+   useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        if (!planExercise?.id || !token) return;
+
+        const data = await getMyPerformanceHistoryForExerciseService(planExercise.id, token);
+        if (!data || data.length === 0) {
+          setHistory([]);
+          setLastPerformanceText('Sem registos anteriores.');
+          return;
+        }
+
+        // Ordenar e garantir que o mais recente está primeiro
+        const ts = v => (typeof v === 'number' ? v : new Date(v).getTime());
+        const ordered = [...data].sort((a, b) => ts(b.performedAt) - ts(a.performedAt));
+        const last = ordered[0]; // o registo mais recente
+
+        setHistory(ordered.slice(0, 3));
+        setLastPerformanceText(
+          `Último: ${Number(last.weightKg || last.performedWeight).toFixed(2)} kg × ${last.reps || last.performedReps} reps`
+        );
+      } catch (err) {
+        console.error('Erro ao buscar histórico', err);
         setLastPerformanceText('Sem registos anteriores.');
-    }
-  }, [lastPerformance]);
+      }
+    };
+
+    fetchHistory();
+  }, [planExercise?.id, token]);
   
   const handleAddSet = () => setSets(prev => [...prev, { id: Date.now() }]);
 

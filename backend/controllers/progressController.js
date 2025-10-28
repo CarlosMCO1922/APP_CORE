@@ -169,6 +169,7 @@ const adminGetUserRecords = async (req, res) => {
 const getMyPerformanceHistoryForExercise = async (req, res) => {
   const userId = req.user.id;
   const { planExerciseId } = req.params; 
+  const limit = Math.min(parseInt(req.query.limit || '3', 10), 20);
 
   try {
     const performances = await db.ClientExercisePerformance.findAll({
@@ -179,7 +180,8 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
       include: [ 
         { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
       ],
-      order: [['performedAt', 'DESC'], ['createdAt', 'DESC']], 
+      order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],    
+      limit,
     });
     res.status(200).json(performances);
   } catch (error) {
@@ -457,6 +459,7 @@ const getExerciseHistoryForClient = async (req, res) => {
     const { exerciseId } = req.params;
     // Obtém o ID do utilizador que está autenticado (através do middleware 'protect')
     const userId = req.user.id;
+    const limit = Math.min(parseInt(req.query.limit || '3', 10), 20);
 
     if (!userId) {
       return res.status(403).json({ message: "Utilizador não autenticado." });
@@ -479,7 +482,7 @@ const getExerciseHistoryForClient = async (req, res) => {
         ['performedAt', 'DESC'],
         ['createdAt', 'DESC'],
       ], // Ordena pelos registos mais recentes com desempate por criação
-      limit: 3, // Limita aos últimos 3 registos
+      limit, // Limita aos últimos 3 registos
       subQuery: false,
     });
 
