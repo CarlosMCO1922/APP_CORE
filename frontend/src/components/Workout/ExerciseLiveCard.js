@@ -1,20 +1,20 @@
 // src/components/Workout/ExerciseLiveCard.js - COM MENU "..."
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
 import { FaPlus, FaEllipsisH, FaHistory } from 'react-icons/fa';
 import SetRow from './SetRow';
+import ExerciseHistoryModal from './ExerciseHistoryModal';
 
 // --- Styled Components ---
 const CardContainer = styled.div` margin-bottom: 40px; `;
-const CardHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; `;
-const ExerciseName = styled.h2` color: ${({ theme }) => theme.colors.textMain}; font-size: 1.3rem; margin: 0; cursor: pointer; &:hover { color: ${({ theme }) => theme.colors.primary}; } `;
+const CardHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; `;
+const ExerciseName = styled.h2` color: ${({ theme }) => theme.colors.textMain}; font-size: 1.05rem; margin: 0; `;
 const SetsGridHeader = styled.div` display: grid; grid-template-columns: 50px 1fr 1fr 60px; gap: 10px; padding: 0 10px; margin-bottom: 8px; color: ${({ theme }) => theme.colors.textMuted}; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; text-align: center; span:first-child { text-align: left; }`;
 const AddSetButton = styled.button` background-color: transparent; color: ${({ theme }) => theme.colors.textMuted}; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; margin-top: 15px; transition: all 0.2s; display: block; width: 100%; text-align: center; &:hover { background-color: ${({ theme }) => theme.colors.cardBackground}; color: ${({ theme }) => theme.colors.primary}; }`;
 const LastPerformance = styled.p` font-size: 0.8rem; color: ${({ theme }) => theme.colors.textMuted}; margin-top: -10px; margin-bottom: 15px; display: flex; align-items: center; gap: 6px; `;
-
+const HistoryBtn = styled.button` background: none; border: none; color: ${({ theme }) => theme.colors.textMuted}; cursor: pointer; padding: 6px; border-radius: 6px; &:hover { background: ${({ theme }) => theme.colors.cardBackground}; color: ${({ theme }) => theme.colors.primary}; }`;
 const MoreActionsButton = styled.button`
   background: none; border: none; color: ${({ theme }) => theme.colors.textMuted};
   font-size: 1.2rem; cursor: pointer; padding: 5px; border-radius: 50%;
@@ -45,41 +45,43 @@ const ExerciseLiveCard = ({
   const { token } = useAuth();
   const [lastPerformanceText, setLastPerformanceText] = useState('Sem registos anteriores.');
   const [history, setHistory] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));
     setSets(initialSets);
   }, [planExercise.sets]);
 
-   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        if (!planExercise?.id || !token) return;
-
-        const data = await getMyPerformanceHistoryForExerciseService(planExercise.id, token);
-        if (!data || data.length === 0) {
-          setHistory([]);
-          setLastPerformanceText('Sem registos anteriores.');
-          return;
-        }
-
-        // Ordenar e garantir que o mais recente está primeiro
-        const ts = v => (typeof v === 'number' ? v : new Date(v).getTime());
-        const ordered = [...data].sort((a, b) => ts(b.performedAt) - ts(a.performedAt));
-        const last = ordered[0]; // o registo mais recente
-
-        setHistory(ordered.slice(0, 3));
-        setLastPerformanceText(
-          `Último: ${Number(last.weightKg || last.performedWeight).toFixed(2)} kg × ${last.reps || last.performedReps} reps`
-        );
-      } catch (err) {
-        console.error('Erro ao buscar histórico', err);
+  const fetchHistory = useCallback(async () => {
+    try {
+      if (!planExercise?.id || !token) return;
+     setIsLoadingHistory(true);
+     const data = await getMyPerformanceHistoryForExerciseService(planExercise.id, token);
+      const ts = v => (typeof v === 'number' ? v : new Date(v).getTime());
+      const ordered = (data || []).sort((a,b) => ts(b.performedAt) - ts(a.performedAt)).slice(0,3);
+      setHistory(ordered);
+     if (ordered[0]) {
+        const last = ordered[0];
+        setLastPerformanceText(`Último: ${Number(last.performedWeight ?? last.weightKg).toFixed(2)} kg × ${(last.performedReps ?? last.reps)} reps`);
+      } else {
         setLastPerformanceText('Sem registos anteriores.');
       }
-    };
-
-    fetchHistory();
+    } catch (err) {
+      console.error('Erro ao buscar histórico', err);
+      setHistory([]);
+      setLastPerformanceText('Sem registos anteriores.');
+    } finally {
+      setIsLoadingHistory(false);
+    }
   }, [planExercise?.id, token]);
+
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  const openHistory = async () => {
+    await fetchHistory(); // refetch para apanhar séries acabadas de registar
+    setIsHistoryOpen(true);
+  };
   
   const handleAddSet = () => setSets(prev => [...prev, { id: Date.now() }]);
 
@@ -93,7 +95,11 @@ const ExerciseLiveCard = ({
 
   return (
     <CardContainer>
-      <LastPerformance><FaHistory /> {lastPerformanceText}</LastPerformance>
+      <CardHeader>
+        <ExerciseName>{planExercise?.exerciseName || planExercise?.name}</ExerciseName>
+        <HistoryBtn onClick={openHistory} title="Ver histórico (últimos 3)"><FaHistory /></HistoryBtn>
+     </CardHeader>
+     <LastPerformance>{lastPerformanceText}</LastPerformance>
       
       <SetsGridHeader><span>Série</span><span>KG</span><span>Reps</span><span></span></SetsGridHeader>
       
@@ -115,6 +121,13 @@ const ExerciseLiveCard = ({
       </div>
 
       <AddSetButton onClick={handleAddSet}><FaPlus /> Adicionar Série ({planExercise.restSeconds || 90}s)</AddSetButton>
+      <ExerciseHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        data={history}
+        isLoading={isLoadingHistory}
+        exerciseName={planExercise?.exerciseName || planExercise?.name}
+      />
     </CardContainer>
   );
 };
