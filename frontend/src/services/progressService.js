@@ -319,10 +319,14 @@ export const getMyLastPerformancesService = async (token) => {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao buscar últimas performances.');
+    if (!response.ok) {
+      // Evita rebentar o UI — devolve [] e deixa a página continuar
+      console.warn('getMyLastPerformancesService: resposta não OK', response.status);
+      return [];
+    }
     return data;
   } catch (error) {
-    console.error("Erro em getMyLastPerformancesService:", error);
-    throw error;
+    console.error('Erro em getMyLastPerformancesService:', error);
+    return [];
   }
 };

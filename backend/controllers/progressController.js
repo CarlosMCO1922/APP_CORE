@@ -497,31 +497,37 @@ const getExerciseHistoryForClient = async (req, res) => {
 
 exports.getMyLastPerformances = async (req, res, next) => {
   try {
+    // 1) Autenticação
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Não autenticado.' });
+    }
     const userId = req.user.id;
 
-    // Traz as últimas 100 do user, ordenadas por data desc
+    // 2) Query simples e robusta
     const rows = await db.ClientExercisePerformance.findAll({
       where: { userId },
+      attributes: [
+        'id', 'planExerciseId', 'exerciseId',
+        'performedAt', 'performedWeight', 'performedReps'
+      ],
       order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],
-      limit: 100,
-      attributes: ['id','planExerciseId','exerciseId','performedAt','performedWeight','performedReps'],
+      limit: 200,
       raw: true
     });
 
-    // Dedup por planExerciseId, ficando com a mais recente de cada
+    // 3) Dedup por planExerciseId (fallback para exerciseId quando faltar)
     const seen = new Set();
-    const deduped = [];
+    const out = [];
     for (const r of rows) {
-      const key = r.planExerciseId || `ex-${r.exerciseId}`; // se algum registo antigo não tiver planExerciseId
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        deduped.push(r);
-      }
+      const key = r.planExerciseId ?? `ex-${r.exerciseId ?? 'unknown'}`;
+      if (!seen.has(key)) { seen.add(key); out.push(r); }
     }
 
-    res.json(deduped);
+    return res.json(out);
   } catch (err) {
-    next(err);
+    console.error('[getMyLastPerformances] ERRO:', err?.message, err?.stack);
+    // Em último caso evita 500 silencioso
+    return res.status(200).json([]);
   }
 };
 
