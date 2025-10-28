@@ -495,39 +495,43 @@ const getExerciseHistoryForClient = async (req, res) => {
 };
 
 
-exports.getMyLastPerformances = async (req, res, next) => {
+const getMyLastPerformances = async (req, res) => {
   try {
-    // 1) Autenticação
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'Não autenticado.' });
     }
+
     const userId = req.user.id;
 
-    // 2) Query simples e robusta
     const rows = await db.ClientExercisePerformance.findAll({
       where: { userId },
       attributes: [
-        'id', 'planExerciseId', 'exerciseId',
-        'performedAt', 'performedWeight', 'performedReps'
+        'id',
+        'planExerciseId',
+        'exerciseId',
+        'performedAt',
+        'performedWeight',
+        'performedReps',
       ],
       order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],
       limit: 200,
-      raw: true
+      raw: true,
     });
 
-    // 3) Dedup por planExerciseId (fallback para exerciseId quando faltar)
     const seen = new Set();
     const out = [];
     for (const r of rows) {
       const key = r.planExerciseId ?? `ex-${r.exerciseId ?? 'unknown'}`;
-      if (!seen.has(key)) { seen.add(key); out.push(r); }
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(r);
+      }
     }
 
     return res.json(out);
   } catch (err) {
-    console.error('[getMyLastPerformances] ERRO:', err?.message, err?.stack);
-    // Em último caso evita 500 silencioso
-    return res.status(200).json([]);
+    console.error('[getMyLastPerformances] ERRO:', err?.message);
+    return res.status(200).json([]); // devolve vazio em vez de 500
   }
 };
 
@@ -541,5 +545,6 @@ module.exports = {
   updatePerformanceLog,
   adminGetUserRecords,
   adminGetFullExerciseHistoryForUser,
-  getExerciseHistoryForClient
+  getExerciseHistoryForClient,
+  getMyLastPerformances,
 };
