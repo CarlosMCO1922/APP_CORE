@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
-import { useAuth , useAuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
 import { FaPlus, FaEllipsisH, FaHistory } from 'react-icons/fa';
 import SetRow from './SetRow';
@@ -42,7 +42,7 @@ const ExerciseLiveCard = ({
   lastPerformance,
 }) => {
   const [sets, setSets] = useState([]);
-  const { token } = useAuthContext();
+  const { token } = useAuth();
   const [lastPerformanceText, setLastPerformanceText] = useState('Sem registos anteriores.');
   const [history, setHistory] = useState([]);
   
