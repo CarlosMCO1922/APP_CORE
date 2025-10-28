@@ -31,7 +31,6 @@ router.post('/check-prs', protect, isClientUser, checkPersonalRecords);
 router.get('/my-records', protect, isClientUser, getMyPersonalRecords);
 router.get('/history/exercise/:exerciseId', protect, isClientUser, getExerciseHistoryForClient);
 router.get('/my-last-performances', protect, isClientUser, getMyLastPerformances);
-router.get('/my-last-performances', protect, progressController.getMyLastPerformances);
 
 // --- ROTA DE STAFF/ADMIN ---
 router.get('/admin/user-records/:userId', protect, isStaff, adminGetUserRecords);

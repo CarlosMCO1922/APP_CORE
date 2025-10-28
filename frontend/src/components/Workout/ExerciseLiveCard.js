@@ -143,7 +143,12 @@ const ExerciseLiveCard = ({
         onClose={() => setIsHistoryOpen(false)}
         data={history}
         isLoading={isLoadingHistory}
-        exerciseName={planExercise?.exerciseName || planExercise?.name}
+        exerciseName={
+          planExercise?.exerciseName ??
+          planExercise?.name ??
+          planExercise?.exercise?.name ??
+          'Exercício'
+        }
       />
     </CardContainer>
   );
