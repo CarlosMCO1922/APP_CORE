@@ -477,8 +477,11 @@ const getExerciseHistoryForClient = async (req, res) => {
         },
         attributes: [] // Não precisamos dos atributos desta tabela, só de a usar para o filtro
       }],
-      order: [['performedAt', 'DESC']], // Ordena pelos mais recentes
-      limit: 5, // Limita aos últimos 5 registos
+       order: [
+        ['performedAt', 'DESC'],
+        ['createdAt', 'DESC'],
+      ], // Ordena pelos registos mais recentes com desempate por criação
+      limit: 3,
     });
 
     res.status(200).json(history);
