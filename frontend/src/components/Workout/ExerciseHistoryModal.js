@@ -126,7 +126,7 @@ const ExerciseHistoryModal = ({ isOpen, onClose, data, isLoading, exerciseName }
               <HistoryItem key={log.id}>
                 <DateColumn>{formatDate(log.performedAt)}</DateColumn>
                 <PerformanceColumn>
-                  {log.performedWeight} kg x {log.performedReps} reps
+                  {(log.performedWeight ?? log.weightKg)} kg x {(log.performedReps ?? log.reps)} reps
                 </PerformanceColumn>
               </HistoryItem>
             ))}

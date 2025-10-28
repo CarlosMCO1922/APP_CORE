@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { getMyPerformanceHistoryForExerciseService } from '../../services/progressService';
+import { getMyPerformanceHistoryForExerciseService, getExerciseHistoryService } from '../../services/progressService';
 import { FaPlus, FaEllipsisH, FaHistory } from 'react-icons/fa';
 import SetRow from './SetRow';
 import ExerciseHistoryModal from './ExerciseHistoryModal';
@@ -55,9 +55,21 @@ const ExerciseLiveCard = ({
 
   const fetchHistory = useCallback(async () => {
     try {
-      if (!planExercise?.id || !token) return;
-     setIsLoadingHistory(true);
-     const data = await getMyPerformanceHistoryForExerciseService(planExercise.id, token);
+      if (!token) return;
+      const planId =
+        planExercise?.planExerciseId ??
+        planExercise?.id ??
+        null;
+      const baseExerciseId = planExercise?.exerciseId ?? null;
+      setIsLoadingHistory(true);
+      let data = [];
+      if (planId) {
+        data = await getMyPerformanceHistoryForExerciseService(planId, token);
+      }
+      // fallback: se não veio nada pelo planExerciseId (ou não existe), tenta por exerciseId
+      if ((!data || data.length === 0) && baseExerciseId) {
+        data = await getExerciseHistoryService(baseExerciseId, token);
+      }
       const ts = v => (typeof v === 'number' ? v : new Date(v).getTime());
       const ordered = (data || []).sort((a,b) => ts(b.performedAt) - ts(a.performedAt)).slice(0,3);
       setHistory(ordered);
@@ -96,7 +108,12 @@ const ExerciseLiveCard = ({
   return (
     <CardContainer>
       <CardHeader>
-        <ExerciseName>{planExercise?.exerciseName || planExercise?.name}</ExerciseName>
+        <ExerciseName>
+          {planExercise?.exerciseName
+            ?? planExercise?.name
+            ?? planExercise?.exercise?.name
+            ?? 'Exercício'}
+        </ExerciseName>
         <HistoryBtn onClick={openHistory} title="Ver histórico (últimos 3)"><FaHistory /></HistoryBtn>
      </CardHeader>
      <LastPerformance>{lastPerformanceText}</LastPerformance>
@@ -108,7 +125,7 @@ const ExerciseLiveCard = ({
           <SetRow
             key={set.id}
             setNumber={index + 1}
-            planExerciseId={planExercise.id}
+            planExerciseId={planExercise?.planExerciseId ?? planExercise?.id}
             trainingId={trainingId} 
             workoutPlanId={workoutPlanId} 
             onSetComplete={onSetComplete}

@@ -522,6 +522,36 @@ const getMyLastPerformances = async (req, res) => {
   }
 };
 
+exports.getMyLastPerformances = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Traz as últimas 100 do user, ordenadas por data desc
+    const rows = await db.ClientExercisePerformance.findAll({
+      where: { userId },
+      order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],
+      limit: 100,
+      attributes: ['id','planExerciseId','exerciseId','performedAt','performedWeight','performedReps'],
+      raw: true
+    });
+
+    // Dedup por planExerciseId, ficando com a mais recente de cada
+    const seen = new Set();
+    const deduped = [];
+    for (const r of rows) {
+      const key = r.planExerciseId || `ex-${r.exerciseId}`; // se algum registo antigo não tiver planExerciseId
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        deduped.push(r);
+      }
+    }
+
+    res.json(deduped);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
