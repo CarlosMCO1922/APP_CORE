@@ -467,21 +467,20 @@ const getExerciseHistoryForClient = async (req, res) => {
     const history = await db.ClientExercisePerformance.findAll({
       where: {
         userId: userId,
+        '$planExerciseDetails.exerciseId$': parseInt(exerciseId)
       },
       // Inclui a tabela de "exercício do plano" para podermos filtrar pelo ID do exercício base
       include: [{
         model: db.WorkoutPlanExercise,
         as: 'planExerciseDetails',
-        where: {
-          exerciseId: parseInt(exerciseId) // <-- O FILTRO PRINCIPAL
-        },
         attributes: [] // Não precisamos dos atributos desta tabela, só de a usar para o filtro
       }],
-       order: [
+      order: [
         ['performedAt', 'DESC'],
         ['createdAt', 'DESC'],
       ], // Ordena pelos registos mais recentes com desempate por criação
-      limit: 3,
+      limit: 3, // Limita aos últimos 3 registos
+      subQuery: false,
     });
 
     res.status(200).json(history);
