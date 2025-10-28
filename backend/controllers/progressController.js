@@ -494,33 +494,6 @@ const getExerciseHistoryForClient = async (req, res) => {
   }
 };
 
-const getMyLastPerformances = async (req, res) => {
-  const userId = req.user.id;
-  try {
-    const [results] = await db.sequelize.query(`
-      SELECT * FROM (
-        SELECT
-          p."performedWeight",
-          p."performedReps",
-          wpe."exerciseId",
-          ROW_NUMBER() OVER(PARTITION BY wpe."exerciseId" ORDER BY p."performedAt" DESC) as rn
-        FROM
-          "ClientExercisePerformances" as p
-        JOIN "workout_plan_exercises" as wpe ON p."planExerciseId" = wpe.id
-        WHERE
-          p."userId" = :userId AND p."performedWeight" IS NOT NULL AND p."performedReps" IS NOT NULL
-      ) as sub
-      WHERE rn = 1
-    `, {
-      replacements: { userId: userId },
-      type: db.sequelize.QueryTypes.SELECT
-    });
-    res.status(200).json(results);
-  } catch (error) {
-    console.error('Erro ao obter últimas performances:', error);
-    res.status(500).json({ message: 'Erro interno do servidor.' });
-  }
-};
 
 exports.getMyLastPerformances = async (req, res, next) => {
   try {

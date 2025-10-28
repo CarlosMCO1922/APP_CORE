@@ -86,7 +86,7 @@ const ExerciseLiveCard = ({
     } finally {
       setIsLoadingHistory(false);
     }
-  }, [planExercise?.id, token]);
+  }, [planExercise?.id, planExercise?.planExerciseId, planExercise?.exerciseId, token]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
