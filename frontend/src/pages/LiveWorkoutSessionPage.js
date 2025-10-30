@@ -139,23 +139,46 @@ const LiveWorkoutSessionPage = () => {
     return Object.values(blocksByOrder);
 
   }, [activeWorkout]);
+
+  const planToExerciseId = useMemo(() => {
+    const map = {};
+    (activeWorkout?.planExercises || []).forEach(pe => {
+      const planId = pe.id ?? pe.planExerciseId;
+      const exId = pe.exerciseDetails?.id;
+      if (planId && exId) map[planId] = exId;
+    });
+    return map;
+  }, [activeWorkout]);
   
 
   const handleSetComplete = (performanceData) => {
+    const {
+      planExerciseId,
+      setNumber,
+      performedWeight,
+      performedReps,
+      restSeconds
+    } = performanceData;
+
+    const exerciseId = planToExerciseId[planExerciseId];
+    if (!exerciseId) {
+      console.warn('Não foi possível mapear planExerciseId -> exerciseId', { planExerciseId, performanceData });
+    }
+
     const fullSetData = {
       trainingId: activeWorkout.trainingId || null,
       workoutPlanId: activeWorkout.id,
-      planExerciseId: performanceData.planExerciseId,
-      setNumber: performanceData.setNumber,
-      weight: Number(performanceData.performedWeight),
-      reps: Number(performanceData.performedReps),
-      // timestamps, RPE, rest, o que usares no backend:
+      planExerciseId,
+      exerciseId,
+      setNumber,
+      weight: Number(performedWeight),
+      reps: Number(performedReps),
       performedAt: new Date().toISOString(),
     };
 
     logSet(fullSetData);
 
-    const restDuration = performanceData.restSeconds ?? 90;
+    const restDuration = restSeconds ?? 90;
     setActiveRestTimer({ active: true, duration: restDuration, key: Date.now() });
   };
   
