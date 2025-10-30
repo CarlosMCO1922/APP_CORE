@@ -118,7 +118,7 @@ const DeleteButton = styled.button`
 
 // --- Componente SetRow ---
 // ALTERADO: Adicionado 'onDeleteSet' às props recebidas
-const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps, onDeleteSet }) => {
+const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeight, lastReps, onDeleteSet = () => {} }) => {
     const { activeWorkout, updateSetData } = useWorkout();
     
     // ALTERADO: Adicionado o estado para controlar a posição do swipe
@@ -150,13 +150,18 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
     });
 
     const handleComplete = () => {
-        if (!weight || !reps) {
-            alert("Preencha o peso e as repetições.");
-            return;
-        }
-        const currentSetData = { ...setData, performedWeight: weight, performedReps: reps, planExerciseId, setNumber };
-        updateSetData(planExerciseId, setNumber, 'isCompleted', true);
+      if (!weight || !reps) {
+        alert("Preencha o peso e as repetições.");
+        return;
+      }
+      const currentSetData = { ...setData, performedWeight: weight, performedReps: reps, planExerciseId, setNumber };
+      updateSetData(planExerciseId, setNumber, 'isCompleted', true);
+
+      if (typeof onSetComplete === 'function') {
         onSetComplete(currentSetData);
+      } else {
+        console.warn('SetRow: onSetComplete não é função', onSetComplete);
+      }
     };
     
     const handleEdit = () => {
@@ -164,9 +169,10 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete, lastWeight, lastReps
     };
 
     const handleDeleteConfirm = () => {
-        if (window.confirm("Tem a certeza que quer apagar esta série?")) {
-            onDeleteSet();
-        }
+      if (window.confirm("Tem a certeza que quer apagar esta série?")) {
+        if (typeof onDeleteSet === 'function') onDeleteSet();
+        else console.warn('SetRow: onDeleteSet não é função', onDeleteSet);
+      }
     };
 
     return (

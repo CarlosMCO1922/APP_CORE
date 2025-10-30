@@ -142,8 +142,19 @@ const LiveWorkoutSessionPage = () => {
   
 
   const handleSetComplete = (performanceData) => {
-    const fullSetData = { /* ... (código igual, está correto) ... */ };
-    logSet(fullSetData); 
+    const fullSetData = {
+      trainingId: activeWorkout.trainingId || null,
+      workoutPlanId: activeWorkout.id,
+      planExerciseId: performanceData.planExerciseId,
+      setNumber: performanceData.setNumber,
+      weight: Number(performanceData.performedWeight),
+      reps: Number(performanceData.performedReps),
+      // timestamps, RPE, rest, o que usares no backend:
+      performedAt: new Date().toISOString(),
+    };
+
+    logSet(fullSetData);
+
     const restDuration = performanceData.restSeconds ?? 90;
     setActiveRestTimer({ active: true, duration: restDuration, key: Date.now() });
   };
@@ -154,7 +165,8 @@ const LiveWorkoutSessionPage = () => {
     setIsHistoryModalOpen(true);
     try {
       const data = await getExerciseHistoryService(exercise.id, authState.token);
-      setHistoryData(data);
+      // mantém só as 3 mais recentes (assumindo que já vem ordenado desc; se não, ordena por createdAt desc antes)
+      setHistoryData((data || []).slice(0, 3));
     } catch (error) {
       console.error("Erro ao buscar histórico:", error);
       setHistoryData([]);
