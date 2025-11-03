@@ -90,6 +90,13 @@ const ExerciseLiveCard = ({
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
+  // Atualiza o texto do "Último" quando o contexto tiver novos dados
+  useEffect(() => {
+    if (lastPerformance?.performedWeight && lastPerformance?.performedReps) {
+      setLastPerformanceText(`Último: ${Number(lastPerformance.performedWeight).toFixed(2)} kg × ${lastPerformance.performedReps} reps`);
+    }
+  }, [lastPerformance]);
+
   const openHistory = async () => {
     await fetchHistory(); // refetch para apanhar séries acabadas de registar
     setIsHistoryOpen(true);

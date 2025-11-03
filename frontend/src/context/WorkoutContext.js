@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyLastPerformancesService, checkPersonalRecordsService } from '../services/progressService';
+import { getMyLastPerformancesService, checkPersonalRecordsService, logExercisePerformanceService } from '../services/progressService';
 import { useAuth } from './AuthContext';
 
 const WorkoutContext = createContext();
@@ -70,6 +70,53 @@ export const WorkoutProvider = ({ children }) => {
         });
     };
 
+    // Regista uma série no backend e atualiza estado local (setsData e lastPerformances)
+    const logSet = async (performanceData) => {
+        try {
+            const { token } = authState;
+            if (!token) throw new Error('Sem token');
+            const res = await logExercisePerformanceService(performanceData, token);
+            const saved = res?.performance || {};
+            // Atualiza setsData com o ID devolvido
+            setActiveWorkout(prev => {
+                if (!prev) return prev;
+                const key = `${performanceData.planExerciseId}-${performanceData.setNumber}`;
+                const current = prev.setsData[key] || {};
+                const newSetsData = {
+                    ...prev.setsData,
+                    [key]: {
+                        ...current,
+                        ...performanceData,
+                        id: saved.id ?? current.id,
+                        performedAt: saved.performedAt ?? performanceData.performedAt,
+                        isCompleted: true,
+                    },
+                };
+                return { ...prev, setsData: newSetsData };
+            });
+
+            // Atualiza o último desempenho para o exercício (para alimentar UI)
+            if (performanceData.exerciseId) {
+                setLastPerformances(prev => ({
+                    ...prev,
+                    [performanceData.exerciseId]: {
+                        id: saved.id,
+                        exerciseId: performanceData.exerciseId,
+                        planExerciseId: performanceData.planExerciseId,
+                        performedAt: saved.performedAt ?? performanceData.performedAt,
+                        performedWeight: performanceData.performedWeight,
+                        performedReps: performanceData.performedReps,
+                    },
+                }));
+            }
+            return saved;
+        } catch (err) {
+            console.error('Erro ao registar série:', err);
+            alert('Falha ao registar a série. Verifique a ligação e tente novamente.');
+            throw err;
+        }
+    };
+
     const finishWorkout = async () => {
         if (!activeWorkout) return;
         const completedSets = Object.values(activeWorkout.setsData).filter(
@@ -101,7 +148,7 @@ export const WorkoutProvider = ({ children }) => {
 
     const cancelWorkout = () => { if (window.confirm("Tem a certeza? Todos os dados registados serão perdidos.")) setActiveWorkout(null); };
 
-    const value = { activeWorkout, isMinimized, lastPerformances, startWorkout, finishWorkout, cancelWorkout, updateSetData, setIsMinimized };
+    const value = { activeWorkout, isMinimized, lastPerformances, startWorkout, finishWorkout, cancelWorkout, updateSetData, setIsMinimized, logSet };
 
     return ( <WorkoutContext.Provider value={value}>{children}</WorkoutContext.Provider> );
 };
