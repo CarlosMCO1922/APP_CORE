@@ -33,9 +33,16 @@ export const darkTheme = {
     sliderButton: 'rgb(37 37 37 / 80%)',
     sliderButtonHover: 'rgb(37 37 37 / 40%)',
     backgroundSelect: 'rgb(51, 51, 51)',
-    disbaledColor: 'rgb(85, 85, 85)',
+    disabledColor: 'rgb(85, 85, 85)',
     lightGray: '#cccccc',
     hoverUnselected: '#fcb535ff',
+    // Adicionais
+    warning: '#FFA000',
+    info: '#17a2b8',
+    mediaButtonBg: '#6c757d',
+    mediaButtonHoverBg: '#5a6268',
+    cardBackgroundDarker: '#2C2C2C',
+    successDark: '#388E3C',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };
@@ -68,6 +75,13 @@ export const lightTheme = {
     disabledColor: '#e6c358d4',
     lightGray: 'rgb(165 165 165)',
     hoverUnselected: '#fcb535ff',
+    // Adicionais
+    warning: '#FFA000',
+    info: '#17a2b8',
+    mediaButtonBg: '#6c757d',
+    mediaButtonHoverBg: '#5a6268',
+    cardBackgroundDarker: '#f5ebcc',
+    successDark: '#2e7d32',
   },
   boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
 };

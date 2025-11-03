@@ -6,8 +6,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #1A1A1A;
-  color: #f0f0f0; 
+  background-color: var(--color-background);
+  color: var(--color-text-main);
 }
 
 code {
@@ -39,17 +39,17 @@ code {
   min-width: 44px;
   background: none;
   border: 0;
-  color: #fcb535ff; /* Cor Primária */
+  color: var(--color-primary); /* Cor Primária */
   font-size: 1.2rem;
   font-weight: bold;
   cursor: pointer;
 }
 .react-calendar__navigation button:disabled {
-  color: #4A4A4A; /* Cor Desativada */
+  color: var(--color-disabled); /* Cor Desativada */
 }
 .react-calendar__navigation button:enabled:hover,
 .react-calendar__navigation button:enabled:focus {
-  background-color: #252525; /* Fundo do Card */
+  background-color: var(--color-card-bg); /* Fundo do Card */
 }
 
 .react-calendar__month-view__weekdays {
@@ -57,7 +57,7 @@ code {
   text-transform: uppercase;
   font-weight: bold;
   font-size: 0.75em;
-  color: rgb(252, 181, 53); /* Cor de Texto Muted */
+  color: var(--color-primary);
 }
 
 .react-calendar__month-view__weekdays__weekday {
@@ -65,10 +65,10 @@ code {
 }
 
 .react-calendar__month-view__days__day--weekend {
-  color: rgb(252, 181, 53); /* Cor Primária */
+  color: var(--color-primary);
 }
 .react-calendar__month-view__days__day--neighboringMonth {
-  color: #4A4A4A; /* Cor Desativada */
+  color: var(--color-text-muted);
 }
 
 .react-calendar__tile {
@@ -80,34 +80,34 @@ code {
   font-size: 0.9rem;
   border: 2px solid transparent;
   border-radius: 6px;
-  color: rgb(252, 181, 53); /* Cor de Texto Principal */
+  color: var(--color-primary);
   cursor: pointer;
 }
 
 .react-calendar__tile:disabled {
   background-color: transparent;
-  color: rgb(252 181 53 / 43%);
+  color: rgba(0,0,0,0.3);
   cursor: default;
 }
 
 .react-calendar__tile:enabled:hover,
 .react-calendar__tile:enabled:focus {
-  background-color: #252525; /* Fundo do Card */
+  background-color: var(--color-card-bg);
 }
 
 .react-calendar__tile--now {
   background: rgba(212, 175, 55, 0.2); /* Fundo do Dia Atual */
-  border: 2px solid #D4AF37;
+  border: 2px solid var(--color-primary);
 }
 
 .react-calendar__tile--hasActive {
-  background: #D4AF37;
-  color: #1A1A1A;
+  background: var(--color-primary);
+  color: var(--color-text-dark);
 }
 
 .react-calendar__tile--active {
-  background: rgb(252, 181, 53) !important;
-  color: #1A1A1A !important;
+  background: var(--color-primary) !important;
+  color: var(--color-text-dark) !important;
   font-weight: bold;
 }
 

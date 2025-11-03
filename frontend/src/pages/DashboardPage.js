@@ -37,7 +37,7 @@ const PageContainer = styled.div`
 const Header = styled.header`
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #4A4A4A;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   text-align: center;
 `;
 
@@ -78,7 +78,7 @@ const SectionTitle = styled.h2`
   color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   display: flex;
   align-items: center;
   gap: 10px;
@@ -101,7 +101,7 @@ const BookingList = styled.ul`
   }
 `;
 const BookingItem = styled.li`
-  background-color: #252525;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px;
   border-radius: 10px;
   border-left: 5px solid ${({ theme }) => theme.colors.primary};
@@ -128,7 +128,7 @@ const BookingItem = styled.li`
   p {
     margin: 6px 0;
     font-size: 0.95rem;
-    color: #a0a0a0;
+    color: ${({ theme }) => theme.colors.textMuted};
     line-height: 1.5;
      @media (max-width: 480px) {
         font-size: 0.9rem;
@@ -220,9 +220,9 @@ const MessageText = styled.p`
 const NoBookingsText = styled.p`
   text-align: center;
   font-size: 1rem;
-  color: #888;
+  color: ${({ theme }) => theme.colors.textMuted};
   padding: 20px;
-  background-color: #222;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   border-radius: 8px;
 `;
 
@@ -238,7 +238,7 @@ const StyledLinkButton = styled(Link)`
   transition: background-color 0.2s ease-in-out, transform 0.15s ease;
 
   &:hover {
-    background-color: #e6c358;
+    background-color: ${({ theme }) => theme.colors.primary};
     transform: translateY(-2px);
   }
 
@@ -330,7 +330,7 @@ const ModalDetail = styled.p`
 const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; margin-top: 20px;`;
 const ModalLabel = styled.label` font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 3px; display: block; font-weight: 500;`;
 const ModalInput = styled.input`
-  padding: 10px 14px; background-color: #333;
+  padding: 10px 14px; background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%;
@@ -354,8 +354,8 @@ const ModalButton = styled.button`
 `;
 const CloseModalButton = styled.button`
   position: absolute; top: 10px; right: 15px; background: transparent; border: none;
-  color: #aaa; font-size: 1.8rem; cursor: pointer;
-  &:hover { color: #fff; }
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer;
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
 `;
 const ModalMessageText = styled.p`
   font-size: 0.9rem; text-align: center; padding: 10px; margin: 10px 0 0 0;
@@ -447,7 +447,7 @@ const ViewDetailsButton = styled.button`
 const EventActions = styled.div`
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px solid #383838;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -513,7 +513,7 @@ const LinkStyleButton = styled.button`
 
   &:hover {
     text-decoration: underline;
-    color: #e6c358;
+    color: ${({ theme }) => theme.colors.primary};
   }
 `;
 

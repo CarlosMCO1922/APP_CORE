@@ -108,10 +108,10 @@ const TableWrapper = styled.div`
 
   &::-webkit-scrollbar {
     height: 8px;
-    background-color: #252525;
+    background-color: ${({ theme }) => theme.colors.cardBackground};
   }
   &::-webkit-scrollbar-thumb {
-    background: #555;
+    background: ${({ theme }) => theme.colors.buttonSecondaryBg};
     border-radius: 4px;
   }
 `;
@@ -130,7 +130,7 @@ const Table = styled.table`
     vertical-align: middle;
   }
   th {
-    background-color: #303030;
+    background-color: ${({ theme }) => theme.colors.cardBackground};
     color: ${({ theme }) => theme.colors.primary};
     font-weight: 600;
     position: sticky;
@@ -138,7 +138,7 @@ const Table = styled.table`
     z-index: 1;
   }
   tbody tr:hover {
-    background-color: #2c2c2c;
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
   }
   tr:last-child td { border-bottom: none; }
 
@@ -241,7 +241,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: #2A2A2A;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: clamp(25px, 4vw, 35px);
   border-radius: 10px; width: 100%;
   max-width: 550px; box-shadow: 0 8px 25px rgba(0,0,0,0.6);
@@ -340,7 +340,7 @@ const ParticipantList = styled.ul`
   overflow-y: auto;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
-  background-color: #222;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
 `;
 
 const ParticipantItem = styled.li`
@@ -356,7 +356,7 @@ const ParticipantItem = styled.li`
     border-bottom: none;
   }
   &:nth-child(even) {
-    background-color: #282828;
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   }
   .email {
     color: ${({ theme }) => theme.colors.textMuted};

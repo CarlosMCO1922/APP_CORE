@@ -115,9 +115,9 @@ const CalendarWrapper = styled.div`
     border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   }
 
-  .rbc-btn-group button {
+.rbc-btn-group button {
     color: ${({ theme }) => theme.colors.textMuted};
-    background-color: #2f2f2f;
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
     border: 1px solid ${({ theme }) => theme.colors.cardBorder};
     padding: 9px 16px;
     border-radius: 6px;
@@ -150,7 +150,7 @@ const CalendarWrapper = styled.div`
     flex-grow: 1;
   }
 
-  .rbc-header {
+.rbc-header {
     border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
     border-left: 1px solid ${({ theme }) => theme.colors.cardBorder}60;
     &:first-child { border-left: none; }
@@ -160,7 +160,7 @@ const CalendarWrapper = styled.div`
     font-weight: 500;
     font-size: 0.85rem;
     text-transform: capitalize;
-    background-color: #282828;
+    background-color: ${({ theme }) => theme.colors.cardBackground};
   }
 
   .rbc-event, .rbc-day-slot .rbc-event {
@@ -184,17 +184,17 @@ const CalendarWrapper = styled.div`
   .rbc-event-content { display: none; }
   .rbc-event.rbc-selected { opacity: 1; }
 
-  .rbc-agenda-view {
+.rbc-agenda-view {
     table {
         border: 1px solid ${({ theme }) => theme.colors.cardBorder};
         font-size: 0.9rem;
         thead th {
-            background-color: #282828;
+            background-color: ${({ theme }) => theme.colors.cardBackground};
             color: ${({ theme }) => theme.colors.primary};
             border-bottom: 2px solid ${({ theme }) => theme.colors.primary};
             padding: 10px 12px;
         }
-        tbody tr:hover { background-color: #2f2f2f; }
+        tbody tr:hover { background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; }
         .rbc-agenda-date-cell, .rbc-agenda-time-cell {
             color: ${({ theme }) => theme.colors.primary};
             font-weight: 500; white-space: nowrap; padding: 10px 12px;
@@ -203,13 +203,13 @@ const CalendarWrapper = styled.div`
     }
   }
 
-  .rbc-time-slot, .rbc-day-slot .rbc-time-slot { border-top: 1px dotted #3a3a3a; }
+.rbc-time-slot, .rbc-day-slot .rbc-time-slot { border-top: 1px dotted ${({ theme }) => theme.colors.cardBorder}; }
   .rbc-time-gutter .rbc-timeslot-group { border-bottom: none; }
-  .rbc-time-header-gutter, .rbc-time-gutter { background: #1e1e1e; border-right: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
+  .rbc-time-header-gutter, .rbc-time-gutter { background: ${({ theme }) => theme.colors.background}; border-right: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
   .rbc-day-bg + .rbc-day-bg { border-left: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
   .rbc-month-row + .rbc-month-row { border-top: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
   .rbc-today { background-color: rgba(212, 175, 55, 0.1); }
-  .rbc-off-range-bg { background-color: #212121; }
+  .rbc-off-range-bg { background-color: ${({ theme }) => theme.colors.backgroundSelect}; }
   .rbc-slot-selectable { cursor: pointer; &:hover { background-color: rgba(212, 175, 55, 0.06); } }
 
   .rbc-current-time-indicator {
@@ -263,7 +263,7 @@ const ModalOverlay = styled.div`
   z-index: 1050; padding: 20px;
 `;
 const ModalContent = styled.div`
-  background-color: #2A2A2A;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: clamp(25px, 4vw, 35px);
   border-radius: 10px; width: 100%; max-width: 550px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.6);
@@ -312,9 +312,9 @@ const EventModalButton = styled.button`
 `;
 const CloseButton = styled.button`
   position: absolute; top: 10px; right: 10px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
-  &:hover { color: #fff; transform: scale(1.1) rotate(90deg); }
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; transform: scale(1.1) rotate(90deg); }
 `;
 
 const ActionButton = styled.button`
@@ -364,7 +364,7 @@ const ModalLabel = styled.label`
 
 const ModalInput = styled.input`
   padding: 10px 14px; 
-  background-color: #333;
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain}; 
@@ -380,9 +380,9 @@ const ModalInput = styled.input`
 
 const RequestModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
 const RequestModalLabel = styled.label` font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 3px; display: block; font-weight: 500;`;
-const RequestModalInput = styled.input` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
-const RequestModalSelect = styled.select` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
-const RequestModalTextarea = styled.textarea` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; min-height: 80px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const RequestModalInput = styled.input` padding: 10px 14px; background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const RequestModalSelect = styled.select` padding: 10px 14px; background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const RequestModalTextarea = styled.textarea` padding: 10px 14px; background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; min-height: 80px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
 const ModalErrorText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error};
@@ -494,9 +494,9 @@ const OptionsModalButton = styled.button`
 
 const AdminModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
 const AdminModalLabel = styled.label` font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 4px; display: block; font-weight: 500;`;
-const AdminModalInput = styled.input` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
-const AdminModalTextarea = styled.textarea` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; min-height: 80px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
-const AdminModalSelect = styled.select` padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const AdminModalInput = styled.input` padding: 10px 14px; background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const AdminModalTextarea = styled.textarea` padding: 10px 14px; background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; min-height: 80px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const AdminModalSelect = styled.select` padding: 10px 14px; background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
 const AdminModalButton = styled(ModalButton)``;
 
 const SubscriptionFormGroup = styled.div`

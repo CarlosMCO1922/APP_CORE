@@ -143,7 +143,7 @@ const DropdownLink = styled(Link)`
   font-size: 0.9rem;
   cursor: pointer;
   &:hover {
-    background-color: #333;
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
     color: ${({ theme }) => theme.colors.primary};
   }
 `;
@@ -172,7 +172,7 @@ const MobileMenuOverlay = styled.div`
 `;
 
 const UserInfo = styled.span`
-  color: #a0a0a0;
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-right: 1rem;
   white-space: nowrap;
 `;
@@ -207,24 +207,24 @@ const MarkAllReadButton = styled.button`
   background: none; border: none; font-size: 0.8rem;
   color: ${({ theme }) => theme.colors.primary}; cursor: pointer;
   &:hover { text-decoration: underline; }
-  &:disabled { color: #666; cursor: not-allowed; }
+  &:disabled { color: ${({ theme }) => theme.colors.textMuted}; cursor: not-allowed; }
 `;
 const NotificationList = styled.ul`
   list-style: none; padding: 0; margin: 0; overflow-y: auto; max-height: 300px;
 `;
 const NotificationItemStyled = styled.div`
   padding: 12px 15px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  cursor: pointer; background-color: ${props => props.isRead ? 'transparent' : '#3a3a3a'};
+  cursor: pointer; background-color: ${props => props.isRead ? 'transparent' : props.theme.colors.buttonSecondaryBg};
   p { margin: 0 0 5px 0; font-size: 0.85rem; line-height: 1.4; white-space: normal; }
-  small { font-size: 0.75rem; color: #888; }
+  small { font-size: 0.75rem; color: ${({ theme }) => theme.colors.textMuted}; }
   &:last-child { border-bottom: none; }
-  &:hover { background-color: #333; }
+  &:hover { background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; }
 `;
 const ViewAllNotificationsLink = styled(Link)`
   display: block; text-align: center; padding: 10px; font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.primary}; text-decoration: none;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  &:hover { background-color: #333; }
+  &:hover { background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; }
 `;
 
 function Navbar() {

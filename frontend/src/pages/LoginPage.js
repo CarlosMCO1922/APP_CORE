@@ -158,8 +158,8 @@ const SubmitButton = styled.button`
     box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primary}55;
   }
   &:disabled {
-    background-color: #5d5d5d;
-    color: #9e9e9e;
+    background-color: ${({ theme }) => theme.colors.disabledColor || '#5d5d5d'};
+    color: ${({ theme }) => theme.colors.textMuted};
     cursor: not-allowed;
     transform: translateY(0px);
   }
@@ -184,7 +184,7 @@ const RegisterLinkText = styled.p`
   margin-top: 2rem;
   text-align: center;
   font-size: 1rem;
-  color: ${({ theme }) => theme.colors.textWhite};
+  color: ${({ theme }) => theme.colors.textMain};
   @media (max-width: 480px) {
     margin-top: 1.5rem;
     font-size: 0.85rem;
@@ -286,7 +286,7 @@ function LoginPage() {
             </SubmitButton>
           </FormGroup>
 
-          <Link to="/reset-password" style={{ color: '#fcb535', marginTop: '15px', display: 'block', textAlign: 'center' }}>
+          <Link to="/reset-password" style={{ color: theme.colors.primary, marginTop: '15px', display: 'block', textAlign: 'center' }}>
             Esqueci-me da palavra-passe
           </Link>
         </Form>

@@ -51,8 +51,8 @@ const MinimizedBar = styled.div`
   bottom: 0;
   left: 0;
   width: 100%;
-  background-color: #222;
-  color: white;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  color: ${({ theme }) => theme.colors.textMain};
   padding: 10px 15px;
   display: flex;
   justify-content: space-between;
@@ -63,12 +63,12 @@ const MinimizedBar = styled.div`
   transition: transform 0.3s ease-in-out;
 
   &:hover {
-    background-color: #333;
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
   }
 `;
 
 const CancelButton = styled.button`
-  background-color: #d9534f;
+  background-color: ${({ theme }) => theme.colors.error};
   color: white;
   border: none;
   border-radius: 5px;

@@ -21,6 +21,28 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 console.log('Resultado do loadStripe (index.js):', stripePromise); 
 
 const GlobalStyle = createGlobalStyle`
+  :root {
+    --color-primary: 
+      ${props => props.theme.colors.primary};
+    --color-background: 
+      ${props => props.theme.colors.background};
+    --color-card-bg: 
+      ${props => props.theme.colors.cardBackground};
+    --color-card-border: 
+      ${props => props.theme.colors.cardBorder};
+    --color-text-main: 
+      ${props => props.theme.colors.textMain};
+    --color-text-muted: 
+      ${props => props.theme.colors.textMuted};
+    --color-text-dark: 
+      ${props => props.theme.colors.textDark};
+    --color-button-secondary-bg: 
+      ${props => props.theme.colors.buttonSecondaryBg};
+    --color-button-secondary-hover-bg: 
+      ${props => props.theme.colors.buttonSecondaryHoverBg};
+    --color-disabled: 
+      ${props => props.theme.colors.disabledColor || '#888'};
+  }
   body {
     background-color: ${props => props.theme.colors.background};
     color: ${props => props.theme.colors.textMain};
