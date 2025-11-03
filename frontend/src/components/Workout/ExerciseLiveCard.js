@@ -60,7 +60,7 @@ const ExerciseLiveCard = ({
         planExercise?.planExerciseId ??
         planExercise?.id ??
         null;
-      const baseExerciseId = planExercise?.exerciseId ?? null;
+      const baseExerciseId = planExercise?.exerciseDetails?.id ?? planExercise?.exerciseId ?? null;
       setIsLoadingHistory(true);
       let data = [];
       if (planId) {

@@ -173,6 +173,9 @@ const LiveWorkoutSessionPage = () => {
       setNumber,
       weight: Number(performedWeight),
       reps: Number(performedReps),
+      weightKg: Number(performedWeight),
+      performedWeight: Number(performedWeight),
+      performedReps: Number(performedReps),
       performedAt: new Date().toISOString(),
     };
 
