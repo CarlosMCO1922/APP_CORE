@@ -858,7 +858,7 @@ const AdminManageTrainingsPage = () => {
         <Title>Gerir Treinos</Title>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Novo Treino</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard">‹</BackLink>
+      <BackLink to="/admin/dashboard">←</BackLink>
 
       <FiltersContainer>
         <FilterGroup>

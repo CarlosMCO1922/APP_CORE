@@ -612,7 +612,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
 
 return (
     <PageContainer>
-      <BackLink to="/admin/dashboard">‹</BackLink>
+      <BackLink to="/admin/dashboard">←</BackLink>
       <HeaderContainer>
         <Title><FaClipboardList /> Gestão de Planos de Treino Modelo</Title>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Criar Novo Plano</CreateButton>

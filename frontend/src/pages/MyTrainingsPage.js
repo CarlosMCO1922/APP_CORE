@@ -135,7 +135,7 @@ const MyTrainingsPage = () => {
 
   return (
     <PageContainer>
-      <BackLink to="/dashboard">‹</BackLink>
+      <BackLink to="/dashboard">←</BackLink>
       <Header>
         <Title><FaRunning />Meus Treinos Inscritos</Title>
       </Header>

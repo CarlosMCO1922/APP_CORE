@@ -876,7 +876,7 @@ const ClientProgressPage = () => {
 
     return (
         <PageContainer>
-            <BackLink to="/dashboard">‹</BackLink>
+            <BackLink to="/dashboard">←</BackLink>
             <HeaderContainer>
                 <Title><FaClipboardList /> Registar Progresso Pessoal</Title>
             </HeaderContainer>

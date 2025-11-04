@@ -464,7 +464,7 @@ const AdminManageUsersPage = () => {
         <Title>Gerir Clientes (Utilizadores)</Title>
         <CreateButton onClick={handleOpenCreateModal}><FaUserPlus /> Novo Cliente</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard">‹</BackLink>
+      <BackLink to="/admin/dashboard">←</BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}

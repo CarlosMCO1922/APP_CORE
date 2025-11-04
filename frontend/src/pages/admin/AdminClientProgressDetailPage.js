@@ -214,7 +214,7 @@ const AdminClientProgressDetailPage = () => {
     return (
         <>
             <PageContainer>
-                <BackLink to="/admin/progresso-clientes">‹</BackLink>
+                <BackLink to="/admin/progresso-clientes">←</BackLink>
                 <Header>
                     <h1><FaUserCircle /> Progresso de {client?.firstName} {client?.lastName}</h1>
                 </Header>

@@ -1030,7 +1030,7 @@ const handleCloseSubscribeSeriesModal = () => {
   return (
     <PageContainer>
       <HeaderSection> <Title>Calendário e Marcações</Title> </HeaderSection>
-      <BackLink to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"}>‹</BackLink>
+      <BackLink to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"}>←</BackLink>
 
       {pageError && <PageErrorText>{pageError}</PageErrorText>}
       {pageSuccessMessage && !showRequestModal && !showEventModal && !showAdminCreateOptionsModal && !showAdminCreateTrainingModal && !showAdminCreateAppointmentModal && <PageSuccessMessage>{pageSuccessMessage}</PageSuccessMessage>}

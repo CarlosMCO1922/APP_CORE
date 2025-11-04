@@ -127,7 +127,7 @@ const AdminClientSelectionPage = () => {
 
     return (
         <PageContainer>
-            <BackLink to="/admin/dashboard">‹</BackLink>
+            <BackLink to="/admin/dashboard">←</BackLink>
             <HeaderContainer>
                 <Title><FaUserGraduate /> Progresso dos Clientes</Title>
             </HeaderContainer>

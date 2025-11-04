@@ -189,15 +189,15 @@ const AdminUserDetailsPage = () => {
     return <PageContainer><LoadingText>A carregar detalhes do cliente...</LoadingText></PageContainer>;
   }
   if (error) {
-    return <PageContainer><BackLink to="/admin/manage-users">‹</BackLink><ErrorText>{error}</ErrorText></PageContainer>;
+    return <PageContainer><BackLink to="/admin/manage-users">←</BackLink><ErrorText>{error}</ErrorText></PageContainer>;
   }
   if (!user) {
-    return <PageContainer><BackLink to="/admin/manage-users">‹</BackLink><EmptyText>Cliente não encontrado.</EmptyText></PageContainer>;
+    return <PageContainer><BackLink to="/admin/manage-users">←</BackLink><EmptyText>Cliente não encontrado.</EmptyText></PageContainer>;
   }
 
   return (
     <PageContainer>
-      <BackLink to="/admin/manage-users">‹</BackLink>
+      <BackLink to="/admin/manage-users">←</BackLink>
       
       <UserDetailsCard>
         <UserHeader>
