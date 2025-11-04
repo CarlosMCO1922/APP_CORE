@@ -46,7 +46,7 @@ const Title = styled.h1`
 
 const WelcomeMessage = styled.p`
   font-size: 1.1rem;
-  color: #b0b0b0;
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: 30px;
   text-align: center;
 
@@ -64,12 +64,12 @@ const AdminNavGrid = styled.div`
 `;
 
 const AdminNavLinkCard = styled(Link)`
-  background-color: #252525;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 25px;
   border-radius: 10px;
   text-decoration: none;
   color: ${({ theme }) => theme.colors.textMain};
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: ${({ theme }) => theme.boxShadow};
   transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
   display: flex;
   flex-direction: column;
@@ -106,7 +106,7 @@ const AdminNavLinkCard = styled(Link)`
 
   &:hover {
     transform: translateY(-5px);
-    background-color: #303030;
+    background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
   }
 `;
 
@@ -119,10 +119,10 @@ const StatsOverviewContainer = styled.div`
 `;
 
 const StatCard = styled.div`
-  background-color: #2c2c2c;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: ${({ theme }) => theme.boxShadow};
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -139,7 +139,7 @@ const StatIcon = styled.div`
 const StatValue = styled.p`
   font-size: 2rem;
   font-weight: 700;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textMain};
   margin: 0 0 5px 0;
 `;
 

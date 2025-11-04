@@ -9,7 +9,7 @@ import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown } f
 // --- Styled Components ---
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background}; 
-  color: #E0E0E0; 
+  color: ${({ theme }) => theme.colors.textMain}; 
   min-height: 100vh;
   padding: 30px 40px;
   font-family: 'Inter', sans-serif;
@@ -29,7 +29,7 @@ const SectionTitle = styled.h2`
   color: ${({ theme }) => theme.colors.primary};
   margin-top: 30px; 
   padding-bottom: 10px;
-  border-bottom: 1px solid #3a3a3a; 
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; 
   font-weight: 600;
 
   &:first-of-type {
@@ -41,7 +41,7 @@ const SettingsForm = styled.form`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 35px 40px; /* Aumentado padding */
   border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  box-shadow: ${({ theme }) => theme.boxShadow};
   max-width: 650px; /* Aumentado max-width */
   margin: 0 auto 40px auto;
 `;
@@ -63,7 +63,7 @@ const Input = styled.input`
   width: 100%;
   padding: 12px 15px;
   background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
-  border: 1px solid #4A4A4A;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: 8px;
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 1rem;
@@ -73,7 +73,7 @@ const Input = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primaryFocusRing};
   }
   &:disabled {
     background-color: ${({ theme }) => theme.colors.disabledColor};
@@ -119,8 +119,8 @@ const SubmitButton = styled.button`
     transform: translateY(-2px);
   }
   &:disabled {
-    background-color: #555;
-    color: #888;
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
     transform: translateY(0);
   }
@@ -137,28 +137,28 @@ const MessageText = styled.p`
   border-style: solid;
 
   &.success {
-    color: #66BB6A; // Verde para sucesso
-    background-color: rgba(102, 187, 106, 0.15);
-    border-color: #66BB6A;
+    color: ${({ theme }) => theme.colors.success};
+    background-color: ${({ theme }) => theme.colors.successBg};
+    border-color: ${({ theme }) => theme.colors.success};
   }
   &.error {
-    color: #FF6B6B; // Vermelho para erro
-    background-color: rgba(255, 107, 107, 0.15);
-    border-color: #FF6B6B;
+    color: ${({ theme }) => theme.colors.error};
+    background-color: ${({ theme }) => theme.colors.errorBg};
+    border-color: ${({ theme }) => theme.colors.error};
   }
 `;
 
-const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: #D4AF37;`;
+const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: ${({ theme }) => theme.colors.primary};`;
 
 const StyledInternalLink = styled(Link)`
-  color: #D4AF37;
+  color: ${({ theme }) => theme.colors.primary};
   font-size: 1rem; 
   text-decoration: none;
   display: inline-block; 
   margin-bottom: 30px; /* Aumentado espaço abaixo */
   transition: color 0.2s ease;
   &:hover {
-    color: #e6c358;
+    color: ${({ theme }) => theme.colors.primaryHover};
     text-decoration: underline;
   }
 `;

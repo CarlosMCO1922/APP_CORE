@@ -4,12 +4,12 @@ import { FaTimes } from 'react-icons/fa';
 
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.85); display: flex;
+  background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex;
   justify-content: center; align-items: center; z-index: 2050; padding: 20px;
 `;
 
 const ModalContent = styled.div`
-  background-color: #2C2C2C; padding: 25px 35px; border-radius: 10px; width: 100%;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker}; padding: 25px 35px; border-radius: 10px; width: 100%;
   max-width: 400px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative;
   border-top: 3px solid ${({ theme }) => theme.colors.primary};
 `;
@@ -21,15 +21,15 @@ const ModalTitle = styled.h3`
 
 const CloseButton = styled.button`
   position: absolute; top: 15px; right: 15px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; &:hover { color: #fff; }
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer; &:hover { color: ${({ theme }) => theme.colors.textMain}; }
 `;
 
 const InputGroup = styled.div`
   display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;
   label { font-size: 0.9rem; color: ${({ theme }) => theme.colors.textMuted}; }
   input {
-    padding: 10px 14px; background-color: #383838; border: 1px solid #555;
-    border-radius: 6px; color: #E0E0E0; font-size: 1rem; width: 100%;
+    padding: 10px 14px; background-color: ${({ theme }) => theme.colors.inputBg}; border: 1px solid ${({ theme }) => theme.colors.inputBorder};
+    border-radius: 6px; color: ${({ theme }) => theme.colors.inputText}; font-size: 1rem; width: 100%;
     &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; }
   }
 `;
@@ -46,7 +46,7 @@ const PlateList = styled.div`
 `;
 
 const PlateChip = styled.span`
-  background-color: #444; color: white; padding: 5px 12px;
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg}; color: ${({ theme }) => theme.colors.textMain}; padding: 5px 12px;
   border-radius: 15px; font-size: 0.9rem; font-weight: 500;
 `;
 
@@ -114,9 +114,9 @@ const PlateCalculatorModal = ({ onSelectWeight, onClose }) => {
           </ResultContainer>
         )}
         
-        <button onClick={handleSelect} style={{width: '100%', marginTop: '20px', padding: '12px', background: '#D4AF37', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer'}}>
+        <PrimaryButton onClick={handleSelect}>
           Usar este Peso
-        </button>
+        </PrimaryButton>
       </ModalContent>
     </ModalOverlay>
   );

@@ -89,10 +89,10 @@ const TableWrapper = styled.div`
   
   &::-webkit-scrollbar {
     height: 8px;
-    background-color: #252525;
+    background-color: ${({ theme }) => theme.colors.scrollbarTrackBg};
   }
   &::-webkit-scrollbar-thumb {
-    background: #555;
+    background: ${({ theme }) => theme.colors.scrollbarThumbBg};
     border-radius: 4px;
   }
 `;
@@ -110,7 +110,7 @@ const Table = styled.table`
     white-space: nowrap;
   }
   th {
-    background-color: #303030;
+    background-color: ${({ theme }) => theme.colors.tableHeaderBg};
     color: ${({ theme }) => theme.colors.primary};
     font-weight: 600;
     position: sticky; 
@@ -118,7 +118,7 @@ const Table = styled.table`
     z-index: 1;
   }
   tr:last-child td { border-bottom: none; }
-  tr:hover { background-color: #2c2c2c; }
+  tr:hover { background-color: ${({ theme }) => theme.colors.hoverRowBg}; }
 
   td:last-child { 
     white-space: normal; 
@@ -161,8 +161,8 @@ const ActionButton = styled.button`
     transform: translateY(-1px);
   }
   &:disabled {
-    background-color: #404040;
-    color: #777;
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
 `;
@@ -202,12 +202,12 @@ const MessageText = styled.p`
 
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.85); display: flex;
+  background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex;
   justify-content: center; align-items: center;
   z-index: 1050; padding: 20px;
 `;
 const ModalContent = styled.div`
-  background-color: #2A2A2A;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
   padding: clamp(25px, 4vw, 35px);
   border-radius: 10px; width: 100%;
   max-width: 500px; box-shadow: 0 8px 25px rgba(0,0,0,0.6);
@@ -223,8 +223,8 @@ const ModalTitle = styled.h2`
 `;
 const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
 const ModalInput = styled.input`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 10px 14px; background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
   width: 100%;
@@ -232,8 +232,8 @@ const ModalInput = styled.input`
   &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
 `;
 const ModalSelect = styled.select`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 10px 14px; background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
   width: 100%;
@@ -260,9 +260,9 @@ const ModalButton = styled(ActionButton)`
 `;
 const CloseButton = styled.button`
   position: absolute; top: 10px; right: 10px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 8px;
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
-  &:hover { color: #fff; transform: scale(1.1); }
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; transform: scale(1.1); }
 `;
 const ModalErrorText = styled.p` // Baseado em ErrorText, mas com ajustes
   ${MessageBaseStyles}

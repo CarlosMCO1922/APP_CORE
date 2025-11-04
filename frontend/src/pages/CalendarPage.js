@@ -208,9 +208,9 @@ const CalendarWrapper = styled.div`
   .rbc-time-header-gutter, .rbc-time-gutter { background: ${({ theme }) => theme.colors.background}; border-right: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
   .rbc-day-bg + .rbc-day-bg { border-left: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
   .rbc-month-row + .rbc-month-row { border-top: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
-  .rbc-today { background-color: rgba(212, 175, 55, 0.1); }
+  .rbc-today { background-color: ${({ theme }) => theme.colors.primaryFocusRing}; }
   .rbc-off-range-bg { background-color: ${({ theme }) => theme.colors.backgroundSelect}; }
-  .rbc-slot-selectable { cursor: pointer; &:hover { background-color: rgba(212, 175, 55, 0.06); } }
+  .rbc-slot-selectable { cursor: pointer; &:hover { background-color: ${({ theme }) => theme.colors.primaryFocusRing}; } }
 
   .rbc-current-time-indicator {
     background-color: ${({ theme }) => theme.colors.error}; height: 1.5px;
@@ -258,7 +258,7 @@ const NoItemsContainer = styled.div`
 
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.88); display: flex;
+  background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex;
   justify-content: center; align-items: center;
   z-index: 1050; padding: 20px;
 `;
@@ -308,7 +308,7 @@ const EventModalButton = styled.button`
   width: 100%;
   @media (min-width: 480px) { width: auto; }
   &:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
-  &:disabled { background-color: #444; color: #888; cursor: not-allowed; }
+  &:disabled { background-color: ${({ theme }) => theme.colors.disabledBg}; color: ${({ theme }) => theme.colors.disabledText}; cursor: not-allowed; }
 `;
 const CloseButton = styled.button`
   position: absolute; top: 10px; right: 10px; background: transparent; border: none;
@@ -374,7 +374,7 @@ const ModalInput = styled.input`
   &:focus { 
     outline: none; 
     border-color: ${({ theme }) => theme.colors.primary}; 
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); 
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing}; 
   }
 `;
 
@@ -416,7 +416,7 @@ const ModalPlanLink = styled(Link)`
   text-decoration: none; font-weight: 600; font-size: 0.9rem;
   text-align: center; margin-top: 15px;
   transition: background-color 0.2s ease-in-out, transform 0.15s ease;
-  &:hover { background-color: #e6c358; transform: translateY(-2px); }
+  &:hover { background-color: ${({ theme }) => theme.colors.primaryHover}; transform: translateY(-2px); }
 `;
 
 const ParticipantListStyled = styled.div`
@@ -438,7 +438,7 @@ const ParticipantListStyled = styled.div`
     padding: 0;
     max-height: 150px;
     overflow-y: auto;
-    background-color: #222;
+    background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
     border-radius: 5px;
     border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   }

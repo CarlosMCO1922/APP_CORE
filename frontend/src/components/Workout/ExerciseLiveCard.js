@@ -23,7 +23,7 @@ const MoreActionsButton = styled.button`
 
 const DropdownMenu = styled.div`
   position: absolute; right: 0; top: 30px;
-  background-color: #1F1F1F;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   z-index: 10; overflow: hidden;

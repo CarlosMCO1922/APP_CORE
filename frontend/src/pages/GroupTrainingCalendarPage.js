@@ -35,7 +35,7 @@ const ProfessionalSelector = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   label { display: block; margin-bottom: 10px; font-weight: 500; color: ${({ theme }) => theme.colors.primary}; display: flex; align-items: center; gap: 8px;}
-  select { width: 100%; padding: 10px 14px; background-color: #333; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; }
+  select { width: 100%; padding: 10px 14px; background-color: ${({ theme }) => theme.colors.inputBg}; border: 1px solid ${({ theme }) => theme.colors.inputBorder}; border-radius: ${({ theme }) => theme.borderRadius}; color: ${({ theme }) => theme.colors.inputText}; font-size: 0.95rem; }
 `;
 const CalendarContainer = styled.div`
   display: flex; justify-content: center; align-items: flex-start;
@@ -59,7 +59,7 @@ const TimeSlotsGrid = styled.div`
   display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px;
 `;
 const TimeSlotButton = styled.button`
-  background-color: #2c2c2c; color: ${({ theme }) => theme.colors.textMain};
+  background-color: ${({ theme }) => theme.colors.cardBackground}; color: ${({ theme }) => theme.colors.textMain};
   padding: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
   &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.textDark}; border-color: ${({ theme }) => theme.colors.primary}; transform: translateY(-2px); }
@@ -75,7 +75,7 @@ const TrainingList = styled.div`
 `;
 
 const TrainingCard = styled.div`
-  background-color: #2c2c2c;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 15px;
   border-radius: 8px;
   border-left: 4px solid ${({ theme }) => theme.colors.primary};
@@ -101,8 +101,8 @@ const BookButton = styled.button`
   cursor: pointer;
   font-weight: 600;
   transition: background-color 0.2s;
-  &:hover:not(:disabled) { background-color: #e6c358; }
-  &:disabled { background-color: #555; color: #999; cursor: not-allowed; }
+  &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.primaryHover}; }
+  &:disabled { background-color: ${({ theme }) => theme.colors.disabledBg}; color: ${({ theme }) => theme.colors.disabledText}; cursor: not-allowed; }
 `;
 
 const GroupTrainingCalendarPage = () => {

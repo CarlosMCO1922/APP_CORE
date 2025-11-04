@@ -26,7 +26,7 @@ const BackLink = styled(Link)`
   display: inline-flex; align-items: center; gap: 8px; margin-bottom: 25px;
   padding: 9px 16px; border-radius: ${({ theme }) => theme.borderRadius};
   transition: background-color 0.2s;
-  &:hover { background-color: ${({ theme }) => theme.colors.cardBackground}; color: #fff; }
+  &:hover { background-color: ${({ theme }) => theme.colors.cardBackground}; color: ${({ theme }) => theme.colors.textMain}; }
 `;
 const LoadingText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.primary}; padding: 40px; font-size: 1.2rem;`;
 const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error}; padding: 20px; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; border-radius: 8px;`;
@@ -57,7 +57,7 @@ const ViewChartButton = styled.button`
 `;
 const ModalOverlay = styled.div`
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0,0,0,0.75); display: flex;
+    background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex;
     justify-content: center; align-items: center;
     z-index: 2100; padding: 20px;
 `;
@@ -97,10 +97,10 @@ const ChartMetricSelector = styled.div`
   gap: 10px; margin-bottom: 20px;
   label { color: ${({ theme }) => theme.colors.textMuted}; font-size: 0.9rem; }
   select {
-    padding: 8px 12px; background-color: #383838;
-    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    padding: 8px 12px; background-color: ${({ theme }) => theme.colors.inputBg};
+    border: 1px solid ${({ theme }) => theme.colors.inputBorder};
     border-radius: ${({ theme }) => theme.borderRadius};
-    color: ${({ theme }) => theme.colors.textMain}; font-size: 0.9rem;
+    color: ${({ theme }) => theme.colors.inputText}; font-size: 0.9rem;
     &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; }
   }
 `;

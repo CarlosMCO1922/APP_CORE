@@ -15,6 +15,8 @@ export const darkTheme = {
   logoUrl1: '/logo_core_short_without_back.png',
   colors: {
     primary: '#fcb535ff', // Dourado
+    primaryHover: '#e6c358',
+    primaryFocusRing: 'rgba(252, 181, 53, 0.2)',
     background: '#1A1A1A', // Preto
     cardBackground: '#252525', // Cinza escuro
     cardBorder: '#383838', // Borda cinza
@@ -33,9 +35,19 @@ export const darkTheme = {
     sliderButton: 'rgb(37 37 37 / 80%)',
     sliderButtonHover: 'rgb(37 37 37 / 40%)',
     backgroundSelect: 'rgb(51, 51, 51)',
+    inputBg: '#383838',
+    inputBorder: '#555555',
+    inputText: '#E0E0E0',
     disabledColor: 'rgb(85, 85, 85)',
+    disabledBg: '#404040',
+    disabledText: '#777777',
     lightGray: '#cccccc',
     hoverUnselected: '#fcb535ff',
+    overlayBg: 'rgba(0,0,0,0.8)',
+    tableHeaderBg: '#303030',
+    hoverRowBg: '#2a2a2a',
+    scrollbarTrackBg: '#252525',
+    scrollbarThumbBg: '#555555',
     // Adicionais
     warning: '#FFA000',
     info: '#17a2b8',
@@ -54,6 +66,8 @@ export const lightTheme = {
   logoUrl1: '/logo_core_short_without_back.png',
   colors: {
     primary: 'rgba(252, 181, 53, 1)', // Dourado um pouco mais escuro para contraste
+    primaryHover: '#e6c358',
+    primaryFocusRing: 'rgba(252, 181, 53, 0.2)',
     background: '#faf1e0', // Branco suave
     cardBackground: 'rgb(253 246 215)',
     cardBorder: '#DEE2E6', // Borda cinza claro
@@ -72,9 +86,19 @@ export const lightTheme = {
     sliderButton: 'rgb(252 181 53 / 61%)',
     sliderButtonHover: 'rgb(252 181 53 / 40%)',
     backgroundSelect: 'rgb(250 241 224)',
+    inputBg: '#FFFFFF',
+    inputBorder: '#DEE2E6',
+    inputText: '#212529',
     disabledColor: '#e6c358d4',
+    disabledBg: '#F1F3F5',
+    disabledText: '#ADB5BD',
     lightGray: 'rgb(165 165 165)',
     hoverUnselected: '#fcb535ff',
+    overlayBg: 'rgba(0,0,0,0.4)',
+    tableHeaderBg: '#F1F3F5',
+    hoverRowBg: '#f5ebcc',
+    scrollbarTrackBg: '#F1F3F5',
+    scrollbarThumbBg: '#C1C1C1',
     // Adicionais
     warning: '#FFA000',
     info: '#17a2b8',

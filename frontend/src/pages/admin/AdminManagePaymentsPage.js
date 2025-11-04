@@ -63,7 +63,7 @@ const CreateButton = styled.button`
   align-self: center;
 
   &:hover {
-    background-color: #e6c358;
+    background-color: ${({ theme }) => theme.colors.primaryHover};
     transform: translateY(-2px);
   }
   @media (max-width: 550px) {
@@ -89,7 +89,7 @@ const BackLink = styled(Link)`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textMain};
   }
   svg {
     margin-right: 4px;
@@ -128,7 +128,7 @@ const FiltersContainer = styled.div`
 
   select, input[type="month"], input[type="text"] {
     padding: 9px 12px;
-    background-color: #333;
+    background-color: ${({ theme }) => theme.colors.inputBg};
     border: 1px solid ${({ theme }) => theme.colors.cardBorder};
     border-radius: ${({ theme }) => theme.borderRadius};
     color: ${({ theme }) => theme.colors.textMain};
@@ -164,7 +164,7 @@ const FilterButton = styled.button`
   height: 38px;
 
   &:hover {
-    background-color: ${({ theme, clear }) => clear ? theme.colors.buttonSecondaryHoverBg : '#e6c358'};
+    background-color: ${({ theme, clear }) => clear ? theme.colors.buttonSecondaryHoverBg : theme.colors.primaryHover};
   }
 `;
 
@@ -176,8 +176,8 @@ const TableWrapper = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius};
   box-shadow: ${({ theme }) => theme.boxShadow};
 
-  &::-webkit-scrollbar { height: 8px; background-color: #252525; }
-  &::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+  &::-webkit-scrollbar { height: 8px; background-color: ${({ theme }) => theme.colors.scrollbarTrackBg}; }
+  &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.scrollbarThumbBg}; border-radius: 4px; }
 `;
 
 const Table = styled.table`
@@ -194,7 +194,7 @@ const Table = styled.table`
     white-space: nowrap;
   }
   th {
-    background-color: #303030;
+    background-color: ${({ theme }) => theme.colors.tableHeaderBg};
     color: ${({ theme }) => theme.colors.primary};
     font-weight: 600;
     position: sticky; 
@@ -202,12 +202,12 @@ const Table = styled.table`
     z-index: 1;
   }
   tr:last-child td { border-bottom: none; }
-  tr:hover { background-color: #2c2c2c; }
+  tr:hover { background-color: ${({ theme }) => theme.colors.hoverRowBg}; }
   td.actions-cell { text-align: right; }
   td.status-cell select {
     padding: 5px 8px;
     font-size: 0.8rem;
-    background-color: #333;
+    background-color: ${({ theme }) => theme.colors.inputBg};
     color: ${({ theme }) => theme.colors.textMain};
     border: 1px solid ${({ theme }) => theme.colors.cardBorder};
     border-radius: 4px;
@@ -231,7 +231,7 @@ const ActionButton = styled.button`
   background-color: ${props => (props.danger ? props.theme.colors.error : props.theme.colors.buttonSecondaryBg)};
   color: white;
   &:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
-  &:disabled { background-color: #404040; color: #777; cursor: not-allowed; }
+  &:disabled { background-color: ${({ theme }) => theme.colors.disabledBg}; color: ${({ theme }) => theme.colors.disabledText}; cursor: not-allowed; }
 `;
 
 const MessageBaseStyles = css`

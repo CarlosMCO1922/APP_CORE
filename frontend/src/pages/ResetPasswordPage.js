@@ -54,7 +54,7 @@ const InputGroup = styled.div`
 const Input = styled.input`
   width: 100%;
   padding: 12px 12px 12px 45px;
-  background-color: ${({ theme }) => theme.colors.inputBackground};
+  background-color: ${({ theme }) => theme.colors.inputBg};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: 8px;
   color: ${({ theme }) => theme.colors.textMain};
@@ -77,7 +77,8 @@ const Button = styled.button`
   cursor: pointer;
   transition: filter 0.2s;
   &:disabled {
-    background-color: #555;
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
   &:hover:not(:disabled) {

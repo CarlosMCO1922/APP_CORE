@@ -50,7 +50,7 @@ const BackLink = styled(Link)`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textMain};
   }
 `;
 
@@ -63,7 +63,7 @@ const NotificationListContainer = styled.div`
 `;
 
 const NotificationItem = styled.div`
-  background-color: ${props => props.$isRead ? '#2C2C2C' : '#3A3A3A'};
+  background-color: ${props => props.$isRead ? props.theme.colors.cardBackground : props.theme.colors.cardBackgroundDarker};
   padding: 15px;
   margin-bottom: 12px;
   border-radius: 8px;
@@ -77,7 +77,7 @@ const NotificationItem = styled.div`
   }
 
   &:hover {
-    background-color: #404040;
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
     border-left-color: ${({ theme }) => theme.colors.primary};
   }
 
@@ -91,7 +91,7 @@ const NotificationItem = styled.div`
 
   small {
     font-size: 0.75rem;
-    color: #888;
+    color: ${({ theme }) => theme.colors.textMuted};
     display: flex;
     align-items: center;
     gap: 5px;
@@ -137,11 +137,12 @@ const PaginationControls = styled.div`
     cursor: pointer;
     font-weight: 500;
     transition: background-color 0.2s;
-    &:hover:not(:disabled) {
-      background-color: #e6c358;
+  &:hover:not(:disabled) {
+      background-color: ${({ theme }) => theme.colors.primaryHover};
     }
     &:disabled {
-      background-color: #555;
+      background-color: ${({ theme }) => theme.colors.disabledBg};
+      color: ${({ theme }) => theme.colors.disabledText};
       cursor: not-allowed;
     }
   }

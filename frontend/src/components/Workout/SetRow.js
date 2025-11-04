@@ -29,7 +29,7 @@ const ActionBackground = styled.div`
   justify-content: flex-end; /* Ícone fica à direita */
   padding-right: 30px;
   color: white;
-  background-color: #D32F2F;
+  background-color: ${({ theme }) => theme.colors.error};
   border-radius: ${({ theme }) => theme.borderRadius};
   z-index: 1;
 `;
@@ -112,7 +112,7 @@ const DeleteButton = styled.button`
   font-weight: bold;
   
   &:hover {
-    background-color: #b71c1c; /* Cor mais escura ao passar o rato */
+    opacity: 0.9; /* leve escurecimento ao passar o rato */
   }
 `;
 

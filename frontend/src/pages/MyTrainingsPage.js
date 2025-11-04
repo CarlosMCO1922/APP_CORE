@@ -80,14 +80,14 @@ const CancelButton = styled.button`
   font-size: 0.85rem;
   font-weight: 500;
   transition: background-color 0.2s;
-  &:hover:not(:disabled) { background-color: #c62828; }
-  &:disabled { background-color: #555; cursor: not-allowed; }
+  &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.error}; opacity: 0.9; }
+  &:disabled { background-color: ${({ theme }) => theme.colors.disabledBg}; cursor: not-allowed; }
 `;
 
 const LoadingText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.primary};`;
 const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error}; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; padding: 10px; border-radius: 5px;`;
 const MessageText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.success}; background-color: ${({theme}) => theme.colors.successBg}; border: 1px solid ${({theme}) => theme.colors.success}; padding: 10px; border-radius: 5px;`;
-const EmptyText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.textMuted}; padding: 20px; background-color: #2c2c2c; border-radius: 8px;`;
+const EmptyText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.textMuted}; padding: 20px; background-color: ${({ theme }) => theme.colors.cardBackground}; border-radius: 8px;`;
 
 const MyTrainingsPage = () => {
   const [trainings, setTrainings] = useState([]);

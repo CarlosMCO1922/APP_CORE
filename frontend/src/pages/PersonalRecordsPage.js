@@ -36,7 +36,7 @@ const BackLink = styled(Link)`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textMain};
   }
 `;
 
@@ -133,7 +133,7 @@ const RecordItem = styled.li`
   &:last-child { border-bottom: none; }
 
   span:first-child { color: ${({ theme }) => theme.colors.textMuted}; }
-  span:last-child { font-weight: 600; color: white; }
+  span:last-child { font-weight: 600; color: ${({ theme }) => theme.colors.textMain}; }
 `;
 
 const HeaderContainer = styled.div`
@@ -226,7 +226,7 @@ const PersonalRecordsPage = () => {
       
       {allRecords.length > 0 && (
         <FilterContainer>
-            <FaSearch style={{color: '#888'}} />
+            <FaSearch style={{color: 'currentColor'}} />
             <SearchInput
                 type="text"
                 placeholder="Pesquisar exercício..."

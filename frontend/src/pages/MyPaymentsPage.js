@@ -44,9 +44,9 @@ const TableWrapper = styled.div`
 
   /* Estilos da Scrollbar */
   &::-webkit-scrollbar { height: 8px; }
-  &::-webkit-scrollbar-track { background: #2c2c2c; border-radius: 4px; }
-  &::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-  &::-webkit-scrollbar-thumb:hover { background: #666; }
+  &::-webkit-scrollbar-track { background: ${({ theme }) => theme.colors.scrollbarTrackBg}; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.scrollbarThumbBg}; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb:hover { background: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; }
 `;
 
 const Table = styled.table`
@@ -114,7 +114,7 @@ const ActionButton = styled.button`
   margin: 2px;
 
   &:hover:not(:disabled) {
-    background-color: #e6c358;
+    background-color: ${({ theme }) => theme.colors.primaryHover};
   }
   &:disabled {
     background-color: ${props => props.theme.colors.buttonSecondaryBg};
@@ -136,9 +136,9 @@ const BackButton = styled.button` // MUDOU de Link para button
 `;
 
 const ConfirmButton = styled(ActionButton)`
-    background-color: #4CAF50; // Verde
+    background-color: ${({ theme }) => theme.colors.success};
     &:hover:not(:disabled) {
-        background-color: #66BB6A;
+        background-color: ${({ theme }) => theme.colors.successDark};
     }
 `;
 
@@ -219,8 +219,8 @@ const MessageText = styled.p`
 `;
 const InfoText = styled(MessageText)`
   color: ${props => props.theme.colors.textMuted};
-  background-color: #2a2a2a;
-  border-color: #444;
+  background-color: ${({ theme }) => theme.colors.hoverRowBg};
+  border-color: ${({ theme }) => theme.colors.cardBorder};
 `;
 const NoItemsText = styled.p`
   font-size: 1rem;
@@ -234,18 +234,18 @@ const StyledLink = styled(Link)`
   text-decoration: none;
   &:hover {
     text-decoration: underline;
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textMain};
   }
 `;
 
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.85);
+  background-color: ${({ theme }) => theme.colors.overlayBg};
   display: flex; justify-content: center; align-items: center;
   z-index: 1050; padding: 20px;
 `;
 const ModalContent = styled.div`
-  background-color: #1F1F1F;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
   padding: 25px 30px;
   border-radius: 10px; width: 100%; max-width: 500px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.6); position: relative;
@@ -258,8 +258,8 @@ const ModalTitle = styled.h2`
 const CloseButton = styled.button`
   position: absolute; top: 10px; right: 15px;
   background: transparent; border: none;
-  color: #aaa; font-size: 1.8rem; cursor: pointer;
-  &:hover { color: #fff; }
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer;
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
 `;
 
 const Header = styled.div`

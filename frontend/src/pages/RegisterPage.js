@@ -43,7 +43,7 @@ const FormBox = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 35px 45px;
   border-radius: 12px;
-  box-shadow: 0 10px 30px ${({ theme }) => theme.colors.primary};
+  box-shadow: ${({ theme }) => theme.boxShadow};
   width: 100%;
   max-width: 500px; // Pode ser um pouco maior para o registo se houver mais campos
 
@@ -130,14 +130,14 @@ const MessageText = styled.p`
   border-style: solid;
 
   &.success {
-    color: ${({ theme }) => theme.colors.sucess};
-    background-color: ${({ theme }) => theme.colors.sucessBg};;
-    border-color: ${({ theme }) => theme.colors.sucess};;
+    color: ${({ theme }) => theme.colors.success};
+    background-color: ${({ theme }) => theme.colors.successBg};
+    border-color: ${({ theme }) => theme.colors.success};
   }
   &.error {
-    color: white;
-    background-color: ${({ theme }) => theme.colors.errorBg};;
-    border-color: ${({ theme }) => theme.colors.error};;
+    color: ${({ theme }) => theme.colors.error};
+    background-color: ${({ theme }) => theme.colors.errorBg};
+    border-color: ${({ theme }) => theme.colors.error};
   }
 `;
 
@@ -157,10 +157,10 @@ const SubmitButton = styled.button`
   margin-top: 0.5rem;
   cursor: pointer;
 
-  &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.primary}; transform: translateY(-1px); }
+  &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.primaryHover}; transform: translateY(-1px); }
   &:disabled { 
-    background-color: ${({ theme }) => theme.colors.background};
-    color: ${({ theme }) => theme.colors.background};;
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed; 
     transform: translateY(0px); 
   }

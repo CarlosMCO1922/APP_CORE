@@ -82,7 +82,7 @@ const BackButton = styled(Link)`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #e6c358;
+    background-color: ${({ theme }) => theme.colors.primaryHover};
   }
 `;
 
@@ -101,9 +101,9 @@ const PRSection = styled.div`
 `;
 
 const PRCard = styled.div`
-  background: linear-gradient(145deg, #2f2f2f, #252525);
+  background: ${({ theme }) => theme.colors.cardBackground};
   border: 1px solid ${({ theme }) => theme.colors.primary};
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+  box-shadow: ${({ theme }) => theme.boxShadow};
   padding: 20px;
   border-radius: ${({ theme }) => theme.borderRadius};
   margin-bottom: 15px;
@@ -135,7 +135,7 @@ const ExerciseSummaryCard = styled.div`
   padding: 20px; border-radius: ${({ theme }) => theme.borderRadius};
   margin-bottom: 15px;
   h3 {
-    margin: 0 0 15px 0; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;
+    margin: 0 0 15px 0; font-size: 1.2rem; color: ${({ theme }) => theme.colors.textMain}; display: flex; align-items: center; gap: 10px;
   }
 `;
 const SetsTable = styled.div`
@@ -145,7 +145,7 @@ const SetRowSummary = styled.div`
   display: grid; grid-template-columns: 50px 1fr 1fr;
   text-align: center; font-size: 0.95rem; padding: 8px 5px;
   border-radius: 4px;
-  background-color: #333;
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   span:first-child { color: ${({ theme }) => theme.colors.textMuted}; font-weight: bold; text-align: left; padding-left: 10px;}
   span { color: ${({ theme }) => theme.colors.textMain}; }
 `;

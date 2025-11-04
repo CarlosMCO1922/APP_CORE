@@ -64,7 +64,7 @@ const CreateButton = styled.button`
   font-size: 0.9rem;
 
   &:hover {
-    background-color: #e6c358;
+    background-color: ${({ theme }) => theme.colors.primaryHover};
     transform: translateY(-2px);
   }
   @media (max-width: 480px) {
@@ -90,7 +90,7 @@ const BackLink = styled(Link)`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textMain};
   }
   svg {
     margin-right: 4px;
@@ -108,10 +108,10 @@ const TableWrapper = styled.div`
 
   &::-webkit-scrollbar {
     height: 8px;
-    background-color: ${({ theme }) => theme.colors.cardBackground};
+    background-color: ${({ theme }) => theme.colors.scrollbarTrackBg};
   }
   &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+    background: ${({ theme }) => theme.colors.scrollbarThumbBg};
     border-radius: 4px;
   }
 `;
@@ -176,7 +176,7 @@ const ActionButton = styled.button`
     if (props.danger) return props.theme.colors.error;
     if (props.secondary) return props.theme.colors.buttonSecondaryBg;
     if (props.plans) return props.theme.colors.mediaButtonBg || '#6c757d';
-    if (props.signups) return '#007bff';
+    if (props.signups) return props.theme.colors.info || '#17a2b8';
     return props.theme.colors.primary;
   }};
   color: ${props => (props.danger || props.plans || props.signups) ? 'white' : (props.secondary ? props.theme.colors.textMain : props.theme.colors.textDark)};
@@ -185,16 +185,16 @@ const ActionButton = styled.button`
     opacity: 0.85;
     transform: translateY(-1px);
     background-color: ${props => {
-        if (props.danger) return '#C62828';
+        if (props.danger) return props.theme.colors.error;
         if (props.secondary) return props.theme.colors.buttonSecondaryHoverBg;
         if (props.plans) return props.theme.colors.mediaButtonHoverBg || '#5a6268';
-        if (props.signups) return '#0056b3';
-        return '#e6c358';
+        if (props.signups) return props.theme.colors.info || '#17a2b8';
+        return props.theme.colors.primaryHover;
     }};
   }
   &:disabled {
-    background-color: #404040;
-    color: #777;
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
 `;
@@ -235,7 +235,7 @@ const MessageText = styled.p`
 
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.85); display: flex;
+  background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex;
   justify-content: center; align-items: center;
   z-index: 1050; padding: 20px;
 `;
@@ -266,33 +266,33 @@ const ModalLabel = styled.label`
 `;
 
 const ModalInput = styled.input`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 10px 14px; background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  color: ${({ theme }) => theme.colors.inputText}; font-size: 0.95rem;
   width: 100%;
   transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing}; }
 `;
 
 const ModalTextarea = styled.textarea`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 10px 14px; background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  color: ${({ theme }) => theme.colors.inputText}; font-size: 0.95rem;
   width: 100%; min-height: 80px; resize: vertical;
   transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing}; }
 `;
 
 const ModalSelect = styled.select`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 10px 14px; background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  color: ${({ theme }) => theme.colors.inputText}; font-size: 0.95rem;
   width: 100%;
   transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing}; }
 `;
 
 const ModalActions = styled.div`
@@ -312,9 +312,9 @@ const ModalButton = styled(ActionButton)`
 
 const CloseButton = styled.button`
   position: absolute; top: 15px; right: 15px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 5px;
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 5px;
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
-  &:hover { color: #fff; transform: scale(1.1); }
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; transform: scale(1.1); }
 `;
 
 const ModalErrorText = styled.p`
@@ -392,7 +392,7 @@ const FilterLabel = styled.label`
 
 const FilterInput = styled.input`
   padding: 9px 12px;
-  background-color: #333;
+  background-color: ${({ theme }) => theme.colors.inputBg};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
@@ -405,7 +405,7 @@ const FilterInput = styled.input`
 
 const FilterSelect = styled.select`
   padding: 9px 12px;
-  background-color: #333;
+  background-color: ${({ theme }) => theme.colors.inputBg};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};

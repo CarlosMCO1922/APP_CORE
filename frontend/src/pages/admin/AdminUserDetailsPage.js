@@ -92,7 +92,7 @@ const HistoryList = styled.ul`
 `;
 
 const HistoryItem = styled.li`
-  background-color: #2C2C2C;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
   padding: 12px 18px;
   border-radius: 8px;
   margin-bottom: 10px;
@@ -138,7 +138,7 @@ const ErrorText = styled.p`
 `;
 const EmptyText = styled.p`
   text-align: center; font-size: 0.9rem; color: ${({ theme }) => theme.colors.textMuted};
-  padding: 20px; background-color: rgba(0,0,0,0.1); border-radius: 8px;
+  padding: 20px; background-color: ${({ theme }) => theme.colors.cardBackground}; border-radius: 8px;
 `;
 
 

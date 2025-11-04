@@ -57,7 +57,7 @@ const BackLink = styled(Link)`
   font-size: 0.95rem;
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textMain};
   }
 `;
 
@@ -181,7 +181,7 @@ const WorkoutPlanDisplay = styled.div`
   }
   p > i {
     display: block;
-    background-color: rgba(0,0,0,0.1);
+    background-color: ${({ theme }) => theme.colors.cardBackground};
     padding: 10px;
     border-radius: 5px;
     font-size: 0.85rem;
@@ -212,7 +212,7 @@ const PrescribedDetails = styled.p`
   font-style: italic;
   line-height: 1.4;
   padding: 8px;
-  background-color: rgba(0,0,0,0.1);
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   border-radius: 4px;
 `;
 
@@ -289,11 +289,11 @@ const LogButton = styled.button`
 
 const PerformanceHistoryItem = styled.div`
   font-size: 0.85rem;
-  color: #b0b0b0;
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-top: 8px;
   padding: 8px 10px;
   border-left: 2px solid ${({ theme }) => theme.colors.cardBorderDarker || '#444'};
-  background-color: rgba(0,0,0,0.05);
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   border-radius: 0 4px 4px 0;
   line-height: 1.5;
   display: flex;
@@ -312,13 +312,14 @@ const DeleteIcon = styled(FaTrash)`
   font-size: 0.9em;
   transition: color 0.2s;
   &:hover {
-    color: ${({ theme }) => theme.colors.errorDark || '#cc0000'};
+    color: ${({ theme }) => theme.colors.error};
+    opacity: 0.85;
   }
 `;
 
 const ModalOverlayStyled = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.88); display: flex;
+  background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex;
   justify-content: center; align-items: center;
   z-index: 1050; padding: 20px;
 `;
@@ -356,10 +357,10 @@ const ModalTitleStyled = styled.h3`
 
 const CloseModalButtonStyled = styled.button`
   background: transparent; border: none;
-  color: #aaa; font-size: 1.8rem; cursor: pointer;
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer;
   padding: 5px; line-height: 1;
   transition: color 0.2s;
-  &:hover { color: white; }
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
 `;
 
 const FullHistoryTableContainer = styled.div`
@@ -438,13 +439,13 @@ const ModalLabel = styled.label`
 
 
 const ModalInput = styled.input`
-  padding: 10px 14px; background-color: #333;
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 10px 14px; background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem;
+  color: ${({ theme }) => theme.colors.inputText}; font-size: 0.95rem;
   width: 100%;
   transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing}; }
 `;
 
 const StatisticsSection = styled.div`

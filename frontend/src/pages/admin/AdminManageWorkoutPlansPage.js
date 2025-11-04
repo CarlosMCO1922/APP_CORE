@@ -18,35 +18,35 @@ import { getAllExercises } from '../../services/exerciseService';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
-  background-color: #1A1A1A;
-  color: #E0E0E0;
+  background-color: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.textMain};
   min-height: 100vh;
   padding: 20px 40px;
-  font-family: 'Inter', sans-serif;
+  font-family: ${({ theme }) => theme.fonts.main};
 `;
 
 const MainTitle = styled.h1`
   font-size: 2rem;
-  color: #D4AF37;
+  color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 5px;
 `;
 
 const TrainingInfo = styled.p`
   font-size: 1.1rem;
-  color: #b0b0b0;
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: 20px;
 `;
 
-const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: #D4AF37;`;
-const ErrorText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #FF6B6B; background-color: rgba(255,107,107,0.15); border: 1px solid #FF6B6B; border-radius: 8px; margin: 15px auto; max-width: 700px;`;
-const MessageText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #66BB6A; background-color: rgba(102,187,106,0.15); border: 1px solid #66BB6A; border-radius: 8px; margin: 15px auto; max-width: 700px;`;
+const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: ${({ theme }) => theme.colors.primary};`;
+const ErrorText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border: 1px solid ${({ theme }) => theme.colors.error}; border-radius: 8px; margin: 15px auto; max-width: 700px;`;
+const MessageText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: ${({ theme }) => theme.colors.success}; background-color: ${({ theme }) => theme.colors.successBg}; border: 1px solid ${({ theme }) => theme.colors.success}; border-radius: 8px; margin: 15px auto; max-width: 700px;`;
 
 const PlanSection = styled.div`
-  background-color: #252525;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 30px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  box-shadow: ${({ theme }) => theme.boxShadow};
 `;
 
 const PlanHeader = styled.div`
@@ -55,9 +55,9 @@ const PlanHeader = styled.div`
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #383838;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   h2 {
-    color: #D4AF37;
+    color: ${({ theme }) => theme.colors.primary};
     font-size: 1.5rem;
     margin: 0;
   }
@@ -75,25 +75,25 @@ const ActionButton = styled.button`
   cursor: pointer;
   border: none;
   transition: background-color 0.2s ease;
-  background-color: ${props => props.danger ? '#D32F2F' : (props.secondary ? '#555' : (props.primary ? '#D4AF37' : '#007bff' ))};
-  color: ${props => props.danger ? 'white' : (props.secondary ? '#E0E0E0' : '#1A1A1A')};
+  background-color: ${props => props.danger ? props.theme.colors.error : (props.secondary ? props.theme.colors.buttonSecondaryBg : props.theme.colors.primary)};
+  color: ${props => props.danger ? 'white' : (props.secondary ? props.theme.colors.textMain : props.theme.colors.textDark)};
   font-weight: 500;
   &:hover {
-    background-color: ${props => props.danger ? '#C62828' : (props.secondary ? '#666' : (props.primary ? '#e6c358' : '#0056b3'))};
+    background-color: ${props => props.danger ? props.theme.colors.error : (props.secondary ? props.theme.colors.buttonSecondaryHoverBg : props.theme.colors.primaryHover)};
   }
   &:disabled {
-    background-color: #404040;
-    color: #777;
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
 `;
 
 const CreateButtonStyled = styled.button`
-  background-color: #D4AF37; color: #1A1A1A; padding: 10px 20px;
+  background-color: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.textDark}; padding: 10px 20px;
   border-radius: 8px; font-weight: bold; border: none; cursor: pointer;
   transition: background-color 0.2s ease; margin-bottom: 20px;
   font-size: 0.95rem;
-  &:hover { background-color: #e6c358; }
+  &:hover { background-color: ${({ theme }) => theme.colors.primaryHover}; }
 `;
 
 const ExerciseList = styled.ul`
@@ -102,12 +102,14 @@ const ExerciseList = styled.ul`
   margin-top: 15px;
 `;
 
+const NotesText = styled.p` color: ${({ theme }) => theme.colors.textMuted}; font-style: italic; margin-bottom: 15px;`;
+
 const ExerciseItem = styled.li`
-  background-color: #2C2C2C;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
   padding: 12px 15px;
   border-radius: 6px;
   margin-bottom: 10px;
-  border-left: 3px solid #b89b2e;
+  border-left: 3px solid ${({ theme }) => theme.colors.primary};
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -116,8 +118,8 @@ const ExerciseItem = styled.li`
   .exercise-info {
     flex-grow: 1;
     p { margin: 4px 0; font-size: 0.9rem; line-height: 1.4;}
-    strong { color: #E0E0E0; font-weight: 600; }
-    em { color: #a0a0a0; font-size: 0.85rem; display: block; margin-top: 3px;}
+    strong { color: ${({ theme }) => theme.colors.textMain}; font-weight: 600; }
+    em { color: ${({ theme }) => theme.colors.textMuted}; font-size: 0.85rem; display: block; margin-top: 3px;}
   }
   .exercise-media-buttons {
     margin-top: 8px;
@@ -142,29 +144,29 @@ const ExerciseItem = styled.li`
   }
 `;
 
-const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1050; padding: 20px;`;
-const ModalContent = styled.div` background-color: #2C2C2C; padding: 25px 35px; border-radius: 10px; width: 100%; max-width: 600px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative; max-height: 90vh; overflow-y: auto; `;
-const ModalTitle = styled.h2` color: #D4AF37; margin-top: 0; margin-bottom: 20px; font-size: 1.5rem; text-align: center;`;
+const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex; justify-content: center; align-items: center; z-index: 1050; padding: 20px;`;
+const ModalContent = styled.div` background-color: ${({ theme }) => theme.colors.cardBackgroundDarker}; padding: 25px 35px; border-radius: 10px; width: 100%; max-width: 600px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative; max-height: 90vh; overflow-y: auto; `;
+const ModalTitle = styled.h2` color: ${({ theme }) => theme.colors.primary}; margin-top: 0; margin-bottom: 20px; font-size: 1.5rem; text-align: center;`;
 const ModalForm = styled.form` display: flex; flex-direction: column; gap: 12px; `;
-const ModalLabel = styled.label` font-size: 0.9rem; color: #b0b0b0; margin-bottom: 3px; display: block; font-weight: 500;`;
-const ModalInput = styled.input` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
-const ModalTextarea = styled.textarea` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; min-height: 70px; resize: vertical; &:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
-const ModalSelect = styled.select` padding: 10px 12px; background-color: #383838; border: 1px solid #555; border-radius: 6px; color: #E0E0E0; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); } `;
+const ModalLabel = styled.label` font-size: 0.9rem; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 3px; display: block; font-weight: 500;`;
+const ModalInput = styled.input` padding: 10px 12px; background-color: ${({ theme }) => theme.colors.inputBg}; border: 1px solid ${({ theme }) => theme.colors.inputBorder}; border-radius: 6px; color: ${({ theme }) => theme.colors.inputText}; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing}; } `;
+const ModalTextarea = styled.textarea` padding: 10px 12px; background-color: ${({ theme }) => theme.colors.inputBg}; border: 1px solid ${({ theme }) => theme.colors.inputBorder}; border-radius: 6px; color: ${({ theme }) => theme.colors.inputText}; font-size: 0.95rem; width: 100%; min-height: 70px; resize: vertical; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing}; } `;
+const ModalSelect = styled.select` padding: 10px 12px; background-color: ${({ theme }) => theme.colors.inputBg}; border: 1px solid ${({ theme }) => theme.colors.inputBorder}; border-radius: 6px; color: ${({ theme }) => theme.colors.inputText}; font-size: 0.95rem; width: 100%; &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing}; } `;
 const ModalActions = styled.div` display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; `;
 const ModalButton = styled.button`
   padding: 10px 18px; border-radius: 6px; border: none; cursor: pointer;
   font-weight: 500; transition: background-color 0.2s ease;
-  background-color: ${props => props.primary ? '#D4AF37' : '#555'};
-  color: ${props => props.primary ? '#1A1A1A' : '#E0E0E0'};
-  &:hover { background-color: ${props => props.primary ? '#e6c358' : '#666'}; }
-  &:disabled { background-color: #404040; color: #777; cursor: not-allowed; }
+  background-color: ${props => props.primary ? props.theme.colors.primary : props.theme.colors.buttonSecondaryBg};
+  color: ${props => props.primary ? props.theme.colors.textDark : props.theme.colors.textMain};
+  &:hover { background-color: ${props => props.primary ? props.theme.colors.primaryHover : props.theme.colors.buttonSecondaryHoverBg}; }
+  &:disabled { background-color: ${({ theme }) => theme.colors.disabledBg}; color: ${({ theme }) => theme.colors.disabledText}; cursor: not-allowed; }
 `;
 const CloseButton = styled.button`
   position: absolute; top: 12px; right: 15px;
   background: transparent; border: none;
-  color: #aaa; font-size: 1.8rem; cursor: pointer;
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer;
   line-height: 1; padding: 0;
-  &:hover { color: #fff; }
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
 `;
 
 const ModalCheckboxContainer = styled.div`
@@ -188,7 +190,7 @@ const ModalCheckbox = styled.input`
   }
 `;
 
-const NoItemsText = styled.p` font-size: 0.95rem; color: #888; text-align: center; padding: 15px 0; font-style: italic; `;
+const NoItemsText = styled.p` font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted}; text-align: center; padding: 15px 0; font-style: italic; `;
 
 const initialWorkoutPlanForm = { name: '', order: 0, notes: '' };
 const initialExercisePlanForm = {
@@ -448,9 +450,9 @@ function AdminManageWorkoutPlansPage() {
     <PageContainer>
       <MainTitle>Gerir Planos para o Treino</MainTitle>
       <TrainingInfo>{trainingName || `ID do Treino: ${trainingId}`}</TrainingInfo>
-      <Link to="/admin/manage-trainings" style={{ color: '#D4AF37', marginBottom: '20px', display: 'inline-block', textDecoration: 'none' }}>
+      <BackLink to="/admin/manage-trainings">
         ‹ Voltar para Gestão de Treinos
-      </Link>
+      </BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}
@@ -466,7 +468,7 @@ function AdminManageWorkoutPlansPage() {
               <ActionButton danger onClick={() => handleDeletePlan(plan.id)}>Eliminar Plano</ActionButton>
             </div>
           </PlanHeader>
-          {plan.notes && <p style={{ color: '#a0a0a0', fontStyle: 'italic', marginBottom: '15px' }}>Notas do plano: {plan.notes}</p>}
+          {plan.notes && <NotesText>Notas do plano: {plan.notes}</NotesText>}
 
           <ActionButton
             primary

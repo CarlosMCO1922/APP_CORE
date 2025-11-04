@@ -139,7 +139,7 @@ const ServiceItem = styled.div`
     border-bottom: none; 
   }
   &:hover { 
-    background-color: ${({ theme }) => theme.colors.background}; 
+    background-color: ${({ theme }) => theme.colors.cardBackground}; 
   }
   .service-text h4 { 
     margin: 0 0 4px 0; 
@@ -161,8 +161,8 @@ const ContinueButton = styled.button`
   padding: 14px 25px; border-radius: 8px; width: 100%; font-size: 1.1rem;
   font-weight: bold; border: none; cursor: pointer; margin-top: 30px;
   transition: background-color 0.2s;
-  &:disabled { background-color: #555; cursor: not-allowed; color: #999; }
-  &:not(:disabled):hover { background-color: #e6c358; }
+  &:disabled { background-color: ${({ theme }) => theme.colors.disabledBg}; cursor: not-allowed; color: ${({ theme }) => theme.colors.disabledText}; }
+  &:not(:disabled):hover { background-color: ${({ theme }) => theme.colors.primaryHover}; }
 `;
 
 const CalendarWrapper = styled.div`

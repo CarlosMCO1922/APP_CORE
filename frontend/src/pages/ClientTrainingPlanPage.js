@@ -122,12 +122,12 @@ const ExerciseList = styled.ul`
 `;
 
 const ExerciseItem = styled.li`
-  background-color: #1F1F1F;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px;
   border-radius: ${props => props.theme.borderRadius};
   margin-bottom: 20px;
-  border: 1px solid #333;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  box-shadow: ${({ theme }) => theme.boxShadow};
   transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 
   &:hover {
@@ -217,7 +217,7 @@ const fadeIn = keyframes`
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: ${({ theme }) => theme.colors.overlayBg};
   display: flex;
   justify-content: center;
   align-items: center;
@@ -226,7 +226,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: #1F1F1F;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
   padding: 0;
   border-radius: 10px;
   width: auto;
@@ -260,9 +260,9 @@ const ModalContent = styled.div`
     padding: 10px 20px;
     text-align: center;
     font-size: 0.85rem;
-    color: ${props => props.theme.colors.textMuted}; // Corrigido para usar props.theme
-    background-color: #2a2a2a;
-    border-top: 1px solid ${props => props.theme.colors.cardBorder}; // Corrigido para usar props.theme
+    color: ${props => props.theme.colors.textMuted};
+    background-color: ${({ theme }) => theme.colors.cardBackground};
+    border-top: 1px solid ${props => props.theme.colors.cardBorder};
     width: 100%;
     a {
       color: ${props => props.theme.colors.primary}; // Corrigido para usar props.theme
@@ -294,7 +294,7 @@ const CloseButton = styled.button`
   box-shadow: 0 2px 10px rgba(0,0,0,0.4);
   &:hover {
     transform: scale(1.1);
-    background-color: #fff;
+    background-color: ${({ theme }) => theme.colors.primaryHover};
   }
 `;
 

@@ -5,7 +5,7 @@ import styled from 'styled-components';
 
 const FormContainer = styled.form`
   padding: 20px;
-  background-color: #2C2C2C;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
   border-radius: 8px;
 `;
 
@@ -54,11 +54,11 @@ const SubmitButton = styled.button`
   justify-content: center;
 
   &:hover:not(:disabled) {
-    background-color: #e6c358;
+    background-color: ${({ theme }) => theme.colors.primaryHover};
   }
   &:disabled {
-    background-color: ${props => props.theme.colors.buttonSecondaryBg || '#555'};
-    color: ${props => props.theme.colors.textMuted || '#888'};
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
 `;
@@ -81,7 +81,7 @@ const Spinner = styled.div`
 const MultibancoDetailsContainer = styled.div`
   margin-top: 20px;
   padding: 20px;
-  background-color: #383838; /* Cor de fundo ligeiramente diferente para destaque */
+  background-color: ${props => props.theme.colors.cardBackground}; /* Cor de fundo ligeiramente diferente para destaque */
   border-radius: ${props => props.theme.borderRadius || '6px'};
   border: 1px solid ${props => props.theme.colors.primary || '#D4AF37'};
   color: ${props => props.theme.colors.textMain || '#E0E0E0'};

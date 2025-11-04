@@ -53,7 +53,7 @@ const CreateButton = styled.button`
   font-size: 0.9rem;
 
   &:hover {
-    background-color: #e6c358; // Lighter gold for hover
+    background-color: ${({ theme }) => theme.colors.primaryHover}; // Lighter gold for hover
     transform: translateY(-2px);
   }
   @media (max-width: 480px) {
@@ -79,7 +79,7 @@ const BackLink = styled(Link)`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textMain};
   }
   svg {
     margin-right: 4px;
@@ -172,8 +172,8 @@ const ActionButton = styled.button`
     transform: translateY(-1px);
   }
   &:disabled {
-    background-color: #404040;
-    color: #777;
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
 `;
@@ -212,7 +212,7 @@ const MessageText = styled.p`
 // Modal Styled Components
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.85); display: flex;
+  background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex;
   justify-content: center; align-items: center;
   z-index: 1050; padding: 20px;
 `;
@@ -292,16 +292,16 @@ const ModalButton = styled.button` /* Usar este como base para botões do modal 
     transform: translateY(-1px);
   }
   &:disabled {
-    background-color: #404040;
-    color: #777;
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
 `;
 const CloseButton = styled.button`
   position: absolute; top: 15px; right: 15px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 5px;
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 5px;
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
-  &:hover { color: #fff; transform: scale(1.1); }
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; transform: scale(1.1); }
 `;
 const ModalErrorText = styled.p`
   ${MessageBaseStyles}

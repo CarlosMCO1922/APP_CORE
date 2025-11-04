@@ -90,18 +90,18 @@ const Input = styled.input`
   display: block;
   width: 100%;
   padding: 0.9rem 1.1rem; 
-  background-color: ${({ theme }) => theme.colors.background};
-  border: 1px solid ${({ theme }) => theme.colors.background};
+  background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
   border-radius: 8px;
-  color: white;
+  color: ${({ theme }) => theme.colors.inputText};
   font-size: 1rem; 
   &::placeholder {
-    color: #78716c;
+    color: ${({ theme }) => theme.colors.textMuted};
   }
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primaryFocusRing};
   }
 `;
 
@@ -141,7 +141,7 @@ const ClientLoginLinkText = styled.p`
   margin-top: 2rem;
   text-align: center;
   font-size: 1rem;
-  color: #a1a1aa;
+  color: ${({ theme }) => theme.colors.textMuted};
 `;
 
 const StyledLink = styled(Link)`
@@ -163,7 +163,7 @@ const StyledLink = styled(Link)`
 
 const FooterText = styled.footer`
   text-align: center;
-  color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+  color: ${({ theme }) => theme.colors.textMuted};
   margin-top: 3rem;
   padding-bottom: 1rem;
 `;

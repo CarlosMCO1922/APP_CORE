@@ -47,7 +47,7 @@ const BackLink = styled(Link)`
   transition: background-color 0.2s;
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textMain};
   }
 `;
 
@@ -83,7 +83,7 @@ const RecordItem = styled.li`
   font-size: 1rem; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorderAlpha || 'rgba(255,255,255,0.08)'};
   &:last-child { border-bottom: none; }
   span:first-child { color: ${({ theme }) => theme.colors.textMuted}; }
-  span:last-child { font-weight: 600; color: white; }
+  span:last-child { font-weight: 600; color: ${({ theme }) => theme.colors.textMain}; }
 `;
 const ViewChartButton = styled.button`
   background-color: transparent;
@@ -108,12 +108,12 @@ const ViewChartButton = styled.button`
 // --- Styled Components para o Modal e Gráfico ---
 const ModalOverlay = styled.div`
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.88); display: flex;
+  background-color: ${({ theme }) => theme.colors.overlayBg}; display: flex;
   justify-content: center; align-items: center;
   z-index: 2100; padding: 20px;
 `;
 const ModalContent = styled.div`
-  background-color: #2C2C2C; padding: 25px 35px;
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker}; padding: 25px 35px;
   border-radius: 10px; width: 100%; max-width: 800px; /* Aumentado para o gráfico */
   box-shadow: 0 8px 25px rgba(0,0,0,0.5); position: relative;
   max-height: 90vh; display: flex; flex-direction: column;
@@ -125,9 +125,9 @@ const ModalTitle = styled.h2`
 `;
 const CloseButton = styled.button`
   position: absolute; top: 15px; right: 15px; background: transparent; border: none;
-  color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1;
+  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.8rem; cursor: pointer; line-height: 1;
   transition: color 0.2s;
-  &:hover { color: #fff; }
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
 `;
 const ChartMetricSelector = styled.div`
   display: flex;
@@ -143,10 +143,10 @@ const ChartMetricSelector = styled.div`
 
   select {
     padding: 8px 12px;
-    background-color: #383838;
-    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    background-color: ${({ theme }) => theme.colors.inputBg};
+    border: 1px solid ${({ theme }) => theme.colors.inputBorder};
     border-radius: ${({ theme }) => theme.borderRadius};
-    color: ${({ theme }) => theme.colors.textMain};
+    color: ${({ theme }) => theme.colors.inputText};
     font-size: 0.9rem;
     &:focus {
       outline: none;

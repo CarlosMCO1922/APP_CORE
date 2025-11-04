@@ -146,7 +146,7 @@ const ExpandableContent = styled.div`
 
 const LoadingText = styled.p` text-align: center; font-size: 1.1rem; color: ${({ theme }) => theme.colors.primary}; padding: 20px; font-style: italic; `;
 const ErrorText = styled.p` text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.error}; padding: 15px; background-color: ${({ theme }) => theme.colors.errorBg}; border: 1px solid ${({ theme }) => theme.colors.error}; border-radius: ${({ theme }) => theme.borderRadius}; margin: 20px auto; max-width: 600px;`;
-const NoItemsText = styled.p` text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.textMuted}; padding: 30px 15px; background-color: rgba(0,0,0,0.1); border-radius: ${({ theme }) => theme.borderRadius}; `;
+const NoItemsText = styled.p` text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.textMuted}; padding: 30px 15px; background-color: ${({ theme }) => theme.colors.cardBackground}; border-radius: ${({ theme }) => theme.borderRadius}; `;
 
 const ExploreWorkoutPlansPage = () => {
   const theme = useTheme();
