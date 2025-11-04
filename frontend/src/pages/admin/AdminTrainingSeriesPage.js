@@ -289,9 +289,9 @@ const AdminTrainingSeriesPage = () => {
 
   return (
     <PageContainer>
-      <BackLink to={isAdminUserCheck ? "/admin/dashboard" : "/dashboard"}> 
-          <FaArrowLeft /> Voltar ao Painel
-      </BackLink> 
+      <BackLink to={isAdminUserCheck ? "/admin/dashboard" : "/dashboard"}>
+        ‹
+      </BackLink>
       <HeaderContainer>
         <Title><FaCalendarPlus /> Criar Nova Série de Treinos</Title>
       </HeaderContainer>

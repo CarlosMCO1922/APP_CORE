@@ -487,7 +487,7 @@ const AdminManagePaymentsPage = () => {
         </TitleContainer>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Registar Pagamento</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard"><FaArrowLeft /> Voltar ao Painel Admin</BackLink>
+      <BackLink to="/admin/dashboard">‹</BackLink>
 
       {pageError && <ErrorText>{pageError}</ErrorText>}
       {pageSuccessMessage && <MessageText>{pageSuccessMessage}</MessageText>}

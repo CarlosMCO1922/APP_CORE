@@ -44,7 +44,7 @@ const BackLink = styled(Link)`
   margin-bottom: 25px;
   padding: 9px 16px;
   border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
   &:hover {
     background-color: ${({ theme }) => theme.colors.cardBackground};
     color: ${({ theme }) => theme.colors.textMain};
@@ -214,7 +214,7 @@ const AdminClientProgressDetailPage = () => {
     return (
         <>
             <PageContainer>
-                <BackLink to="/admin/progresso-clientes"><FaArrowLeft /> Voltar à Seleção de Clientes</BackLink>
+                <BackLink to="/admin/progresso-clientes">‹</BackLink>
                 <Header>
                     <h1><FaUserCircle /> Progresso de {client?.firstName} {client?.lastName}</h1>
                 </Header>

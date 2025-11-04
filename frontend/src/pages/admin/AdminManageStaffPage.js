@@ -395,7 +395,7 @@ const AdminManageStaffPage = () => {
         <Title>Gerir Equipa</Title>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Adicionar Membro</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard"><FaArrowLeft /> Voltar ao Painel Admin</BackLink>
+      <BackLink to="/admin/dashboard">‹</BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}

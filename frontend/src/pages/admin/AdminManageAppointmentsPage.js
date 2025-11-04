@@ -431,7 +431,7 @@ const AdminManageAppointmentsPage = () => {
         <Title>Gerir Consultas</Title>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Nova Consulta</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard"><FaArrowLeft /> Voltar ao Painel Admin</BackLink>
+      <BackLink to="/admin/dashboard">‹</BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}

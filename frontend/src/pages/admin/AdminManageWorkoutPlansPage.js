@@ -462,7 +462,7 @@ function AdminManageWorkoutPlansPage() {
       <MainTitle>Gerir Planos para o Treino</MainTitle>
       <TrainingInfo>{trainingName || `ID do Treino: ${trainingId}`}</TrainingInfo>
       <BackLink to="/admin/manage-trainings">
-        ‹ Voltar para Gestão de Treinos
+        ‹
       </BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}

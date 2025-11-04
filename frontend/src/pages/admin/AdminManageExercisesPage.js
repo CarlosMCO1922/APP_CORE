@@ -183,7 +183,7 @@ function AdminManageExercisesPage() {
         <CreateButtonStyled onClick={handleOpenCreateModal}>Criar Novo Exercício</CreateButtonStyled>
       </TopActionsContainer>
       <Link to="/admin/dashboard" style={{color: '#D4AF37', marginBottom: '20px', display: 'inline-block', textDecoration:'none'}}>
-        ‹ Voltar ao Painel Admin
+        ‹
       </Link>
 
       {error && <ErrorText>{error}</ErrorText>}

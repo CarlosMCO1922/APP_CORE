@@ -383,7 +383,7 @@ function ClientTrainingPlanPage() {
           <TrainingInfo>{trainingName || `Treino ID: ${trainingId}`}</TrainingInfo>
         </HeaderContainer>
         <BackLink to={authState.role === 'user' ? "/dashboard" : "/admin/dashboard"}>
-          <FaArrowLeft /> Voltar ao Painel
+          ‹
         </BackLink>
 
         {loading && <LoadingText>A carregar plano de treino...</LoadingText>}

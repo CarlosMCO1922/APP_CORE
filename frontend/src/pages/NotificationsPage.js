@@ -215,7 +215,7 @@ const NotificationsPage = () => {
   return (
     <PageContainer>
       <BackLink to={authState.role === 'user' ? "/dashboard" : "/admin/dashboard"}>
-        <FaArrowLeft /> Voltar ao Painel
+        ‹
       </BackLink>
       <HeaderContainer>
         <Title><FaBell /> Minhas Notificações</Title>

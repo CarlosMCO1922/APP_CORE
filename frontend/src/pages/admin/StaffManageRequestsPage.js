@@ -366,7 +366,7 @@ const StaffManageRequestsPage = () => {
         <Subtitle>Analise e responda aos pedidos pendentes dos clientes.</Subtitle>
       </HeaderSection>
       <BackLink to="/admin/dashboard">
-        ‹ Voltar ao Painel Staff
+        ‹
       </BackLink>
 
       {pageError && <ErrorText>{pageError}</ErrorText>}
