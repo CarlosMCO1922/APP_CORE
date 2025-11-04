@@ -64,6 +64,11 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'appointments',
     timestamps: true,
+    indexes: [
+      { fields: ['staffId', 'date'] },
+      { fields: ['userId', 'date'] },
+      { fields: ['status'] },
+    ],
   });
 
   Appointment.associate = (models) => {

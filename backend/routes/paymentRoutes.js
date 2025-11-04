@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddleware');
+const { validate } = require('../middleware/validate');
+const { adminCreatePaymentSchema, paymentStatusSchema, paymentIdParams } = require('../validation/schemas');
 
 // --- Rotas do Administrador (Staff com role 'admin') ---
 // Criar um novo pagamento para um utilizador
@@ -10,6 +12,7 @@ router.post(
     '/',
     protect,
     isAdminStaff,
+    validate(adminCreatePaymentSchema),
     paymentController.adminCreatePayment
 );
 
@@ -34,6 +37,7 @@ router.patch(
     '/:paymentId/status',
     protect,
     isAdminStaff,
+    validate(paymentStatusSchema),
     paymentController.adminUpdatePaymentStatus
 );
 
@@ -75,6 +79,7 @@ router.post(
     '/:paymentId/create-stripe-intent',
     protect,
     isClientUser,
+    validate(paymentIdParams, 'params'),
     paymentController.createStripePaymentIntent
 );
 

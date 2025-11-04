@@ -57,6 +57,13 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'payments',
     timestamps: true,
+    indexes: [
+      { fields: ['userId'] },
+      { fields: ['status'] },
+      { fields: ['referenceMonth'] },
+      { fields: ['paymentDate'] },
+      { fields: ['relatedResourceType', 'relatedResourceId'] },
+    ],
   });
 
   Payment.associate = (models) => {

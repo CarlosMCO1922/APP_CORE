@@ -1,6 +1,7 @@
 // backend/middleware/errorHandler.js
+const logger = require('../utils/logger');
 const errorHandler = (err, req, res, next) => {
-  console.error("ERRO NÃO TRATADO:", err.stack || err);
+  logger.error("ERRO NÃO TRATADO:", err.stack || err);
 
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode; 
   res.status(statusCode);

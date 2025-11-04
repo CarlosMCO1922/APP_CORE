@@ -6,6 +6,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 require('dotenv').config();
+const logger = require('./utils/logger');
 const allowedOrigins = (process.env.CORS_ORIGINS || 'https://app-core-frontend-wdvl.onrender.com,http://localhost:3000').split(',').map(o => o.trim());
 app.use(cors({
   origin: (origin, callback) => {
@@ -57,20 +58,20 @@ app.use(errorHandler);
 
 db.sequelize.sync({ alter: true})
   .then(() => {
-    console.log('Base de dados sincronizada com sucesso.');
+    logger.info('Base de dados sincronizada com sucesso.');
   })
   .catch(err => {
-    console.error('Erro ao sincronizar a base de dados:', err);
+    logger.error('Erro ao sincronizar a base de dados:', err);
   });
 
 db.sequelize.authenticate()
   .then(() => {
-    console.log('Conexão com a base de dados estabelecida com sucesso.');
+    logger.info('Conexão com a base de dados estabelecida com sucesso.');
   })
   .catch(err => {
-    console.error('Não foi possível conectar à base de dados:', err);
+    logger.error('Não foi possível conectar à base de dados:', err);
   });
 
 app.listen(port, () => {
-  console.log(`Servidor a correr na porta ${port}`);
+  logger.info(`Servidor a correr na porta ${port}`);
 });

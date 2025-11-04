@@ -2,13 +2,14 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const { validate } = require('../middleware/validate');
+const { registerUserSchema, loginSchema, staffRegisterSchema } = require('../validation/schemas');
 
+router.post('/register', validate(registerUserSchema), authController.registerUser); 
+router.post('/login', validate(loginSchema), authController.loginUser);       
 
-router.post('/register', authController.registerUser); 
-router.post('/login', authController.loginUser);       
-
-router.post('/staff/register', authController.registerStaff); 
-router.post('/staff/login', authController.loginStaff);    
+router.post('/staff/register', validate(staffRegisterSchema), authController.registerStaff); 
+router.post('/staff/login', validate(loginSchema), authController.loginStaff);    
 
 router.post('/request-password-reset', authController.requestPasswordReset);
 router.post('/verify-reset-code', authController.verifyResetCode);
