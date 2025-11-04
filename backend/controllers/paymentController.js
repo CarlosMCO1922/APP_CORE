@@ -274,7 +274,7 @@ const createStripePaymentIntent = async (req, res) => {
     });
     // ***** FIM DA ALTERAÇÃO PARA MULTIBANCO *****
 
-    console.log(`[CREATE INTENT] PaymentIntent criado para Pag.ID ${payment.id}: PI_ID=${paymentIntent.id}, ClientSecret=${paymentIntent.client_secret.substring(0,20)}... Métodos: ${paymentIntent.payment_method_types.join(', ')}`);
+console.log(`[CREATE INTENT] PaymentIntent criado para Pag.ID ${payment.id}: PI_ID=${paymentIntent.id}, Métodos: ${paymentIntent.payment_method_types.join(', ')}`);
 
     res.send({
       clientSecret: paymentIntent.client_secret,
@@ -324,9 +324,6 @@ const stripeWebhookHandler = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  console.log('[WEBHOOK CTRL] Secret do Ambiente (primeiros 5):', webhookSecret ? webhookSecret.substring(0, 5) + '...' : 'NÃO DEFINIDO');
-  console.log('[WEBHOOK CTRL] Assinatura Recebida (primeiros 10):', sig ? sig.substring(0, 10) + '...' : 'NÃO RECEBIDA');
-
   if (!webhookSecret) {
     console.error('[WEBHOOK CTRL] ERRO CRÍTICO: STRIPE_WEBHOOK_SECRET não está configurado no ambiente do servidor.');
     return res.status(400).send('Webhook secret não configurado no servidor.');
@@ -339,16 +336,14 @@ const stripeWebhookHandler = async (req, res) => {
   let event;
 
   try {
-    console.log('[WEBHOOK CTRL] A tentar construir evento Stripe a partir do corpo RAW...');
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     console.log('[WEBHOOK CTRL] Evento Stripe construído com SUCESSO. Tipo:', event.type, 'ID:', event.id);
   } catch (err) {
     console.error(`[WEBHOOK CTRL] ⚠️ FALHA na verificação da assinatura do webhook: ${err.message}`);
-    console.error('[WEBHOOK CTRL] Detalhes do erro de assinatura:', err);
     return res.status(400).send(`Webhook Error (Signature Verification Failed): ${err.message}`);
   }
 
-  console.log(`[WEBHOOK CTRL] A processar evento: ID=<span class="math-inline">\{event\.id\}, Tipo\=</span>{event.type}`);
+  console.log(`[WEBHOOK CTRL] A processar evento: ID=${event.id}, Tipo=${event.type}`);
   switch (event.type) {
     case 'payment_intent.succeeded':
       const paymentIntentSucceeded = event.data.object;
@@ -364,7 +359,7 @@ const stripeWebhookHandler = async (req, res) => {
 
           if (payment) {
             console.log(`[WEBHOOK CTRL] Pagamento interno ID ${internalPaymentId} encontrado. Status atual: ${payment.status}`);
-            if (payment.status === 'pendente' || payment.status !== 'pago') {
+            if (payment.status !== 'pago') {
               payment.status = 'pago';
               await payment.save();
               console.log(`[WEBHOOK CTRL] Pagamento interno ID ${internalPaymentId} atualizado para 'pago' na BD.`);

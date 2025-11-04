@@ -21,7 +21,6 @@ import BookingServiceSelectionPage from './pages/BookingServiceSelectionPage';
 import BookingCalendarPage from './pages/BookingCalendarPage';
 import LiveWorkoutSessionPage from './pages/LiveWorkoutSessionPage';
 import WorkoutSummaryPage from './pages/WorkoutSummaryPage';
-import PersonalRecordsPage from './pages/PersonalRecordsPage';
 import GroupTrainingCalendarPage from './pages/GroupTrainingCalendarPage';
 import IndividualPTRequestPage from './pages/IndividualPTRequestPage';
 import ClientProgressOverviewPage from './pages/ClientProgressOverviewPage';
@@ -83,8 +82,8 @@ const ProtectedRoute = ({ allowedRoles }) => {
   if (!authState.isAuthenticated) return <Navigate to="/login" replace />;
   const currentRole = authState.role; 
 
-  if (allowedRoles && !currentRole) { 
-
+  if (allowedRoles && !currentRole) {
+    return <Navigate to="/login" replace />;
   } else if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
     if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(currentRole)) {
       return <Navigate to="/admin/dashboard" replace />;

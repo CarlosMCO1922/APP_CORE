@@ -6,11 +6,15 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 require('dotenv').config();
+const allowedOrigins = (process.env.CORS_ORIGINS || 'https://app-core-frontend-wdvl.onrender.com,http://localhost:3000').split(',').map(o => o.trim());
 app.use(cors({
-  origin: 'https://app-core-frontend-wdvl.onrender.com'
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'), false);
+  }
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // NÃO uses app.use(express.json()); globalmente ANTES da rota do webhook
 // Vamos aplicar express.json() e express.raw() de forma mais granular ou após a rota do webhook
@@ -41,9 +45,9 @@ app.use('/staff', express.json(), staffRoutes);
 app.use('/payments', paymentRoutes); 
 app.use('/exercises', express.json(), exerciseRoutes);
 app.use('/workout-plans', express.json(), workoutPlanRoutes);
-app.use('/notifications', notificationRoutes);
+app.use('/notifications', express.json(), notificationRoutes);
 app.use('/progress', express.json(), progressRoutes);
-app.use('/training-series', trainingSeriesRoutes);
+app.use('/training-series', express.json(), trainingSeriesRoutes);
 
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---

@@ -16,9 +16,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { CustomThemeProvider } from './context/ThemeContext';
 import { WorkoutProvider } from './context/WorkoutContext';
 
-console.log('CHAVE STRIPE A SER USADA NO INDEX.JS:', process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
-console.log('Resultado do loadStripe (index.js):', stripePromise); 
 
 const GlobalStyle = createGlobalStyle`
   :root {
