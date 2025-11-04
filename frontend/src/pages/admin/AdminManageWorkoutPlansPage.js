@@ -37,6 +37,17 @@ const TrainingInfo = styled.p`
   margin-bottom: 20px;
 `;
 
+const BackLink = styled(Link)`
+  display: inline-block;
+  margin-bottom: 20px;
+  color: ${({ theme }) => theme.colors.primary};
+  text-decoration: none;
+  font-size: 0.95rem;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: ${({ theme }) => theme.colors.primary};`;
 const ErrorText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: ${({ theme }) => theme.colors.error}; background-color: ${({ theme }) => theme.colors.errorBg}; border: 1px solid ${({ theme }) => theme.colors.error}; border-radius: 8px; margin: 15px auto; max-width: 700px;`;
 const MessageText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: ${({ theme }) => theme.colors.success}; background-color: ${({ theme }) => theme.colors.successBg}; border: 1px solid ${({ theme }) => theme.colors.success}; border-radius: 8px; margin: 15px auto; max-width: 700px;`;
