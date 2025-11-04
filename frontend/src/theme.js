@@ -56,7 +56,7 @@ export const darkTheme = {
     cardBackgroundDarker: '#2C2C2C',
     successDark: '#388E3C',
   },
-  boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
+  boxShadow: 'none',
 };
 
 // Novo Tema Claro
@@ -107,5 +107,5 @@ export const lightTheme = {
     cardBackgroundDarker: '#f5ebcc',
     successDark: '#2e7d32',
   },
-  boxShadow: '0 4px 12px rgba(252, 181, 53, 1)',
+  boxShadow: 'none',
 };
