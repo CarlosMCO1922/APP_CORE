@@ -4,12 +4,18 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  // Hydrate de forma síncrona para evitar flicker e redireções erradas
+  const initialToken = localStorage.getItem('userToken') || null;
+  const initialUser = (() => { try { return JSON.parse(localStorage.getItem('userData')); } catch { return null; } })() || null;
+  const initialRole = initialUser ? (initialUser.role ? initialUser.role : 'user') : null;
+  const initialIsAdminFeatureUser = initialUser ? (initialUser.isAdmin || initialRole === 'admin') : false;
+
   const [authState, setAuthState] = useState({
-    token: localStorage.getItem('userToken') || null,
-    user: JSON.parse(localStorage.getItem('userData')) || null,
-    isAuthenticated: !!localStorage.getItem('userToken'),
-    role: null, 
-    isAdminFeatureUser: false,
+    token: initialToken,
+    user: initialUser,
+    isAuthenticated: !!initialToken,
+    role: initialRole,
+    isAdminFeatureUser: initialIsAdminFeatureUser,
   });
 
   useEffect(() => {
@@ -17,14 +23,8 @@ export const AuthProvider = ({ children }) => {
     const userData = localStorage.getItem('userData');
     if (token && userData) {
       const parsedUserData = JSON.parse(userData);
-      let role = null;
-      let isAdminUserField = false;
-      if (parsedUserData.role) { 
-        role = parsedUserData.role;
-      } else { 
-        role = 'user';
-      }
-      isAdminUserField = parsedUserData.isAdmin || false;
+      const role = parsedUserData.role ? parsedUserData.role : 'user';
+      const isAdminUserField = parsedUserData.isAdmin || false;
 
       setAuthState({
         token: token,

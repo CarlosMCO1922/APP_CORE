@@ -28,13 +28,13 @@ const ToggleContainer = styled.button`
     
     // Estilo para o ícone do sol
     &:first-child {
-      transform: ${({ lightTheme }) => lightTheme ? 'translateY(0)' : 'translateY(100px)'};
+      transform: ${({ $light }) => $light ? 'translateY(0)' : 'translateY(100px)'};
       color: #f39c12; // Cor do sol
     }
     
     // Estilo para o ícone da lua
     &:nth-child(2) {
-      transform: ${({ lightTheme }) => lightTheme ? 'translateY(-100px)' : 'translateY(0)'};
+      transform: ${({ $light }) => $light ? 'translateY(-100px)' : 'translateY(0)'};
       color: #f1c40f; // Cor da lua
     }
   }
@@ -45,7 +45,7 @@ const ThemeToggler = () => {
   const isLight = theme === 'light';
 
   return (
-    <ToggleContainer lightTheme={isLight} onClick={toggleTheme}>
+    <ToggleContainer $light={isLight} onClick={toggleTheme}>
       <FaSun />
       <FaMoon />
     </ToggleContainer>

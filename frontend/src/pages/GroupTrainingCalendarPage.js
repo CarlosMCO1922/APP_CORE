@@ -65,6 +65,10 @@ const TimeSlotButton = styled.button`
   &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.textDark}; border-color: ${({ theme }) => theme.colors.primary}; transform: translateY(-2px); }
 `;
 const LoadingText = styled.p`text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.primary};`;
+const SkeletonList = styled.div`
+  display: flex; flex-direction: column; gap: 12px; padding: 10px 0;
+  .row { height: 52px; background: #444; border-radius: 8px; opacity: .25; animation: pulse 1.2s ease-in-out infinite; }
+`;
 const ErrorText = styled.p`text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.error};`;
 const NoSlotsText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.textMuted}; padding: 20px 0;`;
 
@@ -182,7 +186,15 @@ const GroupTrainingCalendarPage = () => {
             <FaRegCalendarCheck style={{marginRight: '10px'}} /> 
             <span>{moment(selectedDate).format('dddd, D [de] MMMM')}</span>
           </TimeSlotsHeader>
-          {loading ? <LoadingText>A carregar aulas...</LoadingText> : (
+          {loading ? (
+            <>
+              <LoadingText>A carregar aulas...</LoadingText>
+              <SkeletonList>
+                {Array.from({length:4}).map((_,i)=>(<div className="row" key={i} />))}
+              </SkeletonList>
+              <style>{`@keyframes pulse { 0%{opacity:.2} 50%{opacity:.5} 100%{opacity:.2} }`}</style>
+            </>
+          ) : (
             trainingsForSelectedDay.length > 0 ? (
               <TrainingList>
                 {trainingsForSelectedDay.map(training => {

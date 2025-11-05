@@ -1,49 +1,53 @@
 // src/App.js
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import React, { useEffect, Suspense, lazy } from 'react';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useWorkout } from './context/WorkoutContext';
 import styled from 'styled-components';
 
-// Componentes de Página 
-import LoginPage from './pages/LoginPage';
-import StaffLoginPage from './pages/StaffLoginPage';
-import DashboardPage from './pages/DashboardPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import RegisterPage from './pages/RegisterPage';
-import CalendarPage from './pages/CalendarPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import SettingsPage from './pages/SettingsPage';
-import MyPaymentsPage from './pages/MyPaymentsPage';
-import NotificationsPage from './pages/NotificationsPage';
-import ExploreWorkoutPlansPage from './pages/ExploreWorkoutPlansPage';
-import BookingServiceSelectionPage from './pages/BookingServiceSelectionPage';
-import BookingCalendarPage from './pages/BookingCalendarPage';
-import LiveWorkoutSessionPage from './pages/LiveWorkoutSessionPage';
-import WorkoutSummaryPage from './pages/WorkoutSummaryPage';
-import GroupTrainingCalendarPage from './pages/GroupTrainingCalendarPage';
-import IndividualPTRequestPage from './pages/IndividualPTRequestPage';
-import ClientProgressOverviewPage from './pages/ClientProgressOverviewPage';
-import WorkoutPlanSummaryPage from './pages/WorkoutPlanSummaryPage';
+// Code-splitting for pages (melhora UX e reduz bundle inicial)
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const StaffLoginPage = lazy(() => import('./pages/StaffLoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const MyPaymentsPage = lazy(() => import('./pages/MyPaymentsPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const ExploreWorkoutPlansPage = lazy(() => import('./pages/ExploreWorkoutPlansPage'));
+const BookingServiceSelectionPage = lazy(() => import('./pages/BookingServiceSelectionPage'));
+const BookingCalendarPage = lazy(() => import('./pages/BookingCalendarPage'));
+const LiveWorkoutSessionPage = lazy(() => import('./pages/LiveWorkoutSessionPage'));
+const WorkoutSummaryPage = lazy(() => import('./pages/WorkoutSummaryPage'));
+const GroupTrainingCalendarPage = lazy(() => import('./pages/GroupTrainingCalendarPage'));
+const IndividualPTRequestPage = lazy(() => import('./pages/IndividualPTRequestPage'));
+const ClientProgressOverviewPage = lazy(() => import('./pages/ClientProgressOverviewPage'));
+const WorkoutPlanSummaryPage = lazy(() => import('./pages/WorkoutPlanSummaryPage'));
 
-import AdminManageUsersPage from './pages/admin/AdminManageUsersPage';
-import AdminUserDetailsPage from './pages/admin/AdminUserDetailsPage';
-import AdminManageStaffPage from './pages/admin/AdminManageStaffPage';
-import AdminManageTrainingsPage from './pages/admin/AdminManageTrainingsPage';
-import AdminManageAppointmentsPage from './pages/admin/AdminManageAppointmentsPage';
-import AdminManagePaymentsPage from './pages/admin/AdminManagePaymentsPage';
-import StaffManageRequestsPage from './pages/admin/StaffManageRequestsPage';
-import AdminManageWorkoutPlansPage from './pages/admin/AdminManageWorkoutPlansPage';
-import AdminManageExercisesPage from './pages/admin/AdminManageExercisesPage';
-import ClientTrainingPlanPage from './pages/ClientTrainingPlanPage';
-import ClientProgressPage from './pages/ClientProgressPage';
-import AdminTrainingSeriesPage from './pages/admin/AdminTrainingSeriesPage';
-import AdminManageGlobalWorkoutPlansPage from './pages/admin/AdminManageGlobalWorkoutPlansPage';
-import AdminClientProgressDetailPage from './pages/admin/AdminClientProgressDetailPage';
-import AdminClientSelectionPage from './pages/admin/AdminClientSelectionPage';
+const AdminManageUsersPage = lazy(() => import('./pages/admin/AdminManageUsersPage'));
+const AdminUserDetailsPage = lazy(() => import('./pages/admin/AdminUserDetailsPage'));
+const AdminManageStaffPage = lazy(() => import('./pages/admin/AdminManageStaffPage'));
+const AdminManageTrainingsPage = lazy(() => import('./pages/admin/AdminManageTrainingsPage'));
+const AdminManageAppointmentsPage = lazy(() => import('./pages/admin/AdminManageAppointmentsPage'));
+const AdminManagePaymentsPage = lazy(() => import('./pages/admin/AdminManagePaymentsPage'));
+const StaffManageRequestsPage = lazy(() => import('./pages/admin/StaffManageRequestsPage'));
+const AdminManageWorkoutPlansPage = lazy(() => import('./pages/admin/AdminManageWorkoutPlansPage'));
+const AdminManageExercisesPage = lazy(() => import('./pages/admin/AdminManageExercisesPage'));
+const ClientTrainingPlanPage = lazy(() => import('./pages/ClientTrainingPlanPage'));
+const ClientProgressPage = lazy(() => import('./pages/ClientProgressPage'));
+const AdminTrainingSeriesPage = lazy(() => import('./pages/admin/AdminTrainingSeriesPage'));
+const AdminManageGlobalWorkoutPlansPage = lazy(() => import('./pages/admin/AdminManageGlobalWorkoutPlansPage'));
+const AdminClientProgressDetailPage = lazy(() => import('./pages/admin/AdminClientProgressDetailPage'));
+const AdminClientSelectionPage = lazy(() => import('./pages/admin/AdminClientSelectionPage'));
 
 // Componente de Layout
 import Navbar from './components/Layout/Navbar';
+
+const Fallback = styled.div`
+  padding: 24px; text-align: center; opacity: 0.8;
+`;
 
 const MinimizedBar = styled.div`
   position: fixed;
@@ -106,7 +110,8 @@ function App() {
     <>
       {authState.isAuthenticated && <Navbar />}
       <div className="main-content-area"> 
-        <Routes>
+        <Suspense fallback={<Fallback>A carregar…</Fallback>}>
+          <Routes>
           <Route path="/login" element={ !authState.isAuthenticated ? <LoginPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)}/>
           <Route path="/register" element={ !authState.isAuthenticated ? <RegisterPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)}/>
           <Route path='/login-staff' element={ !authState.isAuthenticated ? <StaffLoginPage/> : <Navigate to="/admin/dashboard" replace/>}/>
@@ -159,10 +164,13 @@ function App() {
                 : <Navigate to="/login" replace />
             }
           />
-        </Routes>
+          </Routes>
+        </Suspense>
       </div>
       {activeWorkout && !isMinimized && (
-        <LiveWorkoutSessionPage />
+        <Suspense fallback={null}>
+          <LiveWorkoutSessionPage />
+        </Suspense>
       )}
       
       {activeWorkout && isMinimized && (

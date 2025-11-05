@@ -1,6 +1,7 @@
 // src/context/NotificationContext.js
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext'; 
+import { useToast } from '../components/Toast/ToastProvider';
 import {
   getMyNotificationsService,
   markNotificationAsReadService,
@@ -13,6 +14,7 @@ export const useNotifications = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }) => {
   const { authState } = useAuth();
+  const { addToast } = useToast();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [totalNotifications, setTotalNotifications] = useState(0);
@@ -30,7 +32,12 @@ export const NotificationProvider = ({ children }) => {
       if (page === 1) {
         setNotifications(data.notifications);
       } else {
-        setNotifications(data.notifications);
+        setNotifications(prev => {
+          const existingIds = new Set(prev.map(n => n.id));
+          const merged = [...prev];
+          data.notifications.forEach(n => { if (!existingIds.has(n.id)) merged.push(n); });
+          return merged;
+        });
       }
       setUnreadCount(data.unreadCount);
       setTotalNotifications(data.totalNotifications);
@@ -39,10 +46,11 @@ export const NotificationProvider = ({ children }) => {
     } catch (err) {
       setError(err.message || 'Falha ao buscar notificações.');
       console.error("NotificationContext fetchNotifications error:", err);
+      addToast('Falha ao carregar notificações.', { type: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }, [authState.token]);
+  }, [authState.token, addToast]);
 
   useEffect(() => {
     if (authState.isAuthenticated) {
@@ -80,9 +88,11 @@ export const NotificationProvider = ({ children }) => {
         prevNotifications.map(notif => ({ ...notif, isRead: true }))
       );
       setUnreadCount(0);
+      addToast('Todas as notificações foram marcadas como lidas.', { type: 'success' });
       fetchNotifications(1, 10, 'unread');
     } catch (err) {
       console.error("Erro ao marcar todas as notificações como lidas:", err);
+      addToast('Falha ao marcar todas como lidas.', { type: 'error' });
     }
   };
 
@@ -97,7 +107,11 @@ export const NotificationProvider = ({ children }) => {
     fetchNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
-    refreshNotifications: () => fetchNotifications(1, 10, 'unread') 
+    hasUnread: unreadCount > 0,
+    refreshNotifications: () => fetchNotifications(1, 10, 'unread'),
+    loadMore: () => {
+      if (!isLoading && currentPage < totalPages) return fetchNotifications(currentPage + 1, 10, 'unread');
+    }
   };
 
   return (

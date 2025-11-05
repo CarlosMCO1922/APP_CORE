@@ -114,7 +114,7 @@ const DropdownButton = styled.button`
 `;
 
 const DropdownContent = styled.div`
-  display: ${props => (props.isOpen ? 'block' : 'none')};
+  display: ${props => (props.$isOpen ? 'block' : 'none')};
   position: absolute;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   min-width: 240px;
@@ -164,7 +164,7 @@ const MobileMenuOverlay = styled.div`
   bottom: 0;
   padding: 1rem 0; 
   z-index: 999;
-  transform: ${props => props.isOpen ? 'translateX(0)' : 'translateX(-100%)'};
+  transform: ${props => props.$isOpen ? 'translateX(0)' : 'translateX(-100%)'};
   transition: transform 0.3s ease-in-out;
   
   ${NavLinkStyled}, ${DropdownButton}, ${LogoutButton} { width: calc(100% - 2rem); margin: 0.5rem 1rem; padding: 1rem; text-align: left; border-radius: 0; }
@@ -198,6 +198,25 @@ const UnreadBadge = styled.span`
 const NotificationsDropdownContent = styled(DropdownContent)`
   width: 320px;
 `;
+
+const DropdownFooter = styled.div`
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index: 1100;
+`;
+const ModalContentBox = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground}; color: ${({ theme }) => theme.colors.textMain};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder}; border-radius: 8px; padding: 18px; width: 90%; max-width: 480px;
+`;
+const ModalTitle = styled.h3`
+  margin: 0 0 10px 0; color: ${({ theme }) => theme.colors.primary};
+`;
+const ModalActions = styled.div`
+  display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;
+`;
 const NotificationHeader = styled.div`
   padding: 10px 15px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   display: flex; justify-content: space-between; align-items: center;
@@ -214,11 +233,18 @@ const NotificationList = styled.ul`
 `;
 const NotificationItemStyled = styled.div`
   padding: 12px 15px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  cursor: pointer; background-color: ${props => props.isRead ? 'transparent' : props.theme.colors.buttonSecondaryBg};
-  p { margin: 0 0 5px 0; font-size: 0.85rem; line-height: 1.4; white-space: normal; }
-  small { font-size: 0.75rem; color: ${({ theme }) => theme.colors.textMuted}; }
+  cursor: pointer; background-color: ${props => props.$isRead ? 'transparent' : props.theme.colors.buttonSecondaryBg};
+  p { margin: 0 0 5px 0; font-size: 0.85rem; line-height: 1.4; white-space: normal; display: flex; align-items: center; gap: 6px; }
+  small { font-size: 0.75rem; color: ${({ theme }) => theme.colors.textMuted}; display: flex; align-items: center; gap: 6px; }
   &:last-child { border-bottom: none; }
   &:hover { background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; }
+`;
+
+const ChipSmall = styled.span`
+  display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 6px; font-size: 0.65rem; font-weight: 600;
+  background: ${({ theme, $variant }) => $variant === 'new' ? (theme.colors.successBg) : $variant === 'payment' ? 'rgba(212, 175, 55, 0.15)' : theme.colors.buttonSecondaryBg};
+  color: ${({ theme, $variant }) => $variant === 'new' ? theme.colors.success : $variant === 'payment' ? '#D4AF37' : theme.colors.primary};
+  border: 1px solid ${({ theme, $variant }) => $variant === 'new' ? theme.colors.success : $variant === 'payment' ? '#D4AF37' : theme.colors.primary};
 `;
 const ViewAllNotificationsLink = styled(Link)`
   display: block; text-align: center; padding: 10px; font-size: 0.85rem;
@@ -230,11 +256,13 @@ const ViewAllNotificationsLink = styled(Link)`
 function Navbar() {
   const theme = useTheme();
   const { authState, logout } = useAuth();
-  const { notifications, unreadCount, markNotificationAsRead, markAllNotificationsAsRead, totalNotifications } = useNotifications();
+  const { notifications, unreadCount, markNotificationAsRead, markAllNotificationsAsRead, totalNotifications, currentPage, totalPages, loadMore } = useNotifications();
   const navigate = useNavigate();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null); 
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState(null);
 
 
   const handleDropdownToggle = (dropdownName) => {
@@ -255,8 +283,8 @@ function Navbar() {
   
   const handleNotificationClick = (notification) => {
     if (!notification.isRead) markNotificationAsRead(notification.id);
-    if (notification.link) navigate(notification.link);
-    closeAllMenus();
+    setSelectedNotif(notification);
+    setShowNotifModal(true);
   };
 
   if (!authState.isAuthenticated) return null;
@@ -271,7 +299,7 @@ function Navbar() {
         <DropdownButton onClick={() => handleDropdownToggle('client')} className={openDropdown === 'client' ? 'active' : ''}>
           <FaUserCircle /> Minha área {openDropdown === 'client' ? '▴' : '▾'}
         </DropdownButton>
-        <DropdownContent isOpen={openDropdown === 'client'}>
+        <DropdownContent $isOpen={openDropdown === 'client'}>
            <DropdownLink to="/meus-treinos" onClick={() => setTimeout(closeAllMenus, 150)}><FaDumbbell />Treinos</DropdownLink>
           <DropdownLink to="/meu-progresso-detalhado" onClick={() => setTimeout(closeAllMenus, 150)}><FaChartLine /> Progresso</DropdownLink>
           <DropdownLink to="/meus-pagamentos" onClick={() => setTimeout(closeAllMenus, 150)}><FaMoneyBillWave />Pagamentos</DropdownLink>
@@ -295,7 +323,7 @@ function Navbar() {
       <DropdownButton onClick={() => handleDropdownToggle('admin')} className={openDropdown === 'admin' ? 'active' : ''}>
         <FaCog /> Gestão {openDropdown === 'admin' ? '▴' : '▾'}
       </DropdownButton>
-      <DropdownContent isOpen={openDropdown === 'admin'}>
+      <DropdownContent $isOpen={openDropdown === 'admin'}>
        <DropdownLink to="/admin/manage-users" onClick={() => setTimeout(closeAllMenus, 150)}><FaUsers /> Clientes</DropdownLink>
         <DropdownLink to="/admin/progresso-clientes" onClick={() => setTimeout(closeAllMenus, 150)}><FaChartLine /> Progresso Clientes</DropdownLink>
         <DropdownLink to="/admin/manage-staff" onClick={() => setTimeout(closeAllMenus, 150)}><FaUserTie /> Equipa</DropdownLink>
@@ -327,20 +355,35 @@ function Navbar() {
               <BellIcon />
               {unreadCount > 0 && <UnreadBadge>{unreadCount}</UnreadBadge>}
             </DropdownButton>
-            <NotificationsDropdownContent isOpen={openDropdown === 'notifications'}>
+            <NotificationsDropdownContent $isOpen={openDropdown === 'notifications'}>
                 <NotificationHeader>
                     <h4>Notificações</h4>
                     {unreadCount > 0 && <MarkAllReadButton onClick={markAllNotificationsAsRead}>Marcar todas como lidas</MarkAllReadButton>}
                 </NotificationHeader>
                 <NotificationList>
-                    {notifications.length > 0 ? notifications.slice(0, 5).map(notif => (
-                        <NotificationItemStyled key={notif.id} isRead={notif.isRead} onClick={() => handleNotificationClick(notif)}>
-                            <p>{notif.message}</p>
-                            <small>{moment(notif.createdAt).fromNow()}</small>
+                    {notifications.length > 0 ? notifications.map(notif => (
+                        <NotificationItemStyled key={notif.id} $isRead={notif.isRead} onClick={() => handleNotificationClick(notif)}>
+                            <p>
+                              {!notif.isRead && <ChipSmall $variant="new">nova</ChipSmall>}
+                              {notif.message}
+                            </p>
+                            <small>
+                              {moment(notif.createdAt).fromNow()}
+                              {notif.type && (
+                                <ChipSmall $variant={(notif.type || '').includes('PAY') ? 'payment' : 'calendar'}>
+                                  {notif.type.replace(/_/g, ' ').toLowerCase()}
+                                </ChipSmall>
+                              )}
+                            </small>
                         </NotificationItemStyled>
                     )) : <p style={{padding: '15px', textAlign: 'center', fontSize: '0.85rem'}}>Sem notificações.</p>}
                 </NotificationList>
-                <ViewAllNotificationsLink to="/notificacoes" onClick={closeAllMenus}>Ver todas ({totalNotifications})</ViewAllNotificationsLink>
+                <DropdownFooter>
+                  <ViewAllNotificationsLink to="/notificacoes" onClick={closeAllMenus}>Ver todas ({totalNotifications})</ViewAllNotificationsLink>
+                  {currentPage < totalPages && (
+                    <MarkAllReadButton onClick={() => loadMore()}>Carregar mais</MarkAllReadButton>
+                  )}
+                </DropdownFooter>
             </NotificationsDropdownContent>
           </NavItem>
           <NavItem><LogoutButton onClick={handleLogout}><FaSignOutAlt /> Sair</LogoutButton></NavItem>
@@ -349,7 +392,7 @@ function Navbar() {
           {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
         </HamburgerIcon>
       </Nav>
-      <MobileMenuOverlay isOpen={isMobileMenuOpen}>
+      <MobileMenuOverlay $isOpen={isMobileMenuOpen}>
           {role === 'user' && clientLinks}
           {role !== 'user' && role !== 'admin' && staffLinks}
           {role === 'admin' && <>{staffLinks}{adminManagementDropdown}</>}
@@ -364,6 +407,29 @@ function Navbar() {
           </NavItem>
           <LogoutButton onClick={handleLogout} style={{ justifyContent: 'center', margin: '1rem' }}>Sair</LogoutButton>
       </MobileMenuOverlay>
+
+      {showNotifModal && selectedNotif && (
+        <ModalOverlay onClick={() => setShowNotifModal(false)}>
+          <ModalContentBox onClick={e => e.stopPropagation()}>
+            <ModalTitle>Notificação</ModalTitle>
+            <p style={{marginTop:0}}>{selectedNotif.message}</p>
+            <small style={{color: theme.colors.textMuted}}>{moment(selectedNotif.createdAt).fromNow()}</small>
+            {selectedNotif.relatedResourceType && (
+              <p style={{marginTop:8, fontSize: '0.9rem', color: theme.colors.textMuted}}>
+                Recurso: {selectedNotif.relatedResourceType} {selectedNotif.relatedResourceId ? `#${selectedNotif.relatedResourceId}` : ''}
+              </p>
+            )}
+            <ModalActions>
+              <LogoutButton onClick={() => setShowNotifModal(false)}>Fechar</LogoutButton>
+              {selectedNotif.link && (
+                <LogoutButton onClick={() => { navigate(selectedNotif.link); setShowNotifModal(false); closeAllMenus(); }}>
+                  Abrir
+                </LogoutButton>
+              )}
+            </ModalActions>
+          </ModalContentBox>
+        </ModalOverlay>
+      )}
     </>
   );
 }

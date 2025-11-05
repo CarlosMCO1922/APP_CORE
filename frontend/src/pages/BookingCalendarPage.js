@@ -9,6 +9,7 @@ import { getAllStaffForSelection } from '../services/staffService';
 import { FaArrowLeft, FaRegCalendarCheck, FaClock, FaUserMd } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
+import { useToast } from '../components/Toast/ToastProvider';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -83,6 +84,7 @@ const BookingCalendarPage = () => {
   const [loading, setLoading] = useState(true);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState('');
+  const { addToast } = useToast();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -112,13 +114,17 @@ const BookingCalendarPage = () => {
         date: moment(selectedDate).format('YYYY-MM-DD'),
         durationMinutes: 60,
       };
-      getAvailableSlotsForProfessional(params, authState.token)
-        .then(slots => setAvailableSlots(slots))
-        .catch(err => {
+      const t = setTimeout(() => {
+        getAvailableSlotsForProfessional(params, authState.token)
+          .then(slots => setAvailableSlots(slots))
+          .catch(err => {
             console.error(err);
             setError("Não foi possível carregar os horários para este dia.");
+addToast('Falha ao carregar horários.', { type: 'error', category: 'calendar' });
         })
         .finally(() => setSlotsLoading(false));
+      }, 300);
+      return () => clearTimeout(t);
     }
   }, [serviceType, selectedProfessional, selectedDate, authState.token]);
 
@@ -134,10 +140,10 @@ const BookingCalendarPage = () => {
 
     try {
       await clientRequestNewAppointment(requestData, authState.token);
-      alert('Pedido de consulta enviado com sucesso! Serás notificado quando for aceite.');
+addToast('Pedido de consulta enviado com sucesso!', { type: 'success', category: 'calendar' });
       navigate('/dashboard');
     } catch (err) {
-      alert(`Erro ao enviar pedido: ${err.message}`);
+addToast('Erro ao enviar pedido de consulta.', { type: 'error', category: 'calendar' });
     }
   };
 

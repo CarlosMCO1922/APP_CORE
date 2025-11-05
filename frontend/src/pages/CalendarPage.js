@@ -10,6 +10,7 @@ import getDay from 'date-fns/getDay';
 import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import moment from 'moment';
+import { useToast } from '../components/Toast/ToastProvider';
 
 
 import { useAuth } from '../context/AuthContext';
@@ -545,6 +546,7 @@ const CalendarPage = () => {
   const theme = useTheme();
   const { authState } = useAuth();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [events, setEvents] = useState([]);
   const [myBookedTrainingIds, setMyBookedTrainingIds] = useState(new Set());
   const [myBookedAppointmentIds, setMyBookedAppointmentIds] = useState(new Set());
@@ -579,6 +581,7 @@ const CalendarPage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState(Views.WEEK);
+  const [agendaVisibleCount, setAgendaVisibleCount] = useState(25);
 
   const [adminTrainingFormData, setAdminTrainingFormData] = useState(initialAdminTrainingFormState);
   const [adminTrainingFormLoading, setAdminTrainingFormLoading] = useState(false);
@@ -668,6 +671,7 @@ const CalendarPage = () => {
     } catch (err) {
       setPageError(err.message || 'Não foi possível carregar os dados do calendário.');
       console.error("CalendarPage fetchData error:", err);
+addToast('Falha ao carregar dados do calendário.', { type: 'error', category: 'calendar' });
     }
     finally { setLoading(false); }
   }, [authState.token, authState.role, authState.user?.id, isAdminOrStaff, isClient]);
@@ -706,6 +710,7 @@ const CalendarPage = () => {
       handleCloseRequestModal();
     } catch (err) {
       setRequestFormError(err.message || 'Falha ao enviar pedido de consulta.');
+addToast('Falha ao enviar pedido de consulta.', { type: 'error', category: 'calendar' });
     } finally { setRequestFormLoading(false); }
   };
 
@@ -716,9 +721,11 @@ const CalendarPage = () => {
     try {
       await bookTrainingService(selectedEvent.id, authState.token);
       setPageSuccessMessage('Inscrição no treino realizada com sucesso!');
+addToast('Inscrição no treino realizada com sucesso!', { type: 'success', category: 'calendar' });
       await fetchPageData(); handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao inscrever no treino.');
+addToast('Falha ao inscrever no treino.', { type: 'error', category: 'calendar' });
     } finally { setActionLoading(false); }
   };
   const handleCancelTrainingBooking = async () => {
@@ -728,9 +735,11 @@ const CalendarPage = () => {
     try {
       await cancelTrainingBookingService(selectedEvent.id, authState.token);
       setPageSuccessMessage('Inscrição no treino cancelada com sucesso!');
+addToast('Inscrição cancelada.', { type: 'success', category: 'calendar' });
       await fetchPageData(); handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao cancelar inscrição.');
+addToast('Falha ao cancelar inscrição.', { type: 'error', category: 'calendar' });
     } finally { setActionLoading(false); }
   };
   const handleBookSelectedAppointment = async () => {
@@ -739,10 +748,12 @@ const CalendarPage = () => {
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
     try {
       await bookAppointmentService(selectedEvent.id, authState.token);
-      setPageSuccessMessage('Consulta marcada com sucesso!');
+      setPageSuccessMessage('Consulta marcado com sucesso!');
+addToast('Consulta marcada com sucesso!', { type: 'success', category: 'calendar' });
       await fetchPageData(); handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao marcar consulta.');
+addToast('Falha ao marcar consulta.', { type: 'error', category: 'calendar' });
     } finally { setActionLoading(false); }
   };
   const handleCancelAppointmentBooking = async () => {
@@ -752,9 +763,11 @@ const CalendarPage = () => {
     try {
       await cancelAppointmentBookingService(selectedEvent.id, authState.token);
       setPageSuccessMessage('Consulta cancelada com sucesso!');
+addToast('Consulta cancelada.', { type: 'success', category: 'calendar' });
       await fetchPageData(); handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao cancelar consulta.');
+addToast('Falha ao cancelar consulta.', { type: 'error', category: 'calendar' });
     } finally { setActionLoading(false); }
   };
   const handleAdminManageEvent = () => {
@@ -765,7 +778,7 @@ const CalendarPage = () => {
   };
 
   const handleNavigate = useCallback((newDate) => { setCurrentDate(newDate); }, []);
-  const handleViewChange = useCallback((newView) => { setCurrentView(newView); }, []);
+  const handleViewChange = useCallback((newView) => { setCurrentView(newView); if (newView === Views.AGENDA) setAgendaVisibleCount(25); }, []);
 
   const messages = useMemo(() => ({
     allDay: 'Todo o dia', previous: '‹', next: '›', today: 'Hoje',
@@ -884,6 +897,7 @@ const CalendarPage = () => {
                 handleCloseAdminCreateTrainingModal();
             } catch (err) {
                 setAdminTrainingModalError(err.message || 'Falha ao criar série de treinos.');
+addToast('Falha ao criar série de treinos.', { type: 'error', category: 'calendar' });
             } finally {
                 setAdminTrainingFormLoading(false);
             }
@@ -898,10 +912,12 @@ const CalendarPage = () => {
             try {
                 await adminCreateTraining(trainingPayload, authState.token);
                 setPageSuccessMessage('Novo treino criado com sucesso!');
+addToast('Treino criado com sucesso!', { type: 'success', category: 'calendar' });
                 fetchPageData();
                 handleCloseAdminCreateTrainingModal();
             } catch (err) {
                 setAdminTrainingModalError(err.message || 'Falha ao criar treino.');
+addToast('Falha ao criar treino.', { type: 'error', category: 'calendar' });
             } finally {
                 setAdminTrainingFormLoading(false);
             }
@@ -943,10 +959,12 @@ const CalendarPage = () => {
       try {
           await adminCreateAppointment(dataToSend, authState.token);
           setPageSuccessMessage('Nova consulta criada com sucesso a partir do calendário!');
+addToast('Consulta criada com sucesso!', { type: 'success', category: 'calendar' });
           fetchPageData();
           handleCloseAdminCreateAppointmentModal();
       } catch (err) {
           setAdminAppointmentModalError(err.message || 'Falha ao criar consulta.');
+addToast('Falha ao criar consulta.', { type: 'error', category: 'calendar' });
       } finally {
           setAdminAppointmentFormLoading(false);
       }
@@ -1015,17 +1033,34 @@ const handleCloseSubscribeSeriesModal = () => {
         authState.token
       );
       setPageSuccessMessage(result.message || "Inscrição na série realizada com sucesso! As suas aulas foram adicionadas ao calendário.");
+addToast('Inscrição na série realizada com sucesso!', { type: 'success', category: 'calendar' });
       fetchPageData(); 
       handleCloseSubscribeSeriesModal(); 
       handleCloseEventModal();      
     } catch (err) {
       setSeriesSubscriptionError(err.message || "Falha ao subscrever a série.");
+addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' });
     } finally {
       setIsSubscribingRecurring(false);
     }
   };
 
-  if (loading) return <PageContainer><LoadingText>A carregar calendário...</LoadingText></PageContainer>;
+  if (loading) return (
+    <PageContainer>
+      <LoadingText>A carregar calendário...</LoadingText>
+      <div style={{background: theme.colors.cardBackground, border: `1px solid ${theme.colors.cardBorder}`, borderRadius: 12, padding: 20}}>
+        <div style={{height: 24, width: 180, background: '#444', borderRadius: 6, opacity: .25, animation: 'pulse 1.2s ease-in-out infinite', marginBottom: 12}} />
+        {Array.from({length:7}).map((_,i)=>(
+          <div key={i} style={{display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap: 8, marginBottom: 8}}>
+            {Array.from({length:7}).map((__,j)=>(
+              <div key={j} style={{height: 60, background:'#444', borderRadius:8, opacity:.25, animation:'pulse 1.2s ease-in-out infinite'}} />
+            ))}
+          </div>
+        ))}
+      </div>
+      <style>{`@keyframes pulse { 0%{opacity:.2} 50%{opacity:.5} 100%{opacity:.2} }`}</style>
+    </PageContainer>
+  );
 
   return (
     <PageContainer>
@@ -1038,7 +1073,7 @@ const handleCloseSubscribeSeriesModal = () => {
       <CalendarWrapper>
         <Calendar
           localizer={localizer}
-          events={events}
+          events={currentView === Views.AGENDA ? [...events].sort((a,b)=>a.start-b.start).slice(0, agendaVisibleCount) : events}
           startAccessor="start"
           endAccessor="end"
           style={{ height: '100%' }}
@@ -1070,6 +1105,12 @@ const handleCloseSubscribeSeriesModal = () => {
           dayLayoutAlgorithm="no-overlap"
         />
       </CalendarWrapper>
+
+      {currentView === Views.AGENDA && events.length > agendaVisibleCount && (
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
+          <ActionButton onClick={() => setAgendaVisibleCount(c => c + 25)} primary>Mostrar mais</ActionButton>
+        </div>
+      )}
 
       {showEventModal && selectedEvent && (
         <ModalOverlay onClick={handleCloseEventModal}>

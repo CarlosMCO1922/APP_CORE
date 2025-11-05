@@ -10,6 +10,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 import { FaArrowLeft} from 'react-icons/fa';
+import { useToast } from '../components/Toast/ToastProvider';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -274,7 +275,9 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
 const MyPaymentsPage = () => {
   const { authState } = useAuth();
+  const { addToast } = useToast();
   const [payments, setPayments] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(20);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState('');
   const [pageSuccessMessage, setPageSuccessMessage] = useState('');
@@ -297,6 +300,7 @@ const MyPaymentsPage = () => {
         setPageError('');
       } catch (err) {
         setPageError(err.message || 'Não foi possível carregar os seus pagamentos.');
+addToast('Falha ao carregar pagamentos.', { type: 'error', category: 'payment' });
       } finally {
         if (showLoadingIndicator) setLoading(false);
       }
@@ -338,9 +342,11 @@ const MyPaymentsPage = () => {
         setShowStripeModal(true);
       } else {
         setPageError('Não foi possível iniciar o pagamento. Detalhes não recebidos do servidor.');
+addToast('Não foi possível iniciar o pagamento online.', { type: 'error', category: 'payment' });
       }
     } catch (err) {
       setPageError(err.message || 'Falha ao iniciar o processo de pagamento. Tente novamente.');
+addToast('Falha ao iniciar o pagamento.', { type: 'error', category: 'payment' });
     } finally {
       setActionLoading(null);
     }
@@ -359,9 +365,11 @@ const MyPaymentsPage = () => {
     try {
       await clientConfirmManualPayment(payment.id, authState.token);
       setPageSuccessMessage(`Pagamento ID ${payment.id} confirmado com sucesso!`);
+addToast('Pagamento confirmado!', { type: 'success', category: 'payment' });
       setTimeout(() => fetchMyPayments(false), 2000);
     } catch (err) {
       setPageError(err.message || `Falha ao confirmar o pagamento ID ${payment.id}. Tente novamente.`);
+addToast('Falha ao confirmar pagamento.', { type: 'error', category: 'payment' });
     } finally {
       setActionLoading(null);
     }
@@ -376,18 +384,21 @@ const MyPaymentsPage = () => {
   const handleStripePaymentSuccess = (paymentIntent) => {
     setShowStripeModal(false);
     setStripeClientSecret(null);
-    setPageSuccessMessage(`O pagamento para "${currentPaymentDetails?.description}" foi processado! O estado atualizará em breve.`);
+    setPageSuccessMessage(`O pagamento para \"${currentPaymentDetails?.description}\" foi processado! O estado atualizará em breve.`);
+addToast('Pagamento processado com sucesso!', { type: 'success', category: 'payment' });
     setCurrentPaymentDetails(null);
     setTimeout(() => fetchMyPayments(false), 3000);
   };
 
   const handleStripePaymentError = (errorMessage) => {
     console.error("Stripe Payment Error:", errorMessage);
+addToast('Erro no pagamento Stripe.', { type: 'error', category: 'payment' });
   };
 
   const handleStripeRequiresAction = (paymentIntent) => {
     console.log("Stripe - Ação Requerida:", paymentIntent);
     setPageInfoMessage("Foram geradas referências. Utilize os dados no formulário para completar o pagamento.");
+addToast('Referência gerada. Siga as instruções no formulário.', { type: 'info', category: 'payment' });
   };
 
   const handleRefreshPayments = () => {
@@ -396,8 +407,38 @@ const MyPaymentsPage = () => {
     fetchMyPayments().finally(() => setTimeout(() => setPageInfoMessage(''), 2000));
   };
 
-  if (loading && !showStripeModal) {
-    return <PageContainer><LoadingText>A carregar os seus pagamentos...</LoadingText></PageContainer>;
+if (loading && !showStripeModal) {
+    return (
+      <PageContainer>
+        <TableWrapper>
+          <Table>
+            <thead>
+              <tr>
+                <th>Data Registo</th>
+                <th>Mês Ref.</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i}>
+                  {Array.from({ length: 7 }).map((__, j) => (
+                    <td key={j}>
+                      <div style={{height: 12, background: '#444', borderRadius: 6, opacity: 0.25, animation: 'pulse 1.2s ease-in-out infinite'}} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableWrapper>
+        <style>{`@keyframes pulse { 0%{opacity:.2} 50%{opacity:.5} 100%{opacity:.2} }`}</style>
+      </PageContainer>
+    );
   }
 
   return (
@@ -417,6 +458,7 @@ const MyPaymentsPage = () => {
       {pageInfoMessage && !showStripeModal && <InfoText>{pageInfoMessage}</InfoText>}
 
       {payments.length > 0 ? (
+        <>
         <TableWrapper>
           <Table>
             <thead>
@@ -431,7 +473,7 @@ const MyPaymentsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {payments.map(payment => (
+{payments.slice(0, visibleCount).map(payment => (
                 <tr key={payment.id}>
                   <td>{new Date(payment.paymentDate).toLocaleDateString('pt-PT')}</td>
                   <td>{payment.referenceMonth || 'N/A'}</td>
@@ -468,6 +510,12 @@ const MyPaymentsPage = () => {
             </tbody>
           </Table>
         </TableWrapper>
+        {payments.length > visibleCount && (
+          <div style={{ textAlign: 'center', marginTop: 12 }}>
+            <RefreshButton onClick={() => setVisibleCount(c => c + 20)}>Mostrar mais</RefreshButton>
+          </div>
+        )}
+        </>
       ) : (
         !loading && !pageError && <NoItemsText>Ainda não tens pagamentos registados.</NoItemsText>
       )}

@@ -15,6 +15,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { CustomThemeProvider } from './context/ThemeContext';
 import { WorkoutProvider } from './context/WorkoutContext';
+import { ToastProvider } from './components/Toast/ToastProvider';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
@@ -62,11 +63,13 @@ root.render(
         <GlobalStyle />
         <AuthProvider>
           <WorkoutProvider>
-            <NotificationProvider> 
-              <Elements stripe={stripePromise}>
-                <App />
-              </Elements>
-            </NotificationProvider>
+            <ToastProvider>
+              <NotificationProvider> 
+                <Elements stripe={stripePromise}>
+                  <App />
+                </Elements>
+              </NotificationProvider>
+            </ToastProvider>
           </WorkoutProvider>
         </AuthProvider>
       </CustomThemeProvider>
