@@ -455,11 +455,18 @@ const clientCancelAppointmentBooking = async (req, res) => {
   const { appointmentId } = req.params;
   const userId = req.user.id;
   try {
-    const appointment = await db.Appointment.findByPk(appointmentId);
+    const appointment = await db.Appointment.findByPk(appointmentId, { include: [{ model: db.Staff, as: 'professional' }]});
     if (!appointment) { return res.status(404).json({ message: 'Consulta não encontrada.' });}
     if (appointment.userId !== userId) { return res.status(403).json({ message: 'Não tem permissão para cancelar esta consulta.' });}
     
-    
+    // Bloqueia cancelamentos para consultas já iniciadas/terminadas
+    try {
+      const start = new Date(`${appointment.date}T${appointment.time}`);
+      if (!isNaN(start) && start <= new Date()) {
+        return res.status(400).json({ message: 'Não é possível cancelar uma consulta já iniciada ou passada.' });
+      }
+    } catch (e) { /* ignorar parse errors */ }
+
     if (!['agendada', 'confirmada'].includes(appointment.status)) {
         return res.status(400).json({ message: `Não é possível cancelar uma consulta com status '${appointment.status}'. Contacte o suporte.`});
     }

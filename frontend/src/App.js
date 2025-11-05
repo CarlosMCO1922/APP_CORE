@@ -26,6 +26,7 @@ const GroupTrainingCalendarPage = lazy(() => import('./pages/GroupTrainingCalend
 const IndividualPTRequestPage = lazy(() => import('./pages/IndividualPTRequestPage'));
 const ClientProgressOverviewPage = lazy(() => import('./pages/ClientProgressOverviewPage'));
 const WorkoutPlanSummaryPage = lazy(() => import('./pages/WorkoutPlanSummaryPage'));
+const UserCalendarPage = lazy(() => import('./pages/UserCalendarPage'));
 
 const AdminManageUsersPage = lazy(() => import('./pages/admin/AdminManageUsersPage'));
 const AdminUserDetailsPage = lazy(() => import('./pages/admin/AdminUserDetailsPage'));
@@ -119,8 +120,9 @@ function App() {
           {/* Rotas de Cliente */}
           <Route element={<ProtectedRoute allowedRoles={['user']} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/definicoes" element={<SettingsPage />} />
+<Route path="/definicoes" element={<SettingsPage />} />
             <Route path="/meus-pagamentos" element={<MyPaymentsPage />} />
+            <Route path="/meus-treinos" element={<UserCalendarPage />} />
             <Route path="/treinos/:trainingId/plano" element={<ClientTrainingPlanPage />} />
             <Route path="/meu-progresso" element={<ClientProgressPage />} />
             <Route path="/explorar-planos" element={<ExploreWorkoutPlansPage />} />

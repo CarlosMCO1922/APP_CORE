@@ -602,11 +602,26 @@ const DashboardPage = () => {
         fetchPageData();
     }, [fetchPageData]);
 
-    const upcomingEvents = useMemo(() => {
+const upcomingEvents = useMemo(() => {
         const now = new Date();
         const allEvents = [
-            ...bookings.trainings.map(t => ({...t, eventType: 'Treino', dateObj: moment(`${t.date}T${t.time}`).toDate(), link: `/treinos/${t.id}/plano`, icon: <FaRunning />, uniqueKey: `train-${t.id}`})),
-            ...bookings.appointments.map(a => ({...a, eventType: 'Consulta', dateObj: moment(`${a.date}T${a.time}`).toDate(), icon: <FaUserMd />, uniqueKey: `appt-${a.id}`}))
+            ...bookings.trainings.map(t => ({
+                ...t,
+                eventType: 'Treino',
+                dateObj: moment(`${t.date}T${t.time}`).toDate(),
+                link: `/treinos/${t.id}/plano`,
+                icon: <FaRunning />,
+                uniqueKey: `train-${t.id}`,
+                name: t.name || 'Treino'
+            })),
+            ...bookings.appointments.map(a => ({
+                ...a,
+                eventType: 'Consulta',
+                dateObj: moment(`${a.date}T${a.time}`).toDate(),
+                icon: <FaUserMd />,
+                uniqueKey: `appt-${a.id}`,
+                name: a.title || (a.professional ? `Consulta com ${a.professional.firstName}` : 'Consulta')
+            }))
         ];
         return allEvents
             .filter(event => event.dateObj >= now && !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída'].includes(event.status))

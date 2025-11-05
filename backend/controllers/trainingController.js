@@ -324,6 +324,14 @@ const cancelTrainingBooking = async (req, res) => {
     const isBooked = await training.hasParticipant(user);
     if (!isBooked) { return res.status(400).json({ message: 'Não estás inscrito neste treino.' }); }
 
+    // Bloqueia cancelamentos para treinos já iniciados/terminados
+    try {
+      const start = new Date(`${training.date}T${training.time}`);
+      if (!isNaN(start) && start <= new Date()) {
+        return res.status(400).json({ message: 'Não é possível cancelar um treino já iniciado ou passado.' });
+      }
+    } catch (e) { /* ignore parse errors e permitir comportamento antigo */ }
+
     await training.removeParticipant(user);
     _internalCreateNotification({  recipientUserId: userId,
       message: `A sua inscrição no treino "${training.name}" foi cancelada.`,
@@ -344,7 +352,7 @@ const cancelTrainingBooking = async (req, res) => {
 
       _internalCreateNotification({
         recipientUserId: firstInWaitlist.userId,
-        message: `Boas notícias! Abriu uma vaga no treino "<span class="math-inline">\{training\.name\}" \(</span>{format(new Date(training.date), 'dd/MM/yyyy')}) para o qual estavas na lista de espera. Inscreve-te já!`,
+        message: `Boas notícias! Abriu uma vaga no treino "${training.name}" (${format(new Date(training.date), 'dd/MM/yyyy')}). Inscreve-te já!`,
         type: 'TRAINING_SPOT_AVAILABLE_CLIENT',
         relatedResourceId: training.id,
         relatedResourceType: 'training',
