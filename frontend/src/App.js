@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useWorkout } from './context/WorkoutContext';
 import styled from 'styled-components';
+import Navbar from './components/Layout/Navbar';
 
 // Code-splitting for pages (melhora UX e reduz bundle inicial)
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -43,7 +44,6 @@ const AdminClientProgressDetailPage = lazy(() => import('./pages/admin/AdminClie
 const AdminClientSelectionPage = lazy(() => import('./pages/admin/AdminClientSelectionPage'));
 
 // Componente de Layout
-import Navbar from './components/Layout/Navbar';
 
 const Fallback = styled.div`
   padding: 24px; text-align: center; opacity: 0.8;
