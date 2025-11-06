@@ -13,7 +13,7 @@ if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
 
 webpush.setVapidDetails(
   VAPID_SUBJECT || 'mailto:admin@example.com',
-  VAPID_PUBLIC_KEY || '','
+  VAPID_PUBLIC_KEY || '',
   VAPID_PRIVATE_KEY || ''
 );
 
