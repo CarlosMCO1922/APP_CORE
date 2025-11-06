@@ -78,4 +78,11 @@ root.render(
 );
 
 
-serviceWorkerRegistration.register(); 
+serviceWorkerRegistration.register();
+
+// Regista o SW dedicado a push (independente do da CRA para cache)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistration('/notifications-sw.js').then(reg => {
+    if (!reg) navigator.serviceWorker.register('/notifications-sw.js');
+  });
+}

@@ -58,13 +58,27 @@ const Title = styled.h1`
 
 const CalendarWrapper = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: clamp(16px, 3vw, 24px);
+  padding: clamp(20px, 3vw, 30px);
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   height: 80vh;
 
-  .rbc-toolbar { border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; padding-bottom: 10px; margin-bottom: 10px; }
+  .rbc-toolbar {
+    margin-bottom: 20px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    padding-bottom: 12px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  }
+  .rbc-btn-group button { color: ${({ theme }) => theme.colors.textMuted}; background: ${({ theme }) => theme.colors.buttonSecondaryBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+  .rbc-btn-group button:hover, .rbc-toolbar button.rbc-active { background: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.textDark}; border-color: ${({ theme }) => theme.colors.primary}; }
+  .rbc-toolbar-label { color: ${({ theme }) => theme.colors.primary}; font-weight: 600; font-size: clamp(1.2rem, 3vw, 1.6rem); }
+
+  .rbc-header { border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; color: ${({ theme }) => theme.colors.textMuted}; background: ${({ theme }) => theme.colors.cardBackground}; text-transform: capitalize; }
+  .rbc-time-slot, .rbc-day-slot .rbc-time-slot { border-top: 1px dotted ${({ theme }) => theme.colors.cardBorder}; }
+  .rbc-time-header-gutter, .rbc-time-gutter { background: ${({ theme }) => theme.colors.background}; border-right: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
+  .rbc-day-bg + .rbc-day-bg { border-left: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
   .rbc-today { background-color: ${({ theme }) => theme.colors.primaryFocusRing}; }
+
+  .rbc-event, .rbc-day-slot .rbc-event { border: none; border-radius: 6px; padding: 4px 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
 `;
 
 const LoadingText = styled.p`
