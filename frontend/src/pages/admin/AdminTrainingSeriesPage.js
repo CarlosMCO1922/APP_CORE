@@ -7,6 +7,7 @@ import { getAllStaffForSelection } from '../../services/staffService';
 import { FaCalendarPlus, FaListAlt, FaArrowLeft } from 'react-icons/fa';
 
 import { Link } from 'react-router-dom';
+import BackArrow from '../../components/BackArrow';
 
 
 // --- Styled Components ---
@@ -289,11 +290,11 @@ const AdminTrainingSeriesPage = () => {
 
   return (
     <PageContainer>
-      <BackLink to={isAdminUserCheck ? "/admin/dashboard" : "/dashboard"}>
-        ←
-      </BackLink>
       <HeaderContainer>
-        <Title><FaCalendarPlus /> Criar Nova Série de Treinos</Title>
+        <Title>
+          <BackArrow to={isAdminUserCheck ? "/admin/dashboard" : "/dashboard"} />
+          <span><FaCalendarPlus /> Criar Nova Série de Treinos</span>
+        </Title>
       </HeaderContainer>
       
       {message.text && <Message className={message.type}>{message.text}</Message>}

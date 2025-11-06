@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
+import BackArrow from '../../components/BackArrow';
 import { useAuth } from '../../context/AuthContext';
 import {
     getWorkoutPlansByTrainingId,
@@ -459,11 +460,11 @@ function AdminManageWorkoutPlansPage() {
 
   return (
     <PageContainer>
-      <MainTitle>Gerir Planos para o Treino</MainTitle>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <BackArrow to="/admin/manage-trainings" />
+        <MainTitle>Gerir Planos para o Treino</MainTitle>
+      </div>
       <TrainingInfo>{trainingName || `ID do Treino: ${trainingId}`}</TrainingInfo>
-      <BackLink to="/admin/manage-trainings">
-        ←
-      </BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}

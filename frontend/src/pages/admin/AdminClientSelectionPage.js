@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetAllUsers } from '../../services/userService';
 import { FaUserGraduate, FaSearch, FaArrowLeft } from 'react-icons/fa';
+import BackArrow from '../../components/BackArrow';
 
 // --- Styled Components (podes adaptar de outras páginas de admin) ---
 const PageContainer = styled.div`
@@ -127,9 +128,11 @@ const AdminClientSelectionPage = () => {
 
     return (
         <PageContainer>
-            <BackLink to="/admin/dashboard">←</BackLink>
             <HeaderContainer>
-                <Title><FaUserGraduate /> Progresso dos Clientes</Title>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <BackArrow to="/admin/dashboard" />
+                    <Title><FaUserGraduate /> Progresso dos Clientes</Title>
+                </div>
             </HeaderContainer>
             <SearchInput 
                 type="text"

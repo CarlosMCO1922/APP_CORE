@@ -5,6 +5,7 @@ import styled, { css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetAllStaff, adminDeleteStaff, adminCreateStaff, adminUpdateStaff } from '../../services/staffService';
 import { FaUserTie, FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
+import BackArrow from '../../components/BackArrow';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -392,10 +393,12 @@ const AdminManageStaffPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <Title>Gerir Equipa</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackArrow to="/admin/dashboard" />
+          <Title>Gerir Equipa</Title>
+        </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Adicionar Membro</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard">←</BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}

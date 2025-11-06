@@ -1,6 +1,7 @@
 // src/pages/admin/AdminManageGlobalWorkoutPlansPage.js
 import React, { useEffect, useState, useCallback, useMemo} from 'react';
 import { Link } from 'react-router-dom';
+import BackArrow from '../../components/BackArrow';
 import styled, { useTheme, css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -612,9 +613,11 @@ const AdminManageGlobalWorkoutPlansPage = () => {
 
 return (
     <PageContainer>
-      <BackLink to="/admin/dashboard">←</BackLink>
       <HeaderContainer>
-        <Title><FaClipboardList /> Gestão de Planos de Treino Modelo</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackArrow to="/admin/dashboard" />
+          <Title><FaClipboardList /> Gestão de Planos de Treino Modelo</Title>
+        </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Criar Novo Plano</CreateButton>
       </HeaderContainer>
 

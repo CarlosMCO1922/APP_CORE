@@ -10,6 +10,7 @@ import {
     adminDeleteUser
 } from '../../services/userService';
 import { FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes, FaEye, FaUserPlus } from 'react-icons/fa';
+import BackArrow from '../../components/BackArrow';
 
 
 
@@ -461,10 +462,12 @@ const AdminManageUsersPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <Title>Gerir Clientes (Utilizadores)</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackArrow to="/admin/dashboard" />
+          <Title>Gerir Clientes (Utilizadores)</Title>
+        </div>
         <CreateButton onClick={handleOpenCreateModal}><FaUserPlus /> Novo Cliente</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard">←</BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}

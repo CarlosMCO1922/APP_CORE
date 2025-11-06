@@ -12,6 +12,7 @@ import {
 import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
 import { FaCalendarCheck, FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
+import BackArrow from '../../components/BackArrow';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -428,10 +429,12 @@ const AdminManageAppointmentsPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <Title>Gerir Consultas</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackArrow to="/admin/dashboard" />
+          <Title>Gerir Consultas</Title>
+        </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Nova Consulta</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard">←</BackLink>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}

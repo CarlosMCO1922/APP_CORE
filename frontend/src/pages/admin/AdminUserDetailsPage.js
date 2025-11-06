@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminGetUserById, adminGetUserTrainingsService, adminGetUserAppointmentsService } from '../../services/userService';
 import { adminGetAllPayments } from '../../services/paymentService'; 
 import { FaArrowLeft, FaUserCircle, FaDumbbell, FaCalendarCheck, FaEnvelope, FaIdCard, FaMoneyBillWave } from 'react-icons/fa';
+import BackArrow from '../../components/BackArrow';
 
 
 
@@ -189,15 +190,15 @@ const AdminUserDetailsPage = () => {
     return <PageContainer><LoadingText>A carregar detalhes do cliente...</LoadingText></PageContainer>;
   }
   if (error) {
-    return <PageContainer><BackLink to="/admin/manage-users">←</BackLink><ErrorText>{error}</ErrorText></PageContainer>;
+    return <PageContainer><div style={{ marginBottom: '20px' }}><BackArrow to="/admin/manage-users" /></div><ErrorText>{error}</ErrorText></PageContainer>;
   }
   if (!user) {
-    return <PageContainer><BackLink to="/admin/manage-users">←</BackLink><EmptyText>Cliente não encontrado.</EmptyText></PageContainer>;
+    return <PageContainer><div style={{ marginBottom: '20px' }}><BackArrow to="/admin/manage-users" /></div><EmptyText>Cliente não encontrado.</EmptyText></PageContainer>;
   }
 
   return (
     <PageContainer>
-      <BackLink to="/admin/manage-users">←</BackLink>
+      <div style={{ marginBottom: '20px' }}><BackArrow to="/admin/manage-users" /></div>
       
       <UserDetailsCard>
         <UserHeader>

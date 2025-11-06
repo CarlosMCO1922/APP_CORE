@@ -1,6 +1,7 @@
 // src/pages/admin/AdminManageExercisesPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import BackArrow from '../../components/BackArrow';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -179,12 +180,12 @@ function AdminManageExercisesPage() {
   return (
     <PageContainer>
       <TopActionsContainer>
-        <Title>Gerir Exercícios Base</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackArrow to="/admin/dashboard" />
+          <Title>Gerir Exercícios Base</Title>
+        </div>
         <CreateButtonStyled onClick={handleOpenCreateModal}>Criar Novo Exercício</CreateButtonStyled>
       </TopActionsContainer>
-      <Link to="/admin/dashboard" style={{color: '#D4AF37', marginBottom: '20px', display: 'inline-block', textDecoration:'none'}}>
-        ←
-      </Link>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}

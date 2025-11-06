@@ -22,7 +22,7 @@ import {
     FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus, FaLevelUpAlt, FaRedoAlt
 } from 'react-icons/fa';
 import moment from 'moment';
-
+import BackArrow from '../../components/BackArrow';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -855,10 +855,12 @@ const AdminManageTrainingsPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <Title>Gerir Treinos</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackArrow to="/admin/dashboard" />
+          <Title>Gerir Treinos</Title>
+        </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Novo Treino</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard">←</BackLink>
 
       <FiltersContainer>
         <FilterGroup>

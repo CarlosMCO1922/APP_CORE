@@ -233,7 +233,7 @@ export default function UserCalendarPage() {
     <PageContainer>
       <Header>
         <BackButton to="/dashboard"><FaArrowLeft /></BackButton>
-        <Title>O meu calendário</Title>
+        <Title>Treinos/Consultas</Title>
       </Header>
 
       {error && <ErrorText>{error}</ErrorText>}

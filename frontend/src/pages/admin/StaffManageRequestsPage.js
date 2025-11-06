@@ -1,6 +1,7 @@
 // src/pages/admin/StaffManageRequestsPage.js
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import BackArrow from '../../components/BackArrow';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { getAllAppointments, staffRespondToRequest } from '../../services/appointmentService';
@@ -362,12 +363,14 @@ const StaffManageRequestsPage = () => {
   return (
     <PageContainer>
       <HeaderSection>
-        <Title>Gerir Pedidos de Consulta</Title>
-        <Subtitle>Analise e responda aos pedidos pendentes dos clientes.</Subtitle>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+          <BackArrow to="/admin/dashboard" />
+          <div>
+            <Title style={{ margin: 0 }}>Gerir Pedidos de Consulta</Title>
+            <Subtitle style={{ marginTop: 6 }}>Analise e responda aos pedidos pendentes dos clientes.</Subtitle>
+          </div>
+        </div>
       </HeaderSection>
-      <BackLink to="/admin/dashboard">
-        ←
-      </BackLink>
 
       {pageError && <ErrorText>{pageError}</ErrorText>}
       {pageSuccessMessage && <MessageText>{pageSuccessMessage}</MessageText>}

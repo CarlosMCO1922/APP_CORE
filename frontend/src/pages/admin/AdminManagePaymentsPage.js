@@ -12,6 +12,7 @@ import {
 } from '../../services/paymentService';
 import { adminGetAllUsers } from '../../services/userService';
 import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
+import BackArrow from '../../components/BackArrow';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -481,13 +482,15 @@ const AdminManagePaymentsPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <TitleContainer>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BackArrow to="/admin/dashboard" />
+          <TitleContainer>
             <Title>Gestão de Pagamentos</Title>
             <Subtitle>Registar e acompanhar pagamentos dos clientes.</Subtitle>
-        </TitleContainer>
+          </TitleContainer>
+        </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Registar Pagamento</CreateButton>
       </HeaderContainer>
-      <BackLink to="/admin/dashboard">←</BackLink>
 
       {pageError && <ErrorText>{pageError}</ErrorText>}
       {pageSuccessMessage && <MessageText>{pageSuccessMessage}</MessageText>}

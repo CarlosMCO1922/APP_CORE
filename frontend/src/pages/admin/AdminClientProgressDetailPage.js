@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminGetRecordsForUserService, adminGetFullExerciseHistoryForUserService } from '../../services/progressService';
 import { adminGetUserById } from '../../services/userService';
 import { FaTrophy, FaArrowLeft, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
+import BackArrow from '../../components/BackArrow';
 import AdvancedProgressChart from '../../components/Workout/AdvancedProgressChart';
 
 
@@ -214,9 +215,11 @@ const AdminClientProgressDetailPage = () => {
     return (
         <>
             <PageContainer>
-                <BackLink to="/admin/progresso-clientes">←</BackLink>
                 <Header>
-                    <h1><FaUserCircle /> Progresso de {client?.firstName} {client?.lastName}</h1>
+                    <h1>
+                      <BackArrow to="/admin/progresso-clientes" />
+                      <span><FaUserCircle /> Progresso de {client?.firstName} {client?.lastName}</span>
+                    </h1>
                 </Header>
                 
                 {records.length > 0 ? (
