@@ -410,7 +410,7 @@ const AdminManageAppointmentsPage = () => {
       <HeaderContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title>Gerir Consultas</Title>
+          <Title>Consultas</Title>
         </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Nova Consulta</CreateButton>
       </HeaderContainer>

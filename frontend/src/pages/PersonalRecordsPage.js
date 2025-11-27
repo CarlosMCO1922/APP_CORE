@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styled, { css } from 'styled-components';
 import { getMyRecordsService } from '../services/progressService';
-import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown, FaDumbbell} from 'react-icons/fa';
+import { FaSearch, FaClipboardList, FaInfoCircle, FaChevronDown, FaDumbbell} from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import BackArrow from '../components/BackArrow';
 
 const PageContainer = styled.div`
   max-width: 900px;
@@ -143,18 +144,6 @@ const HeaderContainer = styled.div`
   margin-bottom: 30px;
 `;
 
-const BackButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.primary};
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0 8px 0 0;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
-`;
 
 const HeaderSpacer = styled.div`
   width: 32px;
@@ -208,10 +197,6 @@ const PersonalRecordsPage = () => {
     );
   }, [allRecords, searchTerm]);
 
-  const handleBack = () => {
-    setViewDirection('left');
-    navigate('/dashboard');
-  };
 
   if (loading) return <PageContainer><LoadingText>A carregar recordes...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
@@ -219,8 +204,8 @@ const PersonalRecordsPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
-        <Title>Progresso e Recordes</Title>
+        <BackArrow to="/dashboard" />
+        <Title>Progresso Pessoal</Title>
         <HeaderSpacer />
       </HeaderContainer>
       

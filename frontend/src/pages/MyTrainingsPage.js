@@ -130,7 +130,7 @@ const MyTrainingsPage = () => {
         <BackArrow to="/dashboard" />
       </div>
       <Header>
-        <Title><FaRunning />Meus Treinos Inscritos</Title>
+        <Title><FaRunning />Treinos Inscrito</Title>
       </Header>
       
       {loading && <LoadingText>A carregar...</LoadingText>}

@@ -464,7 +464,7 @@ const AdminManagePaymentsPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
           <TitleContainer>
-            <Title>Gestão de Pagamentos</Title>
+            <Title>Pagamentos</Title>
             <Subtitle>Registar e acompanhar pagamentos dos clientes.</Subtitle>
           </TitleContainer>
         </div>

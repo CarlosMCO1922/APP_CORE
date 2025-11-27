@@ -55,8 +55,16 @@ const TogglerContainer = styled.div`
 const Header = styled.header`
   margin-bottom: 30px;
   padding-bottom: 20px;
+  padding-right: 80px; /* Espaço para o toggle */
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   text-align: center;
+  
+  @media (max-width: 768px) {
+    padding-right: 70px;
+  }
+  @media (max-width: 480px) {
+    padding-right: 60px;
+  }
 `;
 
 const Title = styled.h1`

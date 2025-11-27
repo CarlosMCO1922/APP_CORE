@@ -52,13 +52,18 @@ const Title = styled.h1`
   color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 10px;
   text-align: center;
-
+  padding-right: 80px; /* Espaço para o toggle */
+  padding-left: 20px; /* Balanceamento visual */
+  
   @media (max-width: 768px) {
     font-size: 2.2rem;
+    padding-right: 70px;
   }
   @media (max-width: 480px) {
     font-size: 1.8rem;
     margin-bottom: 15px;
+    padding-right: 60px;
+    padding-left: 15px;
   }
 `;
 
@@ -256,7 +261,7 @@ const AdminDashboardPage = () => {
       <TogglerContainer>
         <ThemeToggler />
       </TogglerContainer>
-      <Title>Painel de Administração CORE</Title>
+      <Title>Administração CORE</Title>
       <WelcomeMessage>
         Bem-vindo(a), {authState.user?.firstName || 'Admin'} ({authState.user?.email})!
       </WelcomeMessage>

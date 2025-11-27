@@ -182,7 +182,7 @@ const ClientProgressOverviewPage = () => {
       <PageContainer>
         <HeaderContainer>
           <BackArrow to="/dashboard" />
-          <Title>Progresso e Recordes</Title>
+          <Title>Progresso Pessoal</Title>
           <HeaderSpacer />
         </HeaderContainer>
         

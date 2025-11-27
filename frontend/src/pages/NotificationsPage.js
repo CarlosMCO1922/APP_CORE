@@ -381,7 +381,7 @@ const NotificationsPage = () => {
         <BackArrow to={authState.role === 'user' ? "/dashboard" : "/admin/dashboard"} />
       </div>
       <HeaderContainer>
-        <Title><FaBell /> Minhas Notificações</Title>
+        <Title><FaBell /> Notificações</Title>
         <FilterBar>
           <select value={statusFilter} onChange={handleFilterChange} aria-label="Filtro de estado">
             <option value="all">Todas</option>

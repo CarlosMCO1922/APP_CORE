@@ -374,7 +374,7 @@ const AdminManageStaffPage = () => {
       <HeaderContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title>Gerir Equipa</Title>
+          <Title>Equipa</Title>
         </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Adicionar Membro</CreateButton>
       </HeaderContainer>

@@ -452,7 +452,7 @@ function AdminManageWorkoutPlansPage() {
     <PageContainer>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <BackArrow to="/admin/manage-trainings" />
-        <MainTitle>Gerir Planos para o Treino</MainTitle>
+        <MainTitle>Planos de treino</MainTitle>
       </div>
       <TrainingInfo>{trainingName || `ID do Treino: ${trainingId}`}</TrainingInfo>
 

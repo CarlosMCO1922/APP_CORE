@@ -443,7 +443,7 @@ const AdminManageUsersPage = () => {
       <HeaderContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title>Gerir Clientes (Utilizadores)</Title>
+          <Title>Clientes (Utilizadores)</Title>
         </div>
         <CreateButton onClick={handleOpenCreateModal}><FaUserPlus /> Novo Cliente</CreateButton>
       </HeaderContainer>

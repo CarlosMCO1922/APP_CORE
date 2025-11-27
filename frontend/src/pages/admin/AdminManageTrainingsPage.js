@@ -836,7 +836,7 @@ const AdminManageTrainingsPage = () => {
       <HeaderContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title>Gerir Treinos</Title>
+          <Title>Treinos</Title>
         </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Novo Treino</CreateButton>
       </HeaderContainer>

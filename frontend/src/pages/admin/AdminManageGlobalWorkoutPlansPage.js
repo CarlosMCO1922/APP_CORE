@@ -605,7 +605,7 @@ return (
       <HeaderContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title><FaClipboardList /> Gestão de Planos de Treino Modelo</Title>
+          <Title><FaClipboardList /> Planos de Treino Modelo</Title>
         </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Criar Novo Plano</CreateButton>
       </HeaderContainer>

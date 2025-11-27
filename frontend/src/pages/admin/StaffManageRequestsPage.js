@@ -349,7 +349,7 @@ const StaffManageRequestsPage = () => {
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
           <div>
-            <Title style={{ margin: 0 }}>Gerir Pedidos de Consulta</Title>
+            <Title style={{ margin: 0 }}>Pedidos de Consulta</Title>
             <Subtitle style={{ marginTop: 6 }}>Analise e responda aos pedidos pendentes dos clientes.</Subtitle>
           </div>
         </div>

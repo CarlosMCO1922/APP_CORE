@@ -182,7 +182,7 @@ function AdminManageExercisesPage() {
       <TopActionsContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title>Gerir Exercícios Base</Title>
+          <Title>Exercícios Base</Title>
         </div>
         <CreateButtonStyled onClick={handleOpenCreateModal}>Criar Novo Exercício</CreateButtonStyled>
       </TopActionsContainer>
