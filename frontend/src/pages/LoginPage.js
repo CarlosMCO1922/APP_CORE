@@ -136,6 +136,7 @@ const SubmitButton = styled.button`
   justify-content: center;
   align-items: center;
   padding: 0.9rem 1rem; 
+  min-height: 44px; /* Touch target mínimo para mobile */
   border: none;
   border-radius: 8px;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
@@ -145,6 +146,7 @@ const SubmitButton = styled.button`
   background-color: ${({ theme }) => theme.colors.primary};
   transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent; /* Remove highlight no mobile */
 
   &:hover:not(:disabled) {
     background-color: ${({ theme }) => theme.colors.primary}; 

@@ -1,0 +1,227 @@
+// src/components/Layout/BottomNav.js
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import styled from 'styled-components';
+import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { 
+  FaHome, 
+  FaCalendarAlt, 
+  FaUserCircle, 
+  FaDumbbell, 
+  FaChartLine,
+  FaCog,
+  FaRegCalendarCheck,
+  FaBell,
+  FaCog as FaSettings
+} from 'react-icons/fa';
+
+const Nav = styled.nav`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  padding: 8px 0 max(env(safe-area-inset-bottom), 8px) 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  
+  /* Só mostrar em mobile */
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+const NavItem = styled(Link)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: ${({ theme, $isActive }) => 
+    $isActive ? theme.colors.primary : theme.colors.textMuted};
+  transition: all 0.2s ease;
+  min-width: 60px;
+  flex: 1;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  
+  svg {
+    font-size: 1.4rem;
+    transition: transform 0.2s ease;
+  }
+  
+  span {
+    font-size: 0.7rem;
+    font-weight: ${({ $isActive }) => $isActive ? '600' : '400'};
+    transition: font-weight 0.2s ease;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
+const Badge = styled.span`
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  background-color: ${({ theme }) => theme.colors.error};
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid ${({ theme }) => theme.colors.cardBackground};
+`;
+
+function BottomNav() {
+  const location = useLocation();
+  const { authState } = useAuth();
+  const { unreadCount } = useNotifications();
+  const { role } = authState;
+
+  // Verificar se a rota atual corresponde a uma rota da bottom nav
+  const isActiveRoute = (path) => {
+    if (path === '/dashboard' || path === '/admin/dashboard') {
+      return location.pathname === path;
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  // Rotas para clientes
+  if (role === 'user') {
+    const clientNavItems = [
+      { 
+        path: '/dashboard', 
+        icon: FaHome, 
+        label: 'Início',
+        exact: true
+      },
+      { 
+        path: '/calendario', 
+        icon: FaCalendarAlt, 
+        label: 'Agendar'
+      },
+      { 
+        path: '/meus-treinos', 
+        icon: FaDumbbell, 
+        label: 'Treinos'
+      },
+      { 
+        path: '/meu-progresso-detalhado', 
+        icon: FaChartLine, 
+        label: 'Progresso'
+      },
+      { 
+        path: '/definicoes', 
+        icon: FaCog, 
+        label: 'Definições'
+      },
+    ];
+
+    return (
+      <Nav>
+        {clientNavItems.map(item => {
+          const isActive = item.exact 
+            ? location.pathname === item.path
+            : isActiveRoute(item.path);
+          const Icon = item.icon;
+          
+          return (
+            <NavItem 
+              key={item.path} 
+              to={item.path}
+              $isActive={isActive}
+            >
+              <Icon />
+              <span>{item.label}</span>
+            </NavItem>
+          );
+        })}
+      </Nav>
+    );
+  }
+
+  // Rotas para staff/admin
+  const staffNavItems = [
+    { 
+      path: '/admin/dashboard', 
+      icon: FaHome, 
+      label: 'Início',
+      exact: true
+    },
+    { 
+      path: '/admin/calendario-geral', 
+      icon: FaCalendarAlt, 
+      label: 'Calendário'
+    },
+    { 
+      path: '/admin/appointment-requests', 
+      icon: FaRegCalendarCheck, 
+      label: 'Pedidos'
+    },
+    { 
+      path: '/notificacoes', 
+      icon: FaBell, 
+      label: 'Notificações',
+      badge: unreadCount > 0 ? unreadCount : null
+    },
+    { 
+      path: '/definicoes', 
+      icon: FaSettings, 
+      label: 'Definições'
+    },
+  ];
+
+  // Se for admin, adicionar Gestão como 4º item (substituindo Notificações na posição)
+  if (role === 'admin') {
+    staffNavItems.splice(3, 0, {
+      path: '/admin/manage-users',
+      icon: FaUserCircle,
+      label: 'Gestão'
+    });
+    // Remover o último item (Definições) para manter 5 itens
+    staffNavItems.pop();
+  }
+
+  return (
+    <Nav>
+      {staffNavItems.map(item => {
+        const isActive = item.exact 
+          ? location.pathname === item.path
+          : isActiveRoute(item.path);
+        const Icon = item.icon;
+        
+        return (
+          <NavItem 
+            key={item.path} 
+            to={item.path}
+            $isActive={isActive}
+          >
+            <Icon />
+            {item.badge && <Badge>{item.badge > 9 ? '9+' : item.badge}</Badge>}
+            <span>{item.label}</span>
+          </NavItem>
+        );
+      })}
+    </Nav>
+  );
+}
+
+export default BottomNav;
+

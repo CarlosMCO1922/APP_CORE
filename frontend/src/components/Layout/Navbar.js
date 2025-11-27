@@ -22,6 +22,11 @@ const Nav = styled.nav`
   position: sticky;
   top: 0;
   z-index: 1000;
+  
+  /* Esconder Navbar completa em mobile (será substituída por BottomNav) */
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const NavLogoLink = styled(Link)`
@@ -62,15 +67,21 @@ const NavLinkStyled = styled(Link)`
   font-size: 0.9rem;
   font-weight: 500;
   padding: 0.5rem 0.75rem;
+  min-height: 44px; /* Touch target mínimo para mobile */
   display: flex;
   align-items: center;
   gap: 0.5rem;
   border-radius: 6px;
   white-space: nowrap;
   transition: all 0.2s ease-in-out;
+  -webkit-tap-highlight-color: transparent;
   &:hover {
     color: ${({ theme }) => theme.colors.textButton};
     background-color: ${({ theme }) => theme.colors.primary};
+  }
+  @media (max-width: 768px) {
+    min-height: 48px;
+    padding: 0.75rem 1rem;
   }
 `;
 
@@ -79,6 +90,7 @@ const LogoutButton = styled.button`
   color: ${({ theme }) => theme.colors.textMain};
   border: 1px solid ${({ theme }) => theme.colors.primary};
   padding: 0.5rem 1rem;
+  min-height: 44px; /* Touch target mínimo para mobile */
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
@@ -87,9 +99,14 @@ const LogoutButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s ease-in-out;
+  -webkit-tap-highlight-color: transparent;
   &:hover {
     background-color: ${({ theme }) => theme.colors.primary};
     color: ${({ theme }) => theme.colors.textDark};
+  }
+  @media (max-width: 768px) {
+    min-height: 48px; /* Ligeiramente maior em mobile */
+    padding: 0.75rem 1.25rem;
   }
 `;
 
@@ -101,15 +118,21 @@ const DropdownButton = styled.button`
   font-family: inherit;
   font-weight: 500;
   padding: 0.5rem 0.75rem;
+  min-height: 44px; /* Touch target mínimo para mobile */
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   border-radius: 6px;
   transition: all 0.2s ease-in-out;
+  -webkit-tap-highlight-color: transparent;
   &:hover, &.active {
     color: ${({ theme }) => theme.colors.textButton};
     background-color: ${({ theme }) => theme.colors.primary};
+  }
+  @media (max-width: 768px) {
+    min-height: 48px;
+    padding: 0.75rem 1rem;
   }
 `;
 

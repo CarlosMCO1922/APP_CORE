@@ -320,6 +320,7 @@ const CloseButton = styled.button`
 
 const ActionButton = styled.button`
   padding: 6px 10px;
+  min-height: 44px; /* Touch target mínimo para mobile */
   font-size: 0.8rem;
   border-radius: 5px;
   cursor: pointer;
@@ -328,6 +329,11 @@ const ActionButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  -webkit-tap-highlight-color: transparent;
+  @media (max-width: 768px) {
+    min-height: 48px;
+    padding: 10px 16px;
+  }
 
   background-color: ${props => {
     if (props.danger) return props.theme.colors.error;

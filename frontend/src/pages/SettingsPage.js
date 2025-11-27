@@ -4,7 +4,7 @@ import { Link, useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyProfile, updateMyProfile } from '../services/userService';
-import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
+import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown, FaSignOutAlt } from 'react-icons/fa';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -163,9 +163,50 @@ const StyledInternalLink = styled(Link)`
   }
 `;
 
+const LogoutButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.error};
+  color: white;
+  padding: 14px 25px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+  min-height: 44px; /* Touch target mínimo para mobile */
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 20px;
+
+  &:hover:not(:disabled) {
+    background-color: ${({ theme }) => theme.colors.error};
+    opacity: 0.9;
+    transform: translateY(-2px);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: translateY(0);
+  }
+  
+  @media (max-width: 768px) {
+    min-height: 48px;
+    padding: 16px 25px;
+  }
+`;
+
 
 const SettingsPage = () => {
-  const { authState, login: refreshAuthData } = useAuth(); 
+  const { authState, login: refreshAuthData, logout } = useAuth(); 
   const navigate = useNavigate();
   const [viewDirection, setViewDirection] = useState('right');
   const [formData, setFormData] = useState({
@@ -218,6 +259,13 @@ const SettingsPage = () => {
   const handleBack = () => {
     setViewDirection('left');
     navigate('/dashboard');
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Tens a certeza que queres sair?')) {
+      logout();
+      navigate('/login');
+    }
   };
 
   const handleProfileUpdate = async (e) => {
@@ -342,6 +390,15 @@ const SettingsPage = () => {
         <SubmitButton type="submit" disabled={updating}>
           {updating ? 'A atualizar...' : 'Guardar Alterações'}
         </SubmitButton>
+      </SettingsForm>
+
+      {/* Secção de Conta com Logout */}
+      <SettingsForm style={{ marginTop: '40px' }}>
+        <SectionTitle>Conta</SectionTitle>
+        <LogoutButton type="button" onClick={handleLogout}>
+          <FaSignOutAlt />
+          Sair da Conta
+        </LogoutButton>
       </SettingsForm>
     </PageContainer>
   );

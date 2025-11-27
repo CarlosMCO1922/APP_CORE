@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext';
 import { useWorkout } from './context/WorkoutContext';
 import styled from 'styled-components';
 import Navbar from './components/Layout/Navbar';
+import BottomNav from './components/Layout/BottomNav';
 
 // Code-splitting for pages (melhora UX e reduz bundle inicial)
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -57,14 +58,19 @@ const MinimizedBar = styled.div`
   width: 100%;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   color: ${({ theme }) => theme.colors.textMain};
-  padding: 10px 15px;
+  padding: 10px 15px max(env(safe-area-inset-bottom), 10px) 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
   border-top: 3px solid ${({ theme }) => theme.colors.primary};
-  z-index: 1000;
+  z-index: 1001; /* Acima da BottomNav (z-index 1000) */
   transition: transform 0.3s ease-in-out;
+  
+  /* Em mobile, adicionar padding bottom para não sobrepor com BottomNav */
+  @media (max-width: 768px) {
+    padding-bottom: max(calc(env(safe-area-inset-bottom) + 70px), 70px);
+  }
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
@@ -110,6 +116,7 @@ function App() {
   return (
     <>
       {authState.isAuthenticated && <Navbar />}
+      {authState.isAuthenticated && <BottomNav />}
       <div className="main-content-area"> 
         <Suspense fallback={<Fallback>A carregar…</Fallback>}>
           <Routes>

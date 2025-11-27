@@ -8,6 +8,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--color-background);
   color: var(--color-text-main);
+  /* Safe area support para iPhone (notch) */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 code {
@@ -17,6 +20,48 @@ code {
 
 * {
   box-sizing: border-box;
+  /* Scroll suave e momentum para mobile */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevenir zoom automático no iOS ao focar inputs */
+input, select, textarea {
+  font-size: 16px !important; /* Previne zoom automático no iOS */
+}
+
+/* Touch targets mínimos para mobile (44x44px recomendado) */
+@media (max-width: 768px) {
+  button, a[role="button"], [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Botões pequenos (ícones) podem ser menores mas com padding adequado */
+  button[aria-label], button[title] {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+  }
+}
+
+/* Scrollbars mais finas em mobile */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* --- Estilos para o React Calendar --- */
@@ -113,7 +158,15 @@ code {
 
 .main-content-area {
   position: relative; 
-  z-index: 1;     
+  z-index: 1;
+  /* Safe area support adicional */
+  padding-top: max(env(safe-area-inset-top), 0px);
+  /* Padding bottom para não sobrepor com BottomNav em mobile */
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  
+  @media (max-width: 768px) {
+    padding-bottom: max(calc(env(safe-area-inset-bottom) + 70px), 70px);
+  }
 }
 
 /* --- Fim os Estilos para o React Calendar --- */
