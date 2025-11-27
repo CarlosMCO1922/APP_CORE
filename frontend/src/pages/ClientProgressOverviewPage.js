@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyRecordsService, getMyPerformanceHistoryForExerciseService } from '../services/progressService';
-import { FaTrophy, FaArrowLeft, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
+import { FaTrophy, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 import AdvancedProgressChart from '../components/Workout/AdvancedProgressChart';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,13 +21,6 @@ const PageContainer = styled.div`
 const Header = styled.div`
   text-align: center; margin-bottom: 30px;
   h1 { font-size: 2.2rem; color: ${({ theme }) => theme.colors.primary}; margin: 0; display: flex; align-items: center; justify-content: center; gap: 12px;}
-`;
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary}; text-decoration: none; font-weight: 500;
-  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 25px;
-  padding: 9px 16px; border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s;
-  &:hover { background-color: ${({ theme }) => theme.colors.cardBackground}; color: ${({ theme }) => theme.colors.textMain}; }
 `;
 const LoadingText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.primary}; padding: 40px; font-size: 1.2rem;`;
 const ErrorText = styled.p`text-align: center; color: ${({ theme }) => theme.colors.error}; padding: 20px; background-color: ${({theme}) => theme.colors.errorBg}; border: 1px solid ${({theme}) => theme.colors.error}; border-radius: 8px;`;
@@ -112,18 +106,6 @@ const HeaderContainer = styled.div`
   margin-bottom: 30px;
 `;
 
-const BackButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.primary};
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0 8px 0 0;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
-`;
 
 const HeaderSpacer = styled.div`
   width: 32px;
@@ -191,10 +173,6 @@ const ClientProgressOverviewPage = () => {
     setChartData({ exerciseName: '', history: [] });
   };
 
-  const handleBack = () => {
-    setViewDirection('left');
-    navigate('/dashboard');
-  };
 
   if (loading) return <PageContainer><LoadingText>A carregar o teu progresso...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
@@ -203,7 +181,7 @@ const ClientProgressOverviewPage = () => {
     <>
       <PageContainer>
         <HeaderContainer>
-          <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
+          <BackArrow to="/dashboard" />
           <Title>Progresso e Recordes</Title>
           <HeaderSpacer />
         </HeaderContainer>

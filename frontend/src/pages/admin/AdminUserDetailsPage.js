@@ -5,7 +5,7 @@ import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetUserById, adminGetUserTrainingsService, adminGetUserAppointmentsService } from '../../services/userService';
 import { adminGetAllPayments } from '../../services/paymentService'; 
-import { FaArrowLeft, FaUserCircle, FaDumbbell, FaCalendarCheck, FaEnvelope, FaIdCard, FaMoneyBillWave } from 'react-icons/fa';
+import { FaUserCircle, FaDumbbell, FaCalendarCheck, FaEnvelope, FaIdCard, FaMoneyBillWave } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 
 
@@ -19,22 +19,6 @@ const PageContainer = styled.div`
   font-family: ${({ theme }) => theme.fonts.main};
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  padding: 9px 16px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
-  }
-`;
 
 const UserDetailsCard = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};

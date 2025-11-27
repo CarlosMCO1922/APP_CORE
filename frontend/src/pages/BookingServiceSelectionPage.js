@@ -11,12 +11,12 @@ import {
     FaUserMd, 
     FaDumbbell, 
     FaChevronDown, 
-    FaArrowLeft, 
     FaRegCalendarCheck, 
     FaUsers, 
     FaClock, 
     FaUserTie 
 } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 
 const serviceData = [
   {
@@ -50,17 +50,6 @@ const Header = styled.div`
   margin-bottom: 30px;
 `;
 
-const BackButton = styled.button` // MUDOU de Link para button
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: color 0.2s;
-  &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-  }
-`;
 
 const Title = styled.h1`
   font-size: clamp(1.8rem, 4vw, 2.2rem);
@@ -378,7 +367,7 @@ const BookingServiceSelectionPage = () => {
   return (
     <PageContainer>
       <Header>
-        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
+        <BackArrow to="/dashboard" />
         <Title>{getTitle()}</Title>
       </Header>
       

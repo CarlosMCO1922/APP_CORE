@@ -11,6 +11,12 @@ body {
   /* Safe area support para iPhone (notch) */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  /* Tamanho de fonte base otimizado para mobile */
+  font-size: 15px;
+  
+  @media (min-width: 769px) {
+    font-size: 16px;
+  }
 }
 
 code {
@@ -42,6 +48,35 @@ input, select, textarea {
     min-width: 44px;
     min-height: 44px;
     padding: 8px;
+  }
+  
+  /* Ajustes de tamanho de fonte para mobile - mais compacto mas legível */
+  h1 {
+    font-size: 1.75rem !important;
+  }
+  
+  h2 {
+    font-size: 1.4rem !important;
+  }
+  
+  h3 {
+    font-size: 1.2rem !important;
+  }
+  
+  /* Botões com tamanhos mais apropriados */
+  button, .button, a.button {
+    font-size: 0.9rem !important;
+    padding: 10px 18px !important;
+  }
+  
+  /* Inputs e labels */
+  input, select, textarea {
+    font-size: 15px !important;
+    padding: 12px 14px !important;
+  }
+  
+  label {
+    font-size: 0.9rem !important;
   }
 }
 

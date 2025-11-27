@@ -5,7 +5,8 @@ import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
 import { cancelTrainingBooking } from '../services/trainingService';
-import { FaRunning, FaTrashAlt, FaArrowLeft, FaRegClock } from 'react-icons/fa';
+import { FaRunning, FaTrashAlt, FaRegClock } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 import moment from 'moment';
 import 'moment/locale/pt';
 
@@ -31,16 +32,6 @@ const Title = styled.h1`
   gap: 12px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  &:hover { text-decoration: underline; }
-`;
 
 const TrainingList = styled.ul`
   list-style: none;
@@ -135,7 +126,9 @@ const MyTrainingsPage = () => {
 
   return (
     <PageContainer>
-      <BackLink to="/dashboard">←</BackLink>
+      <div style={{ marginBottom: '20px' }}>
+        <BackArrow to="/dashboard" />
+      </div>
       <Header>
         <Title><FaRunning />Meus Treinos Inscritos</Title>
       </Header>

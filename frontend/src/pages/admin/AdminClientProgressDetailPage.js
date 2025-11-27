@@ -6,7 +6,7 @@ import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetRecordsForUserService, adminGetFullExerciseHistoryForUserService } from '../../services/progressService';
 import { adminGetUserById } from '../../services/userService';
-import { FaTrophy, FaArrowLeft, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
+import { FaTrophy, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import AdvancedProgressChart from '../../components/Workout/AdvancedProgressChart';
 
@@ -35,22 +35,6 @@ const Header = styled.div`
   }
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  padding: 9px 16px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: ${({ theme }) => theme.colors.textMain};
-  }
-`;
 
 const LoadingText = styled.p`
     text-align: center; color: ${({ theme }) => theme.colors.primary}; padding: 40px; font-size: 1.2rem;

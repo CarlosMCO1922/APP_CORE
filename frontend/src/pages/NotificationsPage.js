@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { FaBell, FaCheckDouble, FaArrowLeft, FaExternalLinkAlt, FaRegClock } from 'react-icons/fa';
+import { FaBell, FaCheckDouble, FaExternalLinkAlt, FaRegClock } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 import { useToast } from '../components/Toast/ToastProvider';
 import { markNotificationAsReadService } from '../services/notificationService';
 
@@ -37,24 +38,6 @@ const Title = styled.h1`
   gap: 12px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  padding: 9px 16px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-  font-size: 0.95rem;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: ${({ theme }) => theme.colors.textMain};
-  }
-`;
 
 const NotificationListContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
@@ -394,9 +377,9 @@ const NotificationsPage = () => {
 
   return (
     <PageContainer>
-      <BackLink to={authState.role === 'user' ? "/dashboard" : "/admin/dashboard"}>
-        ←
-      </BackLink>
+      <div style={{ marginBottom: '20px' }}>
+        <BackArrow to={authState.role === 'user' ? "/dashboard" : "/admin/dashboard"} />
+      </div>
       <HeaderContainer>
         <Title><FaBell /> Minhas Notificações</Title>
         <FilterBar>

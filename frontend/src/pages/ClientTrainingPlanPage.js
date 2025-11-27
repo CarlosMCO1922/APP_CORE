@@ -5,7 +5,8 @@ import styled, { keyframes, createGlobalStyle } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getWorkoutPlansByTrainingId } from '../services/workoutPlanService';
 import { getAllTrainings } from '../services/trainingService';
-import { FaImage, FaVideo, FaTimes, FaArrowLeft } from 'react-icons/fa';
+import { FaImage, FaVideo, FaTimes } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -37,26 +38,6 @@ const TrainingInfo = styled.p`
   margin-bottom: 25px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${props => props.theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  padding: 8px 15px;
-  border-radius: ${props => props.theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-
-  &:hover {
-    background-color: ${props => props.theme.colors.cardBackground};
-    color: #fff; // Ajustar se necessário
-  }
-  svg {
-    margin-right: 5px;
-  }
-`;
 
 const MessageBase = styled.p`
   text-align: center;
@@ -382,9 +363,9 @@ function ClientTrainingPlanPage() {
           <MainTitle>Plano de Treino</MainTitle>
           <TrainingInfo>{trainingName || `Treino ID: ${trainingId}`}</TrainingInfo>
         </HeaderContainer>
-        <BackLink to={authState.role === 'user' ? "/dashboard" : "/admin/dashboard"}>
-          ←
-        </BackLink>
+        <div style={{ marginBottom: '20px' }}>
+          <BackArrow to={authState.role === 'user' ? "/dashboard" : "/admin/dashboard"} />
+        </div>
 
         {loading && <LoadingText>A carregar plano de treino...</LoadingText>}
         {error && <ErrorText>{error}</ErrorText>}

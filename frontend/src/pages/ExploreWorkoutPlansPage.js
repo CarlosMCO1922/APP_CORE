@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getVisibleWorkoutPlansService } from '../services/workoutPlanService'; 
-import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
+import { FaSearch, FaClipboardList, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 
 
 
@@ -36,17 +37,6 @@ const Title = styled.h1`
   text-align: center;
 `;
 
-const BackButton = styled.button` // MUDOU de Link para button
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: color 0.2s;
-  &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-  }
-`;
 
 const HeaderSpacer = styled.div``;
 
@@ -185,10 +175,6 @@ const ExploreWorkoutPlansPage = () => {
     fetchPlans();
   }, [fetchPlans]);
 
-  const handleBack = () => {
-    setViewDirection('left');
-    navigate('/dashboard');
-  };
 
   const handleUseThisPlan = (planId) => {
     navigate(`/meu-progresso/usar-plano/${planId}`);
@@ -199,7 +185,7 @@ const ExploreWorkoutPlansPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
+        <BackArrow to="/dashboard" />
         <Title>Planos de Treino</Title>
         <HeaderSpacer />
       </HeaderContainer>

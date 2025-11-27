@@ -1,5 +1,5 @@
 // src/components/Layout/BottomNav.js
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
@@ -9,12 +9,12 @@ import {
   FaCalendarAlt, 
   FaUserCircle, 
   FaDumbbell, 
-  FaChartLine,
-  FaCog,
+  FaListOl,
   FaRegCalendarCheck,
   FaBell,
   FaCog as FaSettings
 } from 'react-icons/fa';
+import MyAreaModal from './MyAreaModal';
 
 const Nav = styled.nav`
   position: fixed;
@@ -72,6 +72,46 @@ const NavItem = styled(Link)`
   }
 `;
 
+const NavButton = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  text-decoration: none;
+  background: none;
+  border: none;
+  color: ${({ theme, $isActive }) => 
+    $isActive ? theme.colors.primary : theme.colors.textMuted};
+  transition: all 0.2s ease;
+  min-width: 60px;
+  flex: 1;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  
+  svg {
+    font-size: 1.4rem;
+    transition: transform 0.2s ease;
+  }
+  
+  span {
+    font-size: 0.7rem;
+    font-weight: ${({ $isActive }) => $isActive ? '600' : '400'};
+    transition: font-weight 0.2s ease;
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
 const Badge = styled.span`
   position: absolute;
   top: 4px;
@@ -94,6 +134,7 @@ function BottomNav() {
   const { authState } = useAuth();
   const { unreadCount } = useNotifications();
   const { role } = authState;
+  const [isMyAreaOpen, setIsMyAreaOpen] = useState(false);
 
   // Verificar se a rota atual corresponde a uma rota da bottom nav
   const isActiveRoute = (path) => {
@@ -103,6 +144,14 @@ function BottomNav() {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
+  // Verificar se alguma rota do popup está ativa
+  const isMyAreaActive = () => {
+    const myAreaRoutes = ['/meu-progresso-detalhado', '/meus-pagamentos', '/definicoes'];
+    return myAreaRoutes.some(route => 
+      location.pathname === route || location.pathname.startsWith(route + '/')
+    );
+  };
+
   // Rotas para clientes
   if (role === 'user') {
     const clientNavItems = [
@@ -110,50 +159,73 @@ function BottomNav() {
         path: '/dashboard', 
         icon: FaHome, 
         label: 'Início',
-        exact: true
+        exact: true,
+        isLink: true
       },
       { 
         path: '/calendario', 
         icon: FaCalendarAlt, 
-        label: 'Agendar'
+        label: 'Agendar',
+        isLink: true
       },
       { 
         path: '/meus-treinos', 
         icon: FaDumbbell, 
-        label: 'Treinos'
+        label: 'Treinos',
+        isLink: true
       },
       { 
-        path: '/meu-progresso-detalhado', 
-        icon: FaChartLine, 
-        label: 'Progresso'
+        path: '/explorar-planos', 
+        icon: FaListOl, 
+        label: 'Planos',
+        isLink: true
       },
       { 
-        path: '/definicoes', 
-        icon: FaCog, 
-        label: 'Definições'
+        path: 'my-area', 
+        icon: FaUserCircle, 
+        label: 'Minha área',
+        isLink: false
       },
     ];
 
     return (
-      <Nav>
-        {clientNavItems.map(item => {
-          const isActive = item.exact 
-            ? location.pathname === item.path
-            : isActiveRoute(item.path);
-          const Icon = item.icon;
-          
-          return (
-            <NavItem 
-              key={item.path} 
-              to={item.path}
-              $isActive={isActive}
-            >
-              <Icon />
-              <span>{item.label}</span>
-            </NavItem>
-          );
-        })}
-      </Nav>
+      <>
+        <Nav>
+          {clientNavItems.map(item => {
+            const isActive = item.isLink 
+              ? (item.exact 
+                  ? location.pathname === item.path
+                  : isActiveRoute(item.path))
+              : isMyAreaActive();
+            const Icon = item.icon;
+            
+            if (item.isLink) {
+              return (
+                <NavItem 
+                  key={item.path} 
+                  to={item.path}
+                  $isActive={isActive}
+                >
+                  <Icon />
+                  <span>{item.label}</span>
+                </NavItem>
+              );
+            } else {
+              return (
+                <NavButton
+                  key={item.path}
+                  onClick={() => setIsMyAreaOpen(true)}
+                  $isActive={isActive}
+                >
+                  <Icon />
+                  <span>{item.label}</span>
+                </NavButton>
+              );
+            }
+          })}
+        </Nav>
+        <MyAreaModal isOpen={isMyAreaOpen} onClose={() => setIsMyAreaOpen(false)} />
+      </>
     );
   }
 

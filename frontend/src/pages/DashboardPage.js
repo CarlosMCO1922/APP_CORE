@@ -42,22 +42,22 @@ const Header = styled.header`
 `;
 
 const Title = styled.h1`
-  font-size: 2.5rem;
+  font-size: 2rem;
   color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 0.5rem;
   @media (max-width: 768px) {
-    font-size: 2.2rem;
+    font-size: 1.75rem;
   }
   @media (max-width: 480px) {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
 `;
 
 const WelcomeMessage = styled.p`
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: ${({ theme }) => theme.colors.textMain};
   @media (max-width: 480px) {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 `;
 
@@ -74,7 +74,7 @@ const Section = styled.section`
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 20px;
   padding-bottom: 10px;
@@ -82,8 +82,11 @@ const SectionTitle = styled.h2`
   display: flex;
   align-items: center;
   gap: 10px;
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+  }
   @media (max-width: 480px) {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
   }
 `;
 
@@ -709,12 +712,6 @@ const upcomingEvents = useMemo(() => {
             <Header>
                 <WelcomeMessage><strong>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</strong></WelcomeMessage>
             </Header>
-
-            <ActionsSection>
-                <StyledLinkButton to="/calendario">Agendar</StyledLinkButton>
-                <StyledLinkButton to="/meus-treinos">Treinos</StyledLinkButton>
-                <StyledLinkButton to="/meus-pagamentos">Pagamentos</StyledLinkButton>
-            </ActionsSection>
 
             {error && <ErrorText>{error}</ErrorText>}
             {pageMessage && <MessageText>{pageMessage}</MessageText>}

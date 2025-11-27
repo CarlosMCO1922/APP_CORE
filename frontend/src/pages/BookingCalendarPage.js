@@ -6,7 +6,8 @@ import Calendar from 'react-calendar';
 import { useAuth } from '../context/AuthContext';
 import { getAvailableSlotsForProfessional, clientRequestNewAppointment } from '../services/appointmentService';
 import { getAllStaffForSelection } from '../services/staffService';
-import { FaArrowLeft, FaRegCalendarCheck, FaClock, FaUserMd } from 'react-icons/fa';
+import { FaRegCalendarCheck, FaClock, FaUserMd } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 import moment from 'moment';
 import 'moment/locale/pt';
 import { useToast } from '../components/Toast/ToastProvider';
@@ -18,10 +19,6 @@ const PageContainer = styled.div`
 `;
 const Header = styled.div`
   display: flex; align-items: center; gap: 15px; margin-bottom: 30px;
-`;
-const BackButton = styled(Link)`
-  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.5rem;
-  transition: color 0.2s; &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
 const Title = styled.h1`
   font-size: clamp(1.8rem, 4vw, 2.2rem); color: ${({ theme }) => theme.colors.textMain}; margin: 0;
@@ -154,7 +151,7 @@ addToast('Erro ao enviar pedido de consulta.', { type: 'error', category: 'calen
   return (
     <PageContainer>
       <Header>
-        <BackButton to="/calendario"><FaArrowLeft /></BackButton>
+        <BackArrow to="/calendario" />
         <Title>{pageTitle}</Title>
       </Header>
       

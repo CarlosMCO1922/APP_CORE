@@ -17,7 +17,7 @@ import { getMyBookings } from '../services/userService';
 import { cancelTrainingBooking } from '../services/trainingService';
 import { cancelAppointmentBooking } from '../services/appointmentService';
 
-import { FaArrowLeft } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 
 const locales = { 'pt-BR': ptBR };
 const localizer = dateFnsLocalizer({
@@ -43,12 +43,6 @@ const Header = styled.div`
   margin-bottom: 20px;
 `;
 
-const BackButton = styled(Link)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.colors.primary}; }
-`;
 
 const Title = styled.h1`
   margin: 0;
@@ -232,7 +226,7 @@ export default function UserCalendarPage() {
   return (
     <PageContainer>
       <Header>
-        <BackButton to="/dashboard"><FaArrowLeft /></BackButton>
+        <BackArrow to="/dashboard" />
         <Title>Treinos/Consultas</Title>
       </Header>
 

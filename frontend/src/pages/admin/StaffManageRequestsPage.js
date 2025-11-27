@@ -38,23 +38,6 @@ const Subtitle = styled.p`
   margin-bottom: 20px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${props => props.theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  padding: 8px 15px;
-  border-radius: ${props => props.theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-
-  &:hover {
-    background-color: ${props => props.theme.colors.cardBackground};
-    color: #fff;
-  }
-`;
 
 
 const LoadingText = styled.p`

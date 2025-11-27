@@ -4,7 +4,7 @@ import { Link, useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getMyProfile, updateMyProfile } from '../services/userService';
-import { FaSearch, FaArrowLeft, FaClipboardList, FaInfoCircle, FaChevronDown, FaSignOutAlt } from 'react-icons/fa';
+import { FaSearch, FaClipboardList, FaInfoCircle, FaChevronDown, FaSignOutAlt } from 'react-icons/fa';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -89,17 +89,6 @@ const HeaderContainer = styled.div`
   gap: 15px; 
 `;
 
-const BackButton = styled.button` // MUDOU de Link para button
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: color 0.2s;
-  &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-  }
-`;
 
 const SubmitButton = styled.button`
   background-color: ${({ theme }) => theme.colors.primary};
@@ -256,10 +245,6 @@ const SettingsPage = () => {
     setPasswordData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleBack = () => {
-    setViewDirection('left');
-    navigate('/dashboard');
-  };
 
   const handleLogout = () => {
     if (window.confirm('Tens a certeza que queres sair?')) {
@@ -319,7 +304,7 @@ const SettingsPage = () => {
   return (
     <PageContainer>
       <HeaderContainer>
-        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
+        <BackArrow to="/dashboard" />
         <Title>Definições</Title>
         <HeaderSpacer />
       </HeaderContainer>

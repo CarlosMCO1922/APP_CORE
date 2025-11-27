@@ -33,10 +33,11 @@ import { getAllStaffForSelection, adminGetAllStaff } from '../services/staffServ
 import { adminGetAllUsers } from '../services/userService';
 
 import {
-    FaArrowLeft, FaTimes, FaUsers, FaUserMd, FaExternalLinkAlt,
+    FaTimes, FaUsers, FaUserMd, FaExternalLinkAlt,
     FaCalendarPlus, FaInfoCircle, FaCalendarDay, FaClock, FaUserCircle, FaStickyNote,
     FaDumbbell, FaRedo
 } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 
 const locales = { 'pt-BR': ptBR };
 const localizer = dateFnsLocalizer({
@@ -74,28 +75,6 @@ const Title = styled.h1`
   letter-spacing: -0.5px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  padding: 9px 16px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s, transform 0.15s ease;
-  font-size: 0.95rem;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
-    transform: translateY(-2px);
-  }
-  svg {
-    margin-right: 5px;
-  }
-`;
 
 const CalendarWrapper = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
@@ -1071,7 +1050,9 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
   return (
     <PageContainer>
       <HeaderSection> <Title>Calendário e Marcações</Title> </HeaderSection>
-      <BackLink to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"}>←</BackLink>
+      <div style={{ marginBottom: '20px' }}>
+        <BackArrow to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"} />
+      </div>
 
       {pageError && <PageErrorText>{pageError}</PageErrorText>}
       {pageSuccessMessage && !showRequestModal && !showEventModal && !showAdminCreateOptionsModal && !showAdminCreateTrainingModal && !showAdminCreateAppointmentModal && <PageSuccessMessage>{pageSuccessMessage}</PageSuccessMessage>}

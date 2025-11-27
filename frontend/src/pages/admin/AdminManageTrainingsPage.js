@@ -18,7 +18,7 @@ import {
 import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
 import {
-    FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt, FaArrowLeft,
+    FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt,
     FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus, FaLevelUpAlt, FaRedoAlt
 } from 'react-icons/fa';
 import moment from 'moment';
@@ -75,27 +75,6 @@ const CreateButton = styled.button`
   }
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding: 8px 12px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s ease, color 0.2s ease;
-  font-size: 0.9rem;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: ${({ theme }) => theme.colors.textMain};
-  }
-  svg {
-    margin-right: 4px;
-  }
-`;
 
 const TableWrapper = styled.div`
   width: 100%;

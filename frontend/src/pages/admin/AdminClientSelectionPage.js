@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { adminGetAllUsers } from '../../services/userService';
-import { FaUserGraduate, FaSearch, FaArrowLeft } from 'react-icons/fa';
+import { FaUserGraduate, FaSearch } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 
 // --- Styled Components (podes adaptar de outras páginas de admin) ---
@@ -34,23 +34,6 @@ const Title = styled.h1`
   gap: 10px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 15px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-  font-size: 0.9rem;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
-  }
-`;
 
 const SearchInput = styled.input`
   flex-grow: 1;

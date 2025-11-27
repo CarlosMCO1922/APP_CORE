@@ -4,7 +4,7 @@ import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext'; 
 import { createTrainingSeriesService } from '../../services/trainingService'; 
 import { getAllStaffForSelection } from '../../services/staffService'; 
-import { FaCalendarPlus, FaListAlt, FaArrowLeft } from 'react-icons/fa';
+import { FaCalendarPlus, FaListAlt } from 'react-icons/fa';
 
 import { Link } from 'react-router-dom';
 import BackArrow from '../../components/BackArrow';
@@ -35,24 +35,6 @@ const Title = styled.h1`
   gap: 12px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  padding: 9px 16px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-  font-size: 0.95rem;
-  border: 1px solid ${({ theme }) => theme.colors.primary};
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.textOnPrimary || '#fff'};
-  }
-`;
 
 const FormSection = styled.section`
   background-color: ${({ theme }) => theme.colors.cardBackground};

@@ -9,8 +9,8 @@ import { clientGetMyPayments, createStripePaymentIntentForSignal, clientConfirmM
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
-import { FaArrowLeft} from 'react-icons/fa';
 import { useToast } from '../components/Toast/ToastProvider';
+import BackArrow from '../components/BackArrow';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -124,17 +124,6 @@ const ActionButton = styled.button`
   }
 `;
 
-const BackButton = styled.button` // MUDOU de Link para button
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: color 0.2s;
-  &:hover {
-    color: ${({ theme }) => theme.colors.primary};
-  }
-`;
 
 const ConfirmButton = styled(ActionButton)`
     background-color: ${({ theme }) => theme.colors.success};
@@ -375,10 +364,6 @@ addToast('Falha ao confirmar pagamento.', { type: 'error', category: 'payment' }
     }
   };
 
-  const handleBack = () => {
-    setViewDirection('left');
-    navigate('/dashboard');
-  };
 
 
   const handleStripePaymentSuccess = (paymentIntent) => {
@@ -444,8 +429,10 @@ if (loading && !showStripeModal) {
   return (
     <PageContainer>
       <Header>
-        <BackButton onClick={handleBack}><FaArrowLeft /></BackButton>
-        <Title>Pagamentos</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+          <BackArrow to="/dashboard" />
+          <Title style={{ margin: 0, textAlign: 'left', flex: 1 }}>Pagamentos</Title>
+        </div>
         <HeaderActions>
           <RefreshButton onClick={handleRefreshPayments} disabled={loading}>
             {loading ? 'A atualizar...' : 'Atualizar Lista'}

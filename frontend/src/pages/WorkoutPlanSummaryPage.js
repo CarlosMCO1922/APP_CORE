@@ -5,7 +5,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService'; 
-import { FaArrowLeft, FaDumbbell, FaChevronRight } from 'react-icons/fa';
+import { FaDumbbell, FaChevronRight } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 import { useWorkout } from '../context/WorkoutContext';
 
 // --- Styled Components ---
@@ -24,12 +25,6 @@ const Header = styled.div`
   margin-bottom: 30px;
 `;
 
-const BackButton = styled(Link)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  transition: color 0.2s;
-  &:hover { color: ${({ theme }) => theme.colors.primary}; }
-`;
 
 const Title = styled.h1`
   font-size: clamp(1.8rem, 4vw, 2.4rem);
@@ -177,7 +172,7 @@ const WorkoutPlanSummaryPage = () => {
   return (
     <PageContainer>
       <Header>
-        <BackButton to="/explorar-planos"><FaArrowLeft /></BackButton>
+        <BackArrow to="/explorar-planos" />
         <Title>{plan.name}</Title>
         <div style={{width: '24px'}}></div> {/* Espaçador para centrar o título */}
       </Header>

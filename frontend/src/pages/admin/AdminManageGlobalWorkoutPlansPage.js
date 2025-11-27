@@ -19,7 +19,7 @@ import { getAllTrainings } from '../../services/trainingService';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
-    FaArrowLeft, FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical 
+    FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical 
 } from 'react-icons/fa';
 
 
@@ -121,17 +121,6 @@ const ModalCheckbox = styled.input`
   }
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  margin-bottom: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  &:hover {
-    text-decoration: underline;
-  }
-`;
 
 const TableWrapper = styled.div`
   width: 100%;

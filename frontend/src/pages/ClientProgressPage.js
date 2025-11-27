@@ -12,10 +12,11 @@ import {
     deleteExercisePerformanceLogService
 } from '../services/progressService';
 import {
-    FaRunning, FaClipboardList, FaSave, FaArrowLeft,
+    FaRunning, FaClipboardList, FaSave,
     FaHistory, FaTimes, FaDumbbell, FaTrash, FaChartLine,
     FaWeightHanging, FaStopwatch, FaCalendarCheck, FaChartBar
 } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
@@ -43,23 +44,6 @@ const Title = styled.h1`
   gap: 12px;
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  padding: 9px 16px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s, color 0.2s;
-  font-size: 0.95rem;
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: ${({ theme }) => theme.colors.textMain};
-  }
-`;
 
 const MessageBaseStyles = css`
   text-align: center;
@@ -876,7 +860,9 @@ const ClientProgressPage = () => {
 
     return (
         <PageContainer>
-            <BackLink to="/dashboard">←</BackLink>
+            <div style={{ marginBottom: '20px' }}>
+              <BackArrow to="/dashboard" />
+            </div>
             <HeaderContainer>
                 <Title><FaClipboardList /> Registar Progresso Pessoal</Title>
             </HeaderContainer>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components'; 
 import { useAuth } from '../../context/AuthContext';
 import { adminGetAllStaff, adminDeleteStaff, adminCreateStaff, adminUpdateStaff } from '../../services/staffService';
-import { FaUserTie, FaPlus, FaEdit, FaTrashAlt, FaArrowLeft, FaTimes } from 'react-icons/fa';
+import { FaUserTie, FaPlus, FaEdit, FaTrashAlt, FaTimes } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 
 // --- Styled Components ---
@@ -58,27 +58,6 @@ const CreateButton = styled.button`
   }
 `;
 
-const BackLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding: 8px 12px;
-  border-radius: ${({ theme }) => theme.borderRadius};
-  transition: background-color 0.2s ease, color 0.2s ease;
-  font-size: 0.9rem;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    color: #fff;
-  }
-  svg {
-    margin-right: 4px;
-  }
-`;
 
 const TableWrapper = styled.div`
   width: 100%;

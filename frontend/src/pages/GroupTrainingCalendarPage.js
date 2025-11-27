@@ -5,7 +5,8 @@ import styled from 'styled-components';
 import Calendar from 'react-calendar';
 import { useAuth } from '../context/AuthContext';
 import { getAllTrainings, bookTraining } from '../services/trainingService';
-import { FaArrowLeft, FaRegCalendarCheck, FaUsers, FaClock, FaUserTie } from 'react-icons/fa';
+import { FaRegCalendarCheck, FaUsers, FaClock, FaUserTie } from 'react-icons/fa';
+import BackArrow from '../components/BackArrow';
 import moment from 'moment';
 import 'moment/locale/pt';
 
@@ -16,10 +17,6 @@ const PageContainer = styled.div`
 `;
 const Header = styled.div`
   display: flex; align-items: center; gap: 15px; margin-bottom: 30px;
-`;
-const BackButton = styled(Link)`
-  color: ${({ theme }) => theme.colors.textMuted}; font-size: 1.5rem;
-  transition: color 0.2s; &:hover { color: ${({ theme }) => theme.colors.primary}; }
 `;
 const Title = styled.h1`
   font-size: clamp(1.8rem, 4vw, 2.2rem); color: ${({ theme }) => theme.colors.textMain}; margin: 0;
@@ -158,7 +155,7 @@ const GroupTrainingCalendarPage = () => {
   return (
     <PageContainer>
       <Header>
-        <BackButton to="/calendario"><FaArrowLeft /></BackButton>
+        <BackArrow to="/calendario" />
         <Title>Inscrever em Treino de Grupo</Title>
       </Header>
       
