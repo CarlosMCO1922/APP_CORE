@@ -16,6 +16,7 @@ import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck,
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
+import ThemeToggler from '../components/Theme/ThemeToggler';
 
 
 // --- Styled Components (do teu ficheiro original) ---
@@ -25,12 +26,29 @@ const PageContainer = styled.div`
   min-height: 100vh;
   padding: 20px 40px;
   font-family: ${({ theme }) => theme.fonts.main};
+  position: relative;
 
   @media (max-width: 768px) {
     padding: 20px 20px;
   }
   @media (max-width: 480px) {
     padding: 15px 15px;
+  }
+`;
+
+const TogglerContainer = styled.div`
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  z-index: 10;
+  
+  @media (max-width: 768px) {
+    right: 20px;
+    top: 15px;
+  }
+  @media (max-width: 480px) {
+    right: 15px;
+    top: 15px;
   }
 `;
 
@@ -709,6 +727,9 @@ const upcomingEvents = useMemo(() => {
 
     return (
         <PageContainer>
+            <TogglerContainer>
+                <ThemeToggler />
+            </TogglerContainer>
             <Header>
                 <WelcomeMessage><strong>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</strong></WelcomeMessage>
             </Header>

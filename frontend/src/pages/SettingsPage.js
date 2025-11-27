@@ -3,9 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { getMyProfile, updateMyProfile } from '../services/userService';
 import { FaSearch, FaClipboardList, FaInfoCircle, FaChevronDown, FaSignOutAlt } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
+import ThemeToggler from '../components/Theme/ThemeToggler';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -196,7 +198,8 @@ const LogoutButton = styled.button`
 
 
 const SettingsPage = () => {
-  const { authState, login: refreshAuthData, logout } = useAuth(); 
+  const { authState, login: refreshAuthData, logout } = useAuth();
+  const { theme: currentTheme } = useTheme(); 
   const navigate = useNavigate();
   const [viewDirection, setViewDirection] = useState('right');
   const [formData, setFormData] = useState({
@@ -371,6 +374,17 @@ const SettingsPage = () => {
             disabled={!passwordData.newPassword}
             autoComplete="new-password"
           />
+        </FormGroup>
+
+        <SectionTitle>Aparência</SectionTitle>
+        <FormGroup>
+          <Label htmlFor="themeToggle">Tema</Label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
+            <ThemeToggler />
+            <span style={{ fontSize: '0.9rem', color: '#a0a0a0' }}>
+              {currentTheme === 'light' ? 'Modo Claro' : 'Modo Escuro'}
+            </span>
+          </div>
         </FormGroup>
 
         <SubmitButton type="submit" disabled={updating}>

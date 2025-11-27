@@ -1,9 +1,21 @@
-// src/components/Layout/MyAreaModal.js
+// src/components/Layout/ManagementModal.js
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { FaChartLine, FaMoneyBillWave, FaCog, FaTimes, FaSignOutAlt } from 'react-icons/fa';
+import { 
+  FaUsers, 
+  FaChartLine, 
+  FaUserTie, 
+  FaDumbbell, 
+  FaCalendarPlus, 
+  FaCalendarCheck, 
+  FaMoneyBillWave, 
+  FaRunning, 
+  FaClipboardList,
+  FaTimes,
+  FaSignOutAlt
+} from 'react-icons/fa';
 
 const Overlay = styled.div`
   position: fixed;
@@ -96,16 +108,22 @@ const MenuList = styled.div`
   padding: 10px 0;
 `;
 
-const MenuItem = styled(Link)`
+const MenuItem = styled.button`
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 16px 20px;
   text-decoration: none;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
   color: ${({ theme }) => theme.colors.textMain};
   transition: all 0.2s ease;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   min-height: 44px;
+  cursor: pointer;
+  font-family: inherit;
   -webkit-tap-highlight-color: transparent;
   
   &:last-child {
@@ -127,46 +145,25 @@ const MenuItem = styled(Link)`
     font-size: 1rem;
     font-weight: 500;
   }
+  
+  ${({ $isLogout }) => $isLogout && `
+    color: ${({ theme }) => theme.colors.error};
+    border-top: 2px solid ${({ theme }) => theme.colors.cardBorder};
+    margin-top: 8px;
+    padding-top: 18px;
+    
+    svg {
+      color: ${({ theme }) => theme.colors.error};
+    }
+    
+    &:hover, &:active {
+      background-color: ${({ theme }) => theme.colors.errorBg || 'rgba(255, 107, 107, 0.1)'};
+      color: ${({ theme }) => theme.colors.error};
+    }
+  `}
 `;
 
-const LogoutButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  text-decoration: none;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  color: ${({ theme }) => theme.colors.error};
-  transition: all 0.2s ease;
-  border-top: 2px solid ${({ theme }) => theme.colors.cardBorder};
-  border-bottom: none;
-  min-height: 44px;
-  cursor: pointer;
-  font-family: inherit;
-  -webkit-tap-highlight-color: transparent;
-  margin-top: 8px;
-  
-  &:hover, &:active {
-    background-color: ${({ theme }) => theme.colors.errorBg || 'rgba(255, 107, 107, 0.1)'};
-    color: ${({ theme }) => theme.colors.error};
-  }
-  
-  svg {
-    font-size: 1.3rem;
-    color: ${({ theme }) => theme.colors.error};
-    flex-shrink: 0;
-  }
-  
-  span {
-    font-size: 1rem;
-    font-weight: 500;
-  }
-`;
-
-function MyAreaModal({ isOpen, onClose }) {
+function ManagementModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -174,25 +171,54 @@ function MyAreaModal({ isOpen, onClose }) {
 
   const menuItems = [
     {
-      path: '/meu-progresso-detalhado',
-      icon: FaChartLine,
-      label: 'Progresso'
+      path: '/admin/manage-users',
+      icon: FaUsers,
+      label: 'Clientes'
     },
     {
-      path: '/meus-pagamentos',
+      path: '/admin/progresso-clientes',
+      icon: FaChartLine,
+      label: 'Progresso Clientes'
+    },
+    {
+      path: '/admin/manage-staff',
+      icon: FaUserTie,
+      label: 'Equipa'
+    },
+    {
+      path: '/admin/manage-trainings',
+      icon: FaDumbbell,
+      label: 'Treinos'
+    },
+    {
+      path: '/admin/training-series',
+      icon: FaCalendarPlus,
+      label: 'Séries'
+    },
+    {
+      path: '/admin/manage-appointments',
+      icon: FaCalendarCheck,
+      label: 'Consultas'
+    },
+    {
+      path: '/admin/manage-payments',
       icon: FaMoneyBillWave,
       label: 'Pagamentos'
     },
     {
-      path: '/definicoes',
-      icon: FaCog,
-      label: 'Definições'
+      path: '/admin/manage-exercises',
+      icon: FaRunning,
+      label: 'Exercícios'
+    },
+    {
+      path: '/admin/manage-global-plans',
+      icon: FaClipboardList,
+      label: 'Planos Modelo'
     }
   ];
 
   const handleItemClick = (path) => {
     onClose();
-    // Pequeno delay para animação suave
     setTimeout(() => {
       navigate(path);
     }, 200);
@@ -212,7 +238,7 @@ function MyAreaModal({ isOpen, onClose }) {
     <Overlay onClick={onClose}>
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
-          <ModalTitle>Minha área</ModalTitle>
+          <ModalTitle>Gestão</ModalTitle>
           <CloseButton onClick={onClose} aria-label="Fechar">
             <FaTimes />
           </CloseButton>
@@ -223,27 +249,22 @@ function MyAreaModal({ isOpen, onClose }) {
             return (
               <MenuItem
                 key={item.path}
-                to={item.path}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleItemClick(item.path);
-                }}
+                onClick={() => handleItemClick(item.path)}
               >
                 <Icon />
                 <span>{item.label}</span>
               </MenuItem>
             );
           })}
-          <LogoutButton onClick={handleLogout}>
+          <MenuItem $isLogout onClick={handleLogout}>
             <FaSignOutAlt />
             <span>Sair</span>
-          </LogoutButton>
+          </MenuItem>
         </MenuList>
       </ModalContent>
     </Overlay>
   );
 }
 
-export default MyAreaModal;
-
+export default ManagementModal;
 

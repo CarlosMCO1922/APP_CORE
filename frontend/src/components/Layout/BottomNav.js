@@ -15,6 +15,7 @@ import {
   FaCog as FaSettings
 } from 'react-icons/fa';
 import MyAreaModal from './MyAreaModal';
+import ManagementModal from './ManagementModal';
 
 const Nav = styled.nav`
   position: fixed;
@@ -135,6 +136,7 @@ function BottomNav() {
   const { unreadCount } = useNotifications();
   const { role } = authState;
   const [isMyAreaOpen, setIsMyAreaOpen] = useState(false);
+  const [isManagementOpen, setIsManagementOpen] = useState(false);
 
   // Verificar se a rota atual corresponde a uma rota da bottom nav
   const isActiveRoute = (path) => {
@@ -148,6 +150,24 @@ function BottomNav() {
   const isMyAreaActive = () => {
     const myAreaRoutes = ['/meu-progresso-detalhado', '/meus-pagamentos', '/definicoes'];
     return myAreaRoutes.some(route => 
+      location.pathname === route || location.pathname.startsWith(route + '/')
+    );
+  };
+
+  // Verificar se alguma rota de gestão está ativa
+  const isManagementActive = () => {
+    const managementRoutes = [
+      '/admin/manage-users',
+      '/admin/progresso-clientes',
+      '/admin/manage-staff',
+      '/admin/manage-trainings',
+      '/admin/training-series',
+      '/admin/manage-appointments',
+      '/admin/manage-payments',
+      '/admin/manage-exercises',
+      '/admin/manage-global-plans'
+    ];
+    return managementRoutes.some(route => 
       location.pathname === route || location.pathname.startsWith(route + '/')
     );
   };
@@ -260,38 +280,62 @@ function BottomNav() {
     },
   ];
 
-  // Se for admin, adicionar Gestão como 4º item (substituindo Notificações na posição)
+  // Se for admin, substituir Notificações por Gestão (popup)
   if (role === 'admin') {
+    // Remover Notificações e Definições
+    staffNavItems = staffNavItems.filter(item => 
+      item.path !== '/notificacoes' && item.path !== '/definicoes'
+    );
+    // Adicionar Gestão como popup
     staffNavItems.splice(3, 0, {
-      path: '/admin/manage-users',
+      path: 'management',
       icon: FaUserCircle,
-      label: 'Gestão'
+      label: 'Gestão',
+      isLink: false
     });
-    // Remover o último item (Definições) para manter 5 itens
-    staffNavItems.pop();
   }
 
   return (
-    <Nav>
-      {staffNavItems.map(item => {
-        const isActive = item.exact 
-          ? location.pathname === item.path
-          : isActiveRoute(item.path);
-        const Icon = item.icon;
-        
-        return (
-          <NavItem 
-            key={item.path} 
-            to={item.path}
-            $isActive={isActive}
-          >
-            <Icon />
-            {item.badge && <Badge>{item.badge > 9 ? '9+' : item.badge}</Badge>}
-            <span>{item.label}</span>
-          </NavItem>
-        );
-      })}
-    </Nav>
+    <>
+      <Nav>
+        {staffNavItems.map(item => {
+          const isActive = item.isLink === false
+            ? isManagementActive()
+            : (item.exact 
+                ? location.pathname === item.path
+                : isActiveRoute(item.path));
+          const Icon = item.icon;
+          
+          if (item.isLink === false) {
+            return (
+              <NavButton
+                key={item.path}
+                onClick={() => setIsManagementOpen(true)}
+                $isActive={isActive}
+              >
+                <Icon />
+                <span>{item.label}</span>
+              </NavButton>
+            );
+          }
+          
+          return (
+            <NavItem 
+              key={item.path} 
+              to={item.path}
+              $isActive={isActive}
+            >
+              <Icon />
+              {item.badge && <Badge>{item.badge > 9 ? '9+' : item.badge}</Badge>}
+              <span>{item.label}</span>
+            </NavItem>
+          );
+        })}
+      </Nav>
+      {role === 'admin' && (
+        <ManagementModal isOpen={isManagementOpen} onClose={() => setIsManagementOpen(false)} />
+      )}
+    </>
   );
 }
 
