@@ -250,7 +250,7 @@ function BottomNav() {
   }
 
   // Rotas para staff/admin
-  const staffNavItems = [
+  let staffNavItems = [
     { 
       path: '/admin/dashboard', 
       icon: FaHome, 
