@@ -2,15 +2,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled, { css, useTheme} from 'styled-components';
-import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import ptBR from 'date-fns/locale/pt-BR';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import moment from 'moment';
 import { useToast } from '../components/Toast/ToastProvider';
+import CustomCalendar, { Views } from '../components/Calendar/CustomCalendar';
 
 
 import { useAuth } from '../context/AuthContext';
@@ -38,15 +34,6 @@ import {
     FaDumbbell, FaRedo
 } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
-
-const locales = { 'pt-BR': ptBR };
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
-  getDay,
-  locales,
-});
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
 const initialAdminTrainingFormState = { name: '', description: '', date: '', time: '', capacity: 10, instructorId: '', durationMinutes: 45, isRecurring: false, recurrenceType: 'weekly', seriesStartDate: '', seriesEndDate: '', dayOfWeek: '1'};
@@ -83,71 +70,8 @@ const CalendarWrapper = styled.div`
   box-shadow: ${({ theme }) => theme.boxShadow};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   height: 80vh;
-
-  .rbc-toolbar {
-    margin-bottom: 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  }
-
-.rbc-btn-group button {
-    color: ${({ theme }) => theme.colors.textMuted};
-    background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
-    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-    padding: 9px 16px;
-    border-radius: 6px;
-    margin: 0 3px;
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.9rem;
-
-    &:hover, &:focus {
-      background-color: ${({ theme }) => theme.colors.primary};
-      color: ${({ theme }) => theme.colors.textDark};
-      border-color: ${({ theme }) => theme.colors.primary};
-      box-shadow: 0 2px 8px ${({ theme }) => theme.colors.primary}50;
-    }
-  }
-
-  .rbc-toolbar button.rbc-active {
-    background-color: ${({ theme }) => theme.colors.primary};
-    color: ${({ theme }) => theme.colors.textDark};
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 8px ${({ theme }) => theme.colors.primary}70;
-  }
-
-  .rbc-toolbar-label {
-    color: ${({ theme }) => theme.colors.primary};
-    font-size: clamp(1.5rem, 4vw, 2rem);
-    font-weight: 600;
-    text-align: center;
-    flex-grow: 1;
-  }
-
-.rbc-header {
-    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-    border-left: 1px solid ${({ theme }) => theme.colors.cardBorder}60;
-    &:first-child { border-left: none; }
-    color: ${({ theme }) => theme.colors.textMuted};
-    padding: 10px 0;
-    text-align: center;
-    font-weight: 500;
-    font-size: 0.85rem;
-    text-transform: capitalize;
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-  }
-
-  .rbc-event, .rbc-day-slot .rbc-event {
-    border: none;
-    border-radius: 5px;
-    padding: 4px 7px;
-    font-size: 0.8rem;
+  overflow: hidden;
+`;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     transition: opacity 0.2s, transform 0.15s ease-out, box-shadow 0.15s ease-out;
     overflow: hidden;
@@ -157,48 +81,6 @@ const CalendarWrapper = styled.div`
         opacity: 0.85;
         transform: translateY(-2px) scale(1.03);
         box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-    }
-  }
-
-  .rbc-event-label { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .rbc-event-content { display: none; }
-  .rbc-event.rbc-selected { opacity: 1; }
-
-.rbc-agenda-view {
-    table {
-        border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-        font-size: 0.9rem;
-        thead th {
-            background-color: ${({ theme }) => theme.colors.cardBackground};
-            color: ${({ theme }) => theme.colors.primary};
-            border-bottom: 2px solid ${({ theme }) => theme.colors.primary};
-            padding: 10px 12px;
-        }
-        tbody tr:hover { background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; }
-        .rbc-agenda-date-cell, .rbc-agenda-time-cell {
-            color: ${({ theme }) => theme.colors.primary};
-            font-weight: 500; white-space: nowrap; padding: 10px 12px;
-        }
-         .rbc-agenda-event-cell { padding: 10px 12px; }
-    }
-  }
-
-.rbc-time-slot, .rbc-day-slot .rbc-time-slot { border-top: 1px dotted ${({ theme }) => theme.colors.cardBorder}; }
-  .rbc-time-gutter .rbc-timeslot-group { border-bottom: none; }
-  .rbc-time-header-gutter, .rbc-time-gutter { background: ${({ theme }) => theme.colors.background}; border-right: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
-  .rbc-day-bg + .rbc-day-bg { border-left: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
-  .rbc-month-row + .rbc-month-row { border-top: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
-  .rbc-today { background-color: ${({ theme }) => theme.colors.primaryFocusRing}; }
-  .rbc-off-range-bg { background-color: ${({ theme }) => theme.colors.backgroundSelect}; }
-  .rbc-slot-selectable { cursor: pointer; &:hover { background-color: ${({ theme }) => theme.colors.primaryFocusRing}; } }
-
-  .rbc-current-time-indicator {
-    background-color: ${({ theme }) => theme.colors.error}; height: 1.5px;
-    box-shadow: 0 0 6px ${({ theme }) => theme.colors.error}90;
-    &::before {
-      content: ''; display: block; width: 7px; height: 7px; border-radius: 50%;
-      background-color: ${({ theme }) => theme.colors.error};
-      position: absolute; left: -2.5px; top: -2.75px;
     }
   }
 `;
@@ -511,20 +393,6 @@ const SubscriptionMessageText = styled.p`
 `;
 
 
-const CustomEventComponent = ({ event }) => (
-  <EventComponentStyled title={event.title + (event.resource.type === 'training' ? ` (${(event.resource.participantsCount ?? event.resource.participants?.length ?? 0)}/${event.resource.capacity})` : '')}>
-    {event.resource.type === 'training' && <FaUsers className="event-icon" />}
-    {event.resource.type === 'appointment' && <FaUserMd className="event-icon" />}
-    <span className="event-title-text">{event.title.split('(')[0].trim().split(':')[0]}</span>
-    <span className="event-details-text">
-      {event.resource.type === 'training' &&
-        `(${(event.resource.participantsCount ?? event.resource.participants?.length ?? 0)}/${event.resource.capacity})`}
-      {event.resource.type === 'appointment' && event.resource.status === 'disponível' && `(Vago)`}
-      {event.resource.type === 'appointment' && event.resource.status === 'pendente_aprovacao_staff' && `(Pendente)`}
-      {event.resource.type === 'appointment' && event.resource.status === 'confirmada' && `(Confirm.)`}
-    </span>
-  </EventComponentStyled>
-);
 
 // --- Componente Principal ---
 const CalendarPage = () => {
@@ -765,61 +633,6 @@ addToast('Falha ao cancelar consulta.', { type: 'error', category: 'calendar' })
   const handleNavigate = useCallback((newDate) => { setCurrentDate(newDate); }, []);
   const handleViewChange = useCallback((newView) => { setCurrentView(newView); if (newView === Views.AGENDA) setAgendaVisibleCount(25); }, []);
 
-  const messages = useMemo(() => ({
-    allDay: 'Todo o dia', previous: '‹', next: '›', today: 'Hoje',
-    month: 'Mês', week: 'Semana', day: 'Dia', agenda: 'Agenda',
-    date: 'Data', time: 'Hora', event: 'Evento',
-    noEventsInRange: 'Não existem eventos neste período.',
-    showMore: total => `+ ${total} mais`
-  }), []);
-
-  const eventStyleGetter = useCallback((event, start, end, isSelected) => {
-    let backgroundColor = theme.colors.primary;
-    let borderColor = theme.colors.primary;
-    let textColor = theme.colors.textDark;
-
-    if (event.resource.type === 'appointment') {
-      backgroundColor = theme.colors.success;
-      borderColor = theme.colors.success;
-      if (event.resource.status === 'disponível') {
-        backgroundColor = theme.colors.mediaButtonBg || '#007bff';
-        borderColor = theme.colors.mediaButtonBg || '#007bff';
-        textColor = theme.colors.textMain;
-      } else if (event.resource.status === 'pendente_aprovacao_staff') {
-        backgroundColor = '#FFA000';
-        borderColor = '#FFA000';
-        textColor = theme.colors.textDark;
-      }
-    }
-
-    const style = {
-      backgroundColor: backgroundColor,
-      borderRadius: '5px',
-      opacity: isSelected ? 1 : 0.9,
-      color: textColor,
-      border: `1px solid ${borderColor}`,
-      boxShadow: isSelected ? `0 0 0 2px ${theme.colors.background}, 0 0 0 3px ${borderColor}` : '0 1px 2px rgba(0,0,0,0.2)',
-      fontSize: '0.78rem',
-      padding: '3px 5px',
-    };
-    return { style };
-  }, [theme]); 
-
-  const tooltipAccessor = useCallback((event) => {
-    const time = `${format(event.start, 'HH:mm')} - ${format(event.end, 'HH:mm')}`;
-    let details = `${event.title}\n${time}`;
-    if (event.resource.type === 'training') {
-      details += `\nInstrutor: ${event.resource.instructor?.firstName || 'N/A'}`;
-      details += `\nVagas: ${(event.resource.participantsCount ?? event.resource.participants?.length ?? 0)}/${event.resource.capacity}`;
-    } else if (event.resource.type === 'appointment') {
-      details += `\nProfissional: ${event.resource.professional?.firstName || 'N/A'}`;
-      if (event.resource.client) {
-        details += `\nCliente: ${event.resource.client.firstName}`;
-      }
-      details += `\nStatus: ${event.resource.status.replace(/_/g, ' ')}`;
-    }
-    return details;
-  }, []);
 
   const handleCloseAdminCreateOptionsModal = () => setShowAdminCreateOptionsModal(false);
 
@@ -1058,46 +871,20 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
       {pageSuccessMessage && !showRequestModal && !showEventModal && !showAdminCreateOptionsModal && !showAdminCreateTrainingModal && !showAdminCreateAppointmentModal && <PageSuccessMessage>{pageSuccessMessage}</PageSuccessMessage>}
 
       <CalendarWrapper>
-        <Calendar
-          localizer={localizer}
-          events={currentView === Views.AGENDA ? [...events].sort((a,b)=>a.start-b.start).slice(0, agendaVisibleCount) : events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: '100%' }}
-          views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-          defaultView={Views.WEEK}
+        <CustomCalendar
+          events={events}
+          currentDate={currentDate}
           view={currentView}
-          date={currentDate}
           onNavigate={handleNavigate}
-          onView={handleViewChange}
-          messages={messages}
-          culture='pt-BR'
+          onViewChange={handleViewChange}
           onSelectEvent={handleSelectEvent}
           onSelectSlot={handleSelectSlot}
           selectable={true}
-          components={{ event: CustomEventComponent }}
-          popup
-          eventPropGetter={eventStyleGetter}
-          tooltipAccessor={tooltipAccessor}
-          timeslots={1}
-          step={60}
           min={new Date(1970, 0, 1, 7, 0, 0)}
           max={new Date(1970, 0, 1, 22, 0, 0)}
-          formats={{
-            agendaHeaderFormat: ({ start, end }) => `${format(start, 'dd/MM')} – ${format(end, 'dd/MM')}`,
-            dayHeaderFormat: date => format(date, 'eeee, dd MMM', { locale: ptBR }),
-            dayRangeHeaderFormat: ({ start, end }, culture, local) =>
-              `${local.format(start, 'dd MMM', {locale: ptBR})} – ${local.format(end, (getDay(start) === getDay(end) ? '' : 'dd ') + 'MMM', {locale: ptBR})}`
-          }}
-          dayLayoutAlgorithm="no-overlap"
+          step={60}
         />
       </CalendarWrapper>
-
-      {currentView === Views.AGENDA && events.length > agendaVisibleCount && (
-        <div style={{ textAlign: 'center', marginTop: 12 }}>
-          <ActionButton onClick={() => setAgendaVisibleCount(c => c + 25)} primary>Mostrar mais</ActionButton>
-        </div>
-      )}
 
       {showEventModal && selectedEvent && (
         <ModalOverlay onClick={handleCloseEventModal}>
