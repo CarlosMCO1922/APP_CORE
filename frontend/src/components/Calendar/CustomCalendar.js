@@ -373,9 +373,17 @@ const EventChip = styled.div`
     flex-shrink: 0;
   }
   
+  .event-text {
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+  
   @media (max-width: 768px) {
     font-size: 0.7rem;
     padding: 3px 6px;
+    min-width: 20px;
+    justify-content: center;
   }
 `;
 
@@ -510,6 +518,7 @@ const WeekEvent = styled.div`
   align-items: center;
   gap: 6px;
   z-index: 1;
+  min-width: 24px;
   
   &:hover {
     transform: translateY(-2px);
@@ -522,9 +531,21 @@ const WeekEvent = styled.div`
     flex-shrink: 0;
   }
   
+  .event-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+  
   @media (max-width: 768px) {
     font-size: 0.75rem;
     padding: 4px 6px;
+    justify-content: center;
+    min-width: 20px;
   }
 `;
 
@@ -792,50 +813,73 @@ const CustomCalendar = ({
   const calculateEventPositions = (events) => {
     if (!events || events.length === 0) return [];
     
-    const positionedEvents = [];
-    const columns = [];
+    // Ordenar eventos por hora de início
+    const sortedEvents = [...events].sort((a, b) => {
+      try {
+        const aStart = a.start instanceof Date ? a.start : parseISO(a.start);
+        const bStart = b.start instanceof Date ? b.start : parseISO(b.start);
+        const aMinutes = getHours(aStart) * 60 + getMinutes(aStart);
+        const bMinutes = getHours(bStart) * 60 + getMinutes(bStart);
+        return aMinutes - bMinutes;
+      } catch {
+        return 0;
+      }
+    });
     
-    events.forEach((event, idx) => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
-      const startMinutes = getHours(eventStart) * 60 + getMinutes(eventStart);
-      const endMinutes = getHours(eventEnd) * 60 + getMinutes(eventEnd);
-      
-      // Encontrar uma coluna disponível
-      let columnIndex = -1;
-      for (let i = 0; i < columns.length; i++) {
-        const column = columns[i];
-        const hasOverlap = column.some(existingEvent => {
-          const existingStart = existingEvent.start instanceof Date ? existingEvent.start : parseISO(existingEvent.start);
-          const existingEnd = existingEvent.end instanceof Date ? existingEvent.end : parseISO(existingEvent.end);
-          const existingStartMinutes = getHours(existingStart) * 60 + getMinutes(existingStart);
-          const existingEndMinutes = getHours(existingEnd) * 60 + getMinutes(existingEnd);
-          
-          // Verifica sobreposição
-          return !(endMinutes <= existingStartMinutes || startMinutes >= existingEndMinutes);
-        });
+    const positionedEvents = [];
+    const columns = []; // Array de arrays, cada array representa uma coluna
+    
+    sortedEvents.forEach((event) => {
+      try {
+        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+        const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
+        const startMinutes = getHours(eventStart) * 60 + getMinutes(eventStart);
+        const endMinutes = getHours(eventEnd) * 60 + getMinutes(eventEnd);
         
-        if (!hasOverlap) {
-          columnIndex = i;
-          break;
+        // Encontrar uma coluna disponível (sem sobreposição)
+        let columnIndex = -1;
+        for (let i = 0; i < columns.length; i++) {
+          const column = columns[i];
+          // Verificar se há sobreposição com algum evento nesta coluna
+          const hasOverlap = column.some(existingEvent => {
+            try {
+              const existingStart = existingEvent.start instanceof Date ? existingEvent.start : parseISO(existingEvent.start);
+              const existingEnd = existingEvent.end instanceof Date ? existingEvent.end : parseISO(existingEvent.end);
+              const existingStartMinutes = getHours(existingStart) * 60 + getMinutes(existingStart);
+              const existingEndMinutes = getHours(existingEnd) * 60 + getMinutes(existingEnd);
+              
+              // Verifica sobreposição: eventos sobrepõem-se se não são completamente separados
+              return !(endMinutes <= existingStartMinutes || startMinutes >= existingEndMinutes);
+            } catch {
+              return false;
+            }
+          });
+          
+          if (!hasOverlap) {
+            columnIndex = i;
+            break;
+          }
         }
+        
+        // Se não encontrou coluna disponível, cria uma nova
+        if (columnIndex === -1) {
+          columnIndex = columns.length;
+          columns.push([]);
+        }
+        
+        // Adicionar evento à coluna
+        columns[columnIndex].push(event);
+        
+        positionedEvents.push({
+          event,
+          column: columnIndex,
+          totalColumns: columns.length,
+          startMinutes,
+          endMinutes
+        });
+      } catch (error) {
+        console.error('Error calculating event position:', error, event);
       }
-      
-      // Se não encontrou coluna disponível, cria uma nova
-      if (columnIndex === -1) {
-        columnIndex = columns.length;
-        columns.push([]);
-      }
-      
-      columns[columnIndex].push(event);
-      
-      positionedEvents.push({
-        event,
-        column: columnIndex,
-        totalColumns: columns.length,
-        startMinutes,
-        endMinutes
-      });
     });
     
     return positionedEvents;
@@ -943,7 +987,7 @@ const CustomCalendar = ({
                       title={event.title}
                     >
                       {event.resource?.type === 'training' ? <FaUsers /> : <FaUserMd />}
-                      <span>{event.title.split('(')[0].trim().split(':')[0]}</span>
+                      <span className="event-text">{event.title.split('(')[0].trim().split(':')[0]}</span>
                     </EventChip>
                   ))}
                   {dayEvents.length > 3 && (
@@ -1034,7 +1078,7 @@ const CustomCalendar = ({
                             title={event.title}
                           >
                             {event.resource?.type === 'training' ? <FaUsers /> : <FaUserMd />}
-                            <span>{event.title.split('(')[0].trim().split(':')[0]}</span>
+                            <span className="event-text">{event.title.split('(')[0].trim().split(':')[0]}</span>
                           </WeekEvent>
                         );
                       })}
