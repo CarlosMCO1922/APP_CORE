@@ -288,6 +288,10 @@ const ViewButton = styled.button`
   transition: all 0.2s ease;
   min-height: 36px;
   white-space: nowrap;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
   &:hover {
     background-color: ${({ $isActive, theme }) => 
@@ -297,11 +301,12 @@ const ViewButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 5px 4px;
-    font-size: 0.55rem;
+    padding: 10px 18px !important;
+    font-size: 0.75rem !important;
     flex: 1;
     min-width: 0;
     min-height: 30px;
+    text-align: center;
     
     svg {
       display: none;
