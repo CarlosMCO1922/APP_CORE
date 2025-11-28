@@ -74,13 +74,12 @@ const CalendarWrapper = styled.div`
   border-radius: 8px;
   box-shadow: ${({ theme }) => theme.boxShadow};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  height: 80vh;
+  overflow: hidden;
   
   @media (max-width: 768px) {
     border-radius: 6px;
   }
-`;
-  height: 80vh;
-  overflow: hidden;
 `;
 
 const MessageBaseStyles = css`
