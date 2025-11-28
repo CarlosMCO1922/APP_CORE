@@ -47,16 +47,79 @@ const CalendarContainer = styled.div`
 
 const CalendarHeader = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   padding: 20px 25px;
   border-bottom: 2px solid ${({ theme }) => theme.colors.cardBorder};
   background-color: ${({ theme }) => theme.colors.cardBackground};
+  gap: 15px;
   
   @media (max-width: 768px) {
     padding: 15px 20px;
-    flex-wrap: wrap;
-    gap: 15px;
+    gap: 12px;
+  }
+`;
+
+const HeaderTop = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+`;
+
+const FilterContainer = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+  }
+`;
+
+const FilterLabel = styled.span`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-weight: 500;
+  
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+  }
+`;
+
+const FilterButton = styled.button`
+  background-color: ${({ $isActive, theme }) => 
+    $isActive ? theme.colors.primary : theme.colors.buttonSecondaryBg};
+  color: ${({ $isActive, theme }) => 
+    $isActive ? theme.colors.textDark : theme.colors.textMain};
+  border: 1px solid ${({ $isActive, theme }) => 
+    $isActive ? theme.colors.primary : theme.colors.cardBorder};
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  
+  &:hover {
+    background-color: ${({ $isActive, theme }) => 
+      $isActive ? theme.colors.primaryHover : theme.colors.buttonSecondaryHoverBg};
+    transform: translateY(-1px);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 8px 12px;
+    font-size: 0.8rem;
   }
 `;
 
@@ -431,8 +494,6 @@ const WeekDayColumn = styled.div`
 
 const WeekEvent = styled.div`
   position: absolute;
-  left: 4px;
-  right: 4px;
   background-color: ${({ $eventType, theme }) => 
     $eventType === 'training' 
       ? theme.colors.primary 
@@ -610,6 +671,7 @@ const CustomCalendar = ({
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [currentView, setCurrentView] = useState(initialView);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [eventFilter, setEventFilter] = useState('all'); // 'all', 'training', 'appointment'
 
   const weekStartsOn = 1; // Monday
 
@@ -659,10 +721,10 @@ const CustomCalendar = ({
   }, [currentDate]);
 
   const getEventsForDay = (day) => {
-    if (!safeEvents || !Array.isArray(safeEvents)) return [];
+    if (!filteredEvents || !Array.isArray(filteredEvents)) return [];
     
     const dayStart = startOfDay(day);
-    return safeEvents.filter(event => {
+    return filteredEvents.filter(event => {
       if (!event || !event.start) return false;
       
       try {
@@ -691,10 +753,21 @@ const CustomCalendar = ({
     return slots;
   }, [min, max]);
 
-  const getEventsForWeekDay = (day, hour) => {
-    if (!safeEvents || !Array.isArray(safeEvents)) return [];
-    
+  // Filtrar eventos baseado no filtro selecionado
+  const filteredEvents = useMemo(() => {
+    if (eventFilter === 'all') return safeEvents;
     return safeEvents.filter(event => {
+      const eventType = event.resource?.type;
+      if (eventFilter === 'training') return eventType === 'training';
+      if (eventFilter === 'appointment') return eventType === 'appointment';
+      return true;
+    });
+  }, [safeEvents, eventFilter]);
+
+  const getEventsForWeekDay = (day, hour) => {
+    if (!filteredEvents || !Array.isArray(filteredEvents)) return [];
+    
+    return filteredEvents.filter(event => {
       if (!event || !event.start) return false;
       
       try {
@@ -715,11 +788,64 @@ const CustomCalendar = ({
     });
   };
 
+  // Função para calcular posicionamento lado a lado quando há sobreposição
+  const calculateEventPositions = (events) => {
+    if (!events || events.length === 0) return [];
+    
+    const positionedEvents = [];
+    const columns = [];
+    
+    events.forEach((event, idx) => {
+      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+      const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
+      const startMinutes = getHours(eventStart) * 60 + getMinutes(eventStart);
+      const endMinutes = getHours(eventEnd) * 60 + getMinutes(eventEnd);
+      
+      // Encontrar uma coluna disponível
+      let columnIndex = -1;
+      for (let i = 0; i < columns.length; i++) {
+        const column = columns[i];
+        const hasOverlap = column.some(existingEvent => {
+          const existingStart = existingEvent.start instanceof Date ? existingEvent.start : parseISO(existingEvent.start);
+          const existingEnd = existingEvent.end instanceof Date ? existingEvent.end : parseISO(existingEvent.end);
+          const existingStartMinutes = getHours(existingStart) * 60 + getMinutes(existingStart);
+          const existingEndMinutes = getHours(existingEnd) * 60 + getMinutes(existingEnd);
+          
+          // Verifica sobreposição
+          return !(endMinutes <= existingStartMinutes || startMinutes >= existingEndMinutes);
+        });
+        
+        if (!hasOverlap) {
+          columnIndex = i;
+          break;
+        }
+      }
+      
+      // Se não encontrou coluna disponível, cria uma nova
+      if (columnIndex === -1) {
+        columnIndex = columns.length;
+        columns.push([]);
+      }
+      
+      columns[columnIndex].push(event);
+      
+      positionedEvents.push({
+        event,
+        column: columnIndex,
+        totalColumns: columns.length,
+        startMinutes,
+        endMinutes
+      });
+    });
+    
+    return positionedEvents;
+  };
+
   // Agenda View Logic
   const agendaEvents = useMemo(() => {
-    if (!safeEvents || !Array.isArray(safeEvents)) return {};
+    if (!filteredEvents || !Array.isArray(filteredEvents)) return {};
     
-    const sorted = [...safeEvents].filter(event => event && event.start).sort((a, b) => {
+    const sorted = [...filteredEvents].filter(event => event && event.start).sort((a, b) => {
       try {
         const aStart = a.start instanceof Date ? a.start : parseISO(a.start);
         const bStart = b.start instanceof Date ? b.start : parseISO(b.start);
@@ -745,7 +871,7 @@ const CustomCalendar = ({
     });
 
     return grouped;
-  }, [safeEvents]);
+  }, [filteredEvents]);
 
   const handleEventClick = (event, e) => {
     e.stopPropagation();
@@ -862,29 +988,48 @@ const CustomCalendar = ({
                   {format(slot, 'HH:mm')}
                 </TimeSlot>
                 {weekDays.map((day, dayIdx) => {
-                  const dayEvents = getEventsForWeekDay(day, hour);
+                  // Obter todos os eventos do dia para calcular sobreposições
+                  const allDayEvents = filteredEvents.filter(event => {
+                    if (!event || !event.start) return false;
+                    try {
+                      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+                      return isSameDay(eventStart, day);
+                    } catch {
+                      return false;
+                    }
+                  });
+                  
+                  const positionedEvents = calculateEventPositions(allDayEvents);
+                  const slotMinutes = hour * 60;
+                  
                   return (
                     <WeekDayColumn
                       key={dayIdx}
                       onClick={() => handleSlotClick(day, hour)}
                     >
-                      {dayEvents.map((event, eventIdx) => {
-                        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-                        const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
-                        const startMinutes = getHours(eventStart) * 60 + getMinutes(eventStart);
-                        const endMinutes = getHours(eventEnd) * 60 + getMinutes(eventEnd);
-                        const slotMinutes = hour * 60;
+                      {positionedEvents.map(({ event, column, totalColumns, startMinutes, endMinutes }, eventIdx) => {
                         const top = ((startMinutes - slotMinutes) / 60) * 100;
                         const height = ((endMinutes - startMinutes) / 60) * 100;
+                        const width = `${100 / totalColumns}%`;
+                        const left = `${(column / totalColumns) * 100}%`;
+                        
+                        // Só renderizar se o evento está visível neste slot
+                        if (endMinutes <= slotMinutes || startMinutes >= slotMinutes + 60) {
+                          return null;
+                        }
                         
                         return (
                           <WeekEvent
-                            key={eventIdx}
+                            key={`${dayIdx}-${eventIdx}`}
                             $eventType={event.resource?.type}
                             onClick={(e) => handleEventClick(event, e)}
                             style={{
                               top: `${Math.max(0, top)}%`,
                               height: `${Math.max(20, height)}%`,
+                              left: left,
+                              width: width,
+                              marginLeft: column > 0 ? '2px' : '4px',
+                              marginRight: column < totalColumns - 1 ? '2px' : '4px',
                             }}
                             title={event.title}
                           >
@@ -919,21 +1064,36 @@ const CustomCalendar = ({
         <DayGrid>
           {timeSlots.map((slot, slotIdx) => {
             const hour = getHours(slot);
-            const dayEvents = getEventsForWeekDay(currentDate, hour);
+            // Obter todos os eventos do dia para calcular sobreposições
+            const allDayEvents = filteredEvents.filter(event => {
+              if (!event || !event.start) return false;
+              try {
+                const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+                return isSameDay(eventStart, currentDate);
+              } catch {
+                return false;
+              }
+            });
+            
+            const positionedEvents = calculateEventPositions(allDayEvents);
+            const slotMinutes = hour * 60;
+            
             return (
               <React.Fragment key={slotIdx}>
                 <TimeSlot>
                   {format(slot, 'HH:mm')}
                 </TimeSlot>
                 <DayColumn onClick={() => handleSlotClick(currentDate, hour)}>
-                  {dayEvents.map((event, eventIdx) => {
-                    const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-                    const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
-                    const startMinutes = getHours(eventStart) * 60 + getMinutes(eventStart);
-                    const endMinutes = getHours(eventEnd) * 60 + getMinutes(eventEnd);
-                    const slotMinutes = hour * 60;
+                  {positionedEvents.map(({ event, column, totalColumns, startMinutes, endMinutes }, eventIdx) => {
                     const top = ((startMinutes - slotMinutes) / 60) * 100;
                     const height = ((endMinutes - startMinutes) / 60) * 100;
+                    const width = `${100 / totalColumns}%`;
+                    const left = `${(column / totalColumns) * 100}%`;
+                    
+                    // Só renderizar se o evento está visível neste slot
+                    if (endMinutes <= slotMinutes || startMinutes >= slotMinutes + 60) {
+                      return null;
+                    }
                     
                     return (
                       <WeekEvent
@@ -943,6 +1103,10 @@ const CustomCalendar = ({
                         style={{
                           top: `${Math.max(0, top)}%`,
                           height: `${Math.max(20, height)}%`,
+                          left: left,
+                          width: width,
+                          marginLeft: column > 0 ? '2px' : '4px',
+                          marginRight: column < totalColumns - 1 ? '2px' : '4px',
                         }}
                         title={event.title}
                       >
@@ -1024,44 +1188,69 @@ const CustomCalendar = ({
   return (
     <CalendarContainer>
       <CalendarHeader>
-        <HeaderLeft>
-          <NavigationButton onClick={() => handleNavigate('prev')}>
-            <FaChevronLeft />
-          </NavigationButton>
-          <HeaderTitle>{formatDateTitle()}</HeaderTitle>
-          <NavigationButton onClick={() => handleNavigate('next')}>
-            <FaChevronRight />
-          </NavigationButton>
-          <TodayButton onClick={handleToday}>Hoje</TodayButton>
-        </HeaderLeft>
-        <ViewButtons>
-          <ViewButton
-            $isActive={currentView === Views.MONTH}
-            onClick={() => handleViewChange(Views.MONTH)}
+        <HeaderTop>
+          <HeaderLeft>
+            <NavigationButton onClick={() => handleNavigate('prev')}>
+              <FaChevronLeft />
+            </NavigationButton>
+            <HeaderTitle>{formatDateTitle()}</HeaderTitle>
+            <NavigationButton onClick={() => handleNavigate('next')}>
+              <FaChevronRight />
+            </NavigationButton>
+            <TodayButton onClick={handleToday}>Hoje</TodayButton>
+          </HeaderLeft>
+          <ViewButtons>
+            <ViewButton
+              $isActive={currentView === Views.MONTH}
+              onClick={() => handleViewChange(Views.MONTH)}
+            >
+              <FaCalendarDay style={{ marginRight: '6px' }} />
+              Mês
+            </ViewButton>
+            <ViewButton
+              $isActive={currentView === Views.WEEK}
+              onClick={() => handleViewChange(Views.WEEK)}
+            >
+              Semana
+            </ViewButton>
+            <ViewButton
+              $isActive={currentView === Views.DAY}
+              onClick={() => handleViewChange(Views.DAY)}
+            >
+              Dia
+            </ViewButton>
+            <ViewButton
+              $isActive={currentView === Views.AGENDA}
+              onClick={() => handleViewChange(Views.AGENDA)}
+            >
+              <FaListUl style={{ marginRight: '6px' }} />
+              Agenda
+            </ViewButton>
+          </ViewButtons>
+        </HeaderTop>
+        <FilterContainer>
+          <FilterLabel>Filtrar:</FilterLabel>
+          <FilterButton
+            $isActive={eventFilter === 'all'}
+            onClick={() => setEventFilter('all')}
           >
-            <FaCalendarDay style={{ marginRight: '6px' }} />
-            Mês
-          </ViewButton>
-          <ViewButton
-            $isActive={currentView === Views.WEEK}
-            onClick={() => handleViewChange(Views.WEEK)}
+            Todos
+          </FilterButton>
+          <FilterButton
+            $isActive={eventFilter === 'training'}
+            onClick={() => setEventFilter('training')}
           >
-            Semana
-          </ViewButton>
-          <ViewButton
-            $isActive={currentView === Views.DAY}
-            onClick={() => handleViewChange(Views.DAY)}
+            <FaUsers style={{ fontSize: '0.85rem' }} />
+            Treinos
+          </FilterButton>
+          <FilterButton
+            $isActive={eventFilter === 'appointment'}
+            onClick={() => setEventFilter('appointment')}
           >
-            Dia
-          </ViewButton>
-          <ViewButton
-            $isActive={currentView === Views.AGENDA}
-            onClick={() => handleViewChange(Views.AGENDA)}
-          >
-            <FaListUl style={{ marginRight: '6px' }} />
-            Agenda
-          </ViewButton>
-        </ViewButtons>
+            <FaUserMd style={{ fontSize: '0.85rem' }} />
+            Consultas
+          </FilterButton>
+        </FilterContainer>
       </CalendarHeader>
       
       {currentView === Views.MONTH && renderMonthView()}
