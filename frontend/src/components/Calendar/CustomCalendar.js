@@ -681,17 +681,17 @@ const CustomCalendar = ({
   }, [min, max]);
 
   const getEventsForWeekDay = (day, hour) => {
-    const dayStart = startOfDay(day);
-    const slotStart = setHours(setMinutes(dayStart, 0), hour);
-    const slotEnd = setHours(setMinutes(dayStart, 59), hour);
-    
     return events.filter(event => {
       const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      const eventEnd = event.end instanceof Date ? event.end : parseISO(event.end);
-      return (
-        (isAfter(eventStart, slotStart) || isSameDay(eventStart, slotStart)) &&
-        (isBefore(eventEnd, slotEnd) || isSameDay(eventEnd, slotEnd))
-      );
+      
+      // Verifica se o evento começa neste dia específico
+      if (!isSameDay(eventStart, day)) {
+        return false;
+      }
+      
+      // Verifica se o evento começa neste slot de hora específico
+      const eventHour = getHours(eventStart);
+      return eventHour === hour;
     });
   };
 
