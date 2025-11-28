@@ -54,8 +54,8 @@ const CalendarHeader = styled.div`
   gap: 15px;
   
   @media (max-width: 768px) {
-    padding: 15px 20px;
-    gap: 12px;
+    padding: 12px 15px;
+    gap: 10px;
   }
 `;
 
@@ -76,7 +76,7 @@ const HeaderTop = styled.div`
 const MobileRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   
   @media (min-width: 769px) {
@@ -143,18 +143,21 @@ const FilterButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 8px 10px;
-    font-size: 0.75rem;
+    padding: 6px 8px;
+    font-size: 0.7rem;
     flex: 1;
     justify-content: center;
     min-width: 0;
+    min-height: 32px;
+    gap: 4px;
     
     span {
-      display: none;
+      display: inline;
     }
     
     svg {
-      margin: 0;
+      font-size: 0.7rem;
+      flex-shrink: 0;
     }
   }
 `;
@@ -183,7 +186,7 @@ const HeaderTitle = styled.h2`
   
   @media (max-width: 768px) {
     min-width: auto;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     flex: 1;
     text-align: center;
     white-space: nowrap;
@@ -220,8 +223,14 @@ const NavigationButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    
+    svg {
+      font-size: 0.85rem;
+    }
   }
 `;
 
@@ -235,6 +244,7 @@ const TodayButton = styled.button`
   cursor: pointer;
   transition: all 0.2s ease;
   min-height: 44px;
+  font-size: 0.9rem;
   
   &:hover {
     background-color: ${({ theme }) => theme.colors.primaryHover};
@@ -242,8 +252,9 @@ const TodayButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 10px 15px;
-    font-size: 0.9rem;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    min-height: 36px;
   }
 `;
 
@@ -286,10 +297,11 @@ const ViewButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 6px 8px;
-    font-size: 0.75rem;
+    padding: 6px 6px;
+    font-size: 0.7rem;
     flex: 1;
     min-width: 0;
+    min-height: 32px;
     
     svg {
       display: none;

@@ -2,15 +2,9 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
-import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import ptBR from 'date-fns/locale/pt-BR';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import moment from 'moment';
 import 'moment/locale/pt';
+import CustomCalendar, { Views } from '../components/Calendar/CustomCalendar';
 
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings } from '../services/userService';
@@ -18,15 +12,6 @@ import { cancelTrainingBooking } from '../services/trainingService';
 import { cancelAppointmentBooking } from '../services/appointmentService';
 
 import BackArrow from '../components/BackArrow';
-
-const locales = { 'pt-BR': ptBR };
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
-  getDay,
-  locales,
-});
 
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
@@ -56,23 +41,7 @@ const CalendarWrapper = styled.div`
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   height: 80vh;
-
-  .rbc-toolbar {
-    margin-bottom: 20px;
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
-    padding-bottom: 12px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  }
-  .rbc-btn-group button { color: ${({ theme }) => theme.colors.textMuted}; background: ${({ theme }) => theme.colors.buttonSecondaryBg}; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-  .rbc-btn-group button:hover, .rbc-toolbar button.rbc-active { background: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.textDark}; border-color: ${({ theme }) => theme.colors.primary}; }
-  .rbc-toolbar-label { color: ${({ theme }) => theme.colors.primary}; font-weight: 600; font-size: clamp(1.2rem, 3vw, 1.6rem); }
-
-  .rbc-header { border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; color: ${({ theme }) => theme.colors.textMuted}; background: ${({ theme }) => theme.colors.cardBackground}; text-transform: capitalize; }
-  .rbc-time-slot, .rbc-day-slot .rbc-time-slot { border-top: 1px dotted ${({ theme }) => theme.colors.cardBorder}; }
-  .rbc-time-header-gutter, .rbc-time-gutter { background: ${({ theme }) => theme.colors.background}; border-right: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
-  .rbc-day-bg + .rbc-day-bg { border-left: 1px solid ${({ theme }) => theme.colors.cardBorder}80; }
-  .rbc-today { background-color: ${({ theme }) => theme.colors.primaryFocusRing}; }
-
-  .rbc-event, .rbc-day-slot .rbc-event { border: none; border-radius: 6px; padding: 4px 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+  overflow: hidden;
 `;
 
 const LoadingText = styled.p`
@@ -128,6 +97,8 @@ export default function UserCalendarPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState(Views.WEEK);
 
   const fetchData = useCallback(async () => {
     if (!authState.token) return;
@@ -207,21 +178,13 @@ export default function UserCalendarPage() {
     }
   }, [selectedEvent, authState.token, fetchData]);
 
-  const eventPropGetter = useCallback((event) => {
-    const type = event.resource?.type;
-    const base = {
-      style: {
-        backgroundColor: theme.colors.primary,
-        color: theme.colors.textDark,
-        borderRadius: 6,
-        border: 'none',
-      }
-    };
-    if (type === 'appointment') {
-      base.style.backgroundColor = '#2e7d32'; // green-ish for appointments
-    }
-    return base;
-  }, [theme]);
+  const handleNavigate = useCallback((newDate) => {
+    setCurrentDate(newDate);
+  }, []);
+
+  const handleViewChange = useCallback((newView) => {
+    setCurrentView(newView);
+  }, []);
 
   return (
     <PageContainer>
@@ -238,25 +201,17 @@ export default function UserCalendarPage() {
         ) : events.length === 0 ? (
           <NoItemsText>Sem treinos ou consultas.</NoItemsText>
         ) : (
-          <Calendar
-            localizer={localizer}
+          <CustomCalendar
             events={events}
-            startAccessor="start"
-            endAccessor="end"
-            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-            defaultView={Views.WEEK}
-            step={30}
-            messages={{
-              month: 'Mês', week: 'Semana', day: 'Dia', today: 'Hoje', agenda: 'Agenda',
-              previous: 'Anterior', next: 'Seguinte', noEventsInRange: 'Sem eventos neste intervalo.'
-            }}
-            eventPropGetter={eventPropGetter}
+            currentDate={currentDate}
+            view={currentView}
+            onNavigate={handleNavigate}
+            onViewChange={handleViewChange}
             onSelectEvent={onSelectEvent}
-            tooltipAccessor={(e) => {
-              const r = e.resource?.raw || {};
-              const who = r.instructor?.firstName || r.professional?.firstName || '';
-              return `${e.title} · ${moment(e.start).format('DD/MM HH:mm')} - ${moment(e.end).format('HH:mm')}${who ? ` · ${who}` : ''}`;
-            }}
+            selectable={false}
+            min={new Date(1970, 0, 1, 7, 0, 0)}
+            max={new Date(1970, 0, 1, 22, 0, 0)}
+            step={60}
           />
         )}
       </CalendarWrapper>
