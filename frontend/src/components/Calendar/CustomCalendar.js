@@ -152,11 +152,11 @@ const FilterButton = styled.button`
     gap: 3px;
     
     span {
-      display: inline;
+      display: none;
     }
     
     svg {
-      font-size: 0.65rem;
+      font-size: 0.75rem;
       flex-shrink: 0;
     }
   }
@@ -298,7 +298,7 @@ const ViewButton = styled.button`
   
   @media (max-width: 768px) {
     padding: 5px 4px;
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     flex: 1;
     min-width: 0;
     min-height: 30px;
@@ -1393,6 +1393,8 @@ const CustomCalendar = ({
             $isActive={eventFilter === 'all'}
             onClick={() => setEventFilter('all')}
           >
+            <FaUsers style={{ fontSize: '0.85rem' }} />
+            <FaUserMd style={{ fontSize: '0.85rem' }} />
             <span>Todos</span>
           </FilterButton>
           <FilterButton
