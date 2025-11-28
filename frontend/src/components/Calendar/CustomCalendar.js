@@ -67,7 +67,31 @@ const HeaderTop = styled.div`
   gap: 15px;
   
   @media (max-width: 768px) {
+    flex-direction: column;
     gap: 12px;
+    align-items: stretch;
+  }
+`;
+
+const MobileRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+const DesktopRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+  
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
 
@@ -79,7 +103,8 @@ const FilterContainer = styled.div`
   
   @media (max-width: 768px) {
     width: 100%;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 6px;
   }
 `;
 
@@ -89,7 +114,7 @@ const FilterLabel = styled.span`
   font-weight: 500;
   
   @media (max-width: 768px) {
-    font-size: 0.85rem;
+    display: none;
   }
 `;
 
@@ -118,8 +143,19 @@ const FilterButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 8px 12px;
-    font-size: 0.8rem;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+    
+    span {
+      display: none;
+    }
+    
+    svg {
+      margin: 0;
+    }
   }
 `;
 
@@ -127,6 +163,13 @@ const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 15px;
+  flex: 1;
+  
+  @media (max-width: 768px) {
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
 `;
 
 const HeaderTitle = styled.h2`
@@ -135,10 +178,17 @@ const HeaderTitle = styled.h2`
   margin: 0;
   font-weight: 700;
   min-width: 200px;
+  text-align: center;
+  flex: 1;
   
   @media (max-width: 768px) {
     min-width: auto;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 `;
 
@@ -206,8 +256,10 @@ const ViewButtons = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   
   @media (max-width: 768px) {
-    gap: 4px;
-    padding: 3px;
+    gap: 3px;
+    padding: 2px;
+    width: 100%;
+    justify-content: space-between;
   }
 `;
 
@@ -234,8 +286,14 @@ const ViewButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 8px 12px;
-    font-size: 0.85rem;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    flex: 1;
+    min-width: 0;
+    
+    svg {
+      display: none;
+    }
   }
 `;
 
@@ -1155,7 +1213,7 @@ const CustomCalendar = ({
                         title={event.title}
                       >
                         {event.resource?.type === 'training' ? <FaUsers /> : <FaUserMd />}
-                        <span>{event.title.split('(')[0].trim().split(':')[0]}</span>
+                        <span className="event-text">{event.title.split('(')[0].trim().split(':')[0]}</span>
                       </WeekEvent>
                     );
                   })}
@@ -1232,7 +1290,8 @@ const CustomCalendar = ({
   return (
     <CalendarContainer>
       <CalendarHeader>
-        <HeaderTop>
+        {/* Desktop Layout */}
+        <DesktopRow>
           <HeaderLeft>
             <NavigationButton onClick={() => handleNavigate('prev')}>
               <FaChevronLeft />
@@ -1271,28 +1330,72 @@ const CustomCalendar = ({
               Agenda
             </ViewButton>
           </ViewButtons>
-        </HeaderTop>
+        </DesktopRow>
+        
+        {/* Mobile Layout - Row 1: Navigation */}
+        <MobileRow>
+          <NavigationButton onClick={() => handleNavigate('prev')}>
+            <FaChevronLeft />
+          </NavigationButton>
+          <HeaderTitle>{formatDateTitle()}</HeaderTitle>
+          <NavigationButton onClick={() => handleNavigate('next')}>
+            <FaChevronRight />
+          </NavigationButton>
+          <TodayButton onClick={handleToday}>Hoje</TodayButton>
+        </MobileRow>
+        
+        {/* Mobile Layout - Row 2: View Buttons */}
+        <MobileRow>
+          <ViewButtons>
+            <ViewButton
+              $isActive={currentView === Views.MONTH}
+              onClick={() => handleViewChange(Views.MONTH)}
+            >
+              Mês
+            </ViewButton>
+            <ViewButton
+              $isActive={currentView === Views.WEEK}
+              onClick={() => handleViewChange(Views.WEEK)}
+            >
+              Semana
+            </ViewButton>
+            <ViewButton
+              $isActive={currentView === Views.DAY}
+              onClick={() => handleViewChange(Views.DAY)}
+            >
+              Dia
+            </ViewButton>
+            <ViewButton
+              $isActive={currentView === Views.AGENDA}
+              onClick={() => handleViewChange(Views.AGENDA)}
+            >
+              Agenda
+            </ViewButton>
+          </ViewButtons>
+        </MobileRow>
+        
+        {/* Filter Section */}
         <FilterContainer>
           <FilterLabel>Filtrar:</FilterLabel>
           <FilterButton
             $isActive={eventFilter === 'all'}
             onClick={() => setEventFilter('all')}
           >
-            Todos
+            <span>Todos</span>
           </FilterButton>
           <FilterButton
             $isActive={eventFilter === 'training'}
             onClick={() => setEventFilter('training')}
           >
             <FaUsers style={{ fontSize: '0.85rem' }} />
-            Treinos
+            <span>Treinos</span>
           </FilterButton>
           <FilterButton
             $isActive={eventFilter === 'appointment'}
             onClick={() => setEventFilter('appointment')}
           >
             <FaUserMd style={{ fontSize: '0.85rem' }} />
-            Consultas
+            <span>Consultas</span>
           </FilterButton>
         </FilterContainer>
       </CalendarHeader>
