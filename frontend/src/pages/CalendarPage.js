@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled, { css, useTheme} from 'styled-components';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
+import ptBR from 'date-fns/locale/pt-BR';
 import moment from 'moment';
 import { useToast } from '../components/Toast/ToastProvider';
 import CustomCalendar, { Views } from '../components/Calendar/CustomCalendar';
