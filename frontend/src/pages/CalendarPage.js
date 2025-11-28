@@ -72,18 +72,6 @@ const CalendarWrapper = styled.div`
   height: 80vh;
   overflow: hidden;
 `;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    transition: opacity 0.2s, transform 0.15s ease-out, box-shadow 0.15s ease-out;
-    overflow: hidden;
-    cursor: pointer;
-
-    &:hover {
-        opacity: 0.85;
-        transform: translateY(-2px) scale(1.03);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-    }
-  }
-`;
 
 const MessageBaseStyles = css`
   text-align: center; padding: 12px 18px; margin: 20px auto;
