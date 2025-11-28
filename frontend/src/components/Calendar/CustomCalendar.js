@@ -54,8 +54,8 @@ const CalendarHeader = styled.div`
   gap: 15px;
   
   @media (max-width: 768px) {
-    padding: 12px 15px;
-    gap: 10px;
+    padding: 10px 12px;
+    gap: 8px;
   }
 `;
 
@@ -76,7 +76,7 @@ const HeaderTop = styled.div`
 const MobileRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   
   @media (min-width: 769px) {
@@ -104,7 +104,7 @@ const FilterContainer = styled.div`
   @media (max-width: 768px) {
     width: 100%;
     justify-content: space-between;
-    gap: 6px;
+    gap: 4px;
   }
 `;
 
@@ -143,20 +143,20 @@ const FilterButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 6px 8px;
-    font-size: 0.7rem;
+    padding: 5px 6px;
+    font-size: 0.65rem;
     flex: 1;
     justify-content: center;
     min-width: 0;
-    min-height: 32px;
-    gap: 4px;
+    min-height: 30px;
+    gap: 3px;
     
     span {
       display: inline;
     }
     
     svg {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       flex-shrink: 0;
     }
   }
@@ -186,7 +186,7 @@ const HeaderTitle = styled.h2`
   
   @media (max-width: 768px) {
     min-width: auto;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     flex: 1;
     text-align: center;
     white-space: nowrap;
@@ -223,13 +223,13 @@ const NavigationButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
     
     svg {
-      font-size: 0.85rem;
+      font-size: 0.75rem;
     }
   }
 `;
@@ -252,9 +252,9 @@ const TodayButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 8px 12px;
-    font-size: 0.75rem;
-    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 0.7rem;
+    min-height: 32px;
   }
 `;
 
@@ -267,7 +267,7 @@ const ViewButtons = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   
   @media (max-width: 768px) {
-    gap: 3px;
+    gap: 2px;
     padding: 2px;
     width: 100%;
     justify-content: space-between;
@@ -297,11 +297,11 @@ const ViewButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 6px 6px;
-    font-size: 0.7rem;
+    padding: 5px 4px;
+    font-size: 0.65rem;
     flex: 1;
     min-width: 0;
-    min-height: 32px;
+    min-height: 30px;
     
     svg {
       display: none;
