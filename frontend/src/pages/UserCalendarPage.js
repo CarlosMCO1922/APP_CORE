@@ -17,8 +17,12 @@ const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
   min-height: 100vh;
-  padding: 25px clamp(15px, 4vw, 40px);
+  padding: 10px clamp(8px, 2vw, 20px);
   font-family: ${({ theme }) => theme.fonts.main};
+  
+  @media (max-width: 768px) {
+    padding: 8px 5px;
+  }
 `;
 
 const Header = styled.div`
@@ -37,11 +41,16 @@ const Title = styled.h1`
 
 const CalendarWrapper = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: clamp(20px, 3vw, 30px);
-  border-radius: 12px;
+  padding: 0;
+  border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   height: 80vh;
   overflow: hidden;
+  
+  @media (max-width: 768px) {
+    border-radius: 6px;
+    height: calc(100vh - 180px);
+  }
 `;
 
 const LoadingText = styled.p`

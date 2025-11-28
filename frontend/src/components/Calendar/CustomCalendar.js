@@ -41,21 +41,21 @@ const CalendarContainer = styled.div`
   flex-direction: column;
   height: 100%;
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
 `;
 
 const CalendarHeader = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 20px 25px;
+  padding: 12px 15px;
   border-bottom: 2px solid ${({ theme }) => theme.colors.cardBorder};
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  gap: 15px;
+  gap: 12px;
   
   @media (max-width: 768px) {
-    padding: 10px 12px;
-    gap: 8px;
+    padding: 8px 10px;
+    gap: 6px;
   }
 `;
 
@@ -330,7 +330,7 @@ const MonthHeader = styled.div`
 `;
 
 const WeekdayHeader = styled.div`
-  padding: 12px 8px;
+  padding: 8px 4px;
   text-align: center;
   font-weight: 600;
   font-size: 0.85rem;
@@ -343,8 +343,8 @@ const WeekdayHeader = styled.div`
   }
   
   @media (max-width: 768px) {
-    padding: 10px 4px;
-    font-size: 0.75rem;
+    padding: 6px 2px;
+    font-size: 0.7rem;
   }
 `;
 
@@ -364,12 +364,17 @@ const MonthGrid = styled.div`
 
 const DayCell = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: 8px;
+  padding: 4px;
   position: relative;
   min-height: 100px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 2px solid transparent;
+  
+  @media (max-width: 768px) {
+    padding: 2px;
+    min-height: 80px;
+  }
   
   ${({ $isToday, theme }) => $isToday && `
     background-color: ${theme.colors.primary}15;
@@ -495,20 +500,29 @@ const WeekHeader = styled.div`
 
 const TimeColumn = styled.div`
   border-right: 2px solid ${({ theme }) => theme.colors.cardBorder};
-  padding: 10px;
+  padding: 6px 4px;
   text-align: center;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.primary};
   font-size: 0.85rem;
+  
+  @media (max-width: 768px) {
+    padding: 4px 2px;
+    font-size: 0.75rem;
+  }
 `;
 
 const WeekDayHeader = styled.div`
-  padding: 12px 8px;
+  padding: 8px 4px;
   text-align: center;
   border-right: 1px solid ${({ theme }) => theme.colors.cardBorder};
   
   &:last-child {
     border-right: none;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 6px 2px;
   }
 `;
 
@@ -554,7 +568,7 @@ const WeekGrid = styled.div`
 const TimeSlot = styled.div`
   border-right: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  padding: 4px 8px;
+  padding: 2px 4px;
   font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textMuted};
   text-align: center;
@@ -562,7 +576,8 @@ const TimeSlot = styled.div`
   
   @media (max-width: 768px) {
     min-height: 50px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
+    padding: 1px 2px;
   }
 `;
 
@@ -662,7 +677,11 @@ const DayColumn = styled.div`
 const AgendaView = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 10px;
+  
+  @media (max-width: 768px) {
+    padding: 8px;
+  }
 `;
 
 const AgendaDateGroup = styled.div`

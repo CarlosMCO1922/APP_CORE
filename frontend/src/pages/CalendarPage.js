@@ -46,8 +46,12 @@ const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
   min-height: 100vh;
-  padding: 25px clamp(15px, 4vw, 40px);
+  padding: 10px clamp(8px, 2vw, 20px);
   font-family: ${({ theme }) => theme.fonts.main};
+  
+  @media (max-width: 768px) {
+    padding: 8px 5px;
+  }
 `;
 
 const HeaderSection = styled.div`
@@ -66,10 +70,15 @@ const Title = styled.h1`
 
 const CalendarWrapper = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: clamp(20px, 3vw, 30px);
-  border-radius: 12px;
+  padding: 0;
+  border-radius: 8px;
   box-shadow: ${({ theme }) => theme.boxShadow};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  
+  @media (max-width: 768px) {
+    border-radius: 6px;
+  }
+`;
   height: 80vh;
   overflow: hidden;
 `;
@@ -852,7 +861,7 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
   return (
     <PageContainer>
       <HeaderSection> <Title>Calendário e Marcações</Title> </HeaderSection>
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '10px' }}>
         <BackArrow to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"} />
       </div>
 
