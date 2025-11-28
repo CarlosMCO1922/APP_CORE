@@ -284,7 +284,7 @@ const EventList = styled.div`
 const EventChip = styled.div`
   background-color: ${({ $eventType, theme }) => 
     $eventType === 'training' 
-      ? `${theme.colors.primary}CC` 
+      ? theme.colors.primary 
       : `${theme.colors.success}CC`};
   color: ${({ theme }) => theme.colors.textDark};
   padding: 4px 8px;
@@ -435,7 +435,7 @@ const WeekEvent = styled.div`
   right: 4px;
   background-color: ${({ $eventType, theme }) => 
     $eventType === 'training' 
-      ? `${theme.colors.primary}CC` 
+      ? theme.colors.primary 
       : `${theme.colors.success}CC`};
   color: ${({ theme }) => theme.colors.textDark};
   padding: 6px 8px;
