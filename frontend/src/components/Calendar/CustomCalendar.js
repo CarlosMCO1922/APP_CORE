@@ -1,6 +1,6 @@
 // src/components/Calendar/CustomCalendar.js
 import React, { useState, useMemo } from 'react';
-import styled, { useTheme } from 'styled-components';
+import styled from 'styled-components';
 import { 
   format, 
   startOfMonth, 
@@ -604,7 +604,9 @@ const CustomCalendar = ({
   step = 60,
   messages = {}
 }) => {
-  const theme = useTheme();
+  // Garantir que events é sempre um array
+  const safeEvents = Array.isArray(events) ? events : [];
+  
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [currentView, setCurrentView] = useState(initialView);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -657,10 +659,19 @@ const CustomCalendar = ({
   }, [currentDate]);
 
   const getEventsForDay = (day) => {
+    if (!safeEvents || !Array.isArray(safeEvents)) return [];
+    
     const dayStart = startOfDay(day);
-    return events.filter(event => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      return isSameDay(eventStart, dayStart);
+    return safeEvents.filter(event => {
+      if (!event || !event.start) return false;
+      
+      try {
+        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+        return isSameDay(eventStart, dayStart);
+      } catch (error) {
+        console.error('Error processing event:', error, event);
+        return false;
+      }
     });
   };
 
@@ -681,40 +692,60 @@ const CustomCalendar = ({
   }, [min, max]);
 
   const getEventsForWeekDay = (day, hour) => {
-    return events.filter(event => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+    if (!safeEvents || !Array.isArray(safeEvents)) return [];
+    
+    return safeEvents.filter(event => {
+      if (!event || !event.start) return false;
       
-      // Verifica se o evento começa neste dia específico
-      if (!isSameDay(eventStart, day)) {
+      try {
+        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+        
+        // Verifica se o evento começa neste dia específico
+        if (!isSameDay(eventStart, day)) {
+          return false;
+        }
+        
+        // Verifica se o evento começa neste slot de hora específico
+        const eventHour = getHours(eventStart);
+        return eventHour === hour;
+      } catch (error) {
+        console.error('Error processing event:', error, event);
         return false;
       }
-      
-      // Verifica se o evento começa neste slot de hora específico
-      const eventHour = getHours(eventStart);
-      return eventHour === hour;
     });
   };
 
   // Agenda View Logic
   const agendaEvents = useMemo(() => {
-    const sorted = [...events].sort((a, b) => {
-      const aStart = a.start instanceof Date ? a.start : parseISO(a.start);
-      const bStart = b.start instanceof Date ? b.start : parseISO(b.start);
-      return aStart - bStart;
+    if (!safeEvents || !Array.isArray(safeEvents)) return {};
+    
+    const sorted = [...safeEvents].filter(event => event && event.start).sort((a, b) => {
+      try {
+        const aStart = a.start instanceof Date ? a.start : parseISO(a.start);
+        const bStart = b.start instanceof Date ? b.start : parseISO(b.start);
+        return aStart - bStart;
+      } catch (error) {
+        console.error('Error sorting events:', error);
+        return 0;
+      }
     });
 
     const grouped = {};
     sorted.forEach(event => {
-      const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-      const dateKey = format(eventStart, 'yyyy-MM-dd');
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
+      try {
+        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+        const dateKey = format(eventStart, 'yyyy-MM-dd');
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = [];
+        }
+        grouped[dateKey].push(event);
+      } catch (error) {
+        console.error('Error grouping event:', error, event);
       }
-      grouped[dateKey].push(event);
     });
 
     return grouped;
-  }, [events]);
+  }, [safeEvents]);
 
   const handleEventClick = (event, e) => {
     e.stopPropagation();
