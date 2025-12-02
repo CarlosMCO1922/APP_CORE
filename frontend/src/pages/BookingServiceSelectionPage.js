@@ -325,7 +325,7 @@ const BookingServiceSelectionPage = () => {
     } else if (currentView === 'calendar') {
       setCurrentView('selection');
     } else {
-      navigate('/dashboard');
+      navigate(-1); // Usar navigate(-1) em vez de ir para dashboard
     }
   };
 
@@ -350,10 +350,25 @@ const BookingServiceSelectionPage = () => {
     }
   };
 
-  // Lógica para filtrar treinos (copiada e adaptada)
-  const trainingsForSelectedDay = allTrainings.filter(training =>
-    moment(training.date).isSame(selectedDate, 'day') && new Date(training.date) >= new Date().setHours(0,0,0,0)
-  );
+  // Lógica para filtrar treinos e remover duplicados
+  const trainingsForSelectedDay = allTrainings
+    .filter(training =>
+      moment(training.date).isSame(selectedDate, 'day') && new Date(training.date) >= new Date().setHours(0,0,0,0)
+    )
+    .reduce((acc, training) => {
+      // Verificar se já existe um treino com o mesmo horário
+      const existing = acc.find(t => t.time === training.time);
+      if (!existing) {
+        acc.push(training);
+      }
+      return acc;
+    }, [])
+    .sort((a, b) => {
+      // Ordenar por horário
+      const timeA = a.time.split(':').map(Number);
+      const timeB = b.time.split(':').map(Number);
+      return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
+    });
 
   // Lógica para o título dinâmico
   const getTitle = () => {

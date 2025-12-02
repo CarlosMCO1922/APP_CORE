@@ -294,7 +294,7 @@ const getWorkoutPlansForTraining = async (req, res) => {
       }],
       joinTableAttributes: ['orderInTraining'],
       order: [
-        db.sequelize.literal(`"TrainingWorkoutPlans"."orderInTraining"`),
+        db.sequelize.literal(`"TrainingWorkoutPlan"."orderInTraining"`),
         ['order', 'ASC']
       ]
     });

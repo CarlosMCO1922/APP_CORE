@@ -21,8 +21,14 @@ const registerUser = async (req, res) => {
   const { firstName, lastName, email, password, gdprConsent } = req.body;
 
   try {
-    // Verificar consentimento GDPR
-    if (!gdprConsent) {
+    // Verificar se os campos obrigatórios estão presentes
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+    }
+
+    // Verificar consentimento GDPR (aceita boolean true ou string "true")
+    const hasConsent = gdprConsent === true || gdprConsent === 'true' || gdprConsent === 1 || gdprConsent === '1';
+    if (!hasConsent) {
       return res.status(400).json({ message: 'É necessário aceitar o consentimento de partilha de dados (RGPD) para criar uma conta.' });
     }
 
@@ -39,13 +45,14 @@ const registerUser = async (req, res) => {
     }
 
     const hashedPassword = await hashPassword(password);
+    const consentDate = new Date();
     const newUser = await db.User.create({
       firstName,
       lastName,
       email,
       password: hashedPassword,
-      gdprConsent: true,
-      gdprConsentDate: new Date(),
+      gdprConsent: true, // Sempre true porque já validámos acima
+      gdprConsentDate: consentDate,
     });
 
     const userResponse = {

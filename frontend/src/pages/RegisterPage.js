@@ -273,8 +273,13 @@ function RegisterPage() {
 
     setLoading(true);
     try {
-      const { confirmPassword, ...userData } = formData; 
-      const responseData = await registerUserAPI(userData);
+      const { confirmPassword, ...userData } = formData;
+      // Garantir que gdprConsent é enviado como boolean
+      const registrationData = {
+        ...userData,
+        gdprConsent: Boolean(userData.gdprConsent)
+      };
+      const responseData = await registerUserAPI(registrationData);
       
       setMessage({ type: 'success', text: `${responseData.message || 'Registo bem-sucedido!'} Serás redirecionado para o login.` });
       

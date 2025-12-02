@@ -396,12 +396,12 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                     {isCompleted ? <FaPencilAlt /> : <FaCheck />}
                 </ActionButton>
             </SwipeableContent>
-            {prescribedReps && (
-                <PrescribedRepsNote>
-                    Reps prescritas: {prescribedReps}
-                </PrescribedRepsNote>
-            )}
         </SwipeableRowContainer>
+        {prescribedReps && (
+            <PrescribedRepsNote>
+                Reps prescritas: {prescribedReps}
+            </PrescribedRepsNote>
+        )}
 
             {showDeleteModal && (
                 <DeleteModalOverlay onClick={handleCancelDelete}>

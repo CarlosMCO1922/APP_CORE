@@ -570,6 +570,24 @@ addToast('Falha ao enviar pedido de consulta.', { type: 'error', category: 'cale
 
   const handleBookSelectedTraining = async () => {
     if (!selectedEvent || selectedEvent.type !== 'training') return;
+    
+    // Se o treino faz parte de uma série, perguntar se quer inscrever-se em mais treinos futuros
+    if (selectedEvent.resource?.trainingSeriesId) {
+      setSelectedSeriesDetailsForSubscription({
+        id: selectedEvent.resource.trainingSeriesId,
+        name: selectedEvent.resource.name || selectedEvent.title,
+        date: selectedEvent.resource.date,
+        time: selectedEvent.resource.time,
+        seriesEndDate: selectedEvent.resource.seriesEndDate,
+        instructor: selectedEvent.resource.instructor
+      });
+      setSeriesSubscriptionEndDate('');
+      setSeriesSubscriptionError('');
+      setShowSubscribeSeriesModal(true);
+      return;
+    }
+    
+    // Inscrição simples (sem série)
     if (!window.confirm('Confirmas a inscrição neste treino?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
     try {
@@ -866,11 +884,15 @@ addToast('Falha ao criar consulta.', { type: 'error', category: 'calendar' });
     setShowSubscribeSeriesModal(true);
 };
 
-const handleCloseSubscribeSeriesModal = () => {
+  const handleCloseSubscribeSeriesModal = () => {
     setShowSubscribeSeriesModal(false);
     setSelectedSeriesDetailsForSubscription(null);
     setSeriesSubscriptionEndDate('');
     setSeriesSubscriptionError('');
+    // Se estava a inscrever-se num treino, fechar também o modal do evento
+    if (selectedEvent) {
+      handleCloseEventModal();
+    }
 };
 
   const handleSeriesSubscriptionSubmit = async (e) => {
@@ -1257,8 +1279,12 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
                     };
                     const result = await createSeriesSubscriptionService(subscriptionPayload, authState.token);
                     setPageSuccessMessage(result.message || "Inscrição na série realizada com sucesso! As suas aulas foram adicionadas ao calendário.");
-                    fetchPageData(); // Re-busca todos os eventos
+addToast('Inscrição na série realizada com sucesso!', { type: 'success', category: 'calendar' });
+                    await fetchPageData(); // Re-busca todos os eventos
                     handleCloseSubscribeSeriesModal();
+                    if (selectedEvent) {
+                      handleCloseEventModal();
+                    }
                   } catch (err) {
                     setSeriesSubscriptionError(err.message || "Falha ao subscrever a série.");
                   } finally {

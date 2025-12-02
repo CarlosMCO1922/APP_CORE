@@ -9,15 +9,15 @@ import {
     getActiveTrainingSeriesForClientService, 
     createSeriesSubscriptionService, 
     cancelTrainingBooking,
-    getAllTrainings
+    getAllTrainings,
+    bookTraining as bookTrainingService
 } from '../services/trainingService'; 
 import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, 
     FaRegClock, FaExclamationTriangle, FaCreditCard, FaUsers, 
-    FaInfoCircle, FaTimes, FaPlusSquare, FaEye, FaTrashAlt, FaRedo
+    FaInfoCircle, FaTimes, FaPlusSquare, FaEye, FaTrashAlt, FaRedo, FaPencilAlt
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
-import ThemeToggler from '../components/Theme/ThemeToggler';
 
 
 // --- Styled Components (do teu ficheiro original) ---
@@ -528,22 +528,22 @@ const NavButton = styled.button`
   }
 `;
 
-const LinkStyleButton = styled.button`
+const IconButton = styled.button`
   background: none;
   border: none;
   color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0; // Remove qualquer padding extra
   cursor: pointer;
+  font-size: 1.8rem;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  border-radius: 8px;
 
   &:hover {
-    text-decoration: underline;
-    color: ${({ theme }) => theme.colors.primary};
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+    transform: scale(1.1);
   }
 `;
 
@@ -602,6 +602,8 @@ const DashboardPage = () => {
     const [clientSubscriptionEndDate, setClientSubscriptionEndDate] = useState('');
     const [subscribingToSeries, setSubscribingToSeries] = useState(false);
     const [seriesModalMessage, setSeriesModalMessage] = useState({ type: '', text: '' });
+    const [showTrainingDetailsModal, setShowTrainingDetailsModal] = useState(false);
+    const [selectedTrainingForDetails, setSelectedTrainingForDetails] = useState(null);
 
     const fetchPageData = useCallback(async () => {
         if (!authState.token) return;
@@ -648,24 +650,39 @@ const DashboardPage = () => {
 
 const upcomingEvents = useMemo(() => {
         const now = new Date();
+        const seenIds = new Set();
         const allEvents = [
-            ...bookings.trainings.map(t => ({
-                ...t,
-                eventType: 'Treino',
-                dateObj: moment(`${t.date}T${t.time}`).toDate(),
-                link: `/treinos/${t.id}/plano`,
-                icon: <FaRunning />,
-                uniqueKey: `train-${t.id}`,
-                name: t.name || 'Treino'
-            })),
-            ...bookings.appointments.map(a => ({
-                ...a,
-                eventType: 'Consulta',
-                dateObj: moment(`${a.date}T${a.time}`).toDate(),
-                icon: <FaUserMd />,
-                uniqueKey: `appt-${a.id}`,
-                name: a.title || (a.professional ? `Consulta com ${a.professional.firstName}` : 'Consulta')
-            }))
+            ...bookings.trainings
+                .filter(t => {
+                    // Remover duplicados baseado no ID
+                    if (seenIds.has(t.id)) return false;
+                    seenIds.add(t.id);
+                    return true;
+                })
+                .map(t => ({
+                    ...t,
+                    eventType: 'Treino',
+                    dateObj: moment(`${t.date}T${t.time}`).toDate(),
+                    link: `/treinos/${t.id}/plano`,
+                    icon: <FaRunning />,
+                    uniqueKey: `train-${t.id}`,
+                    name: t.name || 'Treino'
+                })),
+            ...bookings.appointments
+                .filter(a => {
+                    // Remover duplicados baseado no ID
+                    if (seenIds.has(`appt-${a.id}`)) return false;
+                    seenIds.add(`appt-${a.id}`);
+                    return true;
+                })
+                .map(a => ({
+                    ...a,
+                    eventType: 'Consulta',
+                    dateObj: moment(`${a.date}T${a.time}`).toDate(),
+                    icon: <FaUserMd />,
+                    uniqueKey: `appt-${a.id}`,
+                    name: a.title || (a.professional ? `Consulta com ${a.professional.firstName}` : 'Consulta')
+                }))
         ];
         return allEvents
             .filter(event => event.dateObj >= now && !['cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff', 'concluída'].includes(event.status))
@@ -684,6 +701,22 @@ const upcomingEvents = useMemo(() => {
             await fetchPageData();
         } catch (err) {
             setError(err.message || "Não foi possível cancelar a inscrição.");
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleBookTraining = async (trainingId) => {
+        if (!window.confirm("Confirmas a inscrição neste treino?")) return;
+        setActionLoading(trainingId);
+        setPageMessage('');
+        setError('');
+        try {
+            await bookTrainingService(trainingId, authState.token);
+            setPageMessage("Inscrição no treino realizada com sucesso!");
+            await fetchPageData();
+        } catch (err) {
+            setError(err.message || "Falha ao inscrever no treino.");
         } finally {
             setActionLoading(null);
         }
@@ -750,9 +783,6 @@ const upcomingEvents = useMemo(() => {
 
     return (
         <PageContainer>
-            <TogglerContainer>
-                <ThemeToggler />
-            </TogglerContainer>
             <Header>
                 <WelcomeMessage><strong>Bem-vindo(a) de volta, {authState.user?.firstName || 'Utilizador'}!</strong></WelcomeMessage>
             </Header>
@@ -838,28 +868,39 @@ const upcomingEvents = useMemo(() => {
                                     <ItemCard key={training.id} itemType="training">
                                         <div>
                                             <h3>{training.name}</h3>
-                                            <p><FaRegClock /> {trainingDate.format('dddd, D [de] MMMM')}, {training.time.substring(0,5)}</p>
-                                            {training.instructor && <p><span>Instrutor:</span> {training.instructor.firstName} {training.instructor.lastName}</p>}
-                                            <p><FaUsers /> {spotsAvailable} de {training.capacity} vagas disponíveis</p>
                                         </div>
                                         <EventActions>
-                                            <LinkStyleButton onClick={() => navigate(`/calendario`)}>
-                                                <FaInfoCircle /> Ver Detalhes e Inscrever
-                                            </LinkStyleButton>
-                                            {training.trainingSeriesId && (
-                                                <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal({ 
-                                                    id: training.trainingSeriesId,
-                                                    name: training.name,
-                                                    dayOfWeek: trainingDate.day(),
-                                                    startTime: training.time,
-                                                    endTime: moment(training.time, 'HH:mm:ss').add(training.durationMinutes || 45, 'minutes').format('HH:mm:ss'),
-                                                    instructor: training.instructor,
-                                                    seriesStartDate: training.date,
-                                                    seriesEndDate: training.date
-                                                })} style={{marginTop: '10px'}}>
-                                                    <FaRedo /> Inscrever Semanalmente
-                                                </LinkStyleButton>
-                                            )}
+                                            <IconButton 
+                                                onClick={() => {
+                                                    setSelectedTrainingForDetails(training);
+                                                    setShowTrainingDetailsModal(true);
+                                                }}
+                                                title="Ver Detalhes"
+                                            >
+                                                <FaInfoCircle />
+                                            </IconButton>
+                                            <IconButton 
+                                                onClick={() => {
+                                                    if (training.trainingSeriesId) {
+                                                        handleOpenSeriesSubscriptionModal({ 
+                                                            id: training.trainingSeriesId,
+                                                            name: training.name,
+                                                            dayOfWeek: trainingDate.day(),
+                                                            startTime: training.time,
+                                                            endTime: moment(training.time, 'HH:mm:ss').add(training.durationMinutes || 45, 'minutes').format('HH:mm:ss'),
+                                                            instructor: training.instructor,
+                                                            seriesStartDate: training.date,
+                                                            seriesEndDate: training.date
+                                                        });
+                                                    } else {
+                                                        // Inscrição simples
+                                                        handleBookTraining(training.id);
+                                                    }
+                                                }}
+                                                title="Inscrever-me"
+                                            >
+                                                <FaPencilAlt />
+                                            </IconButton>
                                         </EventActions>
                                     </ItemCard>
                                 );

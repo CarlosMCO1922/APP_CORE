@@ -37,13 +37,9 @@ const ExerciseLiveCard = ({
     setSets(prev => prev.filter((_, index) => index !== indexToDelete));
   };
 
-  // Determinar o nome do exercício a mostrar
-  const displayName = exerciseName 
-    || planExercise?.exerciseDetails?.name 
-    || planExercise?.exerciseName
-    || planExercise?.name
-    || planExercise?.exercise?.name
-    || null;
+  // Só mostrar o nome se exerciseName for explicitamente fornecido (para superseries)
+  // Se for null, não mostrar nada (exercício único já tem nome no header)
+  const displayName = exerciseName || null;
 
   return (
     <CardContainer>
