@@ -85,3 +85,49 @@ if ('serviceWorker' in navigator) {
     if (!reg) navigator.serviceWorker.register('/notifications-sw.js');
   });
 }
+
+// Prevenir rotação para horizontal
+const lockOrientation = () => {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('portrait').catch(() => {
+      // Se não conseguir bloquear, pelo menos tenta prevenir
+      console.log('Não foi possível bloquear orientação');
+    });
+  } else if (screen.lockOrientation) {
+    screen.lockOrientation('portrait');
+  } else if (screen.mozLockOrientation) {
+    screen.mozLockOrientation('portrait');
+  } else if (screen.msLockOrientation) {
+    screen.msLockOrientation('portrait');
+  }
+};
+
+// Tentar bloquear orientação quando a página carregar
+if (window.addEventListener) {
+  window.addEventListener('load', lockOrientation);
+  window.addEventListener('orientationchange', () => {
+    // Força portrait após mudança de orientação
+    setTimeout(lockOrientation, 100);
+  });
+}
+
+// Prevenir zoom com gestos de pinça
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (event) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+  lastTouchEnd = now;
+}, false);
+
+// Prevenir zoom com double tap
+let lastTap = 0;
+document.addEventListener('touchstart', (event) => {
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTap;
+  if (tapLength < 300 && tapLength > 0) {
+    event.preventDefault();
+  }
+  lastTap = currentTime;
+});

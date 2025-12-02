@@ -1,8 +1,8 @@
 // src/components/Workout/RestTimer.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaMinus } from 'react-icons/fa';
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -22,10 +22,25 @@ const TimerContainer = styled.div`
   border-radius: 12px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.5);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
   z-index: 2000;
   animation: ${fadeIn} 0.3s ease-out;
+`;
+
+const TimerTopRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+`;
+
+const TimerControlsRow = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
 `;
 
 const TimerText = styled.div`
@@ -47,6 +62,38 @@ const CloseTimerButton = styled.button`
   }
 `;
 
+const TimerControlButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.textDark};
+  color: ${({ theme }) => theme.colors.primary};
+  border: none;
+  border-radius: 8px;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 function urlBase64ToUint8Array(base64String) {
@@ -61,51 +108,69 @@ function urlBase64ToUint8Array(base64String) {
 const RestTimer = ({ duration, onFinish }) => {
   // O estado agora é o tempo que já passou, começando em 0.
   const [elapsedTime, setElapsedTime] = useState(0);
+  // Duração dinâmica que pode ser ajustada
+  const [currentDuration, setCurrentDuration] = useState(duration);
+  const intervalRef = useRef(null);
+  const notificationTimeoutRef = useRef(null);
+
+  // Função para agendar/cancelar notificação
+  const scheduleNotification = async (remainingSeconds) => {
+    // Cancela notificação anterior se existir
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
+    }
+
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      const regs = await navigator.serviceWorker.getRegistrations();
+      const notifReg = regs.find(r => r.active && r.active.scriptURL.includes('notifications-sw.js')) || (await navigator.serviceWorker.register('/notifications-sw.js'));
+      if (!notifReg) return;
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      const vapidPublicKey = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey) return;
+      const sub = await notifReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) });
+
+      const remaining = Math.max(0, remainingSeconds);
+      fetch(`${API_URL}/push/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub,
+          delaySeconds: remaining,
+          title: 'Descanso concluído',
+          body: 'O seu tempo de descanso terminou. Vamos continuar? 💪'
+        })
+      }).catch(() => {});
+    } catch (e) {
+      // silencioso
+    }
+  };
 
   useEffect(() => {
+    // Agenda notificação inicial
+    scheduleNotification(currentDuration);
+
     // Cria um intervalo que é executado a cada segundo.
-    const intervalId = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setElapsedTime(prevTime => prevTime + 1);
     }, 1000);
 
-    // Tenta subscrever push e agendar notificação de background
-    (async () => {
-      try {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        const regs = await navigator.serviceWorker.getRegistrations();
-        const notifReg = regs.find(r => r.active && r.active.scriptURL.includes('notifications-sw.js')) || (await navigator.serviceWorker.register('/notifications-sw.js'));
-        if (!notifReg) return;
-
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return;
-
-        const vapidPublicKey = process.env.REACT_APP_VAPID_PUBLIC_KEY;
-        if (!vapidPublicKey) return; // sem chave não subscrevemos
-        const sub = await notifReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) });
-
-        const remaining = Math.max(0, duration);
-        fetch(`${API_URL}/push/schedule`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subscription: sub,
-            delaySeconds: remaining,
-            title: 'Descanso concluído',
-            body: 'O seu tempo de descanso terminou. Vamos continuar? 💪'
-          })
-        }).catch(() => {});
-      } catch (e) {
-        // silencioso
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
-    })();
-
-    return () => clearInterval(intervalId);
-  }, [duration]);
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Um segundo useEffect para verificar se o tempo acabou.
-  // Isto é mais limpo e seguro do que colocar a lógica dentro do setInterval.
   useEffect(() => {
-    if (elapsedTime >= duration) {
+    if (elapsedTime >= currentDuration) {
       const audio = new Audio('/notification-sound.mp3');
       audio.play().catch(() => {});
 
@@ -117,7 +182,6 @@ const RestTimer = ({ duration, onFinish }) => {
               permission = await Notification.requestPermission();
             }
             if (permission === 'granted') {
-              // Tenta usar o SW (se registado) para melhor suporte mobile
               if ('serviceWorker' in navigator) {
                 const reg = await navigator.serviceWorker.getRegistration();
                 if (reg && reg.showNotification) {
@@ -143,7 +207,23 @@ const RestTimer = ({ duration, onFinish }) => {
 
       onFinish();
     }
-  }, [elapsedTime, duration, onFinish]);
+  }, [elapsedTime, currentDuration, onFinish]);
+
+  const handleAddTime = () => {
+    const newDuration = currentDuration + 30;
+    setCurrentDuration(newDuration);
+    // Reagenda notificação com novo tempo restante
+    const remaining = Math.max(0, newDuration - elapsedTime);
+    scheduleNotification(remaining);
+  };
+
+  const handleSubtractTime = () => {
+    const newDuration = Math.max(30, currentDuration - 30); // Mínimo de 30 segundos
+    setCurrentDuration(newDuration);
+    // Reagenda notificação com novo tempo restante
+    const remaining = Math.max(0, newDuration - elapsedTime);
+    scheduleNotification(remaining);
+  };
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -151,14 +231,33 @@ const RestTimer = ({ duration, onFinish }) => {
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
+  const remainingTime = Math.max(0, currentDuration - elapsedTime);
+
   return (
     <TimerContainer>
-      <TimerText>
-        Descanso: {formatTime(elapsedTime)} / {formatTime(duration)}
-      </TimerText>
-      <CloseTimerButton onClick={onFinish} aria-label="Fechar cronómetro">
-        <FaTimes />
-      </CloseTimerButton>
+      <TimerTopRow>
+        <TimerText>
+          Descanso: {formatTime(remainingTime)}
+        </TimerText>
+        <CloseTimerButton onClick={onFinish} aria-label="Fechar cronómetro">
+          <FaTimes />
+        </CloseTimerButton>
+      </TimerTopRow>
+      <TimerControlsRow>
+        <TimerControlButton 
+          onClick={handleSubtractTime} 
+          disabled={remainingTime <= 30}
+          aria-label="Reduzir 30 segundos"
+        >
+          <FaMinus />
+        </TimerControlButton>
+        <TimerControlButton 
+          onClick={handleAddTime}
+          aria-label="Adicionar 30 segundos"
+        >
+          <FaPlus />
+        </TimerControlButton>
+      </TimerControlsRow>
     </TimerContainer>
   );
 };

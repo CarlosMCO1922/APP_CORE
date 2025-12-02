@@ -25,7 +25,7 @@ const ActionBackground = styled.div`
   bottom: 0;
   right: 0;
   left: 0;
-  display: flex;
+  display: ${({ isVisible }) => isVisible ? 'flex' : 'none'};
   align-items: center;
   justify-content: flex-end; /* Ícone fica à direita */
   padding-right: 30px;
@@ -41,11 +41,7 @@ const SwipeableContent = styled.div`
   align-items: center;
   gap: 10px;
   padding: 4px 10px;
-  background-color: ${({ theme, isCompleted }) => 
-    isCompleted 
-      ? theme.colors.successBg || 'rgba(102,187,106,0.1)' // Leve tom verde quando completo
-      : theme.colors.cardBackground
-  };
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   border: 2px solid ${({ theme, isCompleted }) => 
     isCompleted 
       ? theme.colors.success // Verde quando completo
@@ -140,6 +136,14 @@ const ActionButton = styled.button`
       ? `0 2px 6px rgba(102, 187, 106, 0.3)` // Sombra verde quando completo
       : `0 2px 6px rgba(252, 181, 53, 0.2)` // Sombra dourada quando pendente
   };
+  
+  svg {
+    font-size: 1.1rem;
+    
+    @media (max-width: 768px) {
+      font-size: ${({ isCompleted }) => isCompleted ? '1.4rem' : '1.1rem'};
+    }
+  }
   
   &:hover:not(:disabled) {
     transform: scale(1.05);
@@ -299,6 +303,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
     const [transformX, setTransformX] = useState(0);
     const [hasShownConfirm, setHasShownConfirm] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     const setData = activeWorkout.setsData[`${planExerciseId}-${setNumber}`] || {};
     const weight = setData.performedWeight ?? lastWeight ?? '';
@@ -339,6 +344,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
       }
       const currentSetData = { ...setData, performedWeight: weight, performedReps: reps, planExerciseId, setNumber };
       updateSetData(planExerciseId, setNumber, 'isCompleted', true);
+      setIsEditing(false);
 
       if (typeof onSetComplete === 'function') {
         onSetComplete(currentSetData);
@@ -348,6 +354,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
     };
     
     const handleEdit = () => {
+        setIsEditing(true);
         updateSetData(planExerciseId, setNumber, 'isCompleted', false);
     };
 
@@ -377,19 +384,25 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
     return (
         <>
             <SwipeableRowContainer onClick={() => transformX !== 0 && !showDeleteModal && setTransformX(0)}>
-                <ActionBackground>
+                <ActionBackground isVisible={transformX < 0}>
                     <DeleteButton onClick={handleDeleteClick}>
                         <FaTrashAlt /> Apagar
                     </DeleteButton>
                 </ActionBackground>
                 <SwipeableContent {...swipeHandlers} transformX={transformX} isCompleted={isCompleted}>
                     <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
-                    <Input type="number" placeholder="-" 
+                    <Input 
+                        type="number" 
+                        placeholder="-" 
                         value={weight} 
+                        disabled={isCompleted && !isEditing}
                         onChange={e => updateSetData(planExerciseId, setNumber, 'performedWeight', e.target.value)} 
                     />
-                    <Input type="number" placeholder="-" 
+                    <Input 
+                        type="number" 
+                        placeholder="-" 
                         value={reps} 
+                        disabled={isCompleted && !isEditing}
                         onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
                     />
                 <ActionButton onClick={isCompleted ? handleEdit : handleComplete} disabled={!weight || !reps} isCompleted={isCompleted}>
