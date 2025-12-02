@@ -1158,7 +1158,7 @@ const CustomCalendar = ({
                         
                         return (
                           <WeekEvent
-                            key={`${dayIdx}-${eventIdx}`}
+                            key={`${event.id || eventIdx}-${dayIdx}-${slotIdx}`}
                             $eventType={event.resource?.type}
                             onClick={(e) => handleEventClick(event, e)}
                             style={{
@@ -1188,6 +1188,19 @@ const CustomCalendar = ({
   };
 
   const renderDayView = () => {
+    // Calcular eventos do dia uma única vez
+    const allDayEvents = filteredEvents.filter(event => {
+      if (!event || !event.start) return false;
+      try {
+        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+        return isSameDay(eventStart, currentDate);
+      } catch {
+        return false;
+      }
+    });
+    
+    const positionedEvents = calculateEventPositions(allDayEvents);
+    
     return (
       <DayView>
         <DayHeader>
@@ -1202,19 +1215,6 @@ const CustomCalendar = ({
         <DayGrid>
           {timeSlots.map((slot, slotIdx) => {
             const hour = getHours(slot);
-            // Obter todos os eventos do dia para calcular sobreposições
-            const allDayEvents = filteredEvents.filter(event => {
-              if (!event || !event.start) return false;
-              try {
-                const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-                return isSameDay(eventStart, currentDate);
-              } catch {
-                return false;
-              }
-            });
-            
-            const positionedEvents = calculateEventPositions(allDayEvents);
-            const slotMinutes = hour * 60;
             
             return (
               <React.Fragment key={slotIdx}>
@@ -1222,25 +1222,25 @@ const CustomCalendar = ({
                   {format(slot, 'HH:mm')}
                 </TimeSlot>
                 <DayColumn onClick={() => handleSlotClick(currentDate, hour)}>
-                  {positionedEvents.map(({ event, column, totalColumns, startMinutes, endMinutes }, eventIdx) => {
-                    const top = ((startMinutes - slotMinutes) / 60) * 100;
-                    const height = ((endMinutes - startMinutes) / 60) * 100;
+                  {/* Renderizar eventos apenas no primeiro slot */}
+                  {slotIdx === 0 && positionedEvents.map(({ event, column, totalColumns, startMinutes, endMinutes }, eventIdx) => {
+                    const totalMinutesInDay = (getHours(max) - getHours(min) + 1) * 60;
+                    const dayStartMinutes = getHours(min) * 60;
+                    const relativeStart = startMinutes - dayStartMinutes;
+                    const relativeEnd = endMinutes - dayStartMinutes;
+                    const top = (relativeStart / totalMinutesInDay) * 100;
+                    const height = ((relativeEnd - relativeStart) / totalMinutesInDay) * 100;
                     const width = `${100 / totalColumns}%`;
                     const left = `${(column / totalColumns) * 100}%`;
                     
-                    // Só renderizar se o evento está visível neste slot
-                    if (endMinutes <= slotMinutes || startMinutes >= slotMinutes + 60) {
-                      return null;
-                    }
-                    
                     return (
                       <WeekEvent
-                        key={eventIdx}
+                        key={`day-${event.id || eventIdx}`}
                         $eventType={event.resource?.type}
                         onClick={(e) => handleEventClick(event, e)}
                         style={{
                           top: `${Math.max(0, top)}%`,
-                          height: `${Math.max(20, height)}%`,
+                          height: `${Math.max(2, height)}%`,
                           left: left,
                           width: width,
                           marginLeft: column > 0 ? '2px' : '4px',
