@@ -88,17 +88,17 @@ if ('serviceWorker' in navigator) {
 
 // Prevenir rotação para horizontal
 const lockOrientation = () => {
-  if (screen.orientation && screen.orientation.lock) {
-    screen.orientation.lock('portrait').catch(() => {
+  if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+    window.screen.orientation.lock('portrait').catch(() => {
       // Se não conseguir bloquear, pelo menos tenta prevenir
       console.log('Não foi possível bloquear orientação');
     });
-  } else if (screen.lockOrientation) {
-    screen.lockOrientation('portrait');
-  } else if (screen.mozLockOrientation) {
-    screen.mozLockOrientation('portrait');
-  } else if (screen.msLockOrientation) {
-    screen.msLockOrientation('portrait');
+  } else if (window.screen && window.screen.lockOrientation) {
+    window.screen.lockOrientation('portrait');
+  } else if (window.screen && window.screen.mozLockOrientation) {
+    window.screen.mozLockOrientation('portrait');
+  } else if (window.screen && window.screen.msLockOrientation) {
+    window.screen.msLockOrientation('portrait');
   }
 };
 
