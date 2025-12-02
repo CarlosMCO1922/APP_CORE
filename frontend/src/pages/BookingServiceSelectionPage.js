@@ -179,7 +179,27 @@ const TrainingAccordion = styled.div`
   flex-direction: column; 
   gap: 10px;
   max-width: 450px;       
-  margin: 0 auto;   
+  margin: 0 auto;
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px;
+  
+  /* Estilização da scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.colors.background};
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.colors.primary};
+    border-radius: 3px;
+    &:hover {
+      background: ${({ theme }) => theme.colors.primaryHover};
+    }
+  }
 `;
 
 const TrainingHeader = styled.button`
@@ -382,7 +402,7 @@ const BookingServiceSelectionPage = () => {
   return (
     <PageContainer>
       <Header>
-        <BackArrow to="/dashboard" />
+        <BackArrow onClick={handleBack} />
         <Title>{getTitle()}</Title>
       </Header>
       

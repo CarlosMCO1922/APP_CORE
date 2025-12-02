@@ -533,8 +533,8 @@ const IconButton = styled.button`
   border: none;
   color: ${({ theme }) => theme.colors.primary};
   cursor: pointer;
-  font-size: 1.8rem;
-  padding: 8px;
+  font-size: 1.2rem;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -543,7 +543,7 @@ const IconButton = styled.button`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
 `;
 
@@ -912,6 +912,29 @@ const upcomingEvents = useMemo(() => {
                   )
               )}
             </Section>
+
+            {showTrainingDetailsModal && selectedTrainingForDetails && (
+                <ModalOverlay onClick={() => setShowTrainingDetailsModal(false)}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                        <CloseModalButton onClick={() => setShowTrainingDetailsModal(false)}><FaTimes /></CloseModalButton>
+                        <ModalTitle>{selectedTrainingForDetails.name}</ModalTitle>
+                        <ModalDetail>
+                            <strong>Data e Hora:</strong> {moment(`${selectedTrainingForDetails.date}T${selectedTrainingForDetails.time}`).format('dddd, D [de] MMMM [às] HH:mm')}
+                        </ModalDetail>
+                        {selectedTrainingForDetails.instructor && (
+                            <ModalDetail>
+                                <strong>Instrutor:</strong> {selectedTrainingForDetails.instructor.firstName} {selectedTrainingForDetails.instructor.lastName}
+                            </ModalDetail>
+                        )}
+                        <ModalDetail>
+                            <strong>Vagas disponíveis:</strong> {selectedTrainingForDetails.capacity - (selectedTrainingForDetails.participants?.length || 0)} de {selectedTrainingForDetails.capacity}
+                        </ModalDetail>
+                        <ModalActions>
+                            <ModalButton type="button" onClick={() => setShowTrainingDetailsModal(false)}>Fechar</ModalButton>
+                        </ModalActions>
+                    </ModalContent>
+                </ModalOverlay>
+            )}
 
             {showSeriesModal && selectedSeriesForSubscription && (
                 <ModalOverlay onClick={handleCloseSeriesSubscriptionModal}>

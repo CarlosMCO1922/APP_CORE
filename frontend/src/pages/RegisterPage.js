@@ -250,14 +250,16 @@ function RegisterPage() {
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setFormData({ ...formData, [e.target.name]: value });
+    const { name, type, checked, value } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
+    setFormData(prev => ({ ...prev, [name]: newValue }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' }); 
 
+    // Validação das passwords
     if (formData.password !== formData.confirmPassword) {
       setMessage({ type: 'error', text: 'As passwords não coincidem.' });
       return;
@@ -266,6 +268,11 @@ function RegisterPage() {
         setMessage({ type: 'error', text: 'A password deve ter pelo menos 6 caracteres.' });
         return;
     }
+    
+    // Validação do GDPR - verificar diretamente o valor do estado
+    // Debug temporário
+    console.log('GDPR Consent value:', formData.gdprConsent, 'Type:', typeof formData.gdprConsent);
+    
     if (!formData.gdprConsent) {
         setMessage({ type: 'error', text: 'É necessário aceitar o consentimento de partilha de dados (RGPD) para criar uma conta.' });
         return;
@@ -273,12 +280,16 @@ function RegisterPage() {
 
     setLoading(true);
     try {
-      const { confirmPassword, ...userData } = formData;
-      // Garantir que gdprConsent é enviado como boolean
+      // Construir objeto de registo explicitamente, garantindo que gdprConsent é true
       const registrationData = {
-        ...userData,
-        gdprConsent: Boolean(userData.gdprConsent)
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        gdprConsent: true // Sempre true porque já validámos acima
       };
+      console.log('Sending registration data:', registrationData);
+      console.log('GDPR Consent in formData:', formData.gdprConsent);
       const responseData = await registerUserAPI(registrationData);
       
       setMessage({ type: 'success', text: `${responseData.message || 'Registo bem-sucedido!'} Serás redirecionado para o login.` });
@@ -329,9 +340,11 @@ function RegisterPage() {
                 type="checkbox" 
                 name="gdprConsent" 
                 id="gdprConsent" 
-                checked={formData.gdprConsent} 
-                onChange={handleChange} 
-                required 
+                checked={formData.gdprConsent || false} 
+                onChange={(e) => {
+                  console.log('Checkbox clicked, checked:', e.target.checked);
+                  handleChange(e);
+                }}
               />
               <CheckboxLabel htmlFor="gdprConsent">
                 Ao criar uma conta, aceito a partilha de dados de acordo com o Regulamento Geral sobre a Proteção de Dados (RGPD). 

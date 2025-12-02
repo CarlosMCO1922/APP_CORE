@@ -81,15 +81,21 @@ export const loginAPI = async (email, password, isStaffLogin = false) => {
 
 export const registerUserAPI = async (userData) => {
   try {
+    console.log('registerUserAPI - userData before stringify:', userData);
+    const requestBody = JSON.stringify(userData);
+    console.log('registerUserAPI - request body:', requestBody);
+    
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: requestBody,
     });
 
     const data = await response.json();
+    console.log('registerUserAPI - response status:', response.status);
+    console.log('registerUserAPI - response data:', data);
 
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao registar utilizador.');

@@ -93,7 +93,15 @@ const MyTrainingsPage = () => {
     setLoading(true);
     try {
       const data = await getMyBookings(authState.token);
-      const futureTrainings = (data.trainings || [])
+      // Remover duplicados baseado no ID do treino
+      const seenIds = new Set();
+      const uniqueTrainings = (data.trainings || []).filter(t => {
+        if (seenIds.has(t.id)) return false;
+        seenIds.add(t.id);
+        return true;
+      });
+      
+      const futureTrainings = uniqueTrainings
         .filter(t => moment(`${t.date}T${t.time}`).isAfter(moment()))
         .sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
       setTrainings(futureTrainings);

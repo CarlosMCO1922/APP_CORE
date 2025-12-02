@@ -20,6 +20,9 @@ try {
 const registerUser = async (req, res) => {
   const { firstName, lastName, email, password, gdprConsent } = req.body;
 
+  console.log('registerUser - Received body:', req.body);
+  console.log('registerUser - gdprConsent value:', gdprConsent, 'Type:', typeof gdprConsent);
+
   try {
     // Verificar se os campos obrigatórios estão presentes
     if (!firstName || !lastName || !email || !password) {
@@ -28,7 +31,10 @@ const registerUser = async (req, res) => {
 
     // Verificar consentimento GDPR (aceita boolean true ou string "true")
     const hasConsent = gdprConsent === true || gdprConsent === 'true' || gdprConsent === 1 || gdprConsent === '1';
+    console.log('registerUser - hasConsent check:', hasConsent);
+    
     if (!hasConsent) {
+      console.log('registerUser - GDPR consent validation failed');
       return res.status(400).json({ message: 'É necessário aceitar o consentimento de partilha de dados (RGPD) para criar uma conta.' });
     }
 
