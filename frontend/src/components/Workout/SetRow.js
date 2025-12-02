@@ -3,7 +3,7 @@ import React, { useState } from 'react'; // Importar apenas o useState
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService, updateExercisePerformanceService } from '../../services/progressService';
-import { FaCheck, FaTrashAlt, FaPencilAlt, FaTimes } from 'react-icons/fa';
+import { FaCheck, FaTrashAlt, FaTimes } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useTheme } from 'styled-components';
@@ -124,8 +124,10 @@ const ActionButton = styled.button`
   };
   font-size: 1.1rem;
   cursor: pointer;
-  width: 44px;
+  width: ${({ isCompleted }) => isCompleted ? 'auto' : '44px'};
+  min-width: 44px;
   height: 44px;
+  padding: ${({ isCompleted }) => isCompleted ? '0 12px' : '0'};
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -141,17 +143,16 @@ const ActionButton = styled.button`
     font-size: 1.1rem !important;
     width: 1.1rem !important;
     height: 1.1rem !important;
+  }
+  
+  .edit-text {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     
     @media (max-width: 768px) {
-      font-size: ${({ isCompleted }) => isCompleted ? '1.5rem !important' : '1.1rem !important'};
-      width: ${({ isCompleted }) => isCompleted ? '1.5rem !important' : '1.1rem !important'};
-      height: ${({ isCompleted }) => isCompleted ? '1.5rem !important' : '1.1rem !important'};
-    }
-    
-    @media (max-width: 480px) {
-      font-size: ${({ isCompleted }) => isCompleted ? '1.6rem !important' : '1.1rem !important'};
-      width: ${({ isCompleted }) => isCompleted ? '1.6rem !important' : '1.1rem !important'};
-      height: ${({ isCompleted }) => isCompleted ? '1.6rem !important' : '1.1rem !important'};
+      font-size: 0.7rem;
     }
   }
   
@@ -421,7 +422,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                         onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
                     />
                 <ActionButton onClick={isCompleted ? handleEdit : handleComplete} disabled={!weight || !reps} isCompleted={isCompleted}>
-                    {isCompleted ? <FaPencilAlt /> : <FaCheck />}
+                    {isCompleted ? <span className="edit-text">EDIT</span> : <FaCheck />}
                 </ActionButton>
             </SwipeableContent>
         </SwipeableRowContainer>
