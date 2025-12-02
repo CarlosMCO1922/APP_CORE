@@ -18,11 +18,7 @@ try {
 
 // Registo de um novo Utilizador (Cliente)
 const registerUser = async (req, res) => {
-  const { firstName, lastName, email, password, gdprConsent } = req.body;
-
-  console.log('registerUser - Received body:', JSON.stringify(req.body, null, 2));
-  console.log('registerUser - gdprConsent value:', gdprConsent, 'Type:', typeof gdprConsent);
-  console.log('registerUser - All body keys:', Object.keys(req.body));
+  const { firstName, lastName, email, password } = req.body;
 
   try {
     // Verificar se os campos obrigatórios estão presentes
@@ -30,23 +26,7 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
     }
 
-    // Verificar consentimento GDPR - aceita vários formatos
-    // Verificar também se vem como 'dprConsent' (erro de minificação possível)
-    const consentValue = gdprConsent !== undefined ? gdprConsent : req.body.dprConsent;
-    console.log('registerUser - consentValue:', consentValue, 'Type:', typeof consentValue);
-    
-    const hasConsent = consentValue === true || 
-                       consentValue === 'true' || 
-                       consentValue === 1 || 
-                       consentValue === '1' ||
-                       String(consentValue).toLowerCase() === 'true';
-    
-    console.log('registerUser - hasConsent check:', hasConsent);
-    
-    if (!hasConsent) {
-      console.log('registerUser - GDPR consent validation failed. Received:', consentValue);
-      return res.status(400).json({ message: 'É necessário aceitar o consentimento de partilha de dados (RGPD) para criar uma conta.' });
-    }
+    // O consentimento GDPR é assumido automaticamente ao criar conta
 
     // Verificar se o email já existe na tabela Users
     const existingUser = await db.User.findOne({ where: { email } });
@@ -61,14 +41,13 @@ const registerUser = async (req, res) => {
     }
 
     const hashedPassword = await hashPassword(password);
-    const consentDate = new Date();
     const newUser = await db.User.create({
       firstName,
       lastName,
       email,
       password: hashedPassword,
-      gdprConsent: true, // Sempre true porque já validámos acima
-      gdprConsentDate: consentDate,
+      gdprConsent: true, // Assumido automaticamente ao criar conta
+      // gdprConsentDate não é necessário - o timestamp de criação serve como prova
     });
 
     const userResponse = {

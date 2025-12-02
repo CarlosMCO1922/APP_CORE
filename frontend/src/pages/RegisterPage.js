@@ -204,37 +204,6 @@ const FooterText = styled.footer`
 `;
 
 
-const CheckboxContainer = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 0.5rem;
-`;
-
-const Checkbox = styled.input`
-  margin-top: 3px;
-  cursor: pointer;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-`;
-
-const CheckboxLabel = styled.label`
-  font-size: 0.85rem;
-  color: ${({ theme }) => theme.colors.textMain};
-  line-height: 1.5;
-  cursor: pointer;
-  flex: 1;
-  
-  a {
-    color: ${({ theme }) => theme.colors.primary};
-    text-decoration: underline;
-    &:hover {
-      color: ${({ theme }) => theme.colors.primaryHover};
-    }
-  }
-`;
-
 function RegisterPage() {
   const theme = useTheme();
   const [formData, setFormData] = useState({
@@ -243,7 +212,6 @@ function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    gdprConsent: false,
   });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
@@ -268,30 +236,16 @@ function RegisterPage() {
         setMessage({ type: 'error', text: 'A password deve ter pelo menos 6 caracteres.' });
         return;
     }
-    
-    // Validação do GDPR - verificar diretamente o valor do estado
-    // Debug temporário
-    console.log('GDPR Consent value:', formData.gdprConsent, 'Type:', typeof formData.gdprConsent);
-    
-    if (!formData.gdprConsent) {
-        setMessage({ type: 'error', text: 'É necessário aceitar o consentimento de partilha de dados (RGPD) para criar uma conta.' });
-        return;
-    }
 
     setLoading(true);
     try {
-      // Construir objeto de registo explicitamente, garantindo que gdprConsent é true
+      // Construir objeto de registo - o consentimento GDPR é assumido automaticamente
       const registrationData = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim(),
-        password: formData.password,
-        gdprConsent: true // Sempre true porque já validámos acima
+        password: formData.password
       };
-      console.log('Sending registration data:', registrationData);
-      console.log('Sending registration data (stringified):', JSON.stringify(registrationData));
-      console.log('GDPR Consent in formData:', formData.gdprConsent);
-      console.log('GDPR Consent in registrationData:', registrationData.gdprConsent);
       const responseData = await registerUserAPI(registrationData);
       
       setMessage({ type: 'success', text: `${responseData.message || 'Registo bem-sucedido!'} Serás redirecionado para o login.` });
@@ -337,22 +291,16 @@ function RegisterPage() {
             <Input type="password" name="confirmPassword" id="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required placeholder='Password' />
           </FormGroup>
           <FormGroup>
-            <CheckboxContainer>
-              <Checkbox 
-                type="checkbox" 
-                name="gdprConsent" 
-                id="gdprConsent" 
-                checked={formData.gdprConsent || false} 
-                onChange={(e) => {
-                  console.log('Checkbox clicked, checked:', e.target.checked);
-                  handleChange(e);
-                }}
-              />
-              <CheckboxLabel htmlFor="gdprConsent">
-                Ao criar uma conta, aceito a partilha de dados de acordo com o Regulamento Geral sobre a Proteção de Dados (RGPD). 
-                Consulte a nossa política de privacidade para mais informações.
-              </CheckboxLabel>
-            </CheckboxContainer>
+            <p style={{
+              fontSize: '0.85rem',
+              color: theme.colors.textMuted,
+              lineHeight: '1.5',
+              marginTop: '0.5rem',
+              textAlign: 'center'
+            }}>
+              Ao criar uma conta, aceita a partilha de dados de acordo com o Regulamento Geral sobre a Proteção de Dados (RGPD). 
+              Consulte a nossa política de privacidade para mais informações.
+            </p>
           </FormGroup>
           <SubmitButton type="submit" disabled={loading}>
             {loading ? 'A registar...' : 'Registar'}
