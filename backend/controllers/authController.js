@@ -3,7 +3,18 @@ const db = require('../models');
 const { hashPassword, comparePassword } = require('../utils/passwordUtils');
 const { generateToken } = require('../utils/tokenUtils');
 const crypto = require('crypto');
-const { sendPasswordResetEmail } = require('../utils/emailService');
+
+// Import opcional do emailService - se não existir, a função será undefined
+let sendPasswordResetEmail;
+try {
+  const emailService = require('../utils/emailService');
+  sendPasswordResetEmail = emailService.sendPasswordResetEmail;
+} catch (error) {
+  console.warn('emailService não encontrado. Funcionalidade de reset de password por email desativada.');
+  sendPasswordResetEmail = async () => {
+    console.warn('sendPasswordResetEmail chamado mas emailService não está disponível');
+  };
+}
 
 // Registo de um novo Utilizador (Cliente)
 const registerUser = async (req, res) => {

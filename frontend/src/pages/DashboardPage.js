@@ -607,7 +607,7 @@ const DashboardPage = () => {
         if (!authState.token) return;
         setLoading(true);
         setError('');
-        setSeriesError('');
+        setTrainingsError('');
         try {
             const [bookingsData, pendingPaymentsData, allTrainingsData] = await Promise.all([
                 getMyBookings(authState.token),
