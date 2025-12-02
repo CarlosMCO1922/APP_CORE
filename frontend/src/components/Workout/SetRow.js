@@ -143,30 +143,16 @@ const ActionButton = styled.button`
     height: 1.1rem !important;
     
     @media (max-width: 768px) {
-      font-size: ${({ isCompleted }) => isCompleted ? '2.4rem !important' : '1.1rem !important'};
-      width: ${({ isCompleted }) => isCompleted ? '2.4rem !important' : '1.1rem !important'};
-      height: ${({ isCompleted }) => isCompleted ? '2.4rem !important' : '1.1rem !important'};
+      font-size: ${({ isCompleted }) => isCompleted ? '1.5rem !important' : '1.1rem !important'};
+      width: ${({ isCompleted }) => isCompleted ? '1.5rem !important' : '1.1rem !important'};
+      height: ${({ isCompleted }) => isCompleted ? '1.5rem !important' : '1.1rem !important'};
     }
     
     @media (max-width: 480px) {
-      font-size: ${({ isCompleted }) => isCompleted ? '2.6rem !important' : '1.1rem !important'};
-      width: ${({ isCompleted }) => isCompleted ? '2.6rem !important' : '1.1rem !important'};
-      height: ${({ isCompleted }) => isCompleted ? '2.6rem !important' : '1.1rem !important'};
+      font-size: ${({ isCompleted }) => isCompleted ? '1.6rem !important' : '1.1rem !important'};
+      width: ${({ isCompleted }) => isCompleted ? '1.6rem !important' : '1.1rem !important'};
+      height: ${({ isCompleted }) => isCompleted ? '1.6rem !important' : '1.1rem !important'};
     }
-  }
-  
-  @media (max-width: 768px) {
-    width: ${({ isCompleted }) => isCompleted ? '60px' : '44px'} !important;
-    height: ${({ isCompleted }) => isCompleted ? '60px' : '44px'} !important;
-    min-width: ${({ isCompleted }) => isCompleted ? '60px' : '44px'} !important;
-    min-height: ${({ isCompleted }) => isCompleted ? '60px' : '44px'} !important;
-  }
-  
-  @media (max-width: 480px) {
-    width: ${({ isCompleted }) => isCompleted ? '64px' : '44px'} !important;
-    height: ${({ isCompleted }) => isCompleted ? '64px' : '44px'} !important;
-    min-width: ${({ isCompleted }) => isCompleted ? '64px' : '44px'} !important;
-    min-height: ${({ isCompleted }) => isCompleted ? '64px' : '44px'} !important;
   }
   
   &:hover:not(:disabled) {
