@@ -91,6 +91,35 @@ exports.createSeriesSubscription = async (req, res) => {
                 console.warn(`Capacidade esgotada para treino ID ${instance.id} na data ${instance.date}. User ${clientId} não inscrito nesta instância da série.`);
                 continue;
             }
+
+            // Verificar se já está inscrito neste treino específico
+            const isAlreadyBooked = await instance.hasParticipant(clientUser, { transaction });
+            if (isAlreadyBooked) {
+                console.warn(`User ${clientId} já está inscrito no treino ID ${instance.id} na data ${instance.date}. Pulando...`);
+                continue;
+            }
+
+            // Verificar se já está inscrito noutro treino no mesmo dia e hora
+            const conflictingTraining = await db.Training.findOne({
+                where: {
+                    date: instance.date,
+                    time: instance.time,
+                    id: { [Op.ne]: instance.id } // Excluir o treino atual
+                },
+                include: [{
+                    model: db.User,
+                    as: 'participants',
+                    where: { id: clientId },
+                    through: { attributes: [] }
+                }],
+                transaction
+            });
+
+            if (conflictingTraining) {
+                console.warn(`User ${clientId} já está inscrito noutro treino no dia ${instance.date} às ${instance.time}. Pulando treino ID ${instance.id}...`);
+                continue;
+            }
+
             await instance.addParticipant(clientUser, { transaction });
             bookingsSuccessful++;
         }

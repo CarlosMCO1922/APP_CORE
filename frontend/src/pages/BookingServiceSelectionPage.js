@@ -66,7 +66,6 @@ const ViewContainer = styled.div`
 
 const AnimatedView = styled.div`
   width: 100%;
-  position: absolute;
   top: 0;
   left: 0;
   transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;

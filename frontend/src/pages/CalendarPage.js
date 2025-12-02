@@ -495,8 +495,24 @@ const CalendarPage = () => {
       setMyBookedTrainingIds(bookedTrainings);
       setMyBookedAppointmentIds(bookedAppointments);
 
+      // Remover treinos duplicados baseado no ID
+      const seenTrainingIds = new Set();
+      const uniqueTrainings = trainingsData.filter(training => {
+        if (seenTrainingIds.has(training.id)) return false;
+        seenTrainingIds.add(training.id);
+        return true;
+      });
+
+      // Remover consultas duplicadas baseado no ID
+      const seenAppointmentIds = new Set();
+      const uniqueAppointments = appointmentsData.filter(appointment => {
+        if (seenAppointmentIds.has(appointment.id)) return false;
+        seenAppointmentIds.add(appointment.id);
+        return true;
+      });
+
       const formattedEvents = [];
-      trainingsData.forEach(training => {
+      uniqueTrainings.forEach(training => {
         const [hours, minutes] = String(training.time).split(':').map(Number);
         const startDateTime = parse(training.date, 'yyyy-MM-dd', new Date());
         startDateTime.setHours(hours, minutes, 0, 0);
@@ -507,7 +523,7 @@ const CalendarPage = () => {
           resource: { type: 'training', ...training }
         });
       });
-      appointmentsData.forEach(appointment => {
+      uniqueAppointments.forEach(appointment => {
         const [hours, minutes] = String(appointment.time).split(':').map(Number);
         const startDateTime = parse(appointment.date, 'yyyy-MM-dd', new Date());
         startDateTime.setHours(hours, minutes, 0, 0);
@@ -1250,7 +1266,7 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
           )}
           {showSubscribeSeriesModal && selectedSeriesDetailsForSubscription && (
             <ModalOverlay onClick={handleCloseSubscribeSeriesModal}>
-              <ModalContent onClick={e => e.stopPropagation()}>
+              <ModalContent onClick={e => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                 <CloseButton onClick={handleCloseSubscribeSeriesModal}><FaTimes /></CloseButton>
                 <ModalTitle>Inscrever na Série: {selectedSeriesDetailsForSubscription.name.split(' - ')[0]}</ModalTitle>
 
@@ -1295,11 +1311,17 @@ addToast('Inscrição na série realizada com sucesso!', { type: 'success', cate
                   <ModalInput
                     type="date"
                     id="seriesSubEndDateCalendar"
-                    value={seriesSubscriptionEndDate}
-                    onChange={(e) => setSeriesSubscriptionEndDate(e.target.value)}
+                    value={seriesSubscriptionEndDate || ''}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setSeriesSubscriptionEndDate(e.target.value);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onFocus={(e) => e.stopPropagation()}
                     min={moment().format('YYYY-MM-DD')}
                     max={selectedSeriesDetailsForSubscription.seriesEndDate || undefined} 
                     required
+                    style={{ pointerEvents: 'auto', cursor: 'pointer' }}
                   />
                   <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop:'5px'}}>
                     A sua inscrição será para todas as aulas desta série que ocorram até à data selecionada.

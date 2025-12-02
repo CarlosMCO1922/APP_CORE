@@ -289,7 +289,9 @@ function RegisterPage() {
         gdprConsent: true // Sempre true porque já validámos acima
       };
       console.log('Sending registration data:', registrationData);
+      console.log('Sending registration data (stringified):', JSON.stringify(registrationData));
       console.log('GDPR Consent in formData:', formData.gdprConsent);
+      console.log('GDPR Consent in registrationData:', registrationData.gdprConsent);
       const responseData = await registerUserAPI(registrationData);
       
       setMessage({ type: 'success', text: `${responseData.message || 'Registo bem-sucedido!'} Serás redirecionado para o login.` });

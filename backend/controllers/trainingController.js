@@ -356,9 +356,31 @@ const bookTraining = async (req, res) => {
       return res.status(404).json({ message: 'Utilizador não encontrado.' });
     }
 
+    // Verificar se já está inscrito neste treino específico
     const isAlreadyBooked = await training.hasParticipant(user);
     if (isAlreadyBooked) {
       return res.status(400).json({ message: 'Já estás inscrito neste treino.' });
+    }
+
+    // Verificar se já está inscrito noutro treino no mesmo dia e hora
+    const conflictingTraining = await db.Training.findOne({
+      where: {
+        date: training.date,
+        time: training.time,
+        id: { [Op.ne]: trainingId } // Excluir o treino atual
+      },
+      include: [{
+        model: db.User,
+        as: 'participants',
+        where: { id: userId },
+        through: { attributes: [] }
+      }]
+    });
+
+    if (conflictingTraining) {
+      return res.status(400).json({ 
+        message: `Já estás inscrito num treino no dia ${training.date} às ${training.time}. Não podes inscrever-te em múltiplos treinos no mesmo horário.` 
+      });
     }
 
     const participantsCount = training.participants ? training.participants.length : 0;

@@ -20,8 +20,9 @@ try {
 const registerUser = async (req, res) => {
   const { firstName, lastName, email, password, gdprConsent } = req.body;
 
-  console.log('registerUser - Received body:', req.body);
+  console.log('registerUser - Received body:', JSON.stringify(req.body, null, 2));
   console.log('registerUser - gdprConsent value:', gdprConsent, 'Type:', typeof gdprConsent);
+  console.log('registerUser - All body keys:', Object.keys(req.body));
 
   try {
     // Verificar se os campos obrigatórios estão presentes
@@ -29,12 +30,21 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
     }
 
-    // Verificar consentimento GDPR (aceita boolean true ou string "true")
-    const hasConsent = gdprConsent === true || gdprConsent === 'true' || gdprConsent === 1 || gdprConsent === '1';
+    // Verificar consentimento GDPR - aceita vários formatos
+    // Verificar também se vem como 'dprConsent' (erro de minificação possível)
+    const consentValue = gdprConsent !== undefined ? gdprConsent : req.body.dprConsent;
+    console.log('registerUser - consentValue:', consentValue, 'Type:', typeof consentValue);
+    
+    const hasConsent = consentValue === true || 
+                       consentValue === 'true' || 
+                       consentValue === 1 || 
+                       consentValue === '1' ||
+                       String(consentValue).toLowerCase() === 'true';
+    
     console.log('registerUser - hasConsent check:', hasConsent);
     
     if (!hasConsent) {
-      console.log('registerUser - GDPR consent validation failed');
+      console.log('registerUser - GDPR consent validation failed. Received:', consentValue);
       return res.status(400).json({ message: 'É necessário aceitar o consentimento de partilha de dados (RGPD) para criar uma conta.' });
     }
 
