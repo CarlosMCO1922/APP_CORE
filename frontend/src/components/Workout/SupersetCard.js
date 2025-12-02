@@ -1,7 +1,7 @@
 // src/components/Workout/SupersetCard.js
 import React from 'react';
 import styled from 'styled-components';
-import { FaLink, FaHistory, FaEllipsisV } from 'react-icons/fa';
+import { FaLink, FaHistory } from 'react-icons/fa';
 import ExerciseLiveCard from './ExerciseLiveCard';
 
 // --- Styled Components (sem alterações) ---
@@ -80,7 +80,6 @@ const SupersetCard = ({ exercises = [], onSetComplete, onShowHistory, trainingId
           <ExerciseWrapper key={planExercise.id}>
             <ExerciseActions>
                 <ActionButton onClick={() => onShowHistory(planExercise.exerciseDetails)} title="Ver Histórico"><FaHistory /></ActionButton>
-                <ActionButton onClick={() => alert('Menu de opções')} title="Opções"><FaEllipsisV /></ActionButton>
             </ExerciseActions>
             <ExerciseLiveCard
               planExercise={planExercise}

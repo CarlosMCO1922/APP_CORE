@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useWorkout } from '../context/WorkoutContext';
-import { FaChevronDown, FaStopwatch, FaTimes, FaHistory, FaEllipsisV } from 'react-icons/fa';
+import { FaChevronDown, FaStopwatch, FaTimes, FaHistory } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard'; 
 import SupersetCard from '../components/Workout/SupersetCard';
 import RestTimer from '../components/Workout/RestTimer'; 
@@ -213,19 +213,20 @@ const LiveWorkoutSessionPage = () => {
       // Se não for supersérie, mostrar sempre após cada série
       shouldShowRestTimer = true;
     } else {
-      // Se for supersérie, verificar se a primeira série de cada exercício está completa
-      const allFirstSetsComplete = currentBlock.every(exercise => {
-        const exercisePlanId = exercise.id || exercise.planExerciseId;
-        const firstSetKey = `${exercisePlanId}-1`;
-        const firstSetData = activeWorkout.setsData[firstSetKey];
-        return firstSetData && firstSetData.isCompleted;
+      // Se for supersérie, só mostrar timer quando completar série do ÚLTIMO exercício do bloco
+      // Ordenar o bloco para garantir ordem correta
+      const sortedBlock = [...currentBlock].sort((a, b) => {
+        // Usar internalOrder se disponível, senão usar a ordem no array
+        const orderA = a.internalOrder !== undefined ? a.internalOrder : currentBlock.indexOf(a);
+        const orderB = b.internalOrder !== undefined ? b.internalOrder : currentBlock.indexOf(b);
+        return orderA - orderB;
       });
       
-      // Só mostrar se todas as primeiras séries estão completas E esta é a primeira série
-      if (setNumber === 1 && allFirstSetsComplete) {
-        shouldShowRestTimer = true;
-      } else if (setNumber > 1) {
-        // Para séries subsequentes, mostrar sempre (após cada série)
+      const lastExerciseInBlock = sortedBlock[sortedBlock.length - 1];
+      const lastExerciseId = lastExerciseInBlock.id || lastExerciseInBlock.planExerciseId;
+      
+      // Só mostrar timer se a série completada foi do último exercício do bloco
+      if (lastExerciseId === planExerciseId) {
         shouldShowRestTimer = true;
       }
     }
@@ -300,7 +301,6 @@ const LiveWorkoutSessionPage = () => {
                                     <ExerciseTitle>{planExercise.exerciseDetails.name}</ExerciseTitle>
                                     <ExerciseActions>
                                         <ActionButton onClick={() => handleShowHistory(planExercise.exerciseDetails)} title="Ver Histórico"><FaHistory /></ActionButton>
-                                        <ActionButton onClick={() => alert('Menu de opções do exercício')} title="Opções"><FaEllipsisV /></ActionButton>
                                     </ExerciseActions>
                                 </ExerciseHeader>
                                 <ExerciseLiveCard

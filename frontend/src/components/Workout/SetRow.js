@@ -141,7 +141,7 @@ const ActionButton = styled.button`
     font-size: 1.1rem;
     
     @media (max-width: 768px) {
-      font-size: ${({ isCompleted }) => isCompleted ? '1.4rem' : '1.1rem'};
+      font-size: ${({ isCompleted }) => isCompleted ? '1.8rem' : '1.1rem'};
     }
   }
   

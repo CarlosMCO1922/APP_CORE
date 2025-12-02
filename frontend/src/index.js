@@ -88,27 +88,78 @@ if ('serviceWorker' in navigator) {
 
 // Prevenir rotação para horizontal
 const lockOrientation = () => {
+  // Tentar múltiplas APIs de bloqueio de orientação
   if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
     window.screen.orientation.lock('portrait').catch(() => {
       // Se não conseguir bloquear, pelo menos tenta prevenir
-      console.log('Não foi possível bloquear orientação');
+      console.log('Não foi possível bloquear orientação via screen.orientation.lock');
     });
   } else if (window.screen && window.screen.lockOrientation) {
-    window.screen.lockOrientation('portrait');
+    try {
+      window.screen.lockOrientation('portrait');
+    } catch (e) {
+      console.log('Não foi possível bloquear orientação via lockOrientation');
+    }
   } else if (window.screen && window.screen.mozLockOrientation) {
-    window.screen.mozLockOrientation('portrait');
+    try {
+      window.screen.mozLockOrientation('portrait');
+    } catch (e) {
+      console.log('Não foi possível bloquear orientação via mozLockOrientation');
+    }
   } else if (window.screen && window.screen.msLockOrientation) {
-    window.screen.msLockOrientation('portrait');
+    try {
+      window.screen.msLockOrientation('portrait');
+    } catch (e) {
+      console.log('Não foi possível bloquear orientação via msLockOrientation');
+    }
+  }
+  
+  // Tentar também via document.documentElement
+  if (document.documentElement && document.documentElement.requestFullscreen) {
+    // Alguns navegadores permitem bloquear orientação em fullscreen
+    // Mas não vamos forçar fullscreen, apenas tentar se já estiver
+  }
+};
+
+// Forçar orientação portrait
+const forcePortrait = () => {
+  // Tentar bloquear via API
+  lockOrientation();
+  
+  // Se detectar landscape, tentar forçar portrait novamente
+  if (window.orientation !== undefined) {
+    const isLandscape = Math.abs(window.orientation) === 90 || Math.abs(window.orientation) === -90;
+    if (isLandscape) {
+      // Tentar bloquear novamente
+      setTimeout(lockOrientation, 50);
+    }
   }
 };
 
 // Tentar bloquear orientação quando a página carregar
 if (window.addEventListener) {
-  window.addEventListener('load', lockOrientation);
+  // Bloquear imediatamente
+  lockOrientation();
+  
+  // Bloquear quando a página carregar
+  window.addEventListener('load', forcePortrait);
+  
+  // Bloquear quando a orientação mudar
   window.addEventListener('orientationchange', () => {
-    // Força portrait após mudança de orientação
-    setTimeout(lockOrientation, 100);
+    setTimeout(forcePortrait, 100);
   });
+  
+  // Também escutar mudanças de tamanho (pode indicar rotação)
+  window.addEventListener('resize', () => {
+    setTimeout(forcePortrait, 100);
+  });
+  
+  // Para iOS, também escutar o evento específico
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', () => {
+      setTimeout(forcePortrait, 100);
+    });
+  }
 }
 
 // Prevenir zoom com gestos de pinça
