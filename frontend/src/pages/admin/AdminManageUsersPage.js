@@ -1,5 +1,5 @@
 // src/pages/admin/AdminManageUsersPage.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
@@ -9,7 +9,7 @@ import {
     adminUpdateUser,
     adminDeleteUser
 } from '../../services/userService';
-import { FaPlus, FaEdit, FaTrashAlt, FaTimes, FaEye, FaUserPlus } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrashAlt, FaTimes, FaEye, FaUserPlus, FaSearch } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 
 
@@ -283,6 +283,48 @@ const CloseButton = styled.button`
   transition: color 0.2s, transform 0.2s; border-radius: 50%;
   &:hover { color: ${({ theme }) => theme.colors.textMain}; transform: scale(1.1); }
 `;
+
+const SearchContainer = styled.div`
+  margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+`;
+
+const SearchInput = styled.input`
+  flex: 1;
+  padding: 10px 14px 10px 40px;
+  background-color: ${({ theme }) => theme.colors.inputBg || theme.colors.buttonSecondaryBg};
+  border: 1px solid ${({ theme }) => theme.colors.inputBorder || theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing || 'rgba(212, 175, 55, 0.2)'};
+  }
+  
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+`;
+
+const SearchIcon = styled(FaSearch)`
+  position: absolute;
+  left: 14px;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 0.9rem;
+`;
+
+const SearchInputWrapper = styled.div`
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+`;
 const ModalErrorText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error};
@@ -318,6 +360,7 @@ const AdminManageUsersPage = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchUsers = useCallback(async () => {
     if (authState.token) {
@@ -325,7 +368,13 @@ const AdminManageUsersPage = () => {
       setError('');
       try {
         const data = await adminGetAllUsers(authState.token);
-        setUsers(data);
+        // Ordenar por nome (firstName) alfabeticamente
+        const sortedData = [...data].sort((a, b) => {
+          const nameA = (a.firstName || '').toLowerCase();
+          const nameB = (b.firstName || '').toLowerCase();
+          return nameA.localeCompare(nameB, 'pt');
+        });
+        setUsers(sortedData);
       } catch (err) {
         setError(err.message || 'Não foi possível carregar os utilizadores.');
       } finally {
@@ -333,6 +382,19 @@ const AdminManageUsersPage = () => {
       }
     }
   }, [authState.token]);
+
+  // Filtrar utilizadores com base no termo de pesquisa
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return users;
+    }
+    const term = searchTerm.toLowerCase().trim();
+    return users.filter(user => 
+      (user.firstName || '').toLowerCase().includes(term) ||
+      (user.lastName || '').toLowerCase().includes(term) ||
+      (user.email || '').toLowerCase().includes(term)
+    );
+  }, [users, searchTerm]);
 
   useEffect(() => {
     fetchUsers();
@@ -451,6 +513,18 @@ const AdminManageUsersPage = () => {
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}
 
+      <SearchContainer>
+        <SearchInputWrapper>
+          <SearchIcon />
+          <SearchInput
+            type="text"
+            placeholder="Pesquisar por nome, apelido ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </SearchInputWrapper>
+      </SearchContainer>
+
       <TableWrapper>
         <Table>
           <thead>
@@ -464,7 +538,7 @@ const AdminManageUsersPage = () => {
             </tr>
           </thead>
           <tbody>
-            {users.length > 0 ? users.map(user => (
+            {filteredUsers.length > 0 ? filteredUsers.map(user => (
               <tr key={user.id}>
                 <td>{user.id}</td>
                 <td>{user.firstName}</td>
@@ -489,7 +563,11 @@ const AdminManageUsersPage = () => {
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>Nenhum utilizador encontrado.</td></tr>
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
+                  {searchTerm ? 'Nenhum utilizador encontrado com o termo de pesquisa.' : 'Nenhum utilizador encontrado.'}
+                </td>
+              </tr>
             )}
           </tbody>
         </Table>

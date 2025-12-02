@@ -14,6 +14,7 @@ const AddSetButton = styled.button` background-color: transparent; color: ${({ t
 
 const ExerciseLiveCard = ({ 
   planExercise, 
+  exerciseName,
   trainingId, 
   workoutPlanId,
   onSetComplete, 
@@ -36,16 +37,21 @@ const ExerciseLiveCard = ({
     setSets(prev => prev.filter((_, index) => index !== indexToDelete));
   };
 
+  // Determinar o nome do exercício a mostrar
+  const displayName = exerciseName 
+    || planExercise?.exerciseDetails?.name 
+    || planExercise?.exerciseName
+    || planExercise?.name
+    || planExercise?.exercise?.name
+    || null;
+
   return (
     <CardContainer>
-      <CardHeader>
-        <ExerciseName>
-          {planExercise?.exerciseName
-            ?? planExercise?.name
-            ?? planExercise?.exercise?.name
-            ?? 'Exercício'}
-        </ExerciseName>
-     </CardHeader>
+      {displayName && (
+        <CardHeader>
+          <ExerciseName>{displayName}</ExerciseName>
+        </CardHeader>
+      )}
       
       <SetsGridHeader><span>Série</span><span>KG</span><span>Reps</span><span></span></SetsGridHeader>
       

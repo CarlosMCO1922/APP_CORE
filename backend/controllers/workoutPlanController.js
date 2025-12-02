@@ -279,10 +279,9 @@ const getWorkoutPlansForTraining = async (req, res) => {
       include: [{
         model: db.WorkoutPlanExercise,
         as: 'planExercises',
-        // --- LINHA CORRIGIDA ---
-        order: [['supersetGroup', 'ASC'], ['order', 'ASC']],
-        // -----------------------
-        include: [{ model: db.Exercise, as: 'exerciseDetails' }]
+        include: [{ model: db.Exercise, as: 'exerciseDetails' }],
+        separate: true,
+        order: [['supersetGroup', 'ASC'], ['order', 'ASC']]
       }],
       joinTableAttributes: ['orderInTraining'],
       order: [

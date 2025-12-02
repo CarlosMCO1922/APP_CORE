@@ -62,6 +62,9 @@ const SupersetCard = ({ exercises = [], onSetComplete, onShowHistory, trainingId
     .map(ex => ex.exerciseDetails.name)
     .join(' + ');
 
+  // Dividir o título da supersérie para extrair nomes individuais
+  const exerciseNames = supersetTitle.split(' + ').map(name => name.trim());
+
   return (
     <SupersetContainer>
       <SupersetHeader>
@@ -69,21 +72,27 @@ const SupersetCard = ({ exercises = [], onSetComplete, onShowHistory, trainingId
         <SupersetTitle>{supersetTitle}</SupersetTitle>
       </SupersetHeader>
       
-      {sortedExercises.map((planExercise) => (
-        <ExerciseWrapper key={planExercise.id}>
-          <ExerciseActions>
-              <ActionButton onClick={() => onShowHistory(planExercise.exerciseDetails)} title="Ver Histórico"><FaHistory /></ActionButton>
-              <ActionButton onClick={() => alert('Menu de opções')} title="Opções"><FaEllipsisV /></ActionButton>
-          </ExerciseActions>
-          <ExerciseLiveCard
-            planExercise={planExercise}
-            onSetComplete={onSetComplete}
-            trainingId={trainingId}
-            workoutPlanId={workoutPlanId}
-            lastPerformance={lastPerformances[planExercise.exerciseDetails.id]}
-          />
-        </ExerciseWrapper>
-      ))}
+      {sortedExercises.map((planExercise, index) => {
+        // Usar o nome do array dividido (antes do "+" para o primeiro, depois do "+" para o segundo)
+        const exerciseName = exerciseNames[index] || planExercise.exerciseDetails?.name || '';
+        
+        return (
+          <ExerciseWrapper key={planExercise.id}>
+            <ExerciseActions>
+                <ActionButton onClick={() => onShowHistory(planExercise.exerciseDetails)} title="Ver Histórico"><FaHistory /></ActionButton>
+                <ActionButton onClick={() => alert('Menu de opções')} title="Opções"><FaEllipsisV /></ActionButton>
+            </ExerciseActions>
+            <ExerciseLiveCard
+              planExercise={planExercise}
+              exerciseName={exerciseName}
+              onSetComplete={onSetComplete}
+              trainingId={trainingId}
+              workoutPlanId={workoutPlanId}
+              lastPerformance={lastPerformances[planExercise.exerciseDetails.id]}
+            />
+          </ExerciseWrapper>
+        );
+      })}
     </SupersetContainer>
   );
 };
