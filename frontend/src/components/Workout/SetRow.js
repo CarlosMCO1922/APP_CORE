@@ -40,42 +40,91 @@ const SwipeableContent = styled.div`
   align-items: center;
   gap: 10px;
   padding: 4px 10px;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  border: 2px solid ${({ theme, isCompleted }) => isCompleted ? theme.colors.success : theme.colors.cardBorder};
+  background-color: ${({ theme, isCompleted }) => 
+    isCompleted 
+      ? theme.colors.successBg || 'rgba(102,187,106,0.1)' // Leve tom verde quando completo
+      : theme.colors.cardBackground
+  };
+  border: 2px solid ${({ theme, isCompleted }) => 
+    isCompleted 
+      ? theme.colors.success // Verde quando completo
+      : theme.colors.cardBorder // Cinza neutro quando pendente
+  };
   border-radius: ${({ theme }) => theme.borderRadius};
   position: relative;
   z-index: 2;
   cursor: grab;
-  transition: transform 0.3s ease-out;
+  transition: all 0.3s ease-out;
   transform: translateX(${({ transformX }) => transformX}px);
+  box-shadow: ${({ theme, isCompleted }) => 
+    isCompleted 
+      ? `0 2px 8px rgba(102, 187, 106, 0.2)` // Sombra verde suave quando completo
+      : 'none'
+  };
 `;
 
 const SetLabel = styled.span`
   font-weight: 700;
   font-size: 1.1rem;
-  color: ${({ theme, isCompleted }) => isCompleted ? theme.colors.primary : theme.colors.textMuted};
+  color: ${({ theme, isCompleted }) => 
+    isCompleted 
+      ? theme.colors.primary // Dourado quando completo para destacar
+      : theme.colors.textMuted // Cinza quando pendente
+  };
   text-align: left;
+  transition: color 0.2s ease;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 12px;
-  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
-  border: 1px solid ${({ theme }) => theme.colors.buttonSecondaryBg};
+  background-color: ${({ theme, disabled }) => 
+    disabled 
+      ? theme.colors.disabledBg 
+      : theme.colors.buttonSecondaryBg
+  };
+  border: 1px solid ${({ theme, disabled }) => 
+    disabled 
+      ? theme.colors.disabledBg 
+      : theme.colors.buttonSecondaryBg
+  };
   border-radius: ${({ theme }) => theme.borderRadius};
-  color: ${({ theme }) => theme.colors.textMain};
+  color: ${({ theme, disabled }) => 
+    disabled 
+      ? theme.colors.disabledText 
+      : theme.colors.textMain
+  };
   text-align: center;
   font-size: 1rem;
+  transition: all 0.2s ease;
   -moz-appearance: textfield;
   &::-webkit-outer-spin-button, &::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
   }
+  
+  &:focus:not(:disabled) {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing};
+  }
 `;
 
 const ActionButton = styled.button`
-  background-color: ${({ theme }) => theme.colors.success};
-  color: white;
-  border: none;
+  background-color: ${({ theme, isCompleted }) => 
+    isCompleted 
+      ? theme.colors.primary // Dourado quando completo (botão editar) - usa cor primária do tema
+      : theme.colors.primary // Dourado também quando não completo (botão finalizar) - chama atenção
+  };
+  color: ${({ theme, isCompleted }) => 
+    isCompleted 
+      ? theme.colors.textDark // Texto escuro quando completo (contraste com dourado)
+      : theme.colors.textDark // Texto escuro quando não completo
+  };
+  border: ${({ theme, isCompleted }) => 
+    isCompleted 
+      ? `2px solid ${theme.colors.success}` // Contorno verde quando completo
+      : 'none' // Sem contorno quando pendente
+  };
   font-size: 1.1rem;
   cursor: pointer;
   width: 44px;
@@ -84,16 +133,33 @@ const ActionButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: ${({ theme, isCompleted }) => 
+    isCompleted 
+      ? `0 2px 6px rgba(102, 187, 106, 0.3)` // Sombra verde quando completo
+      : `0 2px 6px rgba(252, 181, 53, 0.2)` // Sombra dourada quando pendente
+  };
   
   &:hover:not(:disabled) {
-    filter: brightness(1.1);
+    transform: scale(1.05);
+    box-shadow: ${({ theme, isCompleted }) => 
+      isCompleted 
+        ? `0 3px 10px rgba(102, 187, 106, 0.4)` // Sombra verde mais intensa
+        : `0 3px 10px rgba(252, 181, 53, 0.3)` // Sombra dourada mais intensa
+    };
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
   }
 
   &:disabled {
     cursor: not-allowed;
-    background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
-    color: ${({ theme }) => theme.colors.textMuted};
+    background-color: ${({ theme }) => theme.colors.disabledBg};
+    color: ${({ theme }) => theme.colors.disabledText};
+    border: none;
+    box-shadow: none;
+    transform: none;
   }
 `;
 
@@ -203,14 +269,12 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                 <Input type="number" placeholder="-" 
                     value={weight} 
                     onChange={e => updateSetData(planExerciseId, setNumber, 'performedWeight', e.target.value)} 
-                    disabled={isCompleted} 
                 />
                 <Input type="number" placeholder="-" 
                     value={reps} 
                     onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
-                    disabled={isCompleted} 
                 />
-                <ActionButton onClick={isCompleted ? handleEdit : handleComplete} disabled={!weight || !reps}>
+                <ActionButton onClick={isCompleted ? handleEdit : handleComplete} disabled={!weight || !reps} isCompleted={isCompleted}>
                     {isCompleted ? <FaPencilAlt /> : <FaCheck />}
                 </ActionButton>
             </SwipeableContent>

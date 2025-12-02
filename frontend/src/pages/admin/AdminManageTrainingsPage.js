@@ -516,6 +516,10 @@ const AdminManageTrainingsPage = () => {
   const [waitlistLoading, setWaitlistLoading] = useState(false);
   const [promoteLoading, setPromoteLoading] = useState(null);
 
+  const [showDeleteRecurringModal, setShowDeleteRecurringModal] = useState(false);
+  const [deleteRecurringInfo, setDeleteRecurringInfo] = useState(null);
+  const [trainingToDelete, setTrainingToDelete] = useState(null);
+
 
   const fetchPageData = useCallback(async (appliedFilters = activeFilters) => {
     if (authState.token) {
@@ -698,40 +702,56 @@ const AdminManageTrainingsPage = () => {
       const recurringInfo = await checkRecurringTrainings(trainingId, authState.token);
       
       if (recurringInfo.hasRecurring && recurringInfo.futureCount > 0) {
-        // Mostrar modal de confirmação com opção de cancelar todos
-        const cancelAll = window.confirm(
-          `Este treino faz parte de uma série recorrente.\n\n` +
-          `Existem ${recurringInfo.futureCount} treino(s) futuro(s) com as mesmas características.\n\n` +
-          `Deseja eliminar apenas este treino ou todos os treinos futuros da série?\n\n` +
-          `Clique em "OK" para eliminar TODOS os treinos futuros.\n` +
-          `Clique em "Cancelar" para eliminar apenas ESTE treino.`
-        );
-        
-        if (cancelAll) {
-          // Cancelar todos os treinos futuros
-          await adminDeleteTraining(trainingId, authState.token, true);
-          setSuccessMessage(`Treino e ${recurringInfo.futureCount} treino(s) futuro(s) eliminados com sucesso.`);
-        } else {
-          // Cancelar apenas este treino
-          const confirmDelete = window.confirm(`Tens a certeza que queres eliminar apenas este treino?`);
-          if (confirmDelete) {
-            await adminDeleteTraining(trainingId, authState.token, false);
-            setSuccessMessage('Treino eliminado com sucesso.');
-          } else {
-            return; // Usuário cancelou
-          }
-        }
+        // Mostrar modal customizado com 3 opções
+        setDeleteRecurringInfo(recurringInfo);
+        setTrainingToDelete(trainingId);
+        setShowDeleteRecurringModal(true);
       } else {
         // Não há treinos recorrentes, eliminação normal
         if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}?`)) return;
         await adminDeleteTraining(trainingId, authState.token, false);
         setSuccessMessage('Treino eliminado com sucesso.');
+        fetchPageData(activeFilters);
       }
-      
-      fetchPageData(activeFilters);
     } catch (err) {
       setPageError(err.message || 'Falha ao eliminar treino.');
     }
+  };
+
+  const handleDeleteAllRecurring = async () => {
+    if (!trainingToDelete) return;
+    try {
+      await adminDeleteTraining(trainingToDelete, authState.token, true);
+      setSuccessMessage(`Treino e ${deleteRecurringInfo.futureCount} treino(s) futuro(s) eliminados com sucesso.`);
+      setShowDeleteRecurringModal(false);
+      setDeleteRecurringInfo(null);
+      setTrainingToDelete(null);
+      fetchPageData(activeFilters);
+    } catch (err) {
+      setPageError(err.message || 'Falha ao eliminar treinos.');
+      setShowDeleteRecurringModal(false);
+    }
+  };
+
+  const handleDeleteCurrentOnly = async () => {
+    if (!trainingToDelete) return;
+    try {
+      await adminDeleteTraining(trainingToDelete, authState.token, false);
+      setSuccessMessage('Treino eliminado com sucesso.');
+      setShowDeleteRecurringModal(false);
+      setDeleteRecurringInfo(null);
+      setTrainingToDelete(null);
+      fetchPageData(activeFilters);
+    } catch (err) {
+      setPageError(err.message || 'Falha ao eliminar treino.');
+      setShowDeleteRecurringModal(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteRecurringModal(false);
+    setDeleteRecurringInfo(null);
+    setTrainingToDelete(null);
   };
 
   const handleOpenSignupsModal = async (training) => {
@@ -1132,6 +1152,47 @@ const AdminManageTrainingsPage = () => {
                 <ModalButton type="button" secondary onClick={handleCloseSignupsModal}>Fechar</ModalButton>
              </ModalActions>
           </SignupsModalContent>
+        </ModalOverlay>
+      )}
+
+      {showDeleteRecurringModal && deleteRecurringInfo && (
+        <ModalOverlay onClick={handleCancelDelete}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={handleCancelDelete}><FaTimes /></CloseButton>
+            <ModalTitle>Eliminar Treino Recorrente</ModalTitle>
+            <p style={{color: theme.colors.textMain, marginBottom: '20px', lineHeight: '1.6'}}>
+              Este treino faz parte de uma série recorrente.<br/><br/>
+              Existem <strong>{deleteRecurringInfo.futureCount}</strong> treino(s) futuro(s) com as mesmas características.
+            </p>
+            <ModalActions style={{flexDirection: 'column', gap: '12px'}}>
+              <ModalButton 
+                type="button" 
+                danger 
+                onClick={handleDeleteAllRecurring}
+                style={{width: '100%'}}
+              >
+                <FaTrashAlt style={{marginRight: '8px'}} />
+                Eliminar Todos os Posteriores
+              </ModalButton>
+              <ModalButton 
+                type="button" 
+                primary 
+                onClick={handleDeleteCurrentOnly}
+                style={{width: '100%'}}
+              >
+                <FaTrashAlt style={{marginRight: '8px'}} />
+                Apenas o Atual
+              </ModalButton>
+              <ModalButton 
+                type="button" 
+                secondary 
+                onClick={handleCancelDelete}
+                style={{width: '100%'}}
+              >
+                Cancelar
+              </ModalButton>
+            </ModalActions>
+          </ModalContent>
         </ModalOverlay>
       )}
     </PageContainer>
