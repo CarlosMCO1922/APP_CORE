@@ -110,12 +110,23 @@ const StartButton = styled.button`
   text-decoration: none;
   font-size: 1.2rem;
   font-weight: bold;
-  border: none; // Adicionado para remover a borda padrão do botão
-  cursor: pointer; // Adicionado para mostrar que é clicável
-  transition: filter 0.2s;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.2s, opacity 0.2s;
+  position: relative;
 
-  &:hover {
+  &:hover:not(:disabled) {
     filter: brightness(1.1);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: none;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
   }
 `;
 
@@ -141,6 +152,7 @@ const WorkoutPlanSummaryPage = () => {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     const fetchPlanDetails = async () => {
@@ -158,12 +170,22 @@ const WorkoutPlanSummaryPage = () => {
     fetchPlanDetails();
   }, [globalPlanId, authState.token]);
 
-  const handleStartWorkout = () => {
-    if (plan) {
+  const handleStartWorkout = useCallback(async () => {
+    if (!plan || isStarting) return;
+    
+    setIsStarting(true);
+    try {
+      // Pequeno delay para evitar múltiplos cliques
+      await new Promise(resolve => setTimeout(resolve, 300));
       console.log('DADOS DO PLANO ENVIADOS PARA O TREINO:', JSON.stringify(plan, null, 2));
-      startWorkout(plan);
+      await startWorkout(plan);
+    } catch (err) {
+      console.error('Erro ao iniciar treino:', err);
+      setError('Erro ao iniciar treino. Tente novamente.');
+    } finally {
+      setIsStarting(false);
     }
-  };
+  }, [plan, isStarting, startWorkout]);
 
   if (loading) return <PageContainer><LoadingText>A carregar plano...</LoadingText></PageContainer>;
   if (error) return <PageContainer><ErrorText>{error}</ErrorText></PageContainer>;
@@ -193,8 +215,8 @@ const WorkoutPlanSummaryPage = () => {
       </ExerciseList>
 
       <Footer>
-        <StartButton onClick={handleStartWorkout}>
-          Iniciar Treino
+        <StartButton onClick={handleStartWorkout} disabled={isStarting || loading}>
+          {isStarting ? 'A iniciar...' : 'Iniciar Treino'}
         </StartButton>
       </Footer>
     </PageContainer>

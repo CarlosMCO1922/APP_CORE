@@ -3,9 +3,10 @@ import React, { useState } from 'react'; // Importar apenas o useState
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { logExercisePerformanceService, updateExercisePerformanceService } from '../../services/progressService';
-import { FaCheck, FaTrashAlt, FaPencilAlt } from 'react-icons/fa';
+import { FaCheck, FaTrashAlt, FaPencilAlt, FaTimes } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 import { useWorkout } from '../../context/WorkoutContext';
+import { useTheme } from 'styled-components';
 
 const SWIPE_DISTANCE = -200; // Aumentado para um deslize mais longo
 const SWIPE_THRESHOLD = -100;
@@ -182,14 +183,122 @@ const DeleteButton = styled.button`
   }
 `;
 
+const DeleteModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: ${({ theme }) => theme.colors.overlayBg};
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+`;
+
+const DeleteModalContent = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: 25px;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  position: relative;
+  color: ${({ theme }) => theme.colors.textMain};
+  border-top: 3px solid ${({ theme }) => theme.colors.error};
+`;
+
+const DeleteModalTitle = styled.h3`
+  color: ${({ theme }) => theme.colors.textMain};
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  font-weight: 600;
+`;
+
+const DeleteModalText = styled.p`
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 20px;
+  line-height: 1.6;
+`;
+
+const DeleteModalActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const DeleteModalButton = styled.button`
+  padding: 12px 20px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  
+  ${props => props.danger ? `
+    background-color: ${props.theme.colors.error};
+    color: white;
+    &:hover {
+      opacity: 0.9;
+    }
+  ` : props.secondary ? `
+    background-color: ${props.theme.colors.buttonSecondaryBg};
+    color: ${props.theme.colors.textMain};
+    &:hover {
+      background-color: ${props.theme.colors.buttonSecondaryHoverBg};
+    }
+  ` : `
+    background-color: ${props.theme.colors.primary};
+    color: ${props.theme.colors.textDark};
+    &:hover {
+      opacity: 0.9;
+    }
+  `}
+`;
+
+const CloseModalButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 5px;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: ${({ theme }) => theme.colors.textMain};
+  }
+`;
+
+const PrescribedRepsNote = styled.div`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-style: italic;
+  margin-top: 4px;
+  padding-left: 10px;
+`;
+
 // --- Componente SetRow ---
 // ALTERADO: Adicionado 'onDeleteSet' às props recebidas
-const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeight, lastReps, onDeleteSet = () => {} }) => {
+const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeight, lastReps, onDeleteSet = () => {}, prescribedReps = null }) => {
     const { activeWorkout, updateSetData } = useWorkout();
+    const theme = useTheme();
     
     // ALTERADO: Adicionado o estado para controlar a posição do swipe
     const [transformX, setTransformX] = useState(0);
     const [hasShownConfirm, setHasShownConfirm] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const setData = activeWorkout.setsData[`${planExerciseId}-${setNumber}`] || {};
     const weight = setData.performedWeight ?? lastWeight ?? '';
@@ -204,9 +313,9 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                 setTransformX(newX);
                 
                 // Se chegou ao máximo e ainda não mostrou confirmação, mostra imediatamente
-                if (newX <= SWIPE_DISTANCE && !hasShownConfirm) {
+                if (newX <= SWIPE_DISTANCE && !hasShownConfirm && !showDeleteModal) {
                     setHasShownConfirm(true);
-                    handleDeleteConfirm();
+                    handleDeleteClick();
                 }
             }
         },
@@ -242,43 +351,80 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
         updateSetData(planExerciseId, setNumber, 'isCompleted', false);
     };
 
-    const handleDeleteConfirm = () => {
-      if (window.confirm("Tem a certeza que quer apagar esta série?")) {
-        if (typeof onDeleteSet === 'function') {
-          onDeleteSet();
-          setTransformX(0); // Fecha após confirmar
-        } else {
-          console.warn('SetRow: onDeleteSet não é função', onDeleteSet);
-        }
-      } else {
-        // Se cancelar, fecha o swipe
+    const handleDeleteClick = () => {
+      setShowDeleteModal(true);
+      setTransformX(0); // Fecha o swipe quando abre o modal
+      setHasShownConfirm(false);
+    };
+
+    const handleConfirmDelete = () => {
+      if (typeof onDeleteSet === 'function') {
+        onDeleteSet();
+        setShowDeleteModal(false);
         setTransformX(0);
-        setHasShownConfirm(false);
+      } else {
+        console.warn('SetRow: onDeleteSet não é função', onDeleteSet);
+        setShowDeleteModal(false);
       }
     };
 
+    const handleCancelDelete = () => {
+      setShowDeleteModal(false);
+      setTransformX(0);
+      setHasShownConfirm(false);
+    };
+
     return (
-        <SwipeableRowContainer onClick={() => transformX !== 0 && setTransformX(0)}>
-            <ActionBackground>
-                <DeleteButton onClick={handleDeleteConfirm}>
-                    <FaTrashAlt /> Apagar
-                </DeleteButton>
-            </ActionBackground>
-            <SwipeableContent {...swipeHandlers} transformX={transformX} isCompleted={isCompleted}>
-                <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
-                <Input type="number" placeholder="-" 
-                    value={weight} 
-                    onChange={e => updateSetData(planExerciseId, setNumber, 'performedWeight', e.target.value)} 
-                />
-                <Input type="number" placeholder="-" 
-                    value={reps} 
-                    onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
-                />
+        <>
+            <SwipeableRowContainer onClick={() => transformX !== 0 && !showDeleteModal && setTransformX(0)}>
+                <ActionBackground>
+                    <DeleteButton onClick={handleDeleteClick}>
+                        <FaTrashAlt /> Apagar
+                    </DeleteButton>
+                </ActionBackground>
+                <SwipeableContent {...swipeHandlers} transformX={transformX} isCompleted={isCompleted}>
+                    <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
+                    <Input type="number" placeholder="-" 
+                        value={weight} 
+                        onChange={e => updateSetData(planExerciseId, setNumber, 'performedWeight', e.target.value)} 
+                    />
+                    <Input type="number" placeholder="-" 
+                        value={reps} 
+                        onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
+                    />
                 <ActionButton onClick={isCompleted ? handleEdit : handleComplete} disabled={!weight || !reps} isCompleted={isCompleted}>
                     {isCompleted ? <FaPencilAlt /> : <FaCheck />}
                 </ActionButton>
             </SwipeableContent>
+            {prescribedReps && (
+                <PrescribedRepsNote>
+                    Reps prescritas: {prescribedReps}
+                </PrescribedRepsNote>
+            )}
         </SwipeableRowContainer>
+
+            {showDeleteModal && (
+                <DeleteModalOverlay onClick={handleCancelDelete}>
+                    <DeleteModalContent onClick={(e) => e.stopPropagation()}>
+                        <CloseModalButton onClick={handleCancelDelete}>
+                            <FaTimes />
+                        </CloseModalButton>
+                        <DeleteModalTitle>Apagar Série</DeleteModalTitle>
+                        <DeleteModalText>
+                            Tem a certeza que quer apagar esta série? Esta ação não pode ser desfeita.
+                        </DeleteModalText>
+                        <DeleteModalActions>
+                            <DeleteModalButton danger onClick={handleConfirmDelete}>
+                                <FaTrashAlt /> Apagar
+                            </DeleteModalButton>
+                            <DeleteModalButton secondary onClick={handleCancelDelete}>
+                                Cancelar
+                            </DeleteModalButton>
+                        </DeleteModalActions>
+                    </DeleteModalContent>
+                </DeleteModalOverlay>
+            )}
+        </>
     );
 };
 

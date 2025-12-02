@@ -41,6 +41,15 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true,
     },
+    gdprConsent: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    gdprConsentDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     // ---------------------------------
   }, {
     tableName: 'users',

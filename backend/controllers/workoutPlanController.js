@@ -84,7 +84,13 @@ const getAllGlobalWorkoutPlans = async (req, res) => {
       include: [{
         model: db.WorkoutPlanExercise,
         as: 'planExercises',
-        include: [{ model: db.Exercise, as: 'exerciseDetails', attributes: ['id', 'name'] }]
+        required: false, // LEFT JOIN para não excluir planos sem exercícios
+        include: [{ 
+          model: db.Exercise, 
+          as: 'exerciseDetails', 
+          attributes: ['id', 'name'],
+          required: false // LEFT JOIN para não excluir exercícios sem detalhes
+        }]
       }]
     });
     res.status(200).json(workoutPlans);
@@ -279,9 +285,12 @@ const getWorkoutPlansForTraining = async (req, res) => {
       include: [{
         model: db.WorkoutPlanExercise,
         as: 'planExercises',
-        include: [{ model: db.Exercise, as: 'exerciseDetails' }],
-        separate: true,
-        order: [['supersetGroup', 'ASC'], ['order', 'ASC']]
+        required: false, // LEFT JOIN para não excluir planos sem exercícios
+        include: [{ 
+          model: db.Exercise, 
+          as: 'exerciseDetails',
+          required: false // LEFT JOIN para não excluir exercícios sem detalhes
+        }]
       }],
       joinTableAttributes: ['orderInTraining'],
       order: [
@@ -289,7 +298,30 @@ const getWorkoutPlansForTraining = async (req, res) => {
         ['order', 'ASC']
       ]
     });
-    res.status(200).json(associatedPlans);
+
+    // Ordenar os exercícios de cada plano manualmente
+    const plansWithOrderedExercises = (associatedPlans || []).map(plan => {
+      try {
+        const planJSON = plan.toJSON ? plan.toJSON() : plan;
+        if (planJSON.planExercises && Array.isArray(planJSON.planExercises)) {
+          planJSON.planExercises.sort((a, b) => {
+            // Primeiro por supersetGroup, depois por order
+            const groupA = (a.supersetGroup !== null && a.supersetGroup !== undefined) ? a.supersetGroup : 0;
+            const groupB = (b.supersetGroup !== null && b.supersetGroup !== undefined) ? b.supersetGroup : 0;
+            if (groupA !== groupB) {
+              return groupA - groupB;
+            }
+            return (a.order || 0) - (b.order || 0);
+          });
+        }
+        return planJSON;
+      } catch (err) {
+        console.error('Erro ao processar plano:', err);
+        return plan.toJSON ? plan.toJSON() : plan;
+      }
+    });
+
+    res.status(200).json(plansWithOrderedExercises);
   } catch (error) {
     console.error('Erro ao listar planos para o treino:', error);
     res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });

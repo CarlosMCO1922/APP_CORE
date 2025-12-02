@@ -83,6 +83,7 @@ router.post(
 );
 router.delete(
   '/:planId/remove-from-training/:trainingId', 
+  protect,
   isAdminStaff,
   workoutPlanController.removePlanFromTraining
 );

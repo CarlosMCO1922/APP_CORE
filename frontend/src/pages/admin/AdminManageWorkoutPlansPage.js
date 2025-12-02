@@ -244,6 +244,7 @@ function AdminManageWorkoutPlansPage() {
   const [loadingGlobalPlans, setLoadingGlobalPlans] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [assigningPlan, setAssigningPlan] = useState(false);
+  const [selectPlanModalError, setSelectPlanModalError] = useState('');
 
   const fetchTrainingDetails = useCallback(async () => {
     if (authState.token && trainingId) {
@@ -301,32 +302,44 @@ function AdminManageWorkoutPlansPage() {
     // Abrir modal de seleção de planos
     setShowSelectPlanModal(true);
     setSelectedPlanId('');
+    setError(''); // Limpar erros da página
+    setSelectPlanModalError(''); // Limpar erros do modal
     setLoadingGlobalPlans(true);
     try {
       const plans = await adminGetAllGlobalWorkoutPlans(authState.token);
       setGlobalPlans(plans || []);
     } catch (err) {
-      setError(err.message || 'Erro ao carregar planos globais.');
+      console.error('Erro ao carregar planos globais:', err);
+      setSelectPlanModalError(err.message || 'Erro ao carregar planos globais.');
       setGlobalPlans([]);
     } finally {
       setLoadingGlobalPlans(false);
     }
   };
 
+  const handleCloseSelectPlanModal = () => {
+    setShowSelectPlanModal(false);
+    setSelectedPlanId('');
+    setSelectPlanModalError(''); // Limpar erros do modal ao fechar
+  };
+
   const handleSelectExistingPlan = async () => {
     if (!selectedPlanId) {
-      setError('Por favor, selecione um plano.');
+      setSelectPlanModalError('Por favor, selecione um plano.');
       return;
     }
     setAssigningPlan(true);
+    setSelectPlanModalError('');
     setError('');
+    setSuccessMessage('');
     try {
       await adminAssignPlanToTraining(selectedPlanId, trainingId, workoutPlans.length, authState.token);
       setSuccessMessage('Plano associado ao treino com sucesso!');
-      setShowSelectPlanModal(false);
+      handleCloseSelectPlanModal();
       fetchWorkoutPlans();
     } catch (err) {
-      setError(err.message || 'Erro ao associar plano ao treino.');
+      console.error('Erro ao associar plano ao treino:', err);
+      setSelectPlanModalError(err.message || 'Erro ao associar plano ao treino.');
     } finally {
       setAssigningPlan(false);
     }
@@ -571,11 +584,11 @@ function AdminManageWorkoutPlansPage() {
 
       {/* Modal para Selecionar Plano Existente ou Criar Novo */}
       {showSelectPlanModal && (
-        <ModalOverlay onClick={() => setShowSelectPlanModal(false)}>
+        <ModalOverlay onClick={handleCloseSelectPlanModal}>
           <ModalContent onClick={e => e.stopPropagation()}>
-            <CloseButton onClick={() => setShowSelectPlanModal(false)}>&times;</CloseButton>
+            <CloseButton onClick={handleCloseSelectPlanModal}>&times;</CloseButton>
             <ModalTitle>Adicionar Plano de Treino</ModalTitle>
-            {error && <ErrorText>{error}</ErrorText>}
+            {selectPlanModalError && <ErrorText>{selectPlanModalError}</ErrorText>}
             
             {loadingGlobalPlans ? (
               <LoadingText>A carregar planos disponíveis...</LoadingText>
@@ -626,7 +639,7 @@ function AdminManageWorkoutPlansPage() {
             )}
             
             <ModalActions style={{ marginTop: '20px' }}>
-              <ModalButton type="button" onClick={() => setShowSelectPlanModal(false)}>Cancelar</ModalButton>
+              <ModalButton type="button" onClick={handleCloseSelectPlanModal}>Cancelar</ModalButton>
             </ModalActions>
           </ModalContent>
         </ModalOverlay>

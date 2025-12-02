@@ -269,10 +269,22 @@ const deleteTraining = async (req, res) => {
 };
 
 // Nova função para verificar se há treinos futuros recorrentes
+// Para admin: verifica todos os treinos futuros da série
+// Para cliente: verifica apenas os treinos futuros onde está inscrito
 const checkRecurringTrainings = async (req, res) => {
   const { id } = req.params;
+  const userId = req.user?.id; // Pode ser admin ou cliente
+  const isClient = req.user?.role === 'user';
+  
   try {
-    const training = await db.Training.findByPk(id);
+    const training = await db.Training.findByPk(id, {
+      include: [{
+        model: db.User,
+        as: 'participants',
+        attributes: ['id'],
+        through: { attributes: [] }
+      }]
+    });
     if (!training) {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
@@ -284,15 +296,37 @@ const checkRecurringTrainings = async (req, res) => {
     const trainingDate = new Date(training.date);
     const trainingTime = training.time;
     
-    const futureCount = await db.Training.count({
-      where: {
-        trainingSeriesId: training.trainingSeriesId,
-        date: {
-          [db.Sequelize.Op.gt]: trainingDate.toISOString().split('T')[0] // Apenas posteriores
+    let futureCount;
+    if (isClient && userId) {
+      // Para cliente: contar apenas treinos futuros onde está inscrito
+      const futureTrainings = await db.Training.findAll({
+        where: {
+          trainingSeriesId: training.trainingSeriesId,
+          date: {
+            [db.Sequelize.Op.gt]: trainingDate.toISOString().split('T')[0]
+          },
+          time: trainingTime
         },
-        time: trainingTime
-      }
-    });
+        include: [{
+          model: db.User,
+          as: 'participants',
+          where: { id: userId },
+          through: { attributes: [] }
+        }]
+      });
+      futureCount = futureTrainings.length;
+    } else {
+      // Para admin: contar todos os treinos futuros da série
+      futureCount = await db.Training.count({
+        where: {
+          trainingSeriesId: training.trainingSeriesId,
+          date: {
+            [db.Sequelize.Op.gt]: trainingDate.toISOString().split('T')[0]
+          },
+          time: trainingTime
+        }
+      });
+    }
 
     return res.json({ 
       hasRecurring: futureCount > 0, 
@@ -384,6 +418,7 @@ const bookTraining = async (req, res) => {
 const cancelTrainingBooking = async (req, res) => {
   const trainingId = req.params.id;
   const userId = req.user.id;
+  const { cancelRecurring = false } = req.query;
 
   try {
     const training = await db.Training.findByPk(trainingId);
@@ -400,6 +435,42 @@ const cancelTrainingBooking = async (req, res) => {
         return res.status(400).json({ message: 'Não é possível cancelar um treino já iniciado ou passado.' });
       }
     } catch (e) { /* ignore parse errors e permitir comportamento antigo */ }
+
+    // Se cancelRecurring for true, cancelar todas as inscrições futuras na mesma série/hora
+    if (cancelRecurring === 'true' && training.trainingSeriesId) {
+      const trainingDate = new Date(training.date);
+      const trainingTime = training.time;
+      
+      // Encontrar todos os treinos futuros com a mesma série e hora onde o utilizador está inscrito
+      const futureTrainings = await db.Training.findAll({
+        where: {
+          trainingSeriesId: training.trainingSeriesId,
+          date: {
+            [db.Sequelize.Op.gt]: trainingDate.toISOString().split('T')[0]
+          },
+          time: trainingTime
+        },
+        include: [{
+          model: db.User,
+          as: 'participants',
+          where: { id: userId },
+          through: { attributes: [] }
+        }]
+      });
+
+      // Cancelar inscrição em todos os treinos futuros
+      for (const futureTraining of futureTrainings) {
+        await futureTraining.removeParticipant(user);
+        _internalCreateNotification({
+          recipientUserId: userId,
+          message: `A sua inscrição no treino "${futureTraining.name}" foi cancelada.`,
+          type: 'TRAINING_CANCELLED_CLIENT',
+          relatedResourceId: futureTraining.id,
+          relatedResourceType: 'training',
+          link: '/calendario'
+        });
+      }
+    }
 
     await training.removeParticipant(user);
     _internalCreateNotification({  recipientUserId: userId,

@@ -12,7 +12,7 @@ router.get('/:id', protect, trainingController.getTrainingById);
 router.post('/:id/book', protect, isClientUser, trainingController.bookTraining);
 router.delete('/:id/book', protect, isClientUser, trainingController.cancelTrainingBooking);
 router.put('/:id', protect, isAdminStaff, trainingController.updateTraining);
-router.get('/:id/check-recurring', protect, isAdminStaff, trainingController.checkRecurringTrainings);
+router.get('/:id/check-recurring', protect, trainingController.checkRecurringTrainings);
 router.delete('/:id', protect, isAdminStaff, trainingController.deleteTraining);
 
 router.post('/:masterTrainingId/subscribe-recurring', /* protect, isClientUser, */ trainingController.subscribeToRecurringTrainingService);

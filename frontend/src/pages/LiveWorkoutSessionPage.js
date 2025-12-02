@@ -305,6 +305,7 @@ const LiveWorkoutSessionPage = () => {
                                 </ExerciseHeader>
                                 <ExerciseLiveCard
                                     planExercise={planExercise}
+                                    exerciseName={null}
                                     onSetComplete={handleSetComplete}
                                     trainingId={activeWorkout.trainingId || null}
                                     workoutPlanId={activeWorkout.id}

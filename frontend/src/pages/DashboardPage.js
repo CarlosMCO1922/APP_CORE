@@ -8,11 +8,12 @@ import { clientGetMyPendingPaymentsService } from '../services/paymentService';
 import { 
     getActiveTrainingSeriesForClientService, 
     createSeriesSubscriptionService, 
-    cancelTrainingBooking 
+    cancelTrainingBooking,
+    getAllTrainings
 } from '../services/trainingService'; 
 import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck, 
     FaRegClock, FaExclamationTriangle, FaCreditCard, FaUsers, 
-    FaInfoCircle, FaTimes, FaPlusSquare, FaEye, FaTrashAlt // <<< ADICIONADO
+    FaInfoCircle, FaTimes, FaPlusSquare, FaEye, FaTrashAlt, FaRedo
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
@@ -582,6 +583,7 @@ const NoItemsText = styled.p`text-align: center; color: #888; padding: 20px;`;
 
 const DashboardPage = () => {
     const theme = useTheme();
+    const navigate = useNavigate();
     const eventsSliderRef = useRef(null); 
     const seriesSliderRef = useRef(null);
     const { authState } = useAuth();
@@ -592,9 +594,9 @@ const DashboardPage = () => {
     const [pageMessage, setPageMessage] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
 
-    const [availableSeries, setAvailableSeries] = useState([]);
-    const [loadingSeries, setLoadingSeries] = useState(true);
-    const [seriesError, setSeriesError] = useState('');
+    const [availableTrainings, setAvailableTrainings] = useState([]);
+    const [loadingTrainings, setLoadingTrainings] = useState(true);
+    const [trainingsError, setTrainingsError] = useState('');
     const [showSeriesModal, setShowSeriesModal] = useState(false);
     const [selectedSeriesForSubscription, setSelectedSeriesForSubscription] = useState(null);
     const [clientSubscriptionEndDate, setClientSubscriptionEndDate] = useState('');
@@ -607,23 +609,36 @@ const DashboardPage = () => {
         setError('');
         setSeriesError('');
         try {
-            const [bookingsData, pendingPaymentsData, seriesData] = await Promise.all([
+            const [bookingsData, pendingPaymentsData, allTrainingsData] = await Promise.all([
                 getMyBookings(authState.token),
                 clientGetMyPendingPaymentsService(authState.token).catch(() => []),
-                getActiveTrainingSeriesForClientService(authState.token).catch(() => [])
+                getAllTrainings(authState.token).catch(() => [])
             ]);
             setBookings({
                 trainings: bookingsData.trainings || [],
                 appointments: bookingsData.appointments || []
             });
             setPendingPayments(pendingPaymentsData || []);
-            setAvailableSeries(seriesData || []);
+            
+            // Filtrar apenas treinos futuros com vagas disponíveis
+            const now = new Date();
+            const available = (allTrainingsData || []).filter(training => {
+                const trainingDate = new Date(`${training.date}T${training.time}`);
+                const spotsAvailable = training.capacity - (training.participants?.length || 0);
+                return trainingDate >= now && spotsAvailable > 0;
+            }).sort((a, b) => {
+                const dateA = new Date(`${a.date}T${a.time}`);
+                const dateB = new Date(`${b.date}T${b.time}`);
+                return dateA - dateB;
+            }).slice(0, 10); // Limitar a 10 treinos
+            setAvailableTrainings(available);
         } catch (err) {
             setError('Não foi possível carregar todos os dados do dashboard.');
+            setTrainingsError('Não foi possível carregar treinos disponíveis.');
             console.error("Erro ao buscar dados do dashboard:", err);
         } finally {
             setLoading(false);
-            setLoadingSeries(false);
+            setLoadingTrainings(false);
         }
     }, [authState.token]);
 
@@ -803,11 +818,11 @@ const upcomingEvents = useMemo(() => {
             </Section>
 
             <Section>
-              <SectionTitle><FaUsers /> Programas Semanais</SectionTitle>
-              {loadingSeries ? <LoadingText>A carregar programas...</LoadingText> : seriesError ? <ErrorText>{seriesError}</ErrorText> : (
-                  availableSeries.length > 0 ? (
-                      <SliderContainer> {/* << Envolvido no SliderContainer */}
-                          {availableSeries.length > 3 && (
+              <SectionTitle><FaUsers /> Treinos Disponíveis</SectionTitle>
+              {loadingTrainings ? <LoadingText>A carregar treinos...</LoadingText> : trainingsError ? <ErrorText>{trainingsError}</ErrorText> : (
+                  availableTrainings.length > 0 ? (
+                      <SliderContainer>
+                          {availableTrainings.length > 3 && (
                               <>
                                   <NavButton className="left" onClick={() => handleScroll(seriesSliderRef, 'left')}>←</NavButton>
                                   <NavButton className="right" onClick={() => handleScroll(seriesSliderRef, 'right')}>→</NavButton>
@@ -815,30 +830,36 @@ const upcomingEvents = useMemo(() => {
                           )}
 
                           <ItemList ref={seriesSliderRef}>
-                              {availableSeries.map(series => {
-                                // --- LÓGICA DE VERIFICAÇÃO ADICIONADA AQUI ---
-                                let diaDaSemanaFormatado = 'Dia inválido'; // Um valor padrão
-                                // Verificamos se dayOfWeek não é nulo e é um número válido (0-6)
-                                if (series.dayOfWeek != null && series.dayOfWeek >= 0 && series.dayOfWeek <= 6) {
-                                    diaDaSemanaFormatado = moment().day(series.dayOfWeek).format('dddd');
-                                }
-                                // --- FIM DA LÓGICA DE VERIFICAÇÃO ---
-
+                              {availableTrainings.map(training => {
+                                const spotsAvailable = training.capacity - (training.participants?.length || 0);
+                                const trainingDate = moment(`${training.date}T${training.time}`);
+                                
                                 return (
-                                    <ItemCard key={series.id} itemType="series">
+                                    <ItemCard key={training.id} itemType="training">
                                         <div>
-                                            <h3>{series.name}</h3>
-                                            
-                                            {/* Usamos a nossa variável segura aqui */}
-                                            <p><FaRegClock /> Todas as {diaDaSemanaFormatado}s, {series.startTime.substring(0,5)} - {series.endTime.substring(0,5)}</p>
-                                            
-                                            {series.instructor && <p><span>Instrutor:</span> {series.instructor.firstName}</p>}
+                                            <h3>{training.name}</h3>
+                                            <p><FaRegClock /> {trainingDate.format('dddd, D [de] MMMM')}, {training.time.substring(0,5)}</p>
+                                            {training.instructor && <p><span>Instrutor:</span> {training.instructor.firstName} {training.instructor.lastName}</p>}
+                                            <p><FaUsers /> {spotsAvailable} de {training.capacity} vagas disponíveis</p>
                                         </div>
                                         <EventActions>
-                                            <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal(series)}>
+                                            <LinkStyleButton onClick={() => navigate(`/calendario`)}>
                                                 <FaInfoCircle /> Ver Detalhes e Inscrever
                                             </LinkStyleButton>
-                                            <span /> 
+                                            {training.trainingSeriesId && (
+                                                <LinkStyleButton onClick={() => handleOpenSeriesSubscriptionModal({ 
+                                                    id: training.trainingSeriesId,
+                                                    name: training.name,
+                                                    dayOfWeek: trainingDate.day(),
+                                                    startTime: training.time,
+                                                    endTime: moment(training.time, 'HH:mm:ss').add(training.durationMinutes || 45, 'minutes').format('HH:mm:ss'),
+                                                    instructor: training.instructor,
+                                                    seriesStartDate: training.date,
+                                                    seriesEndDate: training.date
+                                                })} style={{marginTop: '10px'}}>
+                                                    <FaRedo /> Inscrever Semanalmente
+                                                </LinkStyleButton>
+                                            )}
                                         </EventActions>
                                     </ItemCard>
                                 );
@@ -846,7 +867,7 @@ const upcomingEvents = useMemo(() => {
                           </ItemList>
                       </SliderContainer>
                   ) : (
-                      <NoItemsText>De momento, não há programas semanais com inscrições abertas.</NoItemsText>
+                      <NoItemsText>De momento, não há treinos disponíveis com vagas.</NoItemsText>
                   )
               )}
             </Section>

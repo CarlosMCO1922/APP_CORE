@@ -3,12 +3,18 @@ const db = require('../models');
 const { hashPassword, comparePassword } = require('../utils/passwordUtils');
 const { generateToken } = require('../utils/tokenUtils');
 const crypto = require('crypto');
+const { sendPasswordResetEmail } = require('../utils/emailService');
 
 // Registo de um novo Utilizador (Cliente)
 const registerUser = async (req, res) => {
-  const { firstName, lastName, email, password } = req.body;
+  const { firstName, lastName, email, password, gdprConsent } = req.body;
 
   try {
+    // Verificar consentimento GDPR
+    if (!gdprConsent) {
+      return res.status(400).json({ message: 'É necessário aceitar o consentimento de partilha de dados (RGPD) para criar uma conta.' });
+    }
+
     // Verificar se o email já existe na tabela Users
     const existingUser = await db.User.findOne({ where: { email } });
     if (existingUser) {
@@ -27,6 +33,8 @@ const registerUser = async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
+      gdprConsent: true,
+      gdprConsentDate: new Date(),
     });
 
     const userResponse = {
@@ -184,10 +192,12 @@ const requestPasswordReset = async (req, res) => {
       user.passwordResetToken = crypto.createHash('sha256').update(resetCode).digest('hex');
       user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // Expira em 10 minutos
       await user.save();
-      
-      // TODO: Implementar a lógica de envio de email aqui
-      // await sendEmail({ to: user.email, subject: 'Código de Recuperação', html: `O seu código é: ${resetCode}` });
-      console.log(`CÓDIGO DE RESET PARA ${user.email}: ${resetCode}`); // Linha temporária para testes
+
+      try {
+        await sendPasswordResetEmail(user.email, resetCode);
+      } catch (e) {
+        console.error('Falha ao enviar email de reset:', e);
+      }
     }
     res.status(200).json({ message: 'Se existir uma conta com este email, receberá um código de recuperação.' });
   } catch (error) {

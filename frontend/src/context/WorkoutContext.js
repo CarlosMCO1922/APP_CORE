@@ -39,7 +39,11 @@ export const WorkoutProvider = ({ children }) => {
         if (activeWorkout) {
             alert("Já existe um treino em andamento. Finalize ou cancele o treino atual antes de iniciar um novo.");
             setIsMinimized(false);
-            return;
+            return Promise.reject(new Error("Treino já em andamento"));
+        }
+
+        if (!planData) {
+            return Promise.reject(new Error("Dados do plano não fornecidos"));
         }
 
         try {
@@ -54,9 +58,15 @@ export const WorkoutProvider = ({ children }) => {
             setLastPerformances({});
         }
 
-        const workoutSession = { ...planData, startTime: Date.now(), setsData: {} };
-        setActiveWorkout(workoutSession);
-        setIsMinimized(false);
+        try {
+            const workoutSession = { ...planData, startTime: Date.now(), setsData: {} };
+            setActiveWorkout(workoutSession);
+            setIsMinimized(false);
+            return Promise.resolve(workoutSession);
+        } catch (error) {
+            console.error("Erro ao iniciar treino:", error);
+            return Promise.reject(error);
+        }
     };
 
     const updateSetData = (planExerciseId, setNumber, field, value) => {

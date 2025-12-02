@@ -18,6 +18,7 @@ import {
     adminCreateTraining,
     createSeriesSubscriptionService,
     createTrainingSeriesService,
+    checkRecurringTrainings,
 } from '../services/trainingService';
 import {
     getAllAppointments,
@@ -32,7 +33,7 @@ import { adminGetAllUsers } from '../services/userService';
 import {
     FaTimes, FaUsers, FaUserMd, FaExternalLinkAlt,
     FaCalendarPlus, FaInfoCircle, FaCalendarDay, FaClock, FaUserCircle, FaStickyNote,
-    FaDumbbell, FaRedo
+    FaDumbbell, FaRedo, FaTrashAlt
 } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
 
@@ -432,6 +433,9 @@ const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState(Views.WEEK);
   const [agendaVisibleCount, setAgendaVisibleCount] = useState(25);
+  const [showCancelRecurringModal, setShowCancelRecurringModal] = useState(false);
+  const [cancelRecurringInfo, setCancelRecurringInfo] = useState(null);
+  const [trainingToCancel, setTrainingToCancel] = useState(null);
 
   const [adminTrainingFormData, setAdminTrainingFormData] = useState(initialAdminTrainingFormState);
   const [adminTrainingFormLoading, setAdminTrainingFormLoading] = useState(false);
@@ -580,17 +584,76 @@ addToast('Falha ao inscrever no treino.', { type: 'error', category: 'calendar' 
   };
   const handleCancelTrainingBooking = async () => {
     if (!selectedEvent || selectedEvent.type !== 'training') return;
+    
+    // Verificar se há treinos futuros na mesma série
+    if (selectedEvent.resource?.trainingSeriesId) {
+      try {
+        const recurringInfo = await checkRecurringTrainings(selectedEvent.id, authState.token);
+        if (recurringInfo.hasRecurring && recurringInfo.futureCount > 0) {
+          setCancelRecurringInfo(recurringInfo);
+          setTrainingToCancel(selectedEvent.id);
+          setShowCancelRecurringModal(true);
+          return;
+        }
+      } catch (err) {
+        console.error('Erro ao verificar treinos recorrentes:', err);
+      }
+    }
+    
+    // Cancelamento normal (sem série ou sem futuros)
     if (!window.confirm('Confirmas o cancelamento da inscrição neste treino?')) return;
     setActionLoading(true); setPageError(''); setPageSuccessMessage('');
     try {
       await cancelTrainingBookingService(selectedEvent.id, authState.token);
       setPageSuccessMessage('Inscrição no treino cancelada com sucesso!');
-addToast('Inscrição cancelada.', { type: 'success', category: 'calendar' });
+      addToast('Inscrição cancelada.', { type: 'success', category: 'calendar' });
       await fetchPageData(); handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao cancelar inscrição.');
-addToast('Falha ao cancelar inscrição.', { type: 'error', category: 'calendar' });
+      addToast('Falha ao cancelar inscrição.', { type: 'error', category: 'calendar' });
     } finally { setActionLoading(false); }
+  };
+
+  const handleCancelAllRecurring = async () => {
+    if (!trainingToCancel) return;
+    setActionLoading(true); setPageError(''); setPageSuccessMessage('');
+    try {
+      await cancelTrainingBookingService(trainingToCancel, authState.token, true);
+      setPageSuccessMessage('Inscrições canceladas com sucesso!');
+      addToast('Inscrições canceladas.', { type: 'success', category: 'calendar' });
+      await fetchPageData();
+      handleCloseCancelRecurringModal();
+      handleCloseEventModal();
+    } catch (err) {
+      setPageError(err.message || 'Falha ao cancelar inscrições.');
+      addToast('Falha ao cancelar inscrições.', { type: 'error', category: 'calendar' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelCurrentOnly = async () => {
+    if (!trainingToCancel) return;
+    setActionLoading(true); setPageError(''); setPageSuccessMessage('');
+    try {
+      await cancelTrainingBookingService(trainingToCancel, authState.token, false);
+      setPageSuccessMessage('Inscrição cancelada com sucesso!');
+      addToast('Inscrição cancelada.', { type: 'success', category: 'calendar' });
+      await fetchPageData();
+      handleCloseCancelRecurringModal();
+      handleCloseEventModal();
+    } catch (err) {
+      setPageError(err.message || 'Falha ao cancelar inscrição.');
+      addToast('Falha ao cancelar inscrição.', { type: 'error', category: 'calendar' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCloseCancelRecurringModal = () => {
+    setShowCancelRecurringModal(false);
+    setCancelRecurringInfo(null);
+    setTrainingToCancel(null);
   };
   const handleBookSelectedAppointment = async () => {
     if (!selectedEvent || selectedEvent.type !== 'appointment') return;
@@ -1227,6 +1290,49 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
               </ModalContent>
             </ModalOverlay>
           )}
+
+            {showCancelRecurringModal && cancelRecurringInfo && (
+                <ModalOverlay onClick={handleCloseCancelRecurringModal}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                        <CloseButton onClick={handleCloseCancelRecurringModal}><FaTimes /></CloseButton>
+                        <ModalTitle>Cancelar Inscrição</ModalTitle>
+                        <p style={{color: theme.colors.textMain, marginBottom: '20px', lineHeight: '1.6'}}>
+                            Este treino faz parte de uma série recorrente.<br/><br/>
+                            Existem <strong>{cancelRecurringInfo.futureCount}</strong> treino(s) futuro(s) à mesma hora onde estás inscrito.
+                        </p>
+                        <ModalActions style={{flexDirection: 'column', gap: '12px'}}>
+                            <ModalButton 
+                                type="button" 
+                                danger 
+                                onClick={handleCancelAllRecurring}
+                                disabled={actionLoading}
+                                style={{width: '100%'}}
+                            >
+                                <FaTrashAlt style={{marginRight: '8px'}} />
+                                Cancelar Todos os Futuros
+                            </ModalButton>
+                            <ModalButton 
+                                type="button" 
+                                primary 
+                                onClick={handleCancelCurrentOnly}
+                                disabled={actionLoading}
+                                style={{width: '100%'}}
+                            >
+                                Apenas Este
+                            </ModalButton>
+                            <ModalButton 
+                                type="button" 
+                                secondary 
+                                onClick={handleCloseCancelRecurringModal}
+                                disabled={actionLoading}
+                                style={{width: '100%'}}
+                            >
+                                Cancelar
+                            </ModalButton>
+                        </ModalActions>
+                    </ModalContent>
+                </ModalOverlay>
+            )}
     </PageContainer>
   );
 };

@@ -6,32 +6,23 @@ import { lightTheme, darkTheme } from '../theme';
 const ThemeContext = createContext();
 
 export const CustomThemeProvider = ({ children }) => {
-  // 1. Verifica o localStorage ou a preferência do sistema para o tema inicial
-  const getInitialTheme = () => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      return savedTheme;
-    }
-    // Opcional: define o tema com base na preferência do sistema do utilizador
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'dark'; // O nosso default é 'dark'
-  };
+  // Forçar sempre tema escuro - não permite alteração
+  const [theme] = useState('dark');
 
-  const [theme, setTheme] = useState(getInitialTheme);
+  // 2. Define o objeto do tema a ser usado - sempre escuro
+  const currentTheme = darkTheme;
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
-
-  // 2. Define o objeto do tema a ser usado com base no estado
-  const currentTheme = theme === 'light' ? lightTheme : darkTheme;
+  // Forçar tema escuro no HTML também
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.style.colorScheme = 'dark';
+    // Remover qualquer classe de tema claro
+    document.documentElement.classList.remove('light-theme');
+    document.documentElement.classList.add('dark-theme');
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: 'dark', toggleTheme: () => {} }}>
       {/* 3. Passa o objeto do tema para o ThemeProvider do styled-components */}
       <StyledThemeProvider theme={currentTheme}>
         {children}

@@ -204,6 +204,37 @@ const FooterText = styled.footer`
 `;
 
 
+const CheckboxContainer = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 0.5rem;
+`;
+
+const Checkbox = styled.input`
+  margin-top: 3px;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+`;
+
+const CheckboxLabel = styled.label`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMain};
+  line-height: 1.5;
+  cursor: pointer;
+  flex: 1;
+  
+  a {
+    color: ${({ theme }) => theme.colors.primary};
+    text-decoration: underline;
+    &:hover {
+      color: ${({ theme }) => theme.colors.primaryHover};
+    }
+  }
+`;
+
 function RegisterPage() {
   const theme = useTheme();
   const [formData, setFormData] = useState({
@@ -212,13 +243,15 @@ function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    gdprConsent: false,
   });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setFormData({ ...formData, [e.target.name]: value });
   };
 
   const handleSubmit = async (e) => {
@@ -231,6 +264,10 @@ function RegisterPage() {
     }
     if (formData.password.length < 6) { 
         setMessage({ type: 'error', text: 'A password deve ter pelo menos 6 caracteres.' });
+        return;
+    }
+    if (!formData.gdprConsent) {
+        setMessage({ type: 'error', text: 'É necessário aceitar o consentimento de partilha de dados (RGPD) para criar uma conta.' });
         return;
     }
 
@@ -280,6 +317,22 @@ function RegisterPage() {
           </FormGroup>
           <FormGroup>
             <Input type="password" name="confirmPassword" id="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required placeholder='Password' />
+          </FormGroup>
+          <FormGroup>
+            <CheckboxContainer>
+              <Checkbox 
+                type="checkbox" 
+                name="gdprConsent" 
+                id="gdprConsent" 
+                checked={formData.gdprConsent} 
+                onChange={handleChange} 
+                required 
+              />
+              <CheckboxLabel htmlFor="gdprConsent">
+                Ao criar uma conta, aceito a partilha de dados de acordo com o Regulamento Geral sobre a Proteção de Dados (RGPD). 
+                Consulte a nossa política de privacidade para mais informações.
+              </CheckboxLabel>
+            </CheckboxContainer>
           </FormGroup>
           <SubmitButton type="submit" disabled={loading}>
             {loading ? 'A registar...' : 'Registar'}

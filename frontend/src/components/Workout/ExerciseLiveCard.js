@@ -68,6 +68,7 @@ const ExerciseLiveCard = ({
             onDeleteSet={() => handleDeleteSet(index)} 
             lastWeight={lastPerformance?.performedWeight}
             lastReps={lastPerformance?.performedReps}
+            prescribedReps={planExercise.reps}
           />
         ))}
       </div>

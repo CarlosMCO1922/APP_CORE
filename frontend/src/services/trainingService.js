@@ -108,7 +108,7 @@ export const adminDeleteTraining = async (trainingId, token, cancelRecurring = f
 };
 
 export const checkRecurringTrainings = async (trainingId, token) => {
-  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!token) throw new Error('Token não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido.');
   try {
     const response = await fetch(`${API_URL}/trainings/${trainingId}/check-recurring`, {
@@ -137,11 +137,14 @@ export const bookTraining = async (trainingId, token) => {
   } catch (error) { console.error("Erro em bookTraining:", error); throw error; }
 };
 
-export const cancelTrainingBooking = async (trainingId, token) => {
+export const cancelTrainingBooking = async (trainingId, token, cancelRecurring = false) => {
   if (!token) throw new Error('Token de cliente não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido para cancelar inscrição.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}/book`, { 
+    const url = cancelRecurring 
+      ? `${API_URL}/trainings/${trainingId}/book?cancelRecurring=true`
+      : `${API_URL}/trainings/${trainingId}/book`;
+    const response = await fetch(url, { 
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
     });
