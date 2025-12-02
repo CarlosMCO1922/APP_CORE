@@ -100,6 +100,7 @@ const LiveWorkoutSessionPage = () => {
   const [historyData, setHistoryData] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedExerciseName, setSelectedExerciseName] = useState('');
+  const [lastCompletedSet, setLastCompletedSet] = useState(null);
 
   // Lógica do cronómetro que depende do 'activeWorkout' do contexto
   useEffect(() => {
@@ -180,10 +181,63 @@ const LiveWorkoutSessionPage = () => {
     };
 
     logSet(fullSetData);
-
-    const restDuration = restSeconds ?? 90;
-    setActiveRestTimer({ active: true, duration: restDuration, key: Date.now() });
+    
+    // Guardar informação sobre a série completada para processar depois
+    setLastCompletedSet({ planExerciseId, setNumber, restSeconds });
   };
+  
+  // useEffect para processar o tempo de descanso após o setsData ser atualizado
+  useEffect(() => {
+    if (!lastCompletedSet || !activeWorkout) return;
+    
+    const { planExerciseId, setNumber, restSeconds } = lastCompletedSet;
+    
+    // Encontrar o bloco ao qual este exercício pertence
+    const currentBlock = exerciseBlocks.find(block => 
+      block.some(ex => {
+        const exId = ex.id || ex.planExerciseId;
+        return exId === planExerciseId;
+      })
+    );
+    
+    if (!currentBlock) {
+      setLastCompletedSet(null);
+      return;
+    }
+    
+    const isSuperset = currentBlock.length > 1;
+    
+    let shouldShowRestTimer = false;
+    
+    if (!isSuperset) {
+      // Se não for supersérie, mostrar sempre após cada série
+      shouldShowRestTimer = true;
+    } else {
+      // Se for supersérie, verificar se a primeira série de cada exercício está completa
+      const allFirstSetsComplete = currentBlock.every(exercise => {
+        const exercisePlanId = exercise.id || exercise.planExerciseId;
+        const firstSetKey = `${exercisePlanId}-1`;
+        const firstSetData = activeWorkout.setsData[firstSetKey];
+        return firstSetData && firstSetData.isCompleted;
+      });
+      
+      // Só mostrar se todas as primeiras séries estão completas E esta é a primeira série
+      if (setNumber === 1 && allFirstSetsComplete) {
+        shouldShowRestTimer = true;
+      } else if (setNumber > 1) {
+        // Para séries subsequentes, mostrar sempre (após cada série)
+        shouldShowRestTimer = true;
+      }
+    }
+
+    if (shouldShowRestTimer) {
+      const restDuration = restSeconds ?? 90;
+      setActiveRestTimer({ active: true, duration: restDuration, key: Date.now() });
+    }
+    
+    // Reset
+    setLastCompletedSet(null);
+  }, [activeWorkout?.setsData, lastCompletedSet, exerciseBlocks]);
   
   const handleShowHistory = async (exercise) => {
     setLoadingHistory(true);

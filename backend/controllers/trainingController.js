@@ -218,20 +218,89 @@ const updateTraining = async (req, res) => {
 
 const deleteTraining = async (req, res) => {
   const { id } = req.params;
+  const { cancelRecurring = false } = req.query; // Query param para cancelar todos os futuros
+  
   try {
     const training = await db.Training.findByPk(id);
     if (!training) {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    
-    await training.setParticipants([]); 
+    // Se cancelRecurring for true, cancelar todos os treinos futuros da série
+    if (cancelRecurring === 'true' && training.trainingSeriesId) {
+      const trainingDate = new Date(training.date);
+      const trainingTime = training.time;
+      
+      // Encontrar todos os treinos futuros com a mesma série, dia da semana e hora
+      const futureTrainings = await db.Training.findAll({
+        where: {
+          trainingSeriesId: training.trainingSeriesId,
+          date: {
+            [db.Sequelize.Op.gt]: trainingDate.toISOString().split('T')[0] // Apenas posteriores
+          },
+          time: trainingTime
+        }
+      });
 
+      // Remover participantes de todos os treinos futuros
+      for (const futureTraining of futureTrainings) {
+        await futureTraining.setParticipants([]);
+        await futureTraining.destroy();
+      }
+
+      // Remover participantes do treino atual
+      await training.setParticipants([]);
+      await training.destroy();
+
+      return res.status(200).json({ 
+        message: `Treino e ${futureTrainings.length} treino(s) futuro(s) da série foram eliminados com sucesso.`,
+        deletedCount: futureTrainings.length + 1
+      });
+    }
+
+    // Eliminação normal (apenas este treino)
+    await training.setParticipants([]); 
     await training.destroy();
     res.status(200).json({ message: 'Treino eliminado com sucesso.' });
   } catch (error) {
     console.error('Erro ao eliminar treino:', error);
     res.status(500).json({ message: 'Erro interno do servidor ao eliminar o treino.', error: error.message });
+  }
+};
+
+// Nova função para verificar se há treinos futuros recorrentes
+const checkRecurringTrainings = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const training = await db.Training.findByPk(id);
+    if (!training) {
+      return res.status(404).json({ message: 'Treino não encontrado.' });
+    }
+
+    if (!training.trainingSeriesId) {
+      return res.json({ hasRecurring: false, futureCount: 0 });
+    }
+
+    const trainingDate = new Date(training.date);
+    const trainingTime = training.time;
+    
+    const futureCount = await db.Training.count({
+      where: {
+        trainingSeriesId: training.trainingSeriesId,
+        date: {
+          [db.Sequelize.Op.gt]: trainingDate.toISOString().split('T')[0] // Apenas posteriores
+        },
+        time: trainingTime
+      }
+    });
+
+    return res.json({ 
+      hasRecurring: futureCount > 0, 
+      futureCount 
+    });
+  } catch (error) {
+    console.error('Erro ao verificar treinos recorrentes:', error);
+    res.status(500).json({ message: 'Erro ao verificar treinos recorrentes.', error: error.message });
   }
 };
 
@@ -833,6 +902,7 @@ module.exports = {
   getTrainingById,
   updateTraining,
   deleteTraining,
+  checkRecurringTrainings,
   bookTraining,
   cancelTrainingBooking,
   getCurrentWeekSignups,

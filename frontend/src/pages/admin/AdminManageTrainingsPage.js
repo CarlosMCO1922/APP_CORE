@@ -13,7 +13,8 @@ import {
     adminGetTrainingWaitlistService,
     getTrainingById,
     adminPromoteClientFromWaitlistService,
-    createTrainingSeriesService
+    createTrainingSeriesService,
+    checkRecurringTrainings
 } from '../../services/trainingService';
 import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
@@ -690,11 +691,43 @@ const AdminManageTrainingsPage = () => {
   };
 
   const handleDeleteTraining = async (trainingId) => {
-    if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}?`)) return;
     setPageError(''); setSuccessMessage('');
+    
     try {
-      await adminDeleteTraining(trainingId, authState.token);
-      setSuccessMessage('Treino eliminado com sucesso.');
+      // Verificar se há treinos recorrentes
+      const recurringInfo = await checkRecurringTrainings(trainingId, authState.token);
+      
+      if (recurringInfo.hasRecurring && recurringInfo.futureCount > 0) {
+        // Mostrar modal de confirmação com opção de cancelar todos
+        const cancelAll = window.confirm(
+          `Este treino faz parte de uma série recorrente.\n\n` +
+          `Existem ${recurringInfo.futureCount} treino(s) futuro(s) com as mesmas características.\n\n` +
+          `Deseja eliminar apenas este treino ou todos os treinos futuros da série?\n\n` +
+          `Clique em "OK" para eliminar TODOS os treinos futuros.\n` +
+          `Clique em "Cancelar" para eliminar apenas ESTE treino.`
+        );
+        
+        if (cancelAll) {
+          // Cancelar todos os treinos futuros
+          await adminDeleteTraining(trainingId, authState.token, true);
+          setSuccessMessage(`Treino e ${recurringInfo.futureCount} treino(s) futuro(s) eliminados com sucesso.`);
+        } else {
+          // Cancelar apenas este treino
+          const confirmDelete = window.confirm(`Tens a certeza que queres eliminar apenas este treino?`);
+          if (confirmDelete) {
+            await adminDeleteTraining(trainingId, authState.token, false);
+            setSuccessMessage('Treino eliminado com sucesso.');
+          } else {
+            return; // Usuário cancelou
+          }
+        }
+      } else {
+        // Não há treinos recorrentes, eliminação normal
+        if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}?`)) return;
+        await adminDeleteTraining(trainingId, authState.token, false);
+        setSuccessMessage('Treino eliminado com sucesso.');
+      }
+      
       fetchPageData(activeFilters);
     } catch (err) {
       setPageError(err.message || 'Falha ao eliminar treino.');

@@ -7,8 +7,8 @@ import { FaCheck, FaTrashAlt, FaPencilAlt } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 import { useWorkout } from '../../context/WorkoutContext';
 
-const SWIPE_DISTANCE = -120; // Aumentado para um deslize mais longo
-const SWIPE_THRESHOLD = -60;
+const SWIPE_DISTANCE = -200; // Aumentado para um deslize mais longo
+const SWIPE_THRESHOLD = -100;
 
 // --- Styled Components (sem alterações) ---
 const SwipeableRowContainer = styled.div`
@@ -99,7 +99,7 @@ const ActionButton = styled.button`
 
 const DeleteButton = styled.button`
   height: 100%;
-  width: 120px; /* Deve corresponder à SWIPE_DISTANCE */
+  width: 200px; /* Deve corresponder à SWIPE_DISTANCE */
   background: none;
   border: none;
   color: white;
@@ -123,6 +123,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
     
     // ALTERADO: Adicionado o estado para controlar a posição do swipe
     const [transformX, setTransformX] = useState(0);
+    const [hasShownConfirm, setHasShownConfirm] = useState(false);
 
     const setData = activeWorkout.setsData[`${planExerciseId}-${setNumber}`] || {};
     const weight = setData.performedWeight ?? lastWeight ?? '';
@@ -135,6 +136,12 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
             if (eventData.deltaX < 0) {
                 const newX = Math.max(SWIPE_DISTANCE, eventData.deltaX);
                 setTransformX(newX);
+                
+                // Se chegou ao máximo e ainda não mostrou confirmação, mostra imediatamente
+                if (newX <= SWIPE_DISTANCE && !hasShownConfirm) {
+                    setHasShownConfirm(true);
+                    handleDeleteConfirm();
+                }
             }
         },
         onSwiped: (eventData) => {
@@ -143,6 +150,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                 setTransformX(SWIPE_DISTANCE); // Fica aberto
             } else {
                 setTransformX(0); // Volta a fechar
+                setHasShownConfirm(false); // Reset para permitir novo swipe
             }
         },
         trackMouse: true,
@@ -170,8 +178,16 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
 
     const handleDeleteConfirm = () => {
       if (window.confirm("Tem a certeza que quer apagar esta série?")) {
-        if (typeof onDeleteSet === 'function') onDeleteSet();
-        else console.warn('SetRow: onDeleteSet não é função', onDeleteSet);
+        if (typeof onDeleteSet === 'function') {
+          onDeleteSet();
+          setTransformX(0); // Fecha após confirmar
+        } else {
+          console.warn('SetRow: onDeleteSet não é função', onDeleteSet);
+        }
+      } else {
+        // Se cancelar, fecha o swipe
+        setTransformX(0);
+        setHasShownConfirm(false);
       }
     };
 
