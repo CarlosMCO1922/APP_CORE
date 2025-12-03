@@ -13,8 +13,15 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  
+  // Enviar mensagem para parar vibração e som
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // Enviar mensagem para todos os clientes
+      clientList.forEach(client => {
+        client.postMessage({ type: 'notificationclick', tag: event.notification.tag });
+      });
+      
       for (const client of clientList) {
         if ('focus' in client) return client.focus();
       }

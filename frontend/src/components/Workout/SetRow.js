@@ -349,7 +349,8 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
     });
 
     const handleComplete = () => {
-      if (!weight || !reps) {
+      // Permitir 0 como valor válido, mas não permitir string vazia ou undefined
+      if (weight === '' || weight === null || weight === undefined || reps === '' || reps === null || reps === undefined) {
         alert("Preencha o peso e as repetições.");
         return;
       }
@@ -421,7 +422,11 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                         disabled={isCompleted && !isEditing}
                         onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
                     />
-                <ActionButton onClick={isCompleted ? handleEdit : handleComplete} disabled={!weight || !reps} isCompleted={isCompleted}>
+                <ActionButton 
+                  onClick={isCompleted ? handleEdit : handleComplete} 
+                  disabled={(weight === '' || weight === null || weight === undefined) || (reps === '' || reps === null || reps === undefined)} 
+                  isCompleted={isCompleted}
+                >
                     {isCompleted ? <span className="edit-text">EDIT</span> : <FaCheck />}
                 </ActionButton>
             </SwipeableContent>

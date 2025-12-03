@@ -112,6 +112,9 @@ const RestTimer = ({ duration, onFinish }) => {
   const [currentDuration, setCurrentDuration] = useState(duration);
   const intervalRef = useRef(null);
   const notificationTimeoutRef = useRef(null);
+  const vibrationIntervalRef = useRef(null);
+  const audioIntervalRef = useRef(null);
+  const notificationClickedRef = useRef(false);
 
   // Função para agendar/cancelar notificação
   const scheduleNotification = async (remainingSeconds) => {
@@ -133,6 +136,7 @@ const RestTimer = ({ duration, onFinish }) => {
       if (!vapidPublicKey) return;
       const sub = await notifReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) });
 
+      // Usar o tempo restante exato (sem adicionar tempo extra)
       const remaining = Math.max(0, remainingSeconds);
       fetch(`${API_URL}/push/schedule`, {
         method: 'POST',
@@ -149,8 +153,9 @@ const RestTimer = ({ duration, onFinish }) => {
     }
   };
 
+  // useEffect para inicializar o timer apenas uma vez
   useEffect(() => {
-    // Agenda notificação inicial
+    // Agenda notificação inicial com o tempo total
     scheduleNotification(currentDuration);
 
     // Cria um intervalo que é executado a cada segundo.
@@ -165,14 +170,125 @@ const RestTimer = ({ duration, onFinish }) => {
       if (notificationTimeoutRef.current) {
         clearTimeout(notificationTimeoutRef.current);
       }
+      if (vibrationIntervalRef.current) {
+        clearInterval(vibrationIntervalRef.current);
+      }
+      if (audioIntervalRef.current) {
+        clearInterval(audioIntervalRef.current);
+      }
+      stopNotification();
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Executar apenas na montagem inicial
+
+  // Nota: Não precisamos de um useEffect separado para reagendar quando currentDuration muda
+  // porque os handlers handleAddTime e handleSubtractTime já fazem isso corretamente
+
+  // Função para parar vibração e som
+  const stopNotification = () => {
+    notificationClickedRef.current = true;
+    if (vibrationIntervalRef.current) {
+      clearInterval(vibrationIntervalRef.current);
+      vibrationIntervalRef.current = null;
+    }
+    if (audioIntervalRef.current) {
+      clearInterval(audioIntervalRef.current);
+      audioIntervalRef.current = null;
+    }
+    // Parar vibração atual
+    if (navigator.vibrate) {
+      navigator.vibrate(0);
+    }
+  };
+
+  // Listener para quando a notificação é clicada
+  useEffect(() => {
+    const handleNotificationClick = () => {
+      stopNotification();
+    };
+
+    // Adicionar listener para cliques em notificações
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'notificationclick') {
+          handleNotificationClick();
+        }
+      });
+    }
+
+    // Listener para cliques em notificações do navegador
+    if ('Notification' in window) {
+      window.addEventListener('focus', () => {
+        // Se a janela ganhar foco, pode ser que o utilizador clicou na notificação
+        if (notificationClickedRef.current === false && elapsedTime >= currentDuration) {
+          // Pequeno delay para garantir que foi um clique na notificação
+          setTimeout(() => {
+            if (document.hasFocus()) {
+              stopNotification();
+            }
+          }, 100);
+        }
+      });
+    }
+
+    return () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleNotificationClick);
+      }
+    };
+  }, [elapsedTime, currentDuration]);
 
   // Um segundo useEffect para verificar se o tempo acabou.
   useEffect(() => {
     if (elapsedTime >= currentDuration) {
-      const audio = new Audio('/notification-sound.mp3');
-      audio.play().catch(() => {});
+      notificationClickedRef.current = false;
+
+      // Criar e tocar som
+      const playSound = () => {
+        try {
+          const audio = new Audio('/notification-sound.mp3');
+          audio.volume = 0.7;
+          audio.play().catch(() => {});
+        } catch (e) {
+          console.warn('Erro ao tocar som:', e);
+        }
+      };
+
+      // Tocar som imediatamente
+      playSound();
+
+      // Tocar som a cada segundo durante 7 segundos
+      let soundCount = 0;
+      audioIntervalRef.current = setInterval(() => {
+        if (notificationClickedRef.current || soundCount >= 6) {
+          clearInterval(audioIntervalRef.current);
+          audioIntervalRef.current = null;
+          return;
+        }
+        playSound();
+        soundCount++;
+      }, 1000);
+
+      // Vibração contínua durante 7 segundos
+      const vibratePattern = [200, 100, 200, 100, 200, 100, 200, 100, 200, 100, 200, 100, 200];
+      if (navigator.vibrate) {
+        navigator.vibrate(vibratePattern);
+        
+        // Continuar vibração durante 7 segundos
+        let vibrationCount = 0;
+        vibrationIntervalRef.current = setInterval(() => {
+          if (notificationClickedRef.current || vibrationCount >= 6) {
+            clearInterval(vibrationIntervalRef.current);
+            vibrationIntervalRef.current = null;
+            if (navigator.vibrate) {
+              navigator.vibrate(0);
+            }
+            return;
+          }
+          navigator.vibrate(vibratePattern);
+          vibrationCount++;
+        }, 1000);
+      }
 
       const notify = async () => {
         try {
@@ -185,29 +301,53 @@ const RestTimer = ({ duration, onFinish }) => {
               if ('serviceWorker' in navigator) {
                 const reg = await navigator.serviceWorker.getRegistration();
                 if (reg && reg.showNotification) {
-                  reg.showNotification('Descanso concluído', {
+                  const notification = await reg.showNotification('Descanso concluído', {
                     body: 'O seu tempo de descanso terminou. Vamos continuar? 💪',
                     icon: '/icons/icon-192x192.png',
                     badge: '/icons/icon-192x192.png',
                     vibrate: [200, 100, 200],
                     tag: 'rest-timer',
+                    requireInteraction: true, // Mantém a notificação visível até interação
                   });
+                  
+                  // Listener para quando a notificação é clicada
+                  notification.onclick = () => {
+                    stopNotification();
+                  };
                 } else {
-                  new Notification('Descanso concluído', { body: 'O seu tempo de descanso terminou.' });
+                  const notification = new Notification('Descanso concluído', { 
+                    body: 'O seu tempo de descanso terminou.',
+                    requireInteraction: true
+                  });
+                  notification.onclick = () => {
+                    stopNotification();
+                  };
                 }
               } else {
-                new Notification('Descanso concluído', { body: 'O seu tempo de descanso terminou.' });
+                const notification = new Notification('Descanso concluído', { 
+                  body: 'O seu tempo de descanso terminou.',
+                  requireInteraction: true
+                });
+                notification.onclick = () => {
+                  stopNotification();
+                };
               }
             }
           }
-          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-        } catch {}
+        } catch (e) {
+          console.warn('Erro ao mostrar notificação:', e);
+        }
       };
       notify();
 
-      onFinish();
+      // Parar tudo após 7 segundos se não foi clicado
+      setTimeout(() => {
+        if (!notificationClickedRef.current) {
+          stopNotification();
+        }
+      }, 7000);
     }
-  }, [elapsedTime, currentDuration, onFinish]);
+  }, [elapsedTime, currentDuration]);
 
   const handleAddTime = () => {
     const newDuration = currentDuration + 30;
