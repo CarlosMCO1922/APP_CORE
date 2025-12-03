@@ -1,4 +1,5 @@
 // src/context/NotificationContext.js
+import { logger } from '../utils/logger';
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext'; 
 import { useToast } from '../components/Toast/ToastProvider';
@@ -45,7 +46,7 @@ export const NotificationProvider = ({ children }) => {
       setTotalPages(data.totalPages);
     } catch (err) {
       setError(err.message || 'Falha ao buscar notificações.');
-      console.error("NotificationContext fetchNotifications error:", err);
+      logger.error("NotificationContext fetchNotifications error:", err);
       addToast('Falha ao carregar notificações.', { type: 'error' });
     } finally {
       setIsLoading(false);
@@ -76,7 +77,7 @@ export const NotificationProvider = ({ children }) => {
       );
       setUnreadCount(prevCount => (prevCount > 0 ? prevCount - 1 : 0));
     } catch (err) {
-      console.error("Erro ao marcar notificação como lida:", err);
+      logger.error("Erro ao marcar notificação como lida:", err);
     }
   };
 
@@ -91,7 +92,7 @@ export const NotificationProvider = ({ children }) => {
       addToast('Todas as notificações foram marcadas como lidas.', { type: 'success' });
       fetchNotifications(1, 10, 'unread');
     } catch (err) {
-      console.error("Erro ao marcar todas as notificações como lidas:", err);
+      logger.error("Erro ao marcar todas as notificações como lidas:", err);
       addToast('Falha ao marcar todas como lidas.', { type: 'error' });
     }
   };

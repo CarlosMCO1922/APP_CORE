@@ -27,18 +27,18 @@ export const logExercisePerformanceService = async (performanceData, token) => {
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Falha ao fazer parse da resposta JSON de logExercisePerformanceService:", e);
-      console.error("Resposta recebida (texto) de logExercisePerformanceService:", responseText);
+      logger.error("Falha ao fazer parse da resposta JSON de logExercisePerformanceService:", e);
+      logger.error("Resposta recebida (texto) de logExercisePerformanceService:", responseText);
       throw new Error(`Resposta do servidor para log-performance não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
     }
 
     if (!response.ok) {
-      console.error('Erro na resposta de logExercisePerformanceService (status não OK):', data);
+      logger.error('Erro na resposta de logExercisePerformanceService (status não OK):', data);
       throw new Error(data.message || `Erro ao registar desempenho do exercício. Status: ${response.status}`);
     }
     return data;
   } catch (error) {
-    console.error("Erro em logExercisePerformanceService:", error);
+    logger.error("Erro em logExercisePerformanceService:", error);
     throw error;
   }
 };
@@ -59,20 +59,20 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Falha ao fazer parse da resposta JSON de getMyPerformanceForWorkoutPlanService:", e);
-      console.error("Resposta recebida (texto) de getMyPerformanceForWorkoutPlanService:", responseText);
+      logger.error("Falha ao fazer parse da resposta JSON de getMyPerformanceForWorkoutPlanService:", e);
+      logger.error("Resposta recebida (texto) de getMyPerformanceForWorkoutPlanService:", responseText);
       throw new Error(`Resposta do servidor para my-history/training/... não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
     }
 
     if (!response.ok) {
-      console.error('Erro na resposta de getMyPerformanceForWorkoutPlanService (status não OK):', data);
+      logger.error('Erro na resposta de getMyPerformanceForWorkoutPlanService (status não OK):', data);
       throw new Error(data.message || `Erro ao buscar histórico de desempenho do plano. Status: ${response.status}`);
     }
     return data; 
   } catch (error) {
-    console.error("Erro em getMyPerformanceForWorkoutPlanService:", error);
+    logger.error("Erro em getMyPerformanceForWorkoutPlanService:", error);
     if (error.message.toLowerCase().includes("unexpected token") || error.message.toLowerCase().includes("json.parse") || error.message.toLowerCase().includes("não é json válido")) {
-        console.error("Detalhe: A resposta do servidor para getMyPerformanceForWorkoutPlanService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor, ou pode ser um erro na URL/endpoint.");
+        logger.error("Detalhe: A resposta do servidor para getMyPerformanceForWorkoutPlanService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor, ou pode ser um erro na URL/endpoint.");
     }
     throw error;
   }
@@ -94,20 +94,20 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      console.error("Falha ao fazer parse da resposta JSON de getMyPerformanceHistoryForExerciseService:", e);
-      console.error("Resposta recebida (texto) de getMyPerformanceHistoryForExerciseService:", responseText);
+      logger.error("Falha ao fazer parse da resposta JSON de getMyPerformanceHistoryForExerciseService:", e);
+      logger.error("Resposta recebida (texto) de getMyPerformanceHistoryForExerciseService:", responseText);
       throw new Error(`Resposta do servidor para my-exercise-history/... não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0, 200)}...`);
     }
     
     if (!response.ok) {
-      console.error('Erro na resposta de getMyPerformanceHistoryForExerciseService (status não OK):', data);
+      logger.error('Erro na resposta de getMyPerformanceHistoryForExerciseService (status não OK):', data);
       throw new Error(data.message || `Erro ao buscar histórico de desempenho do exercício. Status: ${response.status}`);
     }
     return data;
   } catch (error) {
-    console.error("Erro em getMyPerformanceHistoryForExerciseService:", error);
+    logger.error("Erro em getMyPerformanceHistoryForExerciseService:", error);
     if (error.message.toLowerCase().includes("unexpected token") || error.message.toLowerCase().includes("json.parse") || error.message.toLowerCase().includes("não é json válido")) {
-        console.error("Detalhe: A resposta do servidor para getMyPerformanceHistoryForExerciseService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor, ou pode ser um erro na URL/endpoint.");
+        logger.error("Detalhe: A resposta do servidor para getMyPerformanceHistoryForExerciseService não foi JSON. Verifique o separador Network para ver a resposta HTML/texto do servidor, ou pode ser um erro na URL/endpoint.");
     }
     throw error;
   }
@@ -138,13 +138,13 @@ export const deleteExercisePerformanceLogService = async (logId, token) => {
         try {
             data = JSON.parse(responseText);
         } catch (e) {
-            console.error("Falha ao fazer parse da resposta JSON de deleteExercisePerformanceLogService:", e);
-            console.error("Resposta recebida (texto) de deleteExercisePerformanceLogService:", responseText);
+            logger.error("Falha ao fazer parse da resposta JSON de deleteExercisePerformanceLogService:", e);
+            logger.error("Resposta recebida (texto) de deleteExercisePerformanceLogService:", responseText);
             if(response.ok) return { message: responseText || "Operação concluída (resposta não JSON)." };
             throw new Error(`Resposta do servidor para delete log não é JSON válido. Status: ${response.status}. Resposta: ${responseText.substring(0,200)}...`);
         }
         if (!response.ok) {
-            console.error('Erro na resposta de deleteExercisePerformanceLogService (status não OK):', data);
+            logger.error('Erro na resposta de deleteExercisePerformanceLogService (status não OK):', data);
             throw new Error(data.message || `Erro ao eliminar registo. Status: ${response.status}`);
         }
         return data; 
@@ -154,7 +154,7 @@ export const deleteExercisePerformanceLogService = async (logId, token) => {
     return { message: 'Operação de eliminação processada pelo servidor.' };
 
   } catch (error) {
-    console.error("Erro em deleteExercisePerformanceLogService:", error);
+    logger.error("Erro em deleteExercisePerformanceLogService:", error);
     throw error;
   }
 };
@@ -178,7 +178,7 @@ export const checkPersonalRecordsService = async (completedSets, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em checkPersonalRecordsService:", error);
+    logger.error("Erro em checkPersonalRecordsService:", error);
     throw error;
   }
 };
@@ -193,7 +193,7 @@ export const getMyRecordsService = async (token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar recordes.');
     return data;
   } catch (error) {
-    console.error("Erro em getMyRecordsService:", error);
+    logger.error("Erro em getMyRecordsService:", error);
     throw error;
   }
 };
@@ -218,7 +218,7 @@ export const updatePerformanceLogService = async (logId, performanceData, token)
     }
     return data;
   } catch (error) {
-    console.error("Erro em updatePerformanceLogService:", error);
+    logger.error("Erro em updatePerformanceLogService:", error);
     throw error;
   }
 };
@@ -234,7 +234,7 @@ export const adminGetRecordsForUserService = async (userId, token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar recordes do cliente.');
     return data;
   } catch (error) {
-    console.error("Erro em adminGetRecordsForUserService:", error);
+    logger.error("Erro em adminGetRecordsForUserService:", error);
     throw error;
   }
 };
@@ -250,7 +250,7 @@ export const adminGetFullExerciseHistoryForUserService = async (userId, planExer
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar histórico de exercício para o cliente.');
     return data;
   } catch (error) {
-    console.error("Erro em adminGetFullExerciseHistoryForUserService:", error);
+    logger.error("Erro em adminGetFullExerciseHistoryForUserService:", error);
     throw error;
   }
 };
@@ -283,7 +283,7 @@ export const updateExercisePerformanceService = async (performanceId, performanc
     return { success: true, performance: updatedPerformance };
 
   } catch (error) {
-    console.error('Erro no serviço de atualização de performance:', error);
+    logger.error('Erro no serviço de atualização de performance:', error);
     throw error;
   }
 };
@@ -309,7 +309,7 @@ export const getExerciseHistoryService = async (exerciseId, token) => {
     return data;
 
   } catch (error) {
-    console.error("Erro em getExerciseHistoryService:", error);
+    logger.error("Erro em getExerciseHistoryService:", error);
     throw error;
   }
 };
@@ -323,12 +323,12 @@ export const getMyLastPerformancesService = async (token) => {
     const data = await response.json();
     if (!response.ok) {
       // Evita rebentar o UI — devolve [] e deixa a página continuar
-      console.warn('getMyLastPerformancesService: resposta não OK', response.status);
+      logger.warn('getMyLastPerformancesService: resposta não OK', response.status);
       return [];
     }
     return data;
   } catch (error) {
-    console.error('Erro em getMyLastPerformancesService:', error);
+    logger.error('Erro em getMyLastPerformancesService:', error);
     return [];
   }
 };

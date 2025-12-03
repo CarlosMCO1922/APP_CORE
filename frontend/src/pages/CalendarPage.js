@@ -1,4 +1,5 @@
 // src/pages/CalendarPage.js
+import { logger } from '../utils/logger';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled, { css, useTheme} from 'styled-components';
@@ -36,6 +37,7 @@ import {
     FaDumbbell, FaRedo, FaTrashAlt
 } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
 const initialAdminTrainingFormState = { name: '', description: '', date: '', time: '', capacity: 10, instructorId: '', durationMinutes: 45, isRecurring: false, recurrenceType: 'weekly', seriesStartDate: '', seriesEndDate: '', dayOfWeek: '1'};
@@ -424,6 +426,10 @@ const CalendarPage = () => {
   const [selectedSeriesDetailsForSubscription, setSelectedSeriesDetailsForSubscription] = useState(null);
 
   const [showSubscribeSeriesModal, setShowSubscribeSeriesModal] = useState(false);
+  const [showBookTrainingConfirmModal, setShowBookTrainingConfirmModal] = useState(false);
+  const [showCancelTrainingConfirmModal, setShowCancelTrainingConfirmModal] = useState(false);
+  const [showBookAppointmentConfirmModal, setShowBookAppointmentConfirmModal] = useState(false);
+  const [showCancelAppointmentConfirmModal, setShowCancelAppointmentConfirmModal] = useState(false);
   const [seriesSubscriptionEndDate, setSeriesSubscriptionEndDate] = useState('');
   const [seriesSubscriptionError, setSeriesSubscriptionError] = useState('');
   const [isSubscribingRecurring, setIsSubscribingRecurring] = useState(false);
@@ -465,10 +471,10 @@ const CalendarPage = () => {
       ];
 
       if (isAdminOrStaff) {
-        promisesToFetch.push(adminGetAllStaff(authState.token).catch(e => { console.error("Falha ao buscar staff (admin)", e); return []; }));
-        promisesToFetch.push(adminGetAllUsers(authState.token).catch(e => { console.error("Falha ao buscar users (admin)", e); return []; }));
+        promisesToFetch.push(adminGetAllStaff(authState.token).catch(e => { logger.error("Falha ao buscar staff (admin)", e); return []; }));
+        promisesToFetch.push(adminGetAllUsers(authState.token).catch(e => { logger.error("Falha ao buscar users (admin)", e); return []; }));
       } else if (isClient) {
-        promisesToFetch.push(getAllStaffForSelection(authState.token).catch(e => { console.warn("Falha ao buscar staff (client)", e.message); return []; }));
+        promisesToFetch.push(getAllStaffForSelection(authState.token).catch(e => { logger.warn("Falha ao buscar staff (client)", e.message); return []; }));
         promisesToFetch.push(Promise.resolve([]));
       } else {
         promisesToFetch.push(Promise.resolve([]));
@@ -540,7 +546,7 @@ const CalendarPage = () => {
 
     } catch (err) {
       setPageError(err.message || 'Não foi possível carregar os dados do calendário.');
-      console.error("CalendarPage fetchData error:", err);
+      logger.error("CalendarPage fetchData error:", err);
 addToast('Falha ao carregar dados do calendário.', { type: 'error', category: 'calendar' });
     }
     finally { setLoading(false); }
@@ -604,17 +610,27 @@ addToast('Falha ao enviar pedido de consulta.', { type: 'error', category: 'cale
     }
     
     // Inscrição simples (sem série)
-    if (!window.confirm('Confirmas a inscrição neste treino?')) return;
-    setActionLoading(true); setPageError(''); setPageSuccessMessage('');
+    setShowBookTrainingConfirmModal(true);
+  };
+
+  const handleBookTrainingConfirm = async () => {
+    if (!selectedEvent || selectedEvent.type !== 'training') return;
+    setActionLoading(true); 
+    setPageError(''); 
+    setPageSuccessMessage('');
+    setShowBookTrainingConfirmModal(false);
     try {
       await bookTrainingService(selectedEvent.id, authState.token);
       setPageSuccessMessage('Inscrição no treino realizada com sucesso!');
-addToast('Inscrição no treino realizada com sucesso!', { type: 'success', category: 'calendar' });
-      await fetchPageData(); handleCloseEventModal();
+      addToast('Inscrição no treino realizada com sucesso!', { type: 'success', category: 'calendar' });
+      await fetchPageData(); 
+      handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao inscrever no treino.');
-addToast('Falha ao inscrever no treino.', { type: 'error', category: 'calendar' });
-    } finally { setActionLoading(false); }
+      addToast('Falha ao inscrever no treino.', { type: 'error', category: 'calendar' });
+    } finally { 
+      setActionLoading(false); 
+    }
   };
   const handleCancelTrainingBooking = async () => {
     if (!selectedEvent || selectedEvent.type !== 'training') return;
@@ -630,22 +646,32 @@ addToast('Falha ao inscrever no treino.', { type: 'error', category: 'calendar' 
           return;
         }
       } catch (err) {
-        console.error('Erro ao verificar treinos recorrentes:', err);
+        logger.error('Erro ao verificar treinos recorrentes:', err);
       }
     }
     
     // Cancelamento normal (sem série ou sem futuros)
-    if (!window.confirm('Confirmas o cancelamento da inscrição neste treino?')) return;
-    setActionLoading(true); setPageError(''); setPageSuccessMessage('');
+    setShowCancelTrainingConfirmModal(true);
+  };
+
+  const handleCancelTrainingConfirm = async () => {
+    if (!selectedEvent || selectedEvent.type !== 'training') return;
+    setActionLoading(true); 
+    setPageError(''); 
+    setPageSuccessMessage('');
+    setShowCancelTrainingConfirmModal(false);
     try {
       await cancelTrainingBookingService(selectedEvent.id, authState.token);
       setPageSuccessMessage('Inscrição no treino cancelada com sucesso!');
       addToast('Inscrição cancelada.', { type: 'success', category: 'calendar' });
-      await fetchPageData(); handleCloseEventModal();
+      await fetchPageData(); 
+      handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao cancelar inscrição.');
       addToast('Falha ao cancelar inscrição.', { type: 'error', category: 'calendar' });
-    } finally { setActionLoading(false); }
+    } finally { 
+      setActionLoading(false); 
+    }
   };
 
   const handleCancelAllRecurring = async () => {
@@ -689,33 +715,53 @@ addToast('Falha ao inscrever no treino.', { type: 'error', category: 'calendar' 
     setCancelRecurringInfo(null);
     setTrainingToCancel(null);
   };
-  const handleBookSelectedAppointment = async () => {
+  const handleBookSelectedAppointment = () => {
     if (!selectedEvent || selectedEvent.type !== 'appointment') return;
-    if (!window.confirm('Confirmas a marcação desta consulta?')) return;
-    setActionLoading(true); setPageError(''); setPageSuccessMessage('');
+    setShowBookAppointmentConfirmModal(true);
+  };
+
+  const handleBookAppointmentConfirm = async () => {
+    if (!selectedEvent || selectedEvent.type !== 'appointment') return;
+    setActionLoading(true); 
+    setPageError(''); 
+    setPageSuccessMessage('');
+    setShowBookAppointmentConfirmModal(false);
     try {
       await bookAppointmentService(selectedEvent.id, authState.token);
       setPageSuccessMessage('Consulta marcado com sucesso!');
-addToast('Consulta marcada com sucesso!', { type: 'success', category: 'calendar' });
-      await fetchPageData(); handleCloseEventModal();
+      addToast('Consulta marcada com sucesso!', { type: 'success', category: 'calendar' });
+      await fetchPageData(); 
+      handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao marcar consulta.');
-addToast('Falha ao marcar consulta.', { type: 'error', category: 'calendar' });
-    } finally { setActionLoading(false); }
+      addToast('Falha ao marcar consulta.', { type: 'error', category: 'calendar' });
+    } finally { 
+      setActionLoading(false); 
+    }
   };
-  const handleCancelAppointmentBooking = async () => {
+  const handleCancelAppointmentBooking = () => {
     if (!selectedEvent || selectedEvent.type !== 'appointment') return;
-    if (!window.confirm('Confirmas o cancelamento desta consulta?')) return;
-    setActionLoading(true); setPageError(''); setPageSuccessMessage('');
+    setShowCancelAppointmentConfirmModal(true);
+  };
+
+  const handleCancelAppointmentConfirm = async () => {
+    if (!selectedEvent || selectedEvent.type !== 'appointment') return;
+    setActionLoading(true); 
+    setPageError(''); 
+    setPageSuccessMessage('');
+    setShowCancelAppointmentConfirmModal(false);
     try {
       await cancelAppointmentBookingService(selectedEvent.id, authState.token);
       setPageSuccessMessage('Consulta cancelada com sucesso!');
-addToast('Consulta cancelada.', { type: 'success', category: 'calendar' });
-      await fetchPageData(); handleCloseEventModal();
+      addToast('Consulta cancelada.', { type: 'success', category: 'calendar' });
+      await fetchPageData(); 
+      handleCloseEventModal();
     } catch (err) {
       setPageError(err.message || 'Falha ao cancelar consulta.');
-addToast('Falha ao cancelar consulta.', { type: 'error', category: 'calendar' });
-    } finally { setActionLoading(false); }
+      addToast('Falha ao cancelar consulta.', { type: 'error', category: 'calendar' });
+    } finally { 
+      setActionLoading(false); 
+    }
   };
   const handleAdminManageEvent = () => {
     if (!selectedEvent) return;
@@ -864,13 +910,13 @@ addToast('Falha ao criar consulta.', { type: 'error', category: 'calendar' });
 
   const handleOpenSubscribeToSeriesModal = (trainingResource) => {
     if (!trainingResource || !trainingResource.trainingSeriesId) {
-        console.error("Este treino não parece pertencer a uma série ou falta trainingSeriesId.");
+        logger.error("Este treino não parece pertencer a uma série ou falta trainingSeriesId.");
         setPageError("Este treino não pode ser subscrito como série.");
         return;
     }
 
     if (!trainingResource.series || !trainingResource.series.seriesStartDate || !trainingResource.series.seriesEndDate) {
-        console.error("Detalhes da série (seriesStartDate, seriesEndDate) não encontrados no objeto do treino:", trainingResource);
+        logger.error("Detalhes da série (seriesStartDate, seriesEndDate) não encontrados no objeto do treino:", trainingResource);
         setPageError("Detalhes da série incompletos. Tente recarregar a página ou contacte o suporte.");
         return;
     }
@@ -1381,6 +1427,70 @@ addToast('Inscrição na série realizada com sucesso!', { type: 'success', cate
                     </ModalContent>
                 </ModalOverlay>
             )}
+
+            <ConfirmationModal
+                isOpen={showBookTrainingConfirmModal}
+                onClose={() => {
+                    if (!actionLoading) {
+                        setShowBookTrainingConfirmModal(false);
+                    }
+                }}
+                onConfirm={handleBookTrainingConfirm}
+                title="Inscrever no Treino"
+                message="Confirmas a inscrição neste treino?"
+                confirmText="Confirmar"
+                cancelText="Cancelar"
+                danger={false}
+                loading={actionLoading}
+            />
+
+            <ConfirmationModal
+                isOpen={showCancelTrainingConfirmModal}
+                onClose={() => {
+                    if (!actionLoading) {
+                        setShowCancelTrainingConfirmModal(false);
+                    }
+                }}
+                onConfirm={handleCancelTrainingConfirm}
+                title="Cancelar Inscrição"
+                message="Confirmas o cancelamento da inscrição neste treino?"
+                confirmText="Confirmar"
+                cancelText="Cancelar"
+                danger={true}
+                loading={actionLoading}
+            />
+
+            <ConfirmationModal
+                isOpen={showBookAppointmentConfirmModal}
+                onClose={() => {
+                    if (!actionLoading) {
+                        setShowBookAppointmentConfirmModal(false);
+                    }
+                }}
+                onConfirm={handleBookAppointmentConfirm}
+                title="Marcar Consulta"
+                message="Confirmas a marcação desta consulta?"
+                confirmText="Confirmar"
+                cancelText="Cancelar"
+                danger={false}
+                loading={actionLoading}
+            />
+
+            <ConfirmationModal
+                isOpen={showCancelAppointmentConfirmModal}
+                onClose={() => {
+                    if (!actionLoading) {
+                        setShowCancelAppointmentConfirmModal(false);
+                    }
+                }}
+                onConfirm={handleCancelAppointmentConfirm}
+                title="Cancelar Consulta"
+                message="Confirmas o cancelamento desta consulta?"
+                confirmText="Confirmar"
+                cancelText="Cancelar"
+                danger={true}
+                loading={actionLoading}
+            />
     </PageContainer>
   );
 };

@@ -1,4 +1,5 @@
 // src/services/exerciseService.js
+import { logger } from '../utils/logger';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'; 
 
 export const getAllExercises = async (token) => {
@@ -15,7 +16,7 @@ export const getAllExercises = async (token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em getAllExercises:", error);
+    logger.error("Erro em getAllExercises:", error);
     throw error;
   }
 };
@@ -37,7 +38,7 @@ export const createExercise = async (exerciseData, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em createExercise:", error);
+    logger.error("Erro em createExercise:", error);
     throw error;
   }
 };
@@ -59,7 +60,7 @@ export const updateExercise = async (exerciseId, exerciseData, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em updateExercise:", error);
+    logger.error("Erro em updateExercise:", error);
     throw error;
   }
 };
@@ -79,7 +80,7 @@ export const deleteExercise = async (exerciseId, token) => {
     }
     return data; 
   } catch (error) {
-    console.error("Erro em deleteExercise:", error);
+    logger.error("Erro em deleteExercise:", error);
     throw error;
   }
 };

@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect, Suspense, lazy, useState } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useWorkout } from './context/WorkoutContext';
@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import Navbar from './components/Layout/Navbar';
 import BottomNav from './components/Layout/BottomNav';
 import OfflineIndicator from './components/OfflineIndicator';
+import ConfirmationModal from './components/Common/ConfirmationModal';
 
 // Code-splitting for pages (melhora UX e reduz bundle inicial)
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -111,8 +112,20 @@ const ProtectedRoute = ({ allowedRoles }) => {
 function App() {
   const { authState } = useAuth();
   const { activeWorkout, isMinimized, setIsMinimized, cancelWorkout } = useWorkout();
+  const [showCancelWorkoutModal, setShowCancelWorkoutModal] = useState(false);
+
   useEffect(() => {
   }, [authState]);
+
+  const handleCancelWorkoutClick = (e) => {
+    e.stopPropagation();
+    setShowCancelWorkoutModal(true);
+  };
+
+  const handleCancelWorkoutConfirm = () => {
+    setShowCancelWorkoutModal(false);
+    cancelWorkout();
+  };
 
   return (
     <>
@@ -187,11 +200,23 @@ function App() {
       {activeWorkout && isMinimized && (
         <MinimizedBar onClick={() => setIsMinimized(false)}>
           <span>Treino em Andamento: {activeWorkout.name}</span>
-          <CancelButton onClick={(e) => { e.stopPropagation(); cancelWorkout(); }}>
+          <CancelButton onClick={handleCancelWorkoutClick}>
             Cancelar
           </CancelButton>
         </MinimizedBar>
       )}
+
+      <ConfirmationModal
+        isOpen={showCancelWorkoutModal}
+        onClose={() => setShowCancelWorkoutModal(false)}
+        onConfirm={handleCancelWorkoutConfirm}
+        title="Cancelar Treino"
+        message="Tem a certeza? Todos os dados registados serão perdidos."
+        confirmText="Cancelar Treino"
+        cancelText="Continuar"
+        danger={true}
+        loading={false}
+      />
   </>
   );
 }

@@ -9,6 +9,7 @@ import { FaRegCalendarCheck, FaUsers, FaClock, FaUserTie } from 'react-icons/fa'
 import BackArrow from '../components/BackArrow';
 import moment from 'moment';
 import 'moment/locale/pt';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 // --- Styled Components (adaptados da BookingCalendarPage) ---
 const PageContainer = styled.div`
@@ -114,6 +115,8 @@ const GroupTrainingCalendarPage = () => {
   const [bookingLoading, setBookingLoading] = useState(null); // Para o ID do treino
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [showBookConfirmModal, setShowBookConfirmModal] = useState(false);
+  const [trainingToBook, setTrainingToBook] = useState(null);
 
   const fetchTrainings = useCallback(async () => {
     if (!authState.token) return;
@@ -132,17 +135,26 @@ const GroupTrainingCalendarPage = () => {
     fetchTrainings();
   }, [fetchTrainings]);
 
-  const handleBookTraining = async (trainingId) => {
-    if (!window.confirm("Confirmas a tua inscrição neste treino de grupo?")) return;
-    setBookingLoading(trainingId);
-    setError(''); setSuccessMessage('');
+  const handleBookTraining = (trainingId) => {
+    setTrainingToBook(trainingId);
+    setShowBookConfirmModal(true);
+  };
+
+  const handleBookTrainingConfirm = async () => {
+    if (!trainingToBook) return;
+    setBookingLoading(trainingToBook);
+    setError(''); 
+    setSuccessMessage('');
+    setShowBookConfirmModal(false);
     try {
-      const response = await bookTraining(trainingId, authState.token);
+      const response = await bookTraining(trainingToBook, authState.token);
       setSuccessMessage(response.message || "Inscrição realizada com sucesso!");
+      setTrainingToBook(null);
       // Atualizar a lista de treinos para refletir a nova vaga ocupada
       fetchTrainings(); 
     } catch (err) {
       setError(err.message || "Erro ao realizar inscrição.");
+      setTrainingToBook(null);
     } finally {
       setBookingLoading(null);
     }
@@ -220,6 +232,23 @@ const GroupTrainingCalendarPage = () => {
           )}
         </TimeSlotsContainer>
       </BookingLayout>
+
+      <ConfirmationModal
+        isOpen={showBookConfirmModal}
+        onClose={() => {
+          if (bookingLoading === null) {
+            setShowBookConfirmModal(false);
+            setTrainingToBook(null);
+          }
+        }}
+        onConfirm={handleBookTrainingConfirm}
+        title="Inscrever no Treino"
+        message="Confirmas a tua inscrição neste treino de grupo?"
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        danger={false}
+        loading={bookingLoading !== null}
+      />
     </PageContainer>
   );
 };

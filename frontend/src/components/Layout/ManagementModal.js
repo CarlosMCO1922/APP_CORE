@@ -16,6 +16,7 @@ import {
   FaTimes,
   FaSignOutAlt
 } from 'react-icons/fa';
+import ConfirmationModal from '../Common/ConfirmationModal';
 
 const Overlay = styled.div`
   position: fixed;
@@ -166,6 +167,7 @@ const MenuItem = styled.button`
 function ManagementModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
 
   if (!isOpen) return null;
 
@@ -225,13 +227,16 @@ function ManagementModal({ isOpen, onClose }) {
   };
 
   const handleLogout = () => {
-    if (window.confirm("Tem a certeza que quer sair da sua conta?")) {
-      onClose();
-      setTimeout(() => {
-        logout();
-        navigate('/login');
-      }, 200);
-    }
+    setShowLogoutConfirmModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutConfirmModal(false);
+    onClose();
+    setTimeout(() => {
+      logout();
+      navigate('/login');
+    }, 200);
   };
 
   return (
@@ -262,6 +267,18 @@ function ManagementModal({ isOpen, onClose }) {
           </MenuItem>
         </MenuList>
       </ModalContent>
+
+      <ConfirmationModal
+        isOpen={showLogoutConfirmModal}
+        onClose={() => setShowLogoutConfirmModal(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Sair da Conta"
+        message="Tem a certeza que quer sair da sua conta?"
+        confirmText="Sair"
+        cancelText="Cancelar"
+        danger={false}
+        loading={false}
+      />
     </Overlay>
   );
 }

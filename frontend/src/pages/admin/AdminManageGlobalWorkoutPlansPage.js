@@ -21,6 +21,7 @@ import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
     FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical 
 } from 'react-icons/fa';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 
 
@@ -272,6 +273,10 @@ const AdminManageGlobalWorkoutPlansPage = () => {
   const [planToAssign, setPlanToAssign] = useState(null);
   const [selectedTrainingToAssign, setSelectedTrainingToAssign] = useState('');
   const [assignOrder, setAssignOrder] = useState(0);
+  const [showDeleteSupersetConfirmModal, setShowDeleteSupersetConfirmModal] = useState(false);
+  const [showDeletePlanConfirmModal, setShowDeletePlanConfirmModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
 
   const fetchAllData = useCallback(async () => {
@@ -415,7 +420,13 @@ const AdminManageGlobalWorkoutPlansPage = () => {
     };
   
     const handleRemoveSupersetGroup = (supersetGroup) => {
-      if (!window.confirm("Tem a certeza que quer eliminar este bloco e todos os seus exercícios?")) return;
+      setItemToDelete({ type: 'superset', group: supersetGroup });
+      setShowDeleteSupersetConfirmModal(true);
+    };
+
+    const handleRemoveSupersetGroupConfirm = () => {
+      if (!itemToDelete || itemToDelete.type !== 'superset') return;
+      const supersetGroup = itemToDelete.group;
       let remainingExercises = currentPlanData.exercises.filter(ex => ex.supersetGroup !== supersetGroup);
       
       const remappedGroups = {};
@@ -427,6 +438,8 @@ const AdminManageGlobalWorkoutPlansPage = () => {
           ex.supersetGroup = remappedGroups[ex.supersetGroup];
       });
       setCurrentPlanData(prev => ({ ...prev, exercises: remainingExercises }));
+      setItemToDelete(null);
+      setShowDeleteSupersetConfirmModal(false);
     };
 
   const planExercisesGrouped = useMemo(() => {
@@ -555,19 +568,27 @@ const AdminManageGlobalWorkoutPlansPage = () => {
         }
     };
 
-  const handleDeletePlan = async (planId) => {
-    if (window.confirm('Tem a certeza que quer eliminar este plano de treino? Esta ação não pode ser desfeita.')) {
-      setLoading(true); 
-      setError(''); setSuccessMessage('');
-      try {
-        await adminDeleteGlobalWorkoutPlan(planId, authState.token);
-        setSuccessMessage('Plano de treino eliminado com sucesso.');
-        fetchAllData();
-      } catch (err) {
-        setError(err.message || 'Erro ao eliminar plano de treino.');
-      } finally {
-        setLoading(false);
-      }
+  const handleDeletePlan = (planId) => {
+    setItemToDelete({ type: 'plan', id: planId });
+    setShowDeletePlanConfirmModal(true);
+  };
+
+  const handleDeletePlanConfirm = async () => {
+    if (!itemToDelete || itemToDelete.type !== 'plan') return;
+    setDeleteLoading(true);
+    setError(''); 
+    setSuccessMessage('');
+    setShowDeletePlanConfirmModal(false);
+    try {
+      await adminDeleteGlobalWorkoutPlan(itemToDelete.id, authState.token);
+      setSuccessMessage('Plano de treino eliminado com sucesso.');
+      setItemToDelete(null);
+      fetchAllData();
+    } catch (err) {
+      setError(err.message || 'Erro ao eliminar plano de treino.');
+      setItemToDelete(null);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -793,6 +814,38 @@ return (
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteSupersetConfirmModal}
+        onClose={() => {
+          setShowDeleteSupersetConfirmModal(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleRemoveSupersetGroupConfirm}
+        title="Eliminar Bloco de Superset"
+        message="Tem a certeza que quer eliminar este bloco e todos os seus exercícios?"
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={false}
+      />
+
+      <ConfirmationModal
+        isOpen={showDeletePlanConfirmModal}
+        onClose={() => {
+          if (!deleteLoading) {
+            setShowDeletePlanConfirmModal(false);
+            setItemToDelete(null);
+          }
+        }}
+        onConfirm={handleDeletePlanConfirm}
+        title="Eliminar Plano de Treino"
+        message="Tem a certeza que quer eliminar este plano de treino? Esta ação não pode ser desfeita."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={deleteLoading}
+      />
     </PageContainer>
   );
 };

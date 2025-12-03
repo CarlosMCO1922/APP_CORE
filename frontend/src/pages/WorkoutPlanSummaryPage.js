@@ -1,4 +1,5 @@
 // src/pages/WorkoutPlanSummaryPage.js
+import { logger } from '../utils/logger';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -177,10 +178,10 @@ const WorkoutPlanSummaryPage = () => {
     try {
       // Pequeno delay para evitar múltiplos cliques
       await new Promise(resolve => setTimeout(resolve, 300));
-      console.log('DADOS DO PLANO ENVIADOS PARA O TREINO:', JSON.stringify(plan, null, 2));
+      logger.log('DADOS DO PLANO ENVIADOS PARA O TREINO:', JSON.stringify(plan, null, 2));
       await startWorkout(plan);
     } catch (err) {
-      console.error('Erro ao iniciar treino:', err);
+      logger.error('Erro ao iniciar treino:', err);
       setError('Erro ao iniciar treino. Tente novamente.');
     } finally {
       setIsStarting(false);

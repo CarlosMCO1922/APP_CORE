@@ -9,6 +9,7 @@ import { FaRunning, FaTrashAlt, FaRegClock } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
 import moment from 'moment';
 import 'moment/locale/pt';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 const PageContainer = styled.div`
   max-width: 900px;
@@ -86,6 +87,10 @@ const MyTrainingsPage = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [cancellingId, setCancellingId] = useState(null);
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+  const [trainingToCancel, setTrainingToCancel] = useState(null);
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+  const [trainingToCancel, setTrainingToCancel] = useState(null);
   const { authState } = useAuth();
 
   const fetchBookings = useCallback(async () => {
@@ -116,17 +121,25 @@ const MyTrainingsPage = () => {
     fetchBookings();
   }, [fetchBookings]);
 
-  const handleCancel = async (trainingId) => {
-    if (!window.confirm("Tem a certeza que quer cancelar a sua inscrição neste treino?")) return;
-    setCancellingId(trainingId);
+  const handleCancel = (trainingId) => {
+    setTrainingToCancel(trainingId);
+    setShowCancelConfirmModal(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!trainingToCancel) return;
+    setCancellingId(trainingToCancel);
     setMessage('');
     setError('');
+    setShowCancelConfirmModal(false);
     try {
-      const response = await cancelTrainingBooking(trainingId, authState.token);
+      const response = await cancelTrainingBooking(trainingToCancel, authState.token);
       setMessage(response.message);
+      setTrainingToCancel(null);
       fetchBookings(); // Re-busca a lista para atualizar a UI
     } catch (err) {
       setError(err.message || "Erro ao cancelar inscrição.");
+      setTrainingToCancel(null);
     } finally {
       setCancellingId(null);
     }
@@ -165,6 +178,23 @@ const MyTrainingsPage = () => {
           ))}
         </TrainingList>
       )}
+
+      <ConfirmationModal
+        isOpen={showCancelConfirmModal}
+        onClose={() => {
+          if (cancellingId === null) {
+            setShowCancelConfirmModal(false);
+            setTrainingToCancel(null);
+          }
+        }}
+        onConfirm={handleCancelConfirm}
+        title="Cancelar Inscrição"
+        message="Tem a certeza que quer cancelar a sua inscrição neste treino?"
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={cancellingId !== null}
+      />
     </PageContainer>
   );
 };

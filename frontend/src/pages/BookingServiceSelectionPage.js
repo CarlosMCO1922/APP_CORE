@@ -17,6 +17,7 @@ import {
     FaUserTie 
 } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 const serviceData = [
   {
@@ -289,6 +290,8 @@ const BookingServiceSelectionPage = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [expandedTrainingId, setExpandedTrainingId] = useState(null);
+  const [showBookConfirmModal, setShowBookConfirmModal] = useState(false);
+  const [trainingToBook, setTrainingToBook] = useState(null);
 
 
   // --- FUNÇÕES ---
@@ -354,16 +357,25 @@ const BookingServiceSelectionPage = () => {
   };
   
   // Função para inscrever no treino (copiada e adaptada)
-  const handleBookTraining = async (trainingId) => {
-    if (!window.confirm("Confirmas a tua inscrição neste treino de grupo?")) return;
-    setBookingLoading(trainingId);
-    setError(''); setSuccessMessage('');
+  const handleBookTraining = (trainingId) => {
+    setTrainingToBook(trainingId);
+    setShowBookConfirmModal(true);
+  };
+
+  const handleBookTrainingConfirm = async () => {
+    if (!trainingToBook) return;
+    setBookingLoading(trainingToBook);
+    setError(''); 
+    setSuccessMessage('');
+    setShowBookConfirmModal(false);
     try {
-      const response = await bookTraining(trainingId, authState.token);
+      const response = await bookTraining(trainingToBook, authState.token);
       setSuccessMessage(response.message || "Inscrição realizada com sucesso!");
+      setTrainingToBook(null);
       fetchTrainings();
     } catch (err) {
       setError(err.message || "Erro ao realizar inscrição.");
+      setTrainingToBook(null);
     } finally {
       setBookingLoading(null);
     }
@@ -498,6 +510,23 @@ const BookingServiceSelectionPage = () => {
           )}
         </AnimatedView>
       </ViewContainer>
+
+      <ConfirmationModal
+        isOpen={showBookConfirmModal}
+        onClose={() => {
+          if (bookingLoading === null) {
+            setShowBookConfirmModal(false);
+            setTrainingToBook(null);
+          }
+        }}
+        onConfirm={handleBookTrainingConfirm}
+        title="Inscrever no Treino"
+        message="Confirmas a tua inscrição neste treino de grupo?"
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        danger={false}
+        loading={bookingLoading !== null}
+      />
     </PageContainer>
   );
 };

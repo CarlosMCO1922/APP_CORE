@@ -1,4 +1,5 @@
 // src/components/Workout/RestTimer.js
+import { logger } from '../../utils/logger';
 
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
@@ -150,13 +151,13 @@ const RestTimer = ({ duration, onFinish }) => {
       }).catch((error) => {
         // Log erro mas não bloqueia a funcionalidade
         if (process.env.NODE_ENV === 'development') {
-          console.warn('Erro ao agendar notificação push:', error);
+          logger.warn('Erro ao agendar notificação push:', error);
         }
       });
     } catch (e) {
       // Log erro mas não bloqueia a funcionalidade
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Erro ao configurar notificação push:', e);
+        logger.warn('Erro ao configurar notificação push:', e);
       }
     }
   };
@@ -259,11 +260,11 @@ const RestTimer = ({ duration, onFinish }) => {
           audio.play().catch((error) => {
             // Log erro mas não bloqueia a funcionalidade
             if (process.env.NODE_ENV === 'development') {
-              console.warn('Erro ao tocar som de notificação:', error);
+              logger.warn('Erro ao tocar som de notificação:', error);
             }
           });
         } catch (e) {
-          console.warn('Erro ao tocar som:', e);
+          logger.warn('Erro ao tocar som:', e);
         }
       };
 
@@ -348,7 +349,7 @@ const RestTimer = ({ duration, onFinish }) => {
             }
           }
         } catch (e) {
-          console.warn('Erro ao mostrar notificação:', e);
+          logger.warn('Erro ao mostrar notificação:', e);
         }
       };
       notify();

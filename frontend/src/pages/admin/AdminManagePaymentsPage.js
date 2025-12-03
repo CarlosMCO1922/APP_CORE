@@ -13,6 +13,7 @@ import {
 import { adminGetAllUsers } from '../../services/userService';
 import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaTimes } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -353,6 +354,11 @@ const AdminManagePaymentsPage = () => {
   const [currentPaymentData, setCurrentPaymentData] = useState(initialPaymentFormState);
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [showStatusChangeConfirmModal, setShowStatusChangeConfirmModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [paymentToAction, setPaymentToAction] = useState(null);
+  const [actionType, setActionType] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchPageData = useCallback(async (currentFilters) => {
     if (authState.token) {
@@ -430,27 +436,57 @@ const AdminManagePaymentsPage = () => {
     }
   };
 
-  const handleChangePaymentStatus = async (paymentId, newStatus) => {
-    if (!window.confirm(`Tens a certeza que queres alterar o status do pagamento ID ${paymentId} para "${newStatus}"?`)) return;
-    setPageError(''); setPageSuccessMessage('');
+  const handleChangePaymentStatus = (paymentId, newStatus) => {
+    setPaymentToAction({ id: paymentId, status: newStatus });
+    setActionType('status');
+    setShowStatusChangeConfirmModal(true);
+  };
+
+  const handleChangeStatusConfirm = async () => {
+    if (!paymentToAction || actionType !== 'status') return;
+    setActionLoading(true);
+    setPageError(''); 
+    setPageSuccessMessage('');
+    setShowStatusChangeConfirmModal(false);
     try {
-        await adminUpdatePaymentStatus(paymentId, newStatus, authState.token);
-        setPageSuccessMessage(`Status do pagamento ID ${paymentId} atualizado para "${newStatus}".`);
+        await adminUpdatePaymentStatus(paymentToAction.id, paymentToAction.status, authState.token);
+        setPageSuccessMessage(`Status do pagamento ID ${paymentToAction.id} atualizado para "${paymentToAction.status}".`);
+        setPaymentToAction(null);
+        setActionType(null);
         fetchPageData(filters); 
     } catch (err) {
         setPageError(err.message || 'Falha ao atualizar status do pagamento.');
+        setPaymentToAction(null);
+        setActionType(null);
+    } finally {
+        setActionLoading(false);
     }
   };
 
-  const handleDeletePayment = async (paymentId) => { 
-    if (!window.confirm(`Tens a certeza que queres eliminar o pagamento ID ${paymentId}?`)) return;
-    setPageError(''); setPageSuccessMessage('');
+  const handleDeletePayment = (paymentId) => {
+    setPaymentToAction({ id: paymentId });
+    setActionType('delete');
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeletePaymentConfirm = async () => {
+    if (!paymentToAction || actionType !== 'delete') return;
+    setActionLoading(true);
+    setPageError(''); 
+    setPageSuccessMessage('');
+    setShowDeleteConfirmModal(false);
     try {
-        await adminDeletePayment(paymentId, authState.token);
+        await adminDeletePayment(paymentToAction.id, authState.token);
         setPageSuccessMessage('Pagamento eliminado com sucesso.');
+        setPaymentToAction(null);
+        setActionType(null);
         fetchPageData(filters);
     } catch (err) {
         setPageError(err.message || 'Falha ao eliminar pagamento.');
+        setPaymentToAction(null);
+        setActionType(null);
+    } finally {
+        setActionLoading(false);
     }
   };
 
@@ -606,6 +642,42 @@ const AdminManagePaymentsPage = () => {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showStatusChangeConfirmModal}
+        onClose={() => {
+          if (!actionLoading) {
+            setShowStatusChangeConfirmModal(false);
+            setPaymentToAction(null);
+            setActionType(null);
+          }
+        }}
+        onConfirm={handleChangeStatusConfirm}
+        title="Alterar Status do Pagamento"
+        message={paymentToAction && actionType === 'status' ? `Tens a certeza que queres alterar o status do pagamento ID ${paymentToAction.id} para "${paymentToAction.status}"?` : ''}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        danger={false}
+        loading={actionLoading}
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => {
+          if (!actionLoading) {
+            setShowDeleteConfirmModal(false);
+            setPaymentToAction(null);
+            setActionType(null);
+          }
+        }}
+        onConfirm={handleDeletePaymentConfirm}
+        title="Eliminar Pagamento"
+        message={paymentToAction && actionType === 'delete' ? `Tens a certeza que queres eliminar o pagamento ID ${paymentToAction.id}?` : ''}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={actionLoading}
+      />
     </PageContainer>
   );
 };

@@ -11,6 +11,7 @@ import {
 } from '../../services/userService';
 import { FaPlus, FaEdit, FaTrashAlt, FaTimes, FaEye, FaUserPlus, FaSearch } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 
 
@@ -361,6 +362,9 @@ const AdminManageUsersPage = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     if (authState.token) {
@@ -483,16 +487,27 @@ const AdminManageUsersPage = () => {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm(`Tens a certeza que queres eliminar o utilizador ID ${userId}?`)) return;
+  const handleDeleteUser = (userId) => {
+    setUserToDelete(userId);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeleteUserConfirm = async () => {
+    if (!userToDelete) return;
+    setDeleteLoading(true);
     setError('');
     setSuccessMessage('');
+    setShowDeleteConfirmModal(false);
     try {
-      await adminDeleteUser(userId, authState.token);
+      await adminDeleteUser(userToDelete, authState.token);
       setSuccessMessage('Utilizador eliminado com sucesso.');
+      setUserToDelete(null);
       fetchUsers();
     } catch (err) {
       setError(err.message || 'Falha ao eliminar utilizador.');
+      setUserToDelete(null);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -610,6 +625,23 @@ const AdminManageUsersPage = () => {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => {
+          if (!deleteLoading) {
+            setShowDeleteConfirmModal(false);
+            setUserToDelete(null);
+          }
+        }}
+        onConfirm={handleDeleteUserConfirm}
+        title="Eliminar Utilizador"
+        message={userToDelete ? `Tens a certeza que queres eliminar o utilizador ID ${userToDelete}? Esta ação não pode ser desfeita.` : ''}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={deleteLoading}
+      />
     </PageContainer>
   );
 };

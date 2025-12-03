@@ -18,6 +18,7 @@ import {
 import { getAllTrainings }
     from '../../services/trainingService';
 import { getAllExercises } from '../../services/exerciseService';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -235,6 +236,10 @@ function AdminManageWorkoutPlansPage() {
   const [selectedPlanIdForExercise, setSelectedPlanIdForExercise] = useState(null);
   const [exerciseFormLoading, setExerciseFormLoading] = useState(false);
   const [exerciseModalError, setExerciseModalError] = useState('');
+  const [showDeletePlanConfirmModal, setShowDeletePlanConfirmModal] = useState(false);
+  const [showDeleteExerciseConfirmModal, setShowDeleteExerciseConfirmModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [mediaModalContent, setMediaModalContent] = useState({ type: '', src: '', alt: '' });
@@ -387,15 +392,27 @@ function AdminManageWorkoutPlansPage() {
     }
   };
 
-  const handleDeletePlan = async (planIdToDelete) => {
-    if (!window.confirm('Tem certeza que deseja eliminar este plano de treino e todos os seus exercícios?')) return;
-    setError(''); setSuccessMessage('');
+  const handleDeletePlan = (planIdToDelete) => {
+    setItemToDelete({ type: 'plan', id: planIdToDelete });
+    setShowDeletePlanConfirmModal(true);
+  };
+
+  const handleDeletePlanConfirm = async () => {
+    if (!itemToDelete || itemToDelete.type !== 'plan') return;
+    setDeleteLoading(true);
+    setError(''); 
+    setSuccessMessage('');
+    setShowDeletePlanConfirmModal(false);
     try {
-      await deleteWorkoutPlan(planIdToDelete, authState.token);
+      await deleteWorkoutPlan(itemToDelete.id, authState.token);
       setSuccessMessage('Plano de treino eliminado.');
+      setItemToDelete(null);
       fetchWorkoutPlans();
     } catch (err) {
       setError(err.message || 'Erro ao eliminar plano.');
+      setItemToDelete(null);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -474,12 +491,21 @@ function AdminManageWorkoutPlansPage() {
     }
   };
 
-  const handleDeleteExerciseFromPlan = async (exercisePlanIdToDelete) => {
-    if (!window.confirm('Tem certeza que deseja remover este exercício do plano?')) return;
-    setError(''); setSuccessMessage('');
+  const handleDeleteExerciseFromPlan = (exercisePlanIdToDelete) => {
+    setItemToDelete({ type: 'exercise', id: exercisePlanIdToDelete });
+    setShowDeleteExerciseConfirmModal(true);
+  };
+
+  const handleDeleteExerciseConfirm = async () => {
+    if (!itemToDelete || itemToDelete.type !== 'exercise') return;
+    setDeleteLoading(true);
+    setError(''); 
+    setSuccessMessage('');
+    setShowDeleteExerciseConfirmModal(false);
     try {
-      await removeExerciseFromPlan(exercisePlanIdToDelete, authState.token);
+      await removeExerciseFromPlan(itemToDelete.id, authState.token);
       setSuccessMessage('Exercício removido do plano.');
+      setItemToDelete(null);
       fetchWorkoutPlans();
     } catch (err) {
       setError(err.message || 'Erro ao remover exercício.');
@@ -801,6 +827,39 @@ function AdminManageWorkoutPlansPage() {
         </ModalOverlay>
       )}
 
+      <ConfirmationModal
+        isOpen={showDeletePlanConfirmModal}
+        onClose={() => {
+          if (!deleteLoading) {
+            setShowDeletePlanConfirmModal(false);
+            setItemToDelete(null);
+          }
+        }}
+        onConfirm={handleDeletePlanConfirm}
+        title="Eliminar Plano de Treino"
+        message="Tem certeza que deseja eliminar este plano de treino e todos os seus exercícios?"
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={deleteLoading}
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteExerciseConfirmModal}
+        onClose={() => {
+          if (!deleteLoading) {
+            setShowDeleteExerciseConfirmModal(false);
+            setItemToDelete(null);
+          }
+        }}
+        onConfirm={handleDeleteExerciseConfirm}
+        title="Remover Exercício do Plano"
+        message="Tem certeza que deseja remover este exercício do plano?"
+        confirmText="Remover"
+        cancelText="Cancelar"
+        danger={true}
+        loading={deleteLoading}
+      />
     </PageContainer>
   );
 }

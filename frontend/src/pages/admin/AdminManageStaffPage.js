@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { adminGetAllStaff, adminDeleteStaff, adminCreateStaff, adminUpdateStaff } from '../../services/staffService';
 import { FaUserTie, FaPlus, FaEdit, FaTrashAlt, FaTimes } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -272,7 +273,10 @@ const AdminManageStaffPage = () => {
   const [currentStaffData, setCurrentStaffData] = useState(initialStaffFormState);
   const [currentStaffId, setCurrentStaffId] = useState(null);
   const [formLoading, setFormLoading] = useState(false); 
-  const [modalError, setModalError] = useState(''); 
+  const [modalError, setModalError] = useState('');
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false); 
 
   const fetchStaff = useCallback(async () => {
     if (authState.token) {
@@ -349,19 +353,31 @@ const AdminManageStaffPage = () => {
     }
   };
 
-  const handleDeleteStaff = async (staffId, staffEmail) => {
+  const handleDeleteStaff = (staffId, staffEmail) => {
     if (authState.user?.id === staffId) {
         alert("Não pode eliminar a sua própria conta de administrador/staff a partir daqui.");
         return;
     }
-    if (!window.confirm(`Tens a certeza que queres eliminar o membro da equipa ${staffEmail} (ID: ${staffId})? Esta ação não pode ser desfeita.`)) return;
-    setError(''); setSuccessMessage('');
+    setStaffToDelete({ id: staffId, email: staffEmail });
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeleteStaffConfirm = async () => {
+    if (!staffToDelete) return;
+    setDeleteLoading(true);
+    setError(''); 
+    setSuccessMessage('');
+    setShowDeleteConfirmModal(false);
     try {
-      await adminDeleteStaff(staffId, authState.token);
+      await adminDeleteStaff(staffToDelete.id, authState.token);
       setSuccessMessage('Membro da equipa eliminado com sucesso.');
+      setStaffToDelete(null);
       fetchStaff();
     } catch (err) {
       setError(err.message || 'Falha ao eliminar membro da equipa.');
+      setStaffToDelete(null);
+    } finally {
+      setDeleteLoading(false);
     }
   };
   

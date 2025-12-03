@@ -1,4 +1,6 @@
 // src/services/appointmentService.js
+import { logger } from '../utils/logger';
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/';
 
 export const clientRequestNewAppointment = async (requestData, token) => {
@@ -21,7 +23,7 @@ export const clientRequestNewAppointment = async (requestData, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro no serviço clientRequestNewAppointment:", error);
+    logger.error("Erro no serviço clientRequestNewAppointment:", error);
     throw error;
   }
 };
@@ -44,7 +46,7 @@ export const getAllAppointments = async (token, filters = {}) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar consultas.');
     return data; 
-  } catch (error) { console.error("Erro no serviço getAllAppointments:", error); throw error; }
+  } catch (error) { logger.error("Erro no serviço getAllAppointments:", error); throw error; }
 };
 
 export const bookAppointment = async (appointmentId, token) => { 
@@ -57,7 +59,7 @@ export const bookAppointment = async (appointmentId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao marcar consulta.');
     return data;
-  } catch (error) { console.error("Erro em bookAppointment:", error); throw error; }
+  } catch (error) { logger.error("Erro em bookAppointment:", error); throw error; }
 };
 
 export const cancelAppointmentBooking = async (appointmentId, token) => { 
@@ -70,7 +72,7 @@ export const cancelAppointmentBooking = async (appointmentId, token) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erro ao cancelar marcação.');
         return data;
-    } catch (error) { console.error("Erro em cancelAppointmentBooking:", error); throw error; }
+    } catch (error) { logger.error("Erro em cancelAppointmentBooking:", error); throw error; }
 };
 
 export const adminCreateAppointment = async (appointmentData, token) => { 
@@ -84,7 +86,7 @@ export const adminCreateAppointment = async (appointmentData, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao criar consulta.');
     return data;
-  } catch (error) { console.error("Erro em adminCreateAppointment:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminCreateAppointment:", error); throw error; }
 };
 
 export const adminGetAppointmentById = async (appointmentId, token) => { 
@@ -96,7 +98,7 @@ export const adminGetAppointmentById = async (appointmentId, token) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Erro ao buscar consulta por ID.');
         return data;
-    } catch (error) { console.error("Erro em adminGetAppointmentById:", error); throw error; }
+    } catch (error) { logger.error("Erro em adminGetAppointmentById:", error); throw error; }
 };
 
 export const adminUpdateAppointment = async (appointmentId, appointmentData, token) => { 
@@ -110,7 +112,7 @@ export const adminUpdateAppointment = async (appointmentId, appointmentData, tok
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao atualizar consulta.');
     return data;
-  } catch (error) { console.error("Erro em adminUpdateAppointment:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminUpdateAppointment:", error); throw error; }
 };
 
 export const adminDeleteAppointment = async (appointmentId, token) => { 
@@ -132,7 +134,7 @@ export const adminDeleteAppointment = async (appointmentId, token) => {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Erro ao eliminar consulta.');
   } catch (error) { 
-    console.error("Erro em adminDeleteAppointment:", error); 
+    logger.error("Erro em adminDeleteAppointment:", error); 
     if (error instanceof Error) throw error;
     throw new Error('Erro ao comunicar com o servidor para eliminar consulta.');
   }
@@ -157,7 +159,7 @@ export const staffRespondToRequest = async (appointmentId, decision, token, tota
         if (!response.ok) throw new Error(data.message || 'Erro ao responder ao pedido de consulta.');
         return data;
     } catch (error) {
-        console.error("Erro em staffRespondToRequest:", error);
+        logger.error("Erro em staffRespondToRequest:", error);
         throw error;
     }
 };
@@ -171,7 +173,7 @@ export const adminGetTodayAppointmentsCount = async (token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar contagem de consultas de hoje.');
     return data; 
-  } catch (error) { console.error("Erro em adminGetTodayAppointmentsCount:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminGetTodayAppointmentsCount:", error); throw error; }
 };
 
 export const getAvailableSlotsForProfessional = async (params, token) => {
@@ -195,7 +197,7 @@ export const getAvailableSlotsForProfessional = async (params, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em getAvailableSlotsForProfessional:", error);
+    logger.error("Erro em getAvailableSlotsForProfessional:", error);
     throw error;
   }
 };

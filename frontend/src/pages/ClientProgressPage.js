@@ -17,6 +17,7 @@ import {
     FaWeightHanging, FaStopwatch, FaCalendarCheck, FaChartBar
 } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
@@ -644,7 +645,11 @@ const ClientProgressPage = () => {
     const [statsEndDate, setStatsEndDate] = useState('');
 
     const [chartMetric, setChartMetric] = useState('performedWeight');
-    const [loadingStatistics, setLoadingStatistics] = useState(false); 
+    const [loadingStatistics, setLoadingStatistics] = useState(false);
+    const [isSubmittingPerformance, setIsSubmittingPerformance] = useState(false);
+    const [isDeletingLog, setIsDeletingLog] = useState(false);
+    const [showDeleteLogModal, setShowDeleteLogModal] = useState(false);
+    const [deleteLogData, setDeleteLogData] = useState(null); 
 
     const fetchBookedTrainings = useCallback(async () => {
         if (authState.token && !globalPlanId) {
@@ -770,11 +775,13 @@ const ClientProgressPage = () => {
     };
 
     const handleLogPerformance = async (planExerciseId, workoutPlanId) => {
+      if (isSubmittingPerformance) return;
       const inputs = currentPerformanceInputs[planExerciseId];
       if (!inputs || ((!inputs.performedReps) && (!inputs.performedWeight) && (!inputs.performedDurationSeconds) && (!inputs.notes || !inputs.notes.trim())) ) {
         setError("Preencha pelo menos um campo de desempenho ou adicione notas.");
         return;
       }
+      setIsSubmittingPerformance(true);
       setError(''); setSuccessMessage('');
       try {
         const performanceData = {
@@ -798,11 +805,21 @@ const ClientProgressPage = () => {
         setCurrentPerformanceInputs(prev => ({ ...prev, [planExerciseId]: {} }));
       } catch (err) {
         setError("Falha ao registar desempenho: " + err.message);
+      } finally {
+        setIsSubmittingPerformance(false);
       }
     };
     
-    const handleDeletePerformanceLog = async (logId, planExerciseId) => {
-        if (!window.confirm("Tem a certeza que quer eliminar este registo?")) return;
+    const handleDeletePerformanceLog = (logId, planExerciseId) => {
+        setDeleteLogData({ logId, planExerciseId });
+        setShowDeleteLogModal(true);
+    };
+
+    const handleDeleteLogConfirm = async () => {
+        if (!deleteLogData || isDeletingLog) return;
+        const { logId, planExerciseId } = deleteLogData;
+        setIsDeletingLog(true);
+        setShowDeleteLogModal(false);
         try {
             await deleteExercisePerformanceLogService(logId, authState.token);
             setSuccessMessage("Registo eliminado.");
@@ -816,8 +833,11 @@ const ClientProgressPage = () => {
             if(showFullHistoryModal) {
               setFullHistoryLogs(prev => prev.filter(log => log.id !== logId));
             }
+            setDeleteLogData(null);
         } catch(err) {
             setError("Falha ao eliminar registo: " + err.message);
+        } finally {
+            setIsDeletingLog(false);
         }
     };
 
@@ -975,8 +995,8 @@ const ClientProgressPage = () => {
                                               value={currentPerformanceInputs[planEx.id]?.notes || ''}
                                               onChange={e => handlePerformanceInputChange(planEx.id, 'notes', e.target.value)} />
                                           </div>
-                                          <LogButton onClick={() => handleLogPerformance(planEx.id, plan.id)}>
-                                            <FaSave /> Registar Desempenho
+                                          <LogButton onClick={() => handleLogPerformance(planEx.id, plan.id)} disabled={isSubmittingPerformance}>
+                                            <FaSave /> {isSubmittingPerformance ? 'A registar...' : 'Registar Desempenho'}
                                           </LogButton>
                                           {performanceLogs[planEx.id] && performanceLogs[planEx.id].length > 0 && (
                                             <div style={{marginTop: '15px'}}>
@@ -1084,6 +1104,21 @@ const ClientProgressPage = () => {
                     </ModalContentStyled>
                 </ModalOverlayStyled>
             )}
+
+            <ConfirmationModal
+                isOpen={showDeleteLogModal}
+                onClose={() => {
+                    setShowDeleteLogModal(false);
+                    setDeleteLogData(null);
+                }}
+                onConfirm={handleDeleteLogConfirm}
+                title="Eliminar Registo"
+                message="Tem a certeza que quer eliminar este registo?"
+                confirmText="Eliminar"
+                cancelText="Cancelar"
+                danger={true}
+                loading={isDeletingLog}
+            />
         </PageContainer>
     );
 };

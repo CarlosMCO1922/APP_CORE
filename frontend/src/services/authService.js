@@ -1,4 +1,6 @@
 // src/services/authService.js
+import { logger } from '../utils/logger';
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 // --- FUNÇÕES DE RESET DE PASSWORD (CORRIGIDAS) ---
@@ -15,7 +17,7 @@ export const requestPasswordReset = async (data) => {
     }
     return responseData;
   } catch (error) {
-    console.error("Erro no serviço requestPasswordReset:", error);
+    logger.error("Erro no serviço requestPasswordReset:", error);
     throw error;
   }
 };
@@ -33,7 +35,7 @@ export const verifyResetCode = async (data) => {
     }
     return responseData;
   } catch (error) {
-    console.error("Erro no serviço verifyResetCode:", error);
+    logger.error("Erro no serviço verifyResetCode:", error);
     throw error;
   }
 };
@@ -51,7 +53,7 @@ export const resetPassword = async (data) => {
     }
     return responseData;
   } catch (error) {
-    console.error("Erro no serviço resetPassword:", error);
+    logger.error("Erro no serviço resetPassword:", error);
     throw error;
   }
 };
@@ -74,7 +76,7 @@ export const loginAPI = async (email, password, isStaffLogin = false) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro no serviço de loginAPI:", error);
+    logger.error("Erro no serviço de loginAPI:", error);
     throw error;
   }
 };
@@ -96,7 +98,7 @@ export const registerUserAPI = async (userData) => {
     }
     return data; 
   } catch (error) {
-    console.error("Erro no serviço registerUserAPI:", error);
+    logger.error("Erro no serviço registerUserAPI:", error);
     throw error;
   }
 };

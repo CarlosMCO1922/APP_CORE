@@ -13,6 +13,7 @@ import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
 import { FaCalendarCheck, FaPlus, FaEdit, FaTrashAlt, FaTimes } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -291,6 +292,9 @@ const AdminManageAppointmentsPage = () => {
   const [currentAppointmentId, setCurrentAppointmentId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchPageData = useCallback(async () => {
     if (authState.token) {
@@ -389,15 +393,27 @@ const AdminManageAppointmentsPage = () => {
     }
   };
 
-  const handleDeleteAppointment = async (appointmentId) => {
-    if (!window.confirm(`Tens a certeza que queres eliminar a consulta ID ${appointmentId}?`)) return;
-    setError(''); setSuccessMessage('');
+  const handleDeleteAppointment = (appointmentId) => {
+    setAppointmentToDelete(appointmentId);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeleteAppointmentConfirm = async () => {
+    if (!appointmentToDelete) return;
+    setDeleteLoading(true);
+    setError(''); 
+    setSuccessMessage('');
+    setShowDeleteConfirmModal(false);
     try {
-      await adminDeleteAppointment(appointmentId, authState.token);
+      await adminDeleteAppointment(appointmentToDelete, authState.token);
       setSuccessMessage('Consulta eliminada com sucesso.');
+      setAppointmentToDelete(null);
       fetchPageData();
     } catch (err) {
       setError(err.message || 'Falha ao eliminar consulta.');
+      setAppointmentToDelete(null);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -527,6 +543,23 @@ const AdminManageAppointmentsPage = () => {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => {
+          if (!deleteLoading) {
+            setShowDeleteConfirmModal(false);
+            setAppointmentToDelete(null);
+          }
+        }}
+        onConfirm={handleDeleteAppointmentConfirm}
+        title="Eliminar Consulta"
+        message={appointmentToDelete ? `Tens a certeza que queres eliminar a consulta ID ${appointmentToDelete}?` : ''}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={deleteLoading}
+      />
     </PageContainer>
   );
 };

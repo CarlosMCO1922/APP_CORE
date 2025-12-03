@@ -1,4 +1,6 @@
 // src/services/workoutPlanService.js
+import { logger } from '../utils/logger';
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 // --- Funções para WorkoutPlan ---
@@ -20,7 +22,7 @@ export const createWorkoutPlanForTraining = async (trainingId, planData, token) 
     }
     return data;
   } catch (error) {
-    console.error("Erro em createWorkoutPlanForTraining:", error);
+    logger.error("Erro em createWorkoutPlanForTraining:", error);
     throw error;
   }
 };
@@ -43,7 +45,7 @@ export const updateWorkoutPlan = async (planId, planData, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em updateWorkoutPlan:", error);
+    logger.error("Erro em updateWorkoutPlan:", error);
     throw error;
   }
 };
@@ -63,7 +65,7 @@ export const deleteWorkoutPlan = async (planId, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em deleteWorkoutPlan:", error);
+    logger.error("Erro em deleteWorkoutPlan:", error);
     throw error;
   }
 };
@@ -88,7 +90,7 @@ export const addExerciseToPlan = async (planId, exercisePlanData, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em addExerciseToPlan:", error);
+    logger.error("Erro em addExerciseToPlan:", error);
     throw error;
   }
 };
@@ -104,7 +106,7 @@ export const adminCreateGlobalWorkoutPlan = async (planData, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao criar plano de treino global.');
     return data;
-  } catch (error) { console.error("Erro em adminCreateGlobalWorkoutPlan:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminCreateGlobalWorkoutPlan:", error); throw error; }
 };
 
 export const adminGetAllGlobalWorkoutPlans = async (token) => {
@@ -116,7 +118,7 @@ export const adminGetAllGlobalWorkoutPlans = async (token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar planos de treino globais.');
     return data;
-  } catch (error) { console.error("Erro em adminGetAllGlobalWorkoutPlans:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminGetAllGlobalWorkoutPlans:", error); throw error; }
 };
 
 export const adminGetGlobalWorkoutPlanById = async (planId, token) => {
@@ -128,7 +130,7 @@ export const adminGetGlobalWorkoutPlanById = async (planId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar detalhes do plano de treino global.');
     return data;
-  } catch (error) { console.error("Erro em adminGetGlobalWorkoutPlanById:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminGetGlobalWorkoutPlanById:", error); throw error; }
 };
 
 export const getGlobalWorkoutPlanByIdClient = async (planId, token) => {
@@ -146,7 +148,7 @@ export const getGlobalWorkoutPlanByIdClient = async (planId, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em getGlobalWorkoutPlanByIdClient:", error);
+    logger.error("Erro em getGlobalWorkoutPlanByIdClient:", error);
     throw error;
   }
 };
@@ -172,7 +174,7 @@ export const getVisibleWorkoutPlansService = async (token, searchTerm = '') => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em getVisibleWorkoutPlansService:", error);
+    logger.error("Erro em getVisibleWorkoutPlansService:", error);
     throw error;
   }
 };
@@ -188,7 +190,7 @@ export const adminUpdateGlobalWorkoutPlan = async (planId, planData, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao atualizar plano de treino global.');
     return data;
-  } catch (error) { console.error("Erro em adminUpdateGlobalWorkoutPlan:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminUpdateGlobalWorkoutPlan:", error); throw error; }
 };
 
 export const adminDeleteGlobalWorkoutPlan = async (planId, token) => {
@@ -201,7 +203,7 @@ export const adminDeleteGlobalWorkoutPlan = async (planId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao eliminar plano de treino global.');
     return data;
-  } catch (error) { console.error("Erro em adminDeleteGlobalWorkoutPlan:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminDeleteGlobalWorkoutPlan:", error); throw error; }
 };
 
 // --- Funções para ASSOCIAR/DESASSOCIAR Planos a Treinos Específicos ---
@@ -217,7 +219,7 @@ export const adminAssignPlanToTraining = async (planId, trainingId, orderInTrain
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao associar plano a treino.');
     return data;
-  } catch (error) { console.error("Erro em adminAssignPlanToTraining:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminAssignPlanToTraining:", error); throw error; }
 };
 
 export const adminRemovePlanFromTraining = async (planId, trainingId, token) => {
@@ -230,7 +232,7 @@ export const adminRemovePlanFromTraining = async (planId, trainingId, token) => 
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao remover associação do plano ao treino.');
     return data;
-  } catch (error) { console.error("Erro em adminRemovePlanFromTraining:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminRemovePlanFromTraining:", error); throw error; }
 };
 
 export const addExerciseToGlobalPlan = async (planId, exerciseData, token) => {
@@ -244,7 +246,7 @@ export const addExerciseToGlobalPlan = async (planId, exerciseData, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao adicionar exercício ao plano global.');
     return data;
-  } catch (error) { console.error("Erro em addExerciseToGlobalPlan:", error); throw error; }
+  } catch (error) { logger.error("Erro em addExerciseToGlobalPlan:", error); throw error; }
 };
 
 export const updateExerciseInGlobalPlan = async (planExerciseId, exerciseData, token) => {
@@ -258,7 +260,7 @@ export const updateExerciseInGlobalPlan = async (planExerciseId, exerciseData, t
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao atualizar exercício no plano global.');
     return data;
-  } catch (error) { console.error("Erro em updateExerciseInGlobalPlan:", error); throw error; }
+  } catch (error) { logger.error("Erro em updateExerciseInGlobalPlan:", error); throw error; }
 };
 
 export const removeExerciseFromGlobalPlan = async (planExerciseId, token) => {
@@ -271,7 +273,7 @@ export const removeExerciseFromGlobalPlan = async (planExerciseId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao remover exercício do plano global.');
     return data;
-  } catch (error) { console.error("Erro em removeExerciseFromGlobalPlan:", error); throw error; }
+  } catch (error) { logger.error("Erro em removeExerciseFromGlobalPlan:", error); throw error; }
 };
 
 
@@ -289,7 +291,7 @@ export const getWorkoutPlansByTrainingId = async (trainingId, token) => {
       }
       return data;
     } catch (error) {
-      console.error("Erro em getWorkoutPlansByTrainingId:", error);
+      logger.error("Erro em getWorkoutPlansByTrainingId:", error);
       throw error;
     }
 };
@@ -312,7 +314,7 @@ export const updateExerciseInPlan = async (planExerciseId, exercisePlanData, tok
     }
     return data;
   } catch (error) {
-    console.error("Erro em updateExerciseInPlan:", error);
+    logger.error("Erro em updateExerciseInPlan:", error);
     throw error;
   }
 };
@@ -332,7 +334,7 @@ export const removeExerciseFromPlan = async (planExerciseId, token) => {
     }
     return data;
   } catch (error) {
-    console.error("Erro em removeExerciseFromPlan:", error);
+    logger.error("Erro em removeExerciseFromPlan:", error);
     throw error;
   }
 };

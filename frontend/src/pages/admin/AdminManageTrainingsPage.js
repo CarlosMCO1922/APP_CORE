@@ -24,6 +24,7 @@ import {
 } from 'react-icons/fa';
 import moment from 'moment';
 import BackArrow from '../../components/BackArrow';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -511,6 +512,11 @@ const AdminManageTrainingsPage = () => {
   const [userToBook, setUserToBook] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showCancelBookingConfirmModal, setShowCancelBookingConfirmModal] = useState(false);
+  const [showPromoteConfirmModal, setShowPromoteConfirmModal] = useState(false);
+  const [actionData, setActionData] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const [selectedTrainingWaitlist, setSelectedTrainingWaitlist] = useState([]);
   const [waitlistLoading, setWaitlistLoading] = useState(false);
@@ -708,10 +714,8 @@ const AdminManageTrainingsPage = () => {
         setShowDeleteRecurringModal(true);
       } else {
         // Não há treinos recorrentes, eliminação normal
-        if (!window.confirm(`Tens a certeza que queres eliminar o treino ID ${trainingId}?`)) return;
-        await adminDeleteTraining(trainingId, authState.token, false);
-        setSuccessMessage('Treino eliminado com sucesso.');
-        fetchPageData(activeFilters);
+        setActionData({ type: 'delete', trainingId });
+        setShowDeleteConfirmModal(true);
       }
     } catch (err) {
       setPageError(err.message || 'Falha ao eliminar treino.');
@@ -811,9 +815,14 @@ const AdminManageTrainingsPage = () => {
     }
   };
 
-  const handleAdminCancelClientBooking = async (trainingId, userIdToCancel, clientName) => {
-    if (!window.confirm(`Tem a certeza que quer cancelar a inscrição de ${clientName} neste treino?`)) return;
+  const handleAdminCancelClientBooking = (trainingId, userIdToCancel, clientName) => {
+    setActionData({ type: 'cancelBooking', trainingId, userIdToCancel, clientName });
+    setShowCancelBookingConfirmModal(true);
+  };
 
+  const handleCancelBookingConfirm = async () => {
+    if (!actionData || actionData.type !== 'cancelBooking') return;
+    const { trainingId, userIdToCancel } = actionData;
     setBookingLoading(true);
     setBookingError('');
     setSuccessMessage('');
@@ -835,6 +844,8 @@ const AdminManageTrainingsPage = () => {
       setBookingError(err.message || "Falha ao cancelar inscrição.");
     } finally {
       setBookingLoading(false);
+      setActionData(null);
+      setShowCancelBookingConfirmModal(false);
     }
   };
 
@@ -847,7 +858,21 @@ const AdminManageTrainingsPage = () => {
       return;
     }
 
-    if (!window.confirm(`Tem a certeza que quer promover ${clientName} da lista de espera para este treino?`)) return;
+    setActionData({ type: 'promote', trainingId, userIdToPromote, waitlistEntryId, clientName });
+    setShowPromoteConfirmModal(true);
+  };
+
+  const handlePromoteConfirm = async () => {
+    if (!actionData || actionData.type !== 'promote' || !selectedTrainingForSignups) return;
+    const { trainingId, userIdToPromote, waitlistEntryId, clientName } = actionData;
+
+    const currentParticipantsCount = selectedTrainingForSignups.participants?.length || 0;
+    if (currentParticipantsCount >= selectedTrainingForSignups.capacity) {
+      setBookingError("O treino já atingiu a capacidade máxima. Cancele uma inscrição primeiro.");
+      setActionData(null);
+      setShowPromoteConfirmModal(false);
+      return;
+    }
 
     setPromoteLoading(userIdToPromote);
     setBookingError(''); setSuccessMessage('');
@@ -869,9 +894,29 @@ const AdminManageTrainingsPage = () => {
       setBookingError(err.message || "Falha ao promover cliente da lista de espera.");
     } finally {
       setPromoteLoading(null);
+      setActionData(null);
+      setShowPromoteConfirmModal(false);
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!actionData || actionData.type !== 'delete') return;
+    setActionLoading(true);
+    setPageError('');
+    setSuccessMessage('');
+    setShowDeleteConfirmModal(false);
+    try {
+      await adminDeleteTraining(actionData.trainingId, authState.token, false);
+      setSuccessMessage('Treino eliminado com sucesso.');
+      setActionData(null);
+      fetchPageData(activeFilters);
+    } catch (err) {
+      setPageError(err.message || 'Falha ao eliminar treino.');
+      setActionData(null);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (loading && trainings.length === 0 && Object.keys(activeFilters).length === 0) {
     return <PageContainer><LoadingText>A carregar treinos...</LoadingText></PageContainer>;
@@ -1195,6 +1240,57 @@ const AdminManageTrainingsPage = () => {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => {
+          if (!actionLoading) {
+            setShowDeleteConfirmModal(false);
+            setActionData(null);
+          }
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Treino"
+        message={actionData && actionData.type === 'delete' ? `Tens a certeza que queres eliminar o treino ID ${actionData.trainingId}?` : ''}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={actionLoading}
+      />
+
+      <ConfirmationModal
+        isOpen={showCancelBookingConfirmModal}
+        onClose={() => {
+          if (!bookingLoading) {
+            setShowCancelBookingConfirmModal(false);
+            setActionData(null);
+          }
+        }}
+        onConfirm={handleCancelBookingConfirm}
+        title="Cancelar Inscrição"
+        message={actionData && actionData.type === 'cancelBooking' ? `Tem a certeza que quer cancelar a inscrição de ${actionData.clientName} neste treino?` : ''}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={bookingLoading}
+      />
+
+      <ConfirmationModal
+        isOpen={showPromoteConfirmModal}
+        onClose={() => {
+          if (promoteLoading === null) {
+            setShowPromoteConfirmModal(false);
+            setActionData(null);
+          }
+        }}
+        onConfirm={handlePromoteConfirm}
+        title="Promover da Lista de Espera"
+        message={actionData && actionData.type === 'promote' ? `Tem a certeza que quer promover ${actionData.clientName} da lista de espera para este treino?` : ''}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        danger={false}
+        loading={promoteLoading !== null}
+      />
     </PageContainer>
   );
 };

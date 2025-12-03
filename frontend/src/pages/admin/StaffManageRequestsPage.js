@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { getAllAppointments, staffRespondToRequest } from '../../services/appointmentService';
 import { FaUserCircle, FaClock, FaCalendarDay, FaStickyNote, FaCheckCircle, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -254,6 +255,8 @@ const StaffManageRequestsPage = () => {
   const [costModalData, setCostModalData] = useState({ appointmentId: null, totalCost: '' });
   const [costModalError, setCostModalError] = useState('');
   const [costFormLoading, setCostFormLoading] = useState(false);
+  const [showRejectConfirmModal, setShowRejectConfirmModal] = useState(false);
+  const [appointmentToReject, setAppointmentToReject] = useState(null);
 
   const fetchPendingRequests = useCallback(async () => {
     if (authState.token && authState.user) {
@@ -317,25 +320,31 @@ const StaffManageRequestsPage = () => {
     }
   };
 
-  const handleRespondToRequest = async (appointmentId, decision) => {
-    setActionLoading(appointmentId);
+  const handleRespondToRequest = (appointmentId, decision) => {
     if (decision === 'accept') {
       handleOpenCostModal(appointmentId);
     } else {
-      if (!window.confirm('Tens a certeza que queres REJEITAR este pedido de consulta?')) {
-        setActionLoading(null);
-        return;
-      }
-      setPageError(''); setPageSuccessMessage('');
-      try {
-        await staffRespondToRequest(appointmentId, 'reject', authState.token);
-        setPageSuccessMessage('Pedido rejeitado com sucesso.');
-        fetchPendingRequests();
-      } catch (err) {
-        setPageError(err.message || 'Falha ao rejeitar o pedido.');
-      } finally {
-        setActionLoading(null);
-      }
+      setAppointmentToReject(appointmentId);
+      setShowRejectConfirmModal(true);
+    }
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!appointmentToReject) return;
+    setActionLoading(appointmentToReject);
+    setPageError(''); 
+    setPageSuccessMessage('');
+    setShowRejectConfirmModal(false);
+    try {
+      await staffRespondToRequest(appointmentToReject, 'reject', authState.token);
+      setPageSuccessMessage('Pedido rejeitado com sucesso.');
+      setAppointmentToReject(null);
+      fetchPendingRequests();
+    } catch (err) {
+      setPageError(err.message || 'Falha ao rejeitar o pedido.');
+      setAppointmentToReject(null);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -431,6 +440,23 @@ const StaffManageRequestsPage = () => {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showRejectConfirmModal}
+        onClose={() => {
+          if (actionLoading === null) {
+            setShowRejectConfirmModal(false);
+            setAppointmentToReject(null);
+          }
+        }}
+        onConfirm={handleRejectConfirm}
+        title="Rejeitar Pedido de Consulta"
+        message="Tens a certeza que queres REJEITAR este pedido de consulta?"
+        confirmText="Rejeitar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={actionLoading !== null}
+      />
     </PageContainer>
   );
 };

@@ -8,6 +8,7 @@ import { getMyProfile, updateMyProfile } from '../services/userService';
 import { FaSearch, FaClipboardList, FaInfoCircle, FaChevronDown, FaSignOutAlt } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
 import ThemeToggler from '../components/Theme/ThemeToggler';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -250,11 +251,16 @@ const SettingsPage = () => {
   };
 
 
+  const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
+
   const handleLogout = () => {
-    if (window.confirm('Tens a certeza que queres sair?')) {
-      logout();
-      navigate('/login');
-    }
+    setShowLogoutConfirmModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutConfirmModal(false);
+    logout();
+    navigate('/login');
   };
 
   const handleProfileUpdate = async (e) => {
@@ -400,6 +406,18 @@ const SettingsPage = () => {
           Sair da Conta
         </LogoutButton>
       </SettingsForm>
+
+      <ConfirmationModal
+        isOpen={showLogoutConfirmModal}
+        onClose={() => setShowLogoutConfirmModal(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Sair da Conta"
+        message="Tens a certeza que queres sair?"
+        confirmText="Sair"
+        cancelText="Cancelar"
+        danger={false}
+        loading={false}
+      />
     </PageContainer>
   );
 };

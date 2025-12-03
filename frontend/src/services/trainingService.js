@@ -1,4 +1,6 @@
 // src/services/trainingService.js
+import { logger } from '../utils/logger';
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 // --- Funções Existentes (Preservadas) ---
@@ -23,7 +25,7 @@ export const getAllTrainings = async (token, filters = {}) => {
     const queryString = queryParams.toString();
     const fetchURL = queryString ? `${API_URL}/trainings?${queryString}` : `${API_URL}/trainings`;
 
-    console.log("[trainingService] Fetching trainings from URL:", fetchURL);
+    logger.log("[trainingService] Fetching trainings from URL:", fetchURL);
 
     const response = await fetch(fetchURL, {
       headers: { 'Authorization': `Bearer ${token}` },
@@ -43,7 +45,7 @@ export const getAllTrainings = async (token, filters = {}) => {
     const data = JSON.parse(responseText);
     return data;
   } catch (error) {
-    console.error("Erro em getAllTrainings service:", error);
+    logger.error("Erro em getAllTrainings service:", error);
     throw error;
   }
 };
@@ -59,7 +61,7 @@ export const adminCreateTraining = async (trainingData, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao criar treino.');
     return data;
-  } catch (error) { console.error("Erro em adminCreateTraining:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminCreateTraining:", error); throw error; }
 };
 
 export const getTrainingById = async (trainingId, token) => {
@@ -72,7 +74,7 @@ export const getTrainingById = async (trainingId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar detalhes do treino.');
     return data;
-  } catch (error) { console.error("Erro em getTrainingById:", error); throw error; }
+  } catch (error) { logger.error("Erro em getTrainingById:", error); throw error; }
 };
 
 export const adminUpdateTraining = async (trainingId, trainingData, token) => {
@@ -87,7 +89,7 @@ export const adminUpdateTraining = async (trainingId, trainingData, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao atualizar treino.');
     return data;
-  } catch (error) { console.error("Erro em adminUpdateTraining:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminUpdateTraining:", error); throw error; }
 };
 
 export const adminDeleteTraining = async (trainingId, token, cancelRecurring = false) => {
@@ -104,7 +106,7 @@ export const adminDeleteTraining = async (trainingId, token, cancelRecurring = f
     const data = await response.json(); 
     if (!response.ok) throw new Error(data.message || 'Erro ao eliminar treino.');
     return data;
-  } catch (error) { console.error("Erro em adminDeleteTraining:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminDeleteTraining:", error); throw error; }
 };
 
 export const checkRecurringTrainings = async (trainingId, token) => {
@@ -118,7 +120,7 @@ export const checkRecurringTrainings = async (trainingId, token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao verificar treinos recorrentes.');
     return data;
   } catch (error) {
-    console.error("Erro em checkRecurringTrainings:", error);
+    logger.error("Erro em checkRecurringTrainings:", error);
     throw error;
   }
 };
@@ -134,7 +136,7 @@ export const bookTraining = async (trainingId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao inscrever no treino.');
     return data;
-  } catch (error) { console.error("Erro em bookTraining:", error); throw error; }
+  } catch (error) { logger.error("Erro em bookTraining:", error); throw error; }
 };
 
 export const cancelTrainingBooking = async (trainingId, token, cancelRecurring = false) => {
@@ -151,7 +153,7 @@ export const cancelTrainingBooking = async (trainingId, token, cancelRecurring =
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao cancelar inscrição no treino.');
     return data;
-  } catch (error) { console.error("Erro em cancelTrainingBooking:", error); throw error; }
+  } catch (error) { logger.error("Erro em cancelTrainingBooking:", error); throw error; }
 };
 
 export const adminGetCurrentWeekSignups = async (token) => {
@@ -163,7 +165,7 @@ export const adminGetCurrentWeekSignups = async (token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar inscrições da semana.');
     return data;
-  } catch (error) { console.error("Erro em adminGetCurrentWeekSignups:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminGetCurrentWeekSignups:", error); throw error; }
 };
 
 export const adminGetTodayTrainingsCount = async (token) => {
@@ -175,7 +177,7 @@ export const adminGetTodayTrainingsCount = async (token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar contagem de treinos de hoje.');
     return data;
-  } catch (error) { console.error("Erro em adminGetTodayTrainingsCount:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminGetTodayTrainingsCount:", error); throw error; }
 };
 
 export const adminBookClientForTrainingService = async (trainingId, userId, token) => {
@@ -194,7 +196,7 @@ export const adminBookClientForTrainingService = async (trainingId, userId, toke
     if (!response.ok) throw new Error(data.message || 'Erro ao inscrever cliente no treino.');
     return data;
   } catch (error) {
-    console.error("Erro em adminBookClientForTrainingService:", error);
+    logger.error("Erro em adminBookClientForTrainingService:", error);
     throw error;
   }
 };
@@ -214,7 +216,7 @@ export const adminCancelClientBookingService = async (trainingId, userId, token)
     if (!response.ok) throw new Error(data.message || 'Erro ao cancelar inscrição do cliente no treino.');
     return data; 
   } catch (error) {
-    console.error("Erro em adminCancelClientBookingService:", error);
+    logger.error("Erro em adminCancelClientBookingService:", error);
     throw error;
   }
 };
@@ -230,7 +232,7 @@ export const adminGetTrainingWaitlistService = async (trainingId, token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar lista de espera do treino.');
     return data; 
   } catch (error) {
-    console.error(`Erro em adminGetTrainingWaitlistService para trainingId ${trainingId}:`, error);
+    logger.error(`Erro em adminGetTrainingWaitlistService para trainingId ${trainingId}:`, error);
     throw error;
   }
 };
@@ -257,7 +259,7 @@ export const adminPromoteClientFromWaitlistService = async (trainingId, userIdTo
     if (!response.ok) throw new Error(data.message || 'Erro ao promover cliente da lista de espera.');
     return data;
   } catch (error) {
-    console.error(`Erro em adminPromoteClientFromWaitlistService para trainingId ${trainingId}:`, error);
+    logger.error(`Erro em adminPromoteClientFromWaitlistService para trainingId ${trainingId}:`, error);
     throw error;
   }
 };
@@ -272,7 +274,7 @@ export const createTrainingSeriesService = async (seriesData, token) => {
   // O backend montou trainingSeriesRoutes em '/training-series'
   const url = `${API_URL}/training-series`; // Ajusta se o teu prefixo global de API for diferente (ex: /api/training-series)
 
-  console.log('Frontend Service: Criando série de treinos. URL:', url, 'Payload:', seriesData);
+  logger.log('Frontend Service: Criando série de treinos. URL:', url, 'Payload:', seriesData);
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -299,7 +301,7 @@ export const createTrainingSeriesService = async (seriesData, token) => {
 export const getActiveTrainingSeriesForClientService = async (token) => {
   if (!token) throw new Error('Token não fornecido para buscar séries ativas.');
   const url = `${API_URL}/training-series`; 
-  console.log('Frontend Service: Buscando séries ativas para cliente. URL:', url);
+  logger.log('Frontend Service: Buscando séries ativas para cliente. URL:', url);
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
@@ -308,8 +310,8 @@ export const getActiveTrainingSeriesForClientService = async (token) => {
   try {
     data = JSON.parse(responseText);
   } catch (e) {
-     console.error("Falha ao parsear JSON de getActiveTrainingSeriesForClientService", e);
-     console.error("Resposta (texto):", responseText);
+     logger.error("Falha ao parsear JSON de getActiveTrainingSeriesForClientService", e);
+     logger.error("Resposta (texto):", responseText);
      throw new Error(`Resposta do servidor para buscar séries (cliente) não é JSON. Status: ${response.status}`);
   }
   if (!response.ok) {
@@ -325,7 +327,7 @@ export const createSeriesSubscriptionService = async (subscriptionData, token) =
   }
   const url = `${API_URL}/training-series/subscriptions`;
 
-  console.log('Frontend Service: Criando subscrição em série. URL:', url, 'Payload:', subscriptionData);
+  logger.log('Frontend Service: Criando subscrição em série. URL:', url, 'Payload:', subscriptionData);
   const response = await fetch(url, {
      method: 'POST',
      headers: {
@@ -342,7 +344,7 @@ export const createSeriesSubscriptionService = async (subscriptionData, token) =
     try {
       errorData = JSON.parse(responseText);
     } catch(e) {
-      console.error("Resposta do servidor não é JSON:", responseText);
+      logger.error("Resposta do servidor não é JSON:", responseText);
       throw new Error(`Erro HTTP ${response.status} ao subscrever série. Resposta: ${responseText.substring(0, 200)}...`);
     }
     throw new Error(errorData.message || `Erro ${response.status} ao inscrever-se na série de treinos.`);

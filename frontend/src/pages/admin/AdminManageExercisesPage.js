@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import BackArrow from '../../components/BackArrow';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
+import ConfirmationModal from '../../components/Common/ConfirmationModal';
 import {
     getAllExercises,
     createExercise,
@@ -66,6 +67,9 @@ function AdminManageExercisesPage() {
   const [currentExerciseId, setCurrentExerciseId] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchExercisesList = useCallback(async () => {
     if (authState.token) {
@@ -159,17 +163,28 @@ function AdminManageExercisesPage() {
     }
   };
 
-  const handleDelete = async (exerciseId, exerciseName) => {
-    if (!window.confirm(`Tem a certeza que deseja eliminar o exercício "${exerciseName}" (ID: ${exerciseId})?`)) {
-      return;
-    }
-    setError(''); setSuccessMessage('');
+  const handleDeleteClick = (exerciseId, exerciseName) => {
+    setExerciseToDelete({ id: exerciseId, name: exerciseName });
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!exerciseToDelete) return;
+    setDeleteLoading(true);
+    setError(''); 
+    setSuccessMessage('');
     try {
-      await deleteExercise(exerciseId, authState.token);
-      setSuccessMessage(`Exercício "${exerciseName}" eliminado com sucesso.`);
+      await deleteExercise(exerciseToDelete.id, authState.token);
+      setSuccessMessage(`Exercício "${exerciseToDelete.name}" eliminado com sucesso.`);
+      setShowDeleteModal(false);
+      setExerciseToDelete(null);
       fetchExercisesList();
     } catch (err) {
       setError(err.message || 'Erro ao eliminar exercício.');
+      setShowDeleteModal(false);
+      setExerciseToDelete(null);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -211,7 +226,7 @@ function AdminManageExercisesPage() {
                 <ActionButton secondary onClick={() => handleOpenEditModal(ex)}>
                   Editar
                 </ActionButton>
-                <ActionButton danger onClick={() => handleDelete(ex.id, ex.name)}>
+                <ActionButton danger onClick={() => handleDeleteClick(ex.id, ex.name)}>
                   Eliminar
                 </ActionButton>
               </td>
@@ -256,6 +271,23 @@ function AdminManageExercisesPage() {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          if (!deleteLoading) {
+            setShowDeleteModal(false);
+            setExerciseToDelete(null);
+          }
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Exercício"
+        message={exerciseToDelete ? `Tem a certeza que deseja eliminar o exercício "${exerciseToDelete.name}" (ID: ${exerciseToDelete.id})? Esta ação não pode ser desfeita.` : ''}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={deleteLoading}
+      />
     </PageContainer>
   );
 }

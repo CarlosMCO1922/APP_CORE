@@ -11,6 +11,7 @@ import BackArrow from '../components/BackArrow';
 import moment from 'moment';
 import 'moment/locale/pt';
 import { useToast } from '../components/Toast/ToastProvider';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -81,6 +82,7 @@ const BookingCalendarPage = () => {
   const [loading, setLoading] = useState(true);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isRequesting, setIsRequesting] = useState(false);
   const { addToast } = useToast();
 
   useEffect(() => {
@@ -125,22 +127,32 @@ addToast('Falha ao carregar horários.', { type: 'error', category: 'calendar' }
     }
   }, [serviceType, selectedProfessional, selectedDate, authState.token]);
 
-  const handleRequestAppointment = async (time) => {
-    if (!window.confirm(`Confirmas o pedido de consulta para ${moment(selectedDate).format('DD/MM/YYYY')} às ${time}?`)) return;
+  const handleRequestAppointment = (time) => {
+    setAppointmentToRequest({ time, date: moment(selectedDate).format('DD/MM/YYYY') });
+    setShowRequestConfirmModal(true);
+  };
 
+  const handleRequestAppointmentConfirm = async () => {
+    if (!appointmentToRequest || !selectedProfessional || isRequesting) return;
+    setIsRequesting(true);
+    setShowRequestConfirmModal(false);
     const requestData = {
       staffId: selectedProfessional,
       date: moment(selectedDate).format('YYYY-MM-DD'),
-      time: time,
+      time: appointmentToRequest.time,
       durationMinutes: 60
     };
 
     try {
       await clientRequestNewAppointment(requestData, authState.token);
-addToast('Pedido de consulta enviado com sucesso!', { type: 'success', category: 'calendar' });
+      addToast('Pedido de consulta enviado com sucesso!', { type: 'success', category: 'calendar' });
+      setAppointmentToRequest(null);
       navigate('/dashboard');
     } catch (err) {
-addToast('Erro ao enviar pedido de consulta.', { type: 'error', category: 'calendar' });
+      addToast('Erro ao enviar pedido de consulta.', { type: 'error', category: 'calendar' });
+      setAppointmentToRequest(null);
+    } finally {
+      setIsRequesting(false);
     }
   };
 
@@ -203,6 +215,22 @@ addToast('Erro ao enviar pedido de consulta.', { type: 'error', category: 'calen
       ) : (
         <p>Funcionalidade para agendar treinos em desenvolvimento.</p>
       )}
+
+      <ConfirmationModal
+        isOpen={showRequestConfirmModal}
+        onClose={() => {
+          setShowRequestConfirmModal(false);
+          setAppointmentToRequest(null);
+        }}
+        onConfirm={handleRequestAppointmentConfirm}
+        title="Pedir Consulta"
+        message={appointmentToRequest ? `Confirmas o pedido de consulta para ${appointmentToRequest.date} às ${appointmentToRequest.time}?` : ''}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        loading={isRequesting}
+        danger={false}
+        loading={false}
+      />
     </PageContainer>
   );
 };

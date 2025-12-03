@@ -161,7 +161,7 @@ export const WorkoutProvider = ({ children }) => {
         setActiveWorkout(null);
     };
 
-    const cancelWorkout = () => { if (window.confirm("Tem a certeza? Todos os dados registados serão perdidos.")) setActiveWorkout(null); };
+    const cancelWorkout = () => { setActiveWorkout(null); };
 
     const value = { activeWorkout, isMinimized, lastPerformances, startWorkout, finishWorkout, cancelWorkout, updateSetData, setIsMinimized, logSet };
 

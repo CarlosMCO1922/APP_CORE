@@ -8,7 +8,8 @@ import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard';
 import SupersetCard from '../components/Workout/SupersetCard';
 import RestTimer from '../components/Workout/RestTimer'; 
 import { getExerciseHistoryService } from '../services/progressService'; 
-import ExerciseHistoryModal from '../components/Workout/ExerciseHistoryModal'; 
+import ExerciseHistoryModal from '../components/Workout/ExerciseHistoryModal';
+import ConfirmationModal from '../components/Common/ConfirmationModal'; 
 
 // --- Styled Components (Definições movidas para o topo) ---
 const PageContainer = styled.div`
@@ -101,6 +102,8 @@ const LiveWorkoutSessionPage = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedExerciseName, setSelectedExerciseName] = useState('');
   const [lastCompletedSet, setLastCompletedSet] = useState(null);
+  const [showCancelWorkoutModal, setShowCancelWorkoutModal] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   // Lógica do cronómetro que depende do 'activeWorkout' do contexto
   useEffect(() => {
@@ -319,8 +322,20 @@ const LiveWorkoutSessionPage = () => {
             <div style={{ height: '80px' }} /> 
 
             <Footer>
-              <CancelButton onClick={cancelWorkout}><FaTimes /> Cancelar</CancelButton>
-              <FinishButton onClick={finishWorkout}>Concluir Treino</FinishButton>
+              <CancelButton onClick={() => setShowCancelWorkoutModal(true)} disabled={isFinishing}><FaTimes /> Cancelar</CancelButton>
+              <FinishButton onClick={async () => {
+                if (isFinishing) return;
+                setIsFinishing(true);
+                try {
+                  await finishWorkout();
+                } catch (err) {
+                  logger.error('Erro ao concluir treino:', err);
+                } finally {
+                  setIsFinishing(false);
+                }
+              }} disabled={isFinishing}>
+                {isFinishing ? 'A concluir...' : 'Concluir Treino'}
+              </FinishButton>
             </Footer>
       </PageContainer>
             
@@ -335,6 +350,21 @@ const LiveWorkoutSessionPage = () => {
             )}
 
             {activeRestTimer.active && ( <RestTimer key={activeRestTimer.key} duration={activeRestTimer.duration} onFinish={() => setActiveRestTimer({ ...activeRestTimer, active: false })} /> )}
+
+            <ConfirmationModal
+                isOpen={showCancelWorkoutModal}
+                onClose={() => setShowCancelWorkoutModal(false)}
+                onConfirm={() => {
+                    setShowCancelWorkoutModal(false);
+                    cancelWorkout();
+                }}
+                title="Cancelar Treino"
+                message="Tem a certeza? Todos os dados registados serão perdidos."
+                confirmText="Cancelar Treino"
+                cancelText="Continuar"
+                danger={true}
+                loading={false}
+            />
           </>
         );
       };

@@ -2,6 +2,7 @@
 import React, { useState } from 'react'; // Importar apenas o useState
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
+import { logger } from '../../utils/logger';
 import { logExercisePerformanceService, updateExercisePerformanceService } from '../../services/progressService';
 import { FaCheck, FaTrashAlt, FaTimes } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
@@ -361,7 +362,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
       if (typeof onSetComplete === 'function') {
         onSetComplete(currentSetData);
       } else {
-        console.warn('SetRow: onSetComplete não é função', onSetComplete);
+        logger.warn('SetRow: onSetComplete não é função', onSetComplete);
       }
     };
     
@@ -382,7 +383,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
         setShowDeleteModal(false);
         setTransformX(0);
       } else {
-        console.warn('SetRow: onDeleteSet não é função', onDeleteSet);
+        logger.warn('SetRow: onDeleteSet não é função', onDeleteSet);
         setShowDeleteModal(false);
       }
     };

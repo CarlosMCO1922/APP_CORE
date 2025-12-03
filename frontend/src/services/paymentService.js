@@ -1,4 +1,6 @@
 // src/services/paymentService.js
+import { logger } from '../utils/logger';
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 export const adminCreatePayment = async (paymentData, token) => {
@@ -12,7 +14,7 @@ export const adminCreatePayment = async (paymentData, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao criar pagamento.');
     return data;
-  } catch (error) { console.error("Erro em adminCreatePayment:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminCreatePayment:", error); throw error; }
 };
 
 export const adminGetAllPayments = async (filters = {}, token) => {
@@ -27,7 +29,7 @@ export const adminGetAllPayments = async (filters = {}, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar todos os pagamentos.');
     return data;
-  } catch (error) { console.error("Erro em adminGetAllPayments:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminGetAllPayments:", error); throw error; }
 };
 
 export const adminGetTotalPaid = async (token, dateRange = null) => {
@@ -48,7 +50,7 @@ export const adminGetTotalPaid = async (token, dateRange = null) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar total pago.');
     return data; 
-  } catch (error) { console.error("Erro em adminGetTotalPaid:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminGetTotalPaid:", error); throw error; }
 };
 
 export const adminUpdatePaymentStatus = async (paymentId, status, token) => {
@@ -62,7 +64,7 @@ export const adminUpdatePaymentStatus = async (paymentId, status, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao atualizar status do pagamento.');
     return data;
-  } catch (error) { console.error("Erro em adminUpdatePaymentStatus:", error); throw error; }
+  } catch (error) { logger.error("Erro em adminUpdatePaymentStatus:", error); throw error; }
 };
 
 export const adminDeletePayment = async (paymentId, token) => {
@@ -83,7 +85,7 @@ export const adminDeletePayment = async (paymentId, token) => {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Erro ao eliminar pagamento.');
     } catch (error) {
-        console.error("Erro em adminDeletePayment:", error);
+        logger.error("Erro em adminDeletePayment:", error);
         if (error instanceof Error) throw error;
         throw new Error('Erro ao comunicar com o servidor para eliminar pagamento.');
     }
@@ -99,7 +101,7 @@ export const clientGetMyPayments = async (token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar os seus pagamentos.');
     return data;
-  } catch (error) { console.error("Erro em clientGetMyPayments:", error); throw error; }
+  } catch (error) { logger.error("Erro em clientGetMyPayments:", error); throw error; }
 };
 
 export const clientGetMyPendingPaymentsService = async (token) => {
@@ -112,7 +114,7 @@ export const clientGetMyPendingPaymentsService = async (token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar os seus pagamentos pendentes.');
     return data;
   } catch (error) {
-    console.error("Erro em clientGetMyPendingPaymentsService:", error);
+    logger.error("Erro em clientGetMyPendingPaymentsService:", error);
     throw error;
   }
 };
@@ -128,7 +130,7 @@ export const clientAcceptPayment = async (paymentId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao aceitar pagamento.');
     return data;
-  } catch (error) { console.error("Erro em clientAcceptPayment:", error); throw error; }
+  } catch (error) { logger.error("Erro em clientAcceptPayment:", error); throw error; }
 };
 
 export const clientConfirmManualPayment = async (paymentId, token) => {
@@ -142,7 +144,7 @@ export const clientConfirmManualPayment = async (paymentId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao confirmar pagamento.');
     return data;
-  } catch (error) { console.error("Erro em clientConfirmManualPayment:", error); throw error; }
+  } catch (error) { logger.error("Erro em clientConfirmManualPayment:", error); throw error; }
 };
 
 // Função para criar a intenção de pagamento Stripe
@@ -163,7 +165,7 @@ export const createStripePaymentIntentForSignal = async (internalPaymentId, toke
     }
     return data;
   } catch (error) {
-    console.error("Erro em createStripePaymentIntentForSignal:", error);
+    logger.error("Erro em createStripePaymentIntentForSignal:", error);
     throw error;
   }
 };

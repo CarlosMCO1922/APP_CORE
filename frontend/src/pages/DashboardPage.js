@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../utils/logger';
 import { getMyBookings } from '../services/userService';
 import { clientGetMyPendingPaymentsService } from '../services/paymentService';
 import { 
@@ -18,6 +19,7 @@ import { FaCalendarAlt, FaRunning, FaUserMd, FaRegCalendarCheck,
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/pt';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 
 // --- Styled Components (do teu ficheiro original) ---
@@ -604,6 +606,9 @@ const DashboardPage = () => {
     const [seriesModalMessage, setSeriesModalMessage] = useState({ type: '', text: '' });
     const [showTrainingDetailsModal, setShowTrainingDetailsModal] = useState(false);
     const [selectedTrainingForDetails, setSelectedTrainingForDetails] = useState(null);
+    const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+    const [showBookConfirmModal, setShowBookConfirmModal] = useState(false);
+    const [trainingToAction, setTrainingToAction] = useState(null);
 
     const fetchPageData = useCallback(async () => {
         if (!authState.token) return;
@@ -614,11 +619,11 @@ const DashboardPage = () => {
             const [bookingsData, pendingPaymentsData, allTrainingsData] = await Promise.all([
                 getMyBookings(authState.token),
                 clientGetMyPendingPaymentsService(authState.token).catch((error) => {
-                    console.error('Erro ao carregar pagamentos pendentes:', error);
+                    logger.error('Erro ao carregar pagamentos pendentes:', error);
                     return [];
                 }),
                 getAllTrainings(authState.token).catch((error) => {
-                    console.error('Erro ao carregar treinos:', error);
+                    logger.error('Erro ao carregar treinos:', error);
                     return [];
                 })
             ]);
@@ -643,7 +648,7 @@ const DashboardPage = () => {
         } catch (err) {
             setError('Não foi possível carregar todos os dados do dashboard.');
             setTrainingsError('Não foi possível carregar treinos disponíveis.');
-            console.error("Erro ao buscar dados do dashboard:", err);
+            logger.error("Erro ao buscar dados do dashboard:", err);
         } finally {
             setLoading(false);
             setLoadingTrainings(false);
@@ -696,11 +701,18 @@ const upcomingEvents = useMemo(() => {
             .slice(0, 5);
     }, [bookings]);
 
-    const handleCancelTraining = async (trainingId) => {
-        if (!window.confirm("Tem a certeza que quer cancelar a sua inscrição neste treino?")) return;
+    const handleCancelTraining = (trainingId) => {
+        setTrainingToAction(trainingId);
+        setShowCancelConfirmModal(true);
+    };
+
+    const handleCancelTrainingConfirm = async () => {
+        if (!trainingToAction) return;
+        const trainingId = trainingToAction;
         setActionLoading(trainingId);
         setPageMessage('');
         setError('');
+        setShowCancelConfirmModal(false);
         try {
             const res = await cancelTrainingBooking(trainingId, authState.token);
             setPageMessage(res.message || "Inscrição cancelada com sucesso!");
@@ -709,14 +721,22 @@ const upcomingEvents = useMemo(() => {
             setError(err.message || "Não foi possível cancelar a inscrição.");
         } finally {
             setActionLoading(null);
+            setTrainingToAction(null);
         }
     };
 
-    const handleBookTraining = async (trainingId) => {
-        if (!window.confirm("Confirmas a inscrição neste treino?")) return;
+    const handleBookTraining = (trainingId) => {
+        setTrainingToAction(trainingId);
+        setShowBookConfirmModal(true);
+    };
+
+    const handleBookTrainingConfirm = async () => {
+        if (!trainingToAction) return;
+        const trainingId = trainingToAction;
         setActionLoading(trainingId);
         setPageMessage('');
         setError('');
+        setShowBookConfirmModal(false);
         try {
             await bookTrainingService(trainingId, authState.token);
             setPageMessage("Inscrição no treino realizada com sucesso!");
@@ -725,6 +745,7 @@ const upcomingEvents = useMemo(() => {
             setError(err.message || "Falha ao inscrever no treino.");
         } finally {
             setActionLoading(null);
+            setTrainingToAction(null);
         }
     };
 
@@ -762,7 +783,7 @@ const upcomingEvents = useMemo(() => {
           fetchPageData();
           setTimeout(() => handleCloseSeriesSubscriptionModal(), 3000);
         } catch (error) {
-          console.error("Erro ao inscrever na série:", error);
+          logger.error("Erro ao inscrever na série:", error);
           setSeriesModalMessage({type: 'error', text: error.message || 'Falha ao inscrever na série.'});
         } finally {
           setSubscribingToSeries(false);
@@ -963,6 +984,40 @@ const upcomingEvents = useMemo(() => {
                     </ModalContent>
                 </ModalOverlay>
             )}
+
+            <ConfirmationModal
+                isOpen={showCancelConfirmModal}
+                onClose={() => {
+                    if (actionLoading === null) {
+                        setShowCancelConfirmModal(false);
+                        setTrainingToAction(null);
+                    }
+                }}
+                onConfirm={handleCancelTrainingConfirm}
+                title="Cancelar Inscrição"
+                message="Tem a certeza que quer cancelar a sua inscrição neste treino?"
+                confirmText="Cancelar Inscrição"
+                cancelText="Manter Inscrição"
+                danger={true}
+                loading={actionLoading !== null}
+            />
+
+            <ConfirmationModal
+                isOpen={showBookConfirmModal}
+                onClose={() => {
+                    if (actionLoading === null) {
+                        setShowBookConfirmModal(false);
+                        setTrainingToAction(null);
+                    }
+                }}
+                onConfirm={handleBookTrainingConfirm}
+                title="Inscrever no Treino"
+                message="Confirmas a inscrição neste treino?"
+                confirmText="Confirmar"
+                cancelText="Cancelar"
+                danger={false}
+                loading={actionLoading !== null}
+            />
         </PageContainer>
     );
 };

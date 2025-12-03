@@ -1,4 +1,5 @@
 // src/services/notificationService.js
+import { logger } from '../utils/logger';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'; 
 
 export const getMyNotificationsService = async (token, page = 1, limit = 10, status = null) => {
@@ -16,7 +17,7 @@ export const getMyNotificationsService = async (token, page = 1, limit = 10, sta
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar notificações.');
     return data; 
   } catch (error) {
-    console.error("Erro em getMyNotificationsService:", error);
+    logger.error("Erro em getMyNotificationsService:", error);
     throw error;
   }
 };
@@ -36,7 +37,7 @@ export const markNotificationAsReadService = async (notificationId, token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao marcar notificação como lida.');
     return data; 
   } catch (error) {
-    console.error("Erro em markNotificationAsReadService:", error);
+    logger.error("Erro em markNotificationAsReadService:", error);
     throw error;
   }
 };
@@ -55,7 +56,7 @@ export const markAllNotificationsAsReadService = async (token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao marcar todas as notificações como lidas.');
     return data; 
   } catch (error) {
-    console.error("Erro em markAllNotificationsAsReadService:", error);
+    logger.error("Erro em markAllNotificationsAsReadService:", error);
     throw error;
   }
 };

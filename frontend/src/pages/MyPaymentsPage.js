@@ -11,6 +11,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 import { useToast } from '../components/Toast/ToastProvider';
 import BackArrow from '../components/BackArrow';
+import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -276,6 +277,8 @@ const MyPaymentsPage = () => {
   const [stripeClientSecret, setStripeClientSecret] = useState(null);
   const [currentPaymentDetails, setCurrentPaymentDetails] = useState(null);
   const [viewDirection, setViewDirection] = useState('right');
+  const [showConfirmPaymentModal, setShowConfirmPaymentModal] = useState(false);
+  const [paymentToConfirm, setPaymentToConfirm] = useState(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -341,24 +344,32 @@ addToast('Falha ao iniciar o pagamento.', { type: 'error', category: 'payment' }
     }
   };
 
-  const handleConfirmPayment = async (payment) => {
+  const handleConfirmPayment = (payment) => {
     if (payment.status !== 'pendente' || payment.category !== 'mensalidade_treino') {
         setPageError("Apenas mensalidades pendentes podem ser confirmadas desta forma.");
         return;
     }
-    if (!window.confirm(`Tem a certeza que deseja marcar a mensalidade ID ${payment.id} como paga?`)) {
-        return;
-    }
-    setActionLoading(payment.id);
-    setPageError(''); setPageSuccessMessage(''); setPageInfoMessage('');
+    setPaymentToConfirm(payment);
+    setShowConfirmPaymentModal(true);
+  };
+
+  const handleConfirmPaymentConfirm = async () => {
+    if (!paymentToConfirm) return;
+    setActionLoading(paymentToConfirm.id);
+    setPageError(''); 
+    setPageSuccessMessage(''); 
+    setPageInfoMessage('');
+    setShowConfirmPaymentModal(false);
     try {
-      await clientConfirmManualPayment(payment.id, authState.token);
-      setPageSuccessMessage(`Pagamento ID ${payment.id} confirmado com sucesso!`);
-addToast('Pagamento confirmado!', { type: 'success', category: 'payment' });
+      await clientConfirmManualPayment(paymentToConfirm.id, authState.token);
+      setPageSuccessMessage(`Pagamento ID ${paymentToConfirm.id} confirmado com sucesso!`);
+      addToast('Pagamento confirmado!', { type: 'success', category: 'payment' });
+      setPaymentToConfirm(null);
       setTimeout(() => fetchMyPayments(false), 2000);
     } catch (err) {
-      setPageError(err.message || `Falha ao confirmar o pagamento ID ${payment.id}. Tente novamente.`);
-addToast('Falha ao confirmar pagamento.', { type: 'error', category: 'payment' });
+      setPageError(err.message || `Falha ao confirmar o pagamento ID ${paymentToConfirm.id}. Tente novamente.`);
+      addToast('Falha ao confirmar pagamento.', { type: 'error', category: 'payment' });
+      setPaymentToConfirm(null);
     } finally {
       setActionLoading(null);
     }
@@ -523,6 +534,23 @@ if (loading && !showStripeModal) {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showConfirmPaymentModal}
+        onClose={() => {
+          if (actionLoading === null) {
+            setShowConfirmPaymentModal(false);
+            setPaymentToConfirm(null);
+          }
+        }}
+        onConfirm={handleConfirmPaymentConfirm}
+        title="Confirmar Pagamento"
+        message={paymentToConfirm ? `Tem a certeza que deseja marcar a mensalidade ID ${paymentToConfirm.id} como paga?` : ''}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        danger={false}
+        loading={actionLoading !== null}
+      />
     </PageContainer>
   );
 };

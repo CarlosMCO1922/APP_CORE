@@ -1,9 +1,10 @@
 // src/components/Layout/MyAreaModal.js
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { FaChartLine, FaMoneyBillWave, FaCog, FaTimes, FaSignOutAlt } from 'react-icons/fa';
+import ConfirmationModal from '../Common/ConfirmationModal';
 
 const Overlay = styled.div`
   position: fixed;
@@ -199,13 +200,16 @@ function MyAreaModal({ isOpen, onClose }) {
   };
 
   const handleLogout = () => {
-    if (window.confirm("Tem a certeza que quer sair da sua conta?")) {
-      onClose();
-      setTimeout(() => {
-        logout();
-        navigate('/login');
-      }, 200);
-    }
+    setShowLogoutConfirmModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutConfirmModal(false);
+    onClose();
+    setTimeout(() => {
+      logout();
+      navigate('/login');
+    }, 200);
   };
 
   return (
@@ -240,6 +244,18 @@ function MyAreaModal({ isOpen, onClose }) {
           </LogoutButton>
         </MenuList>
       </ModalContent>
+
+      <ConfirmationModal
+        isOpen={showLogoutConfirmModal}
+        onClose={() => setShowLogoutConfirmModal(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Sair da Conta"
+        message="Tem a certeza que quer sair da sua conta?"
+        confirmText="Sair"
+        cancelText="Cancelar"
+        danger={false}
+        loading={false}
+      />
     </Overlay>
   );
 }
