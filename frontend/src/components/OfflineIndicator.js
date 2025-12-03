@@ -1,7 +1,7 @@
 // frontend/src/components/OfflineIndicator.js
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FaWifi, FaWifiSlash } from 'react-icons/fa';
+import { FaWifi, FaExclamationTriangle } from 'react-icons/fa';
 import { isOnline, setupOnlineListener } from '../utils/networkUtils';
 
 const OfflineBanner = styled.div`
@@ -39,7 +39,7 @@ const OfflineIndicator = () => {
 
   return (
     <OfflineBanner show={isOffline}>
-      <FaWifiSlash />
+      <FaExclamationTriangle />
       <span>Sem conexão à internet. Algumas funcionalidades podem não estar disponíveis.</span>
     </OfflineBanner>
   );
