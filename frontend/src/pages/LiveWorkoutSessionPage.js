@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useWorkout } from '../context/WorkoutContext';
+import { logger } from '../utils/logger';
 import { FaChevronDown, FaStopwatch, FaTimes, FaHistory } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard'; 
 import SupersetCard from '../components/Workout/SupersetCard';
