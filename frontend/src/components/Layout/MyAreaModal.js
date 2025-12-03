@@ -170,6 +170,7 @@ const LogoutButton = styled.button`
 function MyAreaModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
 
   if (!isOpen) return null;
 

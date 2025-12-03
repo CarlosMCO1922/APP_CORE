@@ -83,6 +83,8 @@ const BookingCalendarPage = () => {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isRequesting, setIsRequesting] = useState(false);
+  const [appointmentToRequest, setAppointmentToRequest] = useState(null);
+  const [showRequestConfirmModal, setShowRequestConfirmModal] = useState(false);
   const { addToast } = useToast();
 
   useEffect(() => {
