@@ -44,25 +44,69 @@ const CalendarContainer = styled.div`
 `;
 const TimeSlotsContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: 25px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; min-height: 400px;
+  padding: 0; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder}; 
+  min-height: 400px;
+  max-height: 70vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 `;
 const TimeSlotsHeader = styled.h3`
   font-size: 1.2rem; font-weight: 500; color: ${({ theme }) => theme.colors.textMuted};
-  margin-top: 0; margin-bottom: 25px; text-align: center;
+  margin: 0; padding: 20px 25px; text-align: center;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   span { color: ${({ theme }) => theme.colors.primary}; font-weight: 600; }
 `;
 const TimePeriodGroup = styled.div`
-  margin-bottom: 25px;
-  h4 { font-size: 0.9rem; color: ${({ theme }) => theme.colors.textMuted}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; }
+  padding: 0 25px;
+  padding-top: 20px;
+  padding-bottom: 10px;
+  h4 { 
+    font-size: 0.9rem; 
+    color: ${({ theme }) => theme.colors.textMuted}; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    margin: 0 0 15px 0; 
+    padding-bottom: 8px; 
+    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; 
+  }
 `;
-const TimeSlotsGrid = styled.div`
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px;
+const TimeSlotsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 25px;
+  padding-bottom: 20px;
 `;
 const TimeSlotButton = styled.button`
-  background-color: ${({ theme }) => theme.colors.background}; color: ${({ theme }) => theme.colors.textMain};
-  padding: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
-  &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.textDark}; border-color: ${({ theme }) => theme.colors.primary}; transform: translateY(-2px); }
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  color: ${({ theme }) => theme.colors.textMain};
+  padding: 15px 20px;
+  border: none;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  
+  &:first-child {
+    border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  }
+  
+  &:hover:not(:disabled) {
+    background-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.textDark};
+  }
+  
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
 `;
 const LoadingText = styled.p`text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.primary};`;
 const ErrorText = styled.p`text-align: center; font-size: 1rem; color: ${({ theme }) => theme.colors.error};`;
@@ -199,14 +243,30 @@ addToast('Falha ao carregar horários.', { type: 'error', category: 'calendar' }
             : availableSlots.length > 0 ? (
               <>
                 {morningSlots.length > 0 && (
-                  <TimePeriodGroup><h4>Antes do meio-dia</h4><TimeSlotsGrid>
-                    {morningSlots.map(slot => <TimeSlotButton key={slot} onClick={() => handleRequestAppointment(slot)}>{slot}</TimeSlotButton>)}
-                  </TimeSlotsGrid></TimePeriodGroup>
+                  <TimePeriodGroup>
+                    <h4>Antes do meio-dia</h4>
+                    <TimeSlotsList>
+                      {morningSlots.map(slot => (
+                        <TimeSlotButton key={slot} onClick={() => handleRequestAppointment(slot)}>
+                          <span>{slot}</span>
+                          <FaClock style={{ fontSize: '0.9rem', opacity: 0.7 }} />
+                        </TimeSlotButton>
+                      ))}
+                    </TimeSlotsList>
+                  </TimePeriodGroup>
                 )}
                 {afternoonSlots.length > 0 && (
-                  <TimePeriodGroup><h4>Depois do meio-dia</h4><TimeSlotsGrid>
-                    {afternoonSlots.map(slot => <TimeSlotButton key={slot} onClick={() => handleRequestAppointment(slot)}>{slot}</TimeSlotButton>)}
-                  </TimeSlotsGrid></TimePeriodGroup>
+                  <TimePeriodGroup>
+                    <h4>Depois do meio-dia</h4>
+                    <TimeSlotsList>
+                      {afternoonSlots.map(slot => (
+                        <TimeSlotButton key={slot} onClick={() => handleRequestAppointment(slot)}>
+                          <span>{slot}</span>
+                          <FaClock style={{ fontSize: '0.9rem', opacity: 0.7 }} />
+                        </TimeSlotButton>
+                      ))}
+                    </TimeSlotsList>
+                  </TimePeriodGroup>
                 )}
               </>
             ) : (
@@ -231,7 +291,6 @@ addToast('Falha ao carregar horários.', { type: 'error', category: 'calendar' }
         cancelText="Cancelar"
         loading={isRequesting}
         danger={false}
-        loading={false}
       />
     </PageContainer>
   );
