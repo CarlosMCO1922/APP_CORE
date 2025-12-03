@@ -1,6 +1,7 @@
 // src/services/progressService.js
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'; 
-console.log('API_URL em uso no progressService:', API_URL); 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { logger } from '../utils/logger';
+logger.log('API_URL em uso no progressService:', API_URL); 
 
 
 export const logExercisePerformanceService = async (performanceData, token) => {
@@ -10,7 +11,7 @@ export const logExercisePerformanceService = async (performanceData, token) => {
   }
   try {
     const url = `${API_URL}/progress/log-performance`;
-    console.log('logExercisePerformanceService URL:', url, 'Payload:', performanceData);
+    logger.log('logExercisePerformanceService URL:', url, 'Payload:', performanceData);
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -47,7 +48,7 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
   if (!trainingId || !workoutPlanId) throw new Error('ID do Treino e ID do Plano de Treino são obrigatórios.');
   try {
     const url = `${API_URL}/progress/my-history/training/${trainingId}/plan/${workoutPlanId}`;
-    console.log('getMyPerformanceForWorkoutPlanService URL:', url);
+    logger.log('getMyPerformanceForWorkoutPlanService URL:', url);
     const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -82,7 +83,7 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
   if (!planExerciseId) throw new Error('ID do Exercício do Plano (planExerciseId) é obrigatório.');
   try {
     const url = `${API_URL}/progress/my-exercise-history/${planExerciseId}?limit=3`;
-    console.log('getMyPerformanceHistoryForExerciseService URL:', url); 
+    logger.log('getMyPerformanceHistoryForExerciseService URL:', url); 
     const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -117,7 +118,7 @@ export const deleteExercisePerformanceLogService = async (logId, token) => {
   if (!logId) throw new Error('ID do Log é obrigatório para eliminar.');
   try {
     const url = `${API_URL}/progress/log/${logId}`; 
-    console.log('deleteExercisePerformanceLogService URL:', url);
+    logger.log('deleteExercisePerformanceLogService URL:', url);
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {

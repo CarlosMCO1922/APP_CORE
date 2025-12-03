@@ -613,8 +613,14 @@ const DashboardPage = () => {
         try {
             const [bookingsData, pendingPaymentsData, allTrainingsData] = await Promise.all([
                 getMyBookings(authState.token),
-                clientGetMyPendingPaymentsService(authState.token).catch(() => []),
-                getAllTrainings(authState.token).catch(() => [])
+                clientGetMyPendingPaymentsService(authState.token).catch((error) => {
+                    console.error('Erro ao carregar pagamentos pendentes:', error);
+                    return [];
+                }),
+                getAllTrainings(authState.token).catch((error) => {
+                    console.error('Erro ao carregar treinos:', error);
+                    return [];
+                })
             ]);
             setBookings({
                 trainings: bookingsData.trainings || [],

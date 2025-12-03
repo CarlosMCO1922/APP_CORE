@@ -6,6 +6,7 @@ import { useWorkout } from './context/WorkoutContext';
 import styled from 'styled-components';
 import Navbar from './components/Layout/Navbar';
 import BottomNav from './components/Layout/BottomNav';
+import OfflineIndicator from './components/OfflineIndicator';
 
 // Code-splitting for pages (melhora UX e reduz bundle inicial)
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -115,6 +116,7 @@ function App() {
 
   return (
     <>
+      <OfflineIndicator />
       {authState.isAuthenticated && <Navbar />}
       {authState.isAuthenticated && <BottomNav />}
       <div className="main-content-area"> 

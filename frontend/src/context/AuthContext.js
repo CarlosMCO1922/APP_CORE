@@ -1,14 +1,26 @@
 // src/context/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { isValidToken, isTokenExpired } from '../utils/tokenUtils';
+import { safeGetItem, safeSetItem, validateUserData } from '../utils/storageUtils';
+import { logger } from '../utils/logger';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   // Hydrate de forma síncrona para evitar flicker e redireções erradas
-  const initialToken = localStorage.getItem('userToken') || null;
-  const initialUser = (() => { try { return JSON.parse(localStorage.getItem('userData')); } catch { return null; } })() || null;
+  // Valida token antes de usar
+  const rawToken = localStorage.getItem('userToken');
+  const initialToken = rawToken && isValidToken(rawToken) ? rawToken : null;
+  const initialUser = safeGetItem('userData', validateUserData);
   const initialRole = initialUser ? (initialUser.role ? initialUser.role : 'user') : null;
   const initialIsAdminFeatureUser = initialUser ? (initialUser.isAdmin || initialRole === 'admin') : false;
+  
+  // Se token estava inválido, limpa dados
+  if (rawToken && !initialToken) {
+    logger.warn("Token expirado ou inválido encontrado, limpando dados de autenticação");
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userData');
+  }
 
   const [authState, setAuthState] = useState({
     token: initialToken,
@@ -20,19 +32,26 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('userToken');
-    const userData = localStorage.getItem('userData');
-    if (token && userData) {
-      const parsedUserData = JSON.parse(userData);
-      const role = parsedUserData.role ? parsedUserData.role : 'user';
-      const isAdminUserField = parsedUserData.isAdmin || false;
+    const userData = safeGetItem('userData', validateUserData);
+    
+    // Valida token antes de usar
+    if (token && isValidToken(token) && userData) {
+      const role = userData.role ? userData.role : 'user';
+      const isAdminUserField = userData.isAdmin || false;
 
       setAuthState({
         token: token,
-        user: parsedUserData,
+        user: userData,
         isAuthenticated: true,
         role: role,
         isAdminFeatureUser: isAdminUserField || (role === 'admin'),
       });
+    } else if (token) {
+      // Token inválido ou expirado, limpa dados
+      logger.warn("Token inválido ou expirado detectado, limpando autenticação");
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userData');
+      setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false });
     }
   }, []);
 
@@ -51,9 +70,14 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (data.token) {
+        // Valida token antes de guardar
+        if (!isValidToken(data.token)) {
+          throw new Error('Token inválido recebido do servidor');
+        }
+        
         localStorage.setItem('userToken', data.token);
         const userDataToStore = data.user || data.staff;
-        localStorage.setItem('userData', JSON.stringify(userDataToStore));
+        safeSetItem('userData', userDataToStore);
         
         let determinedRole = null;
         let determinedIsAdminUserField = false;

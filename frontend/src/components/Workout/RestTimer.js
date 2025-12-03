@@ -147,9 +147,17 @@ const RestTimer = ({ duration, onFinish }) => {
           title: 'Descanso concluído',
           body: 'O seu tempo de descanso terminou. Vamos continuar? 💪'
         })
-      }).catch(() => {});
+      }).catch((error) => {
+        // Log erro mas não bloqueia a funcionalidade
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Erro ao agendar notificação push:', error);
+        }
+      });
     } catch (e) {
-      // silencioso
+      // Log erro mas não bloqueia a funcionalidade
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Erro ao configurar notificação push:', e);
+      }
     }
   };
 
@@ -248,7 +256,12 @@ const RestTimer = ({ duration, onFinish }) => {
         try {
           const audio = new Audio('/notification-sound.mp3');
           audio.volume = 0.7;
-          audio.play().catch(() => {});
+          audio.play().catch((error) => {
+            // Log erro mas não bloqueia a funcionalidade
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Erro ao tocar som de notificação:', error);
+            }
+          });
         } catch (e) {
           console.warn('Erro ao tocar som:', e);
         }

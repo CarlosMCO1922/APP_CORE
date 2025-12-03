@@ -2,6 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyLastPerformancesService, checkPersonalRecordsService, logExercisePerformanceService } from '../services/progressService';
 import { useAuth } from './AuthContext';
+import { safeGetItem, safeSetItem, validateWorkoutSession, clearInvalidStorage } from '../utils/storageUtils';
+import { logger } from '../utils/logger';
 
 const WorkoutContext = createContext();
 
@@ -14,22 +16,25 @@ export const WorkoutProvider = ({ children }) => {
 
     // Carrega um treino ativo do localStorage ao iniciar a app
     useEffect(() => {
-        try {
-            const savedWorkout = localStorage.getItem('activeWorkoutSession');
-            if (savedWorkout) {
-                setActiveWorkout(JSON.parse(savedWorkout));
-                setIsMinimized(true);
-            }
-        } catch (error) {
-            console.error("Falha ao carregar treino do localStorage:", error);
-            localStorage.removeItem('activeWorkoutSession');
+        // Limpa dados inválidos/antigos
+        clearInvalidStorage();
+        
+        // Tenta carregar treino com validação
+        const savedWorkout = safeGetItem('activeWorkoutSession', validateWorkoutSession);
+        if (savedWorkout) {
+            setActiveWorkout(savedWorkout);
+            setIsMinimized(true);
+            logger.log("Treino carregado do localStorage:", savedWorkout);
         }
     }, []);
 
     // Guarda o treino no localStorage sempre que ele muda
     useEffect(() => {
         if (activeWorkout) {
-            localStorage.setItem('activeWorkoutSession', JSON.stringify(activeWorkout));
+            const success = safeSetItem('activeWorkoutSession', activeWorkout);
+            if (!success) {
+                logger.warn("Falha ao guardar treino no localStorage");
+            }
         } else {
             localStorage.removeItem('activeWorkoutSession');
         }
@@ -54,7 +59,7 @@ export const WorkoutProvider = ({ children }) => {
             }, {});
             setLastPerformances(historyMap);
         } catch (error) {
-            console.error("Não foi possível carregar o histórico de performances:", error);
+            logger.error("Não foi possível carregar o histórico de performances:", error);
             setLastPerformances({});
         }
 
@@ -64,7 +69,7 @@ export const WorkoutProvider = ({ children }) => {
             setIsMinimized(false);
             return Promise.resolve(workoutSession);
         } catch (error) {
-            console.error("Erro ao iniciar treino:", error);
+            logger.error("Erro ao iniciar treino:", error);
             return Promise.reject(error);
         }
     };
@@ -121,7 +126,7 @@ export const WorkoutProvider = ({ children }) => {
             }
             return saved;
         } catch (err) {
-            console.error('Erro ao registar série:', err);
+            logger.error('Erro ao registar série:', err);
             alert('Falha ao registar a série. Verifique a ligação e tente novamente.');
             throw err;
         }
@@ -140,7 +145,7 @@ export const WorkoutProvider = ({ children }) => {
             try {
                 const prResult = await checkPersonalRecordsService(completedSets, authState.token);
                 personalRecords = prResult.records || [];
-            } catch (error) { console.error("Erro ao verificar PRs:", error); }
+            } catch (error) { logger.error("Erro ao verificar PRs:", error); }
         }
 
         navigate('/treino/resumo', { 
