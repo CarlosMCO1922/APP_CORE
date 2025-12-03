@@ -1,6 +1,7 @@
 // src/services/progressService.js
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 import { logger } from '../utils/logger';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 logger.log('API_URL em uso no progressService:', API_URL); 
 
 
