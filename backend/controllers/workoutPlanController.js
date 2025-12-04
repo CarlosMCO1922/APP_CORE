@@ -108,7 +108,7 @@ const getGlobalWorkoutPlanById = async (req, res) => {
             include: [{
                 model: db.WorkoutPlanExercise,
                 as: 'planExercises',
-                order: [['order', 'ASC']],
+                order: [['order', 'ASC'], ['internalOrder', 'ASC']],
                 include: [{ model: db.Exercise, as: 'exerciseDetails' }]
             }]
         });
@@ -305,13 +305,16 @@ const getWorkoutPlansForTraining = async (req, res) => {
         const planJSON = plan.toJSON ? plan.toJSON() : plan;
         if (planJSON.planExercises && Array.isArray(planJSON.planExercises)) {
           planJSON.planExercises.sort((a, b) => {
-            // Primeiro por supersetGroup, depois por order
-            const groupA = (a.supersetGroup !== null && a.supersetGroup !== undefined) ? a.supersetGroup : 0;
-            const groupB = (b.supersetGroup !== null && b.supersetGroup !== undefined) ? b.supersetGroup : 0;
-            if (groupA !== groupB) {
-              return groupA - groupB;
+            // Primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
+            const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
+            const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
+            if (orderA !== orderB) {
+              return orderA - orderB;
             }
-            return (a.order || 0) - (b.order || 0);
+            // Se estão no mesmo bloco, ordenar por internalOrder
+            const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+            const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+            return internalOrderA - internalOrderB;
           });
         }
         return planJSON;
@@ -340,7 +343,7 @@ const getVisibleWorkoutPlans = async (req, res) => {
     const workoutPlans = await db.WorkoutPlan.findAll({
       where: whereClause, order: [['name', 'ASC']],
       include: [{
-        model: db.WorkoutPlanExercise, as: 'planExercises', order: [['order', 'ASC']],
+        model: db.WorkoutPlanExercise, as: 'planExercises', order: [['order', 'ASC'], ['internalOrder', 'ASC']],
         include: [{ model: db.Exercise, as: 'exerciseDetails', attributes: ['id', 'name', 'muscleGroup', 'imageUrl', 'videoUrl'] }]
       }]
     });
@@ -379,7 +382,7 @@ const getExercisesForGlobalWorkoutPlan = async (req, res) => {
         const workoutPlan = await db.WorkoutPlan.findByPk(parseInt(planId));
         if (!workoutPlan) return res.status(404).json({ message: 'Plano de treino global não encontrado.' });
         const exercises = await db.WorkoutPlanExercise.findAll({
-            where: { workoutPlanId: parseInt(planId) }, order: [['order', 'ASC']],
+            where: { workoutPlanId: parseInt(planId) }, order: [['order', 'ASC'], ['internalOrder', 'ASC']],
             include: [{ model: db.Exercise, as: 'exerciseDetails' }]
         });
         res.status(200).json(exercises);

@@ -958,7 +958,17 @@ const ClientProgressPage = () => {
                                 <WorkoutPlanDisplay key={plan.id}>
                                   <h3>Plano: {plan.name} {plan.order !== undefined ? `(Bloco: ${plan.order + 1})` : ''}</h3>
                                   {plan.notes && <p><i>Notas do Plano: {plan.notes}</i></p>}
-                                  {(plan.planExercises || []).sort((a, b) => a.order - b.order).map(planEx => (
+                                  {(plan.planExercises || []).sort((a, b) => {
+                                    // Primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
+                                    const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
+                                    const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
+                                    if (orderA !== orderB) {
+                                      return orderA - orderB;
+                                    }
+                                    const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+                                    const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+                                    return internalOrderA - internalOrderB;
+                                  }).map(planEx => (
                                       <ExerciseLogItem key={planEx.id}>
                                           <ExerciseName>{planEx.exerciseDetails?.name || 'Exercício Desconhecido'}</ExerciseName>
                                           <PrescribedDetails>

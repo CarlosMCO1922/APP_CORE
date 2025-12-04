@@ -201,7 +201,17 @@ const WorkoutPlanSummaryPage = () => {
       </Header>
       
       <ExerciseList>
-        {plan.planExercises.sort((a,b) => a.order - b.order).map(pe => (
+        {plan.planExercises.sort((a, b) => {
+          // Primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
+          const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
+          const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+          const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+          return internalOrderA - internalOrderB;
+        }).map(pe => (
           <ExerciseItem key={pe.id}>
             <div className="info">
               <IconWrapper><FaDumbbell /></IconWrapper>

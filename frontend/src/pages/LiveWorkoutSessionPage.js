@@ -125,12 +125,21 @@ const LiveWorkoutSessionPage = () => {
       return [];
     }
 
-    // A lista de exercícios já vem ordenada corretamente do backend, não mexemos.
-    const exercisesInOrder = activeWorkout.planExercises;
+    // Ordenar exercícios: primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
+    const exercisesInOrder = [...activeWorkout.planExercises].sort((a, b) => {
+      const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
+      const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+      const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+      return internalOrderA - internalOrderB;
+    });
     
-    // Usamos 'reduce' para agrupar por 'order', que agora representa a ordem dos blocos.
+    // Usamos 'reduce' para agrupar por 'order', que representa a ordem dos blocos.
     const blocksByOrder = exercisesInOrder.reduce((acc, exercise) => {
-      const blockOrder = exercise.order;
+      const blockOrder = exercise.order !== null && exercise.order !== undefined ? exercise.order : 0;
       
       // Se ainda não vimos este bloco, criamos uma nova lista para ele.
       if (!acc[blockOrder]) {
@@ -144,8 +153,9 @@ const LiveWorkoutSessionPage = () => {
     }, {});
 
     // O resultado de 'reduce' é um objeto. Convertemos para uma lista de blocos.
-    // Object.values() vai devolver os blocos na ordem correta (0, 1, 2...).
-    return Object.values(blocksByOrder);
+    // Ordenar as chaves do objeto para garantir ordem correta dos blocos
+    const sortedBlockOrders = Object.keys(blocksByOrder).map(Number).sort((a, b) => a - b);
+    return sortedBlockOrders.map(order => blocksByOrder[order]);
 
   }, [activeWorkout]);
 

@@ -74,7 +74,7 @@ const getExercisesForWorkoutPlan = async (req, res) => {
 
     const exercises = await db.WorkoutPlanExercise.findAll({
       where: { workoutPlanId: planId },
-      order: [['order', 'ASC']],
+      order: [['order', 'ASC'], ['internalOrder', 'ASC']],
       include: [{ model: db.Exercise, as: 'exerciseDetails' }]
     });
     res.status(200).json(exercises);
