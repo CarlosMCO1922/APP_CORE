@@ -392,7 +392,7 @@ addToast('Erro no pagamento Stripe.', { type: 'error', category: 'payment' });
   };
 
   const handleStripeRequiresAction = (paymentIntent) => {
-    console.log("Stripe - Ação Requerida:", paymentIntent);
+    // logger.log("Stripe - Ação Requerida:", paymentIntent);
     setPageInfoMessage("Foram geradas referências. Utilize os dados no formulário para completar o pagamento.");
 addToast('Referência gerada. Siga as instruções no formulário.', { type: 'info', category: 'payment' });
   };

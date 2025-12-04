@@ -189,7 +189,7 @@ const LiveWorkoutSessionPage = () => {
 
     const exerciseId = planToExerciseId[planExerciseId];
     if (!exerciseId) {
-      console.warn('Não foi possível mapear planExerciseId -> exerciseId', { planExerciseId, performanceData });
+      logger.warn('Não foi possível mapear planExerciseId -> exerciseId', { planExerciseId, performanceData });
     }
 
     const fullSetData = {

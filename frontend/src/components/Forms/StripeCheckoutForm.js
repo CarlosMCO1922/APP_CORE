@@ -168,7 +168,7 @@ const StripeCheckoutForm = ({ paymentDetails, onSuccess, onError, onRequiresActi
     }
 
     if (paymentIntent) {
-      console.log("Resultado da PaymentIntent (StripeCheckoutForm):", paymentIntent);
+      // logger.log("Resultado da PaymentIntent (StripeCheckoutForm):", paymentIntent);
       if (paymentIntent.status === 'succeeded') {
         setMessage(`Pagamento de ${Number(paymentDetails.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })} realizado com sucesso!`);
         setMessageType('success');
