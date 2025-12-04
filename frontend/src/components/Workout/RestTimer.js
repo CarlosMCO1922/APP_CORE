@@ -107,7 +107,8 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 const RestTimer = ({ duration, onFinish }) => {
-  // O estado agora é o tempo que já passou, começando em 0.
+  // Usar timestamp para calcular tempo decorrido (funciona mesmo em segundo plano)
+  const [startTime] = useState(() => Date.now());
   const [elapsedTime, setElapsedTime] = useState(0);
   // Duração dinâmica que pode ser ajustada
   const [currentDuration, setCurrentDuration] = useState(duration);
@@ -116,13 +117,42 @@ const RestTimer = ({ duration, onFinish }) => {
   const vibrationIntervalRef = useRef(null);
   const audioIntervalRef = useRef(null);
   const notificationClickedRef = useRef(false);
+  const hasTriggeredNotificationRef = useRef(false);
+  const notificationScheduledRef = useRef(false); // Prevenir múltiplas notificações
+  const lastVisibilityChangeRef = useRef(Date.now()); // Para calcular tempo quando volta ao foco
 
-  // Função para agendar/cancelar notificação
+  // Função para agendar/cancelar notificação (apenas uma por vez)
   const scheduleNotification = async (remainingSeconds) => {
-    // Cancela notificação anterior se existir
-    if (notificationTimeoutRef.current) {
-      clearTimeout(notificationTimeoutRef.current);
+    // Se já existe uma notificação agendada, cancelar primeiro
+    if (notificationScheduledRef.current) {
+      // Tentar cancelar a notificação anterior
+      try {
+        if (notificationTimeoutRef.current) {
+          clearTimeout(notificationTimeoutRef.current);
+        }
+        // Cancelar notificação push se existir
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          const notifReg = regs.find(r => r.active && r.active.scriptURL.includes('notifications-sw.js'));
+          if (notifReg && notifReg.pushManager) {
+            const subscription = await notifReg.pushManager.getSubscription();
+            if (subscription) {
+              // Enviar pedido para cancelar notificação agendada
+              fetch(`${API_URL}/push/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subscription })
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch (e) {
+        logger.warn('Erro ao cancelar notificação anterior:', e);
+      }
     }
+
+    // Marcar que uma notificação está agendada
+    notificationScheduledRef.current = true;
 
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
@@ -146,16 +176,17 @@ const RestTimer = ({ duration, onFinish }) => {
           subscription: sub,
           delaySeconds: remaining,
           title: 'Descanso concluído',
-          body: 'O seu tempo de descanso terminou. Vamos continuar? 💪'
+          body: 'O seu tempo de descanso terminou. Vamos continuar? 💪',
+          tag: 'rest-timer' // Tag única para evitar duplicados
         })
       }).catch((error) => {
-        // Log erro mas não bloqueia a funcionalidade
+        notificationScheduledRef.current = false;
         if (process.env.NODE_ENV === 'development') {
           logger.warn('Erro ao agendar notificação push:', error);
         }
       });
     } catch (e) {
-      // Log erro mas não bloqueia a funcionalidade
+      notificationScheduledRef.current = false;
       if (process.env.NODE_ENV === 'development') {
         logger.warn('Erro ao configurar notificação push:', e);
       }
@@ -164,13 +195,41 @@ const RestTimer = ({ duration, onFinish }) => {
 
   // useEffect para inicializar o timer apenas uma vez
   useEffect(() => {
-    // Agenda notificação inicial com o tempo total
-    scheduleNotification(currentDuration);
+    // Agenda notificação inicial com o tempo total (apenas uma vez)
+    if (!notificationScheduledRef.current) {
+      scheduleNotification(currentDuration);
+    }
 
-    // Cria um intervalo que é executado a cada segundo.
-    intervalRef.current = setInterval(() => {
-      setElapsedTime(prevTime => prevTime + 1);
-    }, 1000);
+    // Função para calcular tempo decorrido baseado em timestamp real
+    const updateElapsedTime = () => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTime) / 1000);
+      setElapsedTime(elapsed);
+    };
+
+    // Atualizar imediatamente
+    updateElapsedTime();
+
+    // Cria um intervalo que é executado a cada segundo
+    intervalRef.current = setInterval(updateElapsedTime, 1000);
+
+    // Listener para quando a app volta ao foco (corrige tempo quando estava em segundo plano)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Quando volta ao foco, recalcular o tempo baseado no timestamp real
+        const now = Date.now();
+        const timeInBackground = now - lastVisibilityChangeRef.current;
+        // Se esteve em segundo plano por mais de 1 segundo, atualizar
+        if (timeInBackground > 1000) {
+          updateElapsedTime();
+        }
+      } else {
+        // Guardar timestamp quando vai para segundo plano
+        lastVisibilityChangeRef.current = Date.now();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       if (intervalRef.current) {
@@ -185,7 +244,10 @@ const RestTimer = ({ duration, onFinish }) => {
       if (audioIntervalRef.current) {
         clearInterval(audioIntervalRef.current);
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       stopNotification();
+      hasTriggeredNotificationRef.current = false;
+      notificationScheduledRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Executar apenas na montagem inicial
@@ -247,20 +309,42 @@ const RestTimer = ({ duration, onFinish }) => {
     };
   }, [elapsedTime, currentDuration]);
 
+  // Calcular tempo restante
+  const remainingTime = Math.max(0, currentDuration - elapsedTime);
+
   // Um segundo useEffect para verificar se o tempo acabou.
   useEffect(() => {
-    if (elapsedTime >= currentDuration) {
+    // Verificar se o tempo acabou e ainda não foi acionada a notificação
+    if (elapsedTime >= currentDuration && !hasTriggeredNotificationRef.current) {
+      hasTriggeredNotificationRef.current = true;
       notificationClickedRef.current = false;
 
-      // Criar e tocar som
+      // Criar e tocar som usando Web Audio API para melhor compatibilidade
       const playSound = () => {
         try {
+          // Tentar usar um ficheiro de som primeiro
           const audio = new Audio('/notification-sound.mp3');
-          audio.volume = 0.7;
-          audio.play().catch((error) => {
-            // Log erro mas não bloqueia a funcionalidade
-            if (process.env.NODE_ENV === 'development') {
-              logger.warn('Erro ao tocar som de notificação:', error);
+          audio.volume = 0.8;
+          audio.play().catch(() => {
+            // Se falhar, criar um som sintético usando Web Audio API
+            try {
+              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              
+              oscillator.frequency.value = 800; // Frequência do som
+              oscillator.type = 'sine';
+              
+              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+              
+              oscillator.start(audioContext.currentTime);
+              oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (e) {
+              logger.warn('Erro ao criar som sintético:', e);
             }
           });
         } catch (e) {
@@ -271,10 +355,10 @@ const RestTimer = ({ duration, onFinish }) => {
       // Tocar som imediatamente
       playSound();
 
-      // Tocar som a cada segundo durante 7 segundos
+      // Tocar som a cada segundo durante 5 segundos
       let soundCount = 0;
       audioIntervalRef.current = setInterval(() => {
-        if (notificationClickedRef.current || soundCount >= 6) {
+        if (notificationClickedRef.current || soundCount >= 4) {
           clearInterval(audioIntervalRef.current);
           audioIntervalRef.current = null;
           return;
@@ -283,15 +367,15 @@ const RestTimer = ({ duration, onFinish }) => {
         soundCount++;
       }, 1000);
 
-      // Vibração contínua durante 7 segundos
-      const vibratePattern = [200, 100, 200, 100, 200, 100, 200, 100, 200, 100, 200, 100, 200];
+      // Vibração contínua durante 5 segundos
+      const vibratePattern = [300, 100, 300, 100, 300, 100, 300];
       if (navigator.vibrate) {
         navigator.vibrate(vibratePattern);
         
-        // Continuar vibração durante 7 segundos
+        // Continuar vibração durante 5 segundos
         let vibrationCount = 0;
         vibrationIntervalRef.current = setInterval(() => {
-          if (notificationClickedRef.current || vibrationCount >= 6) {
+          if (notificationClickedRef.current || vibrationCount >= 4) {
             clearInterval(vibrationIntervalRef.current);
             vibrationIntervalRef.current = null;
             if (navigator.vibrate) {
@@ -304,7 +388,25 @@ const RestTimer = ({ duration, onFinish }) => {
         }, 1000);
       }
 
+      // Mostrar notificação local apenas se não houver notificação push agendada
+      // ou se a notificação push já foi exibida
       const notify = async () => {
+        // Verificar se já existe uma notificação com a mesma tag
+        if ('serviceWorker' in navigator) {
+          try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg && reg.getNotifications) {
+              const existingNotifications = await reg.getNotifications({ tag: 'rest-timer' });
+              // Se já existe uma notificação com a mesma tag, não criar outra
+              if (existingNotifications.length > 0) {
+                return;
+              }
+            }
+          } catch (e) {
+            // Continuar se houver erro
+          }
+        }
+
         try {
           if (typeof window !== 'undefined' && 'Notification' in window) {
             let permission = Notification.permission;
@@ -315,36 +417,27 @@ const RestTimer = ({ duration, onFinish }) => {
               if ('serviceWorker' in navigator) {
                 const reg = await navigator.serviceWorker.getRegistration();
                 if (reg && reg.showNotification) {
-                  const notification = await reg.showNotification('Descanso concluído', {
+                  await reg.showNotification('Descanso concluído', {
                     body: 'O seu tempo de descanso terminou. Vamos continuar? 💪',
                     icon: '/icons/icon-192x192.png',
                     badge: '/icons/icon-192x192.png',
                     vibrate: [200, 100, 200],
-                    tag: 'rest-timer',
-                    requireInteraction: true, // Mantém a notificação visível até interação
+                    tag: 'rest-timer', // Tag única para evitar duplicados
+                    requireInteraction: true,
                   });
-                  
-                  // Listener para quando a notificação é clicada
-                  notification.onclick = () => {
-                    stopNotification();
-                  };
                 } else {
-                  const notification = new Notification('Descanso concluído', { 
+                  new Notification('Descanso concluído', { 
                     body: 'O seu tempo de descanso terminou.',
+                    tag: 'rest-timer',
                     requireInteraction: true
                   });
-                  notification.onclick = () => {
-                    stopNotification();
-                  };
                 }
               } else {
-                const notification = new Notification('Descanso concluído', { 
+                new Notification('Descanso concluído', { 
                   body: 'O seu tempo de descanso terminou.',
+                  tag: 'rest-timer',
                   requireInteraction: true
                 });
-                notification.onclick = () => {
-                  stopNotification();
-                };
               }
             }
           }
@@ -354,18 +447,23 @@ const RestTimer = ({ duration, onFinish }) => {
       };
       notify();
 
-      // Parar tudo após 7 segundos se não foi clicado
+      // Parar tudo após 5 segundos se não foi clicado
       setTimeout(() => {
         if (!notificationClickedRef.current) {
           stopNotification();
         }
-      }, 7000);
+      }, 5000);
     }
   }, [elapsedTime, currentDuration]);
 
   const handleAddTime = () => {
     const newDuration = currentDuration + 30;
     setCurrentDuration(newDuration);
+    // Resetar flag de notificação se o novo tempo for maior que o tempo decorrido
+    if (newDuration > elapsedTime) {
+      hasTriggeredNotificationRef.current = false;
+      notificationScheduledRef.current = false; // Permitir reagendar
+    }
     // Reagenda notificação com novo tempo restante
     const remaining = Math.max(0, newDuration - elapsedTime);
     scheduleNotification(remaining);
@@ -374,6 +472,11 @@ const RestTimer = ({ duration, onFinish }) => {
   const handleSubtractTime = () => {
     const newDuration = Math.max(30, currentDuration - 30); // Mínimo de 30 segundos
     setCurrentDuration(newDuration);
+    // Resetar flag de notificação se o novo tempo for maior que o tempo decorrido
+    if (newDuration > elapsedTime) {
+      hasTriggeredNotificationRef.current = false;
+      notificationScheduledRef.current = false; // Permitir reagendar
+    }
     // Reagenda notificação com novo tempo restante
     const remaining = Math.max(0, newDuration - elapsedTime);
     scheduleNotification(remaining);
@@ -385,7 +488,21 @@ const RestTimer = ({ duration, onFinish }) => {
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
-  const remainingTime = Math.max(0, currentDuration - elapsedTime);
+  // Se o tempo acabou, esconder o componente após alguns segundos
+  useEffect(() => {
+    if (remainingTime === 0) {
+      // Aguardar alguns segundos para o utilizador ver a notificação, depois esconder
+      const hideTimer = setTimeout(() => {
+        onFinish();
+      }, 5000); // Esconder após 5 segundos
+      return () => clearTimeout(hideTimer);
+    }
+  }, [remainingTime, onFinish]);
+
+  // Não renderizar se o tempo acabou e já passou o tempo de exibição
+  if (remainingTime === 0) {
+    return null;
+  }
 
   return (
     <TimerContainer>
