@@ -155,7 +155,15 @@ const LiveWorkoutSessionPage = () => {
     // O resultado de 'reduce' é um objeto. Convertemos para uma lista de blocos.
     // Ordenar as chaves do objeto para garantir ordem correta dos blocos
     const sortedBlockOrders = Object.keys(blocksByOrder).map(Number).sort((a, b) => a - b);
-    return sortedBlockOrders.map(order => blocksByOrder[order]);
+    // Ordenar os exercícios dentro de cada bloco por internalOrder
+    return sortedBlockOrders.map(order => {
+      const block = blocksByOrder[order];
+      return block.sort((a, b) => {
+        const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+        const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+        return internalOrderA - internalOrderB;
+      });
+    });
 
   }, [activeWorkout]);
 

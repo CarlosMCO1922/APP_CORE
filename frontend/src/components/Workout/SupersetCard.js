@@ -56,7 +56,12 @@ const SupersetCard = ({ exercises = [], onSetComplete, onShowHistory, trainingId
     return null;
   }
 
-  const sortedExercises = [...exercises].sort((a, b) => a.order - b.order);
+  // Ordenar por internalOrder (ordem dentro do bloco/superset)
+  const sortedExercises = [...exercises].sort((a, b) => {
+    const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+    const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+    return internalOrderA - internalOrderB;
+  });
 
   const supersetTitle = sortedExercises
     .map(ex => ex.exerciseDetails.name)
