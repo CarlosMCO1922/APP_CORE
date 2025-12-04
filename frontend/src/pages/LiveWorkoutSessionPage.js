@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { logger } from '../utils/logger';
+import useWakeLock from '../hooks/useWakeLock';
 import { FaChevronDown, FaStopwatch, FaTimes, FaHistory } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard'; 
 import SupersetCard from '../components/Workout/SupersetCard';
@@ -105,6 +106,9 @@ const LiveWorkoutSessionPage = () => {
   const [lastCompletedSet, setLastCompletedSet] = useState(null);
   const [showCancelWorkoutModal, setShowCancelWorkoutModal] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+
+  // Manter o ecrã ligado durante o treino
+  useWakeLock(!!activeWorkout);
 
   // Lógica do cronómetro que depende do 'activeWorkout' do contexto
   useEffect(() => {
