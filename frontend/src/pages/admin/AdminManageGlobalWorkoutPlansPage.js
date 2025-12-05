@@ -320,6 +320,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
             id: ex.id,
             exerciseId: ex.exerciseDetails.id,
             order: ex.order,
+            internalOrder: ex.internalOrder !== null && ex.internalOrder !== undefined ? ex.internalOrder : 0,
             supersetGroup: ex.supersetGroup, 
             sets: ex.sets || '',
             reps: ex.reps || '',
@@ -412,9 +413,15 @@ const AdminManageGlobalWorkoutPlansPage = () => {
       const exerciseToRemove = currentPlanData.exercises[originalIndex];
       let updatedExercises = currentPlanData.exercises.filter((_, i) => i !== originalIndex);
       const remainingInGroup = updatedExercises.filter(ex => ex.supersetGroup === exerciseToRemove.supersetGroup);
-      remainingInGroup.sort((a, b) => a.order - b.order);
+      // Ordenar por internalOrder dentro do grupo
+      remainingInGroup.sort((a, b) => {
+        const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+        const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+        return internalOrderA - internalOrderB;
+      });
+      // Atualizar internalOrder sequencialmente
       remainingInGroup.forEach((ex, index) => {
-          ex.order = index;
+          ex.internalOrder = index;
       });
       setCurrentPlanData(prev => ({ ...prev, exercises: updatedExercises }));
     };
@@ -446,10 +453,13 @@ const AdminManageGlobalWorkoutPlansPage = () => {
         if (!currentPlanData.exercises) return [];
         const groups = new Map();
         const sortedExercises = [...currentPlanData.exercises].sort((a, b) => {
+            // Primeiro por supersetGroup (bloco), depois por internalOrder (ordem dentro do bloco)
             if (a.supersetGroup !== b.supersetGroup) {
-                return a.supersetGroup - b.supersetGroup;
+                return (a.supersetGroup || 0) - (b.supersetGroup || 0);
             }
-            return a.order - b.order;
+            const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+            const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+            return internalOrderA - internalOrderB;
         });
         sortedExercises.forEach((ex, index) => {
           const group = ex.supersetGroup;
@@ -491,39 +501,78 @@ const AdminManageGlobalWorkoutPlansPage = () => {
         }
 
         if (type === 'EXERCISE') { 
-            const sourceGroupIndex = parseInt(source.droppableId.replace('block-', ''));
-            const destGroupIndex = parseInt(destination.droppableId.replace('block-', ''));
+            // Encontrar os grupos usando o blockKey (droppableId)
+            const sourceBlockKey = source.droppableId;
+            const destBlockKey = destination.droppableId;
+            
+            // Encontrar os índices dos grupos no planExercisesGrouped
+            let sourceGroupIndex = -1;
+            let destGroupIndex = -1;
+            
+            planExercisesGrouped.forEach((group, idx) => {
+                const blockKey = group[0].supersetGroup ? `group-${group[0].supersetGroup}` : `group-single-${group[0].id || group[0].tempId}`;
+                if (blockKey === sourceBlockKey) sourceGroupIndex = idx;
+                if (blockKey === destBlockKey) destGroupIndex = idx;
+            });
+            
+            if (sourceGroupIndex === -1 || destGroupIndex === -1) return;
             
             const sourceGroup = planExercisesGrouped[sourceGroupIndex];
-            const exerciseToMove = sourceGroup.find((_, index) => index === source.index);
+            const destGroup = planExercisesGrouped[destGroupIndex];
+            const exerciseToMove = sourceGroup[source.index];
             
-          
-            newExercises.splice(exerciseToMove.originalIndex, 1);
-
-           
-            const updatedExercise = { ...exerciseToMove, supersetGroup: planExercisesGrouped[destGroupIndex][0].supersetGroup };
-            
-            
-            const groupToInsertInto = planExercisesGrouped[destGroupIndex];
-            let targetIndex;
-            if (destination.index >= groupToInsertInto.length) {
-                const lastExercise = groupToInsertInto[groupToInsertInto.length - 1];
-                targetIndex = lastExercise ? newExercises.findIndex(ex => (ex.id || ex.tempId) === (lastExercise.id || lastExercise.tempId)) + 1 : newExercises.length;
-            } else {
-                const siblingExercise = groupToInsertInto[destination.index];
-                targetIndex = newExercises.findIndex(ex => (ex.id || ex.tempId) === (siblingExercise.id || siblingExercise.tempId));
+            // Remover o exercício da lista original
+            const exerciseIndexToRemove = newExercises.findIndex(ex => (ex.id || ex.tempId) === (exerciseToMove.id || exerciseToMove.tempId));
+            if (exerciseIndexToRemove !== -1) {
+                newExercises.splice(exerciseIndexToRemove, 1);
             }
+
+            // Atualizar o supersetGroup do exercício movido
+            const targetSupersetGroup = destGroup[0].supersetGroup;
+            const updatedExercise = { ...exerciseToMove, supersetGroup: targetSupersetGroup };
+            
+            // Encontrar a posição correta para inserir
+            let targetIndex;
+            if (destination.index >= destGroup.length) {
+                // Inserir no final do grupo de destino
+                const lastExerciseInDest = destGroup[destGroup.length - 1];
+                const lastIndex = newExercises.findIndex(ex => (ex.id || ex.tempId) === (lastExerciseInDest.id || lastExerciseInDest.tempId));
+                targetIndex = lastIndex !== -1 ? lastIndex + 1 : newExercises.length;
+            } else {
+                // Inserir antes do exercício no índice de destino
+                const siblingExercise = destGroup[destination.index];
+                const siblingIndex = newExercises.findIndex(ex => (ex.id || ex.tempId) === (siblingExercise.id || siblingExercise.tempId));
+                targetIndex = siblingIndex !== -1 ? siblingIndex : newExercises.length;
+            }
+            
             newExercises.splice(targetIndex, 0, updatedExercise);
 
+            // Agrupar por supersetGroup e atualizar order e internalOrder
             const finalGrouped = {};
             newExercises.forEach(ex => {
-                if(!finalGrouped[ex.supersetGroup]) finalGrouped[ex.supersetGroup] = [];
-                finalGrouped[ex.supersetGroup].push(ex);
+                const groupKey = ex.supersetGroup !== null && ex.supersetGroup !== undefined ? ex.supersetGroup : 'single';
+                if(!finalGrouped[groupKey]) finalGrouped[groupKey] = [];
+                finalGrouped[groupKey].push(ex);
             });
-            const finalReorderedExercises = Object.values(finalGrouped).flat().map((ex, index) => {
-                const group = finalGrouped[ex.supersetGroup];
-                ex.order = group.findIndex(gEx => (gEx.id || gEx.tempId) === (ex.id || ex.tempId));
-                return ex;
+
+            // Atualizar order (bloco) e internalOrder (ordem dentro do bloco)
+            let blockOrder = 0;
+            const finalReorderedExercises = [];
+            
+            Object.keys(finalGrouped).sort((a, b) => {
+                // Ordenar grupos: 'single' no final, depois por valor numérico
+                if (a === 'single') return 1;
+                if (b === 'single') return -1;
+                return parseInt(a) - parseInt(b);
+            }).forEach(groupKey => {
+                const group = finalGrouped[groupKey];
+                // Atualizar order para todos os exercícios do grupo
+                group.forEach((ex, index) => {
+                    ex.order = blockOrder;
+                    ex.internalOrder = index; // Atualizar internalOrder sequencialmente dentro do grupo
+                    finalReorderedExercises.push(ex);
+                });
+                blockOrder++;
             });
 
             setCurrentPlanData(prev => ({...prev, exercises: finalReorderedExercises}));
@@ -543,6 +592,7 @@ const AdminManageGlobalWorkoutPlansPage = () => {
                 id: isNaN(parseInt(ex.id)) ? null : ex.id, 
                 exerciseId: parseInt(ex.exerciseId),
                 order: parseInt(ex.order) || 0,
+                internalOrder: ex.internalOrder !== null && ex.internalOrder !== undefined ? parseInt(ex.internalOrder) : 0,
                 supersetGroup: parseInt(ex.supersetGroup) || 0,
                 sets: ex.sets ? parseInt(ex.sets) : null,
                 reps: ex.reps || null,
