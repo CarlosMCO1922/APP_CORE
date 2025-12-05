@@ -9,7 +9,7 @@ import { getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService';
 import { FaDumbbell, FaChevronRight } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
 import { useWorkout } from '../context/WorkoutContext';
-import { sortPlanExercises } from '../utils/exerciseOrderUtils';
+import { sortPlanExercises, ensurePlanExercisesOrdered } from '../utils/exerciseOrderUtils';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
