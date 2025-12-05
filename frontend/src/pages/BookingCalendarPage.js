@@ -15,7 +15,7 @@ import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
-  max-width: 1000px; margin: 20px auto; padding: 20px clamp(15px, 4vw, 40px);
+  max-width: 1000px; margin: 20px auto; padding: 0 clamp(15px, 4vw, 40px) 20px;
   font-family: ${({ theme }) => theme.fonts.main};
 `;
 const Header = styled.div`
@@ -26,11 +26,12 @@ const Title = styled.h1`
 `;
 const BookingLayout = styled.div`
   display: grid; grid-template-columns: 1fr; gap: 40px;
+  margin-top: 0;
   @media (min-width: 800px) { grid-template-columns: auto 1fr; }
 `;
 const LeftColumn = styled.div`
   display: flex; flex-direction: column; gap: 15px;
-  margin-top: 10px;
+  margin-top: 0;
 `;
 const ProfessionalSelector = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
