@@ -8,6 +8,7 @@ import Navbar from './components/Layout/Navbar';
 import BottomNav from './components/Layout/BottomNav';
 import OfflineIndicator from './components/OfflineIndicator';
 import ConfirmationModal from './components/Common/ConfirmationModal';
+import { isOnline } from './utils/networkUtils';
 
 // Code-splitting for pages (melhora UX e reduz bundle inicial)
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -55,23 +56,34 @@ const Fallback = styled.div`
 
 const MinimizedBar = styled.div`
   position: fixed;
-  bottom: 0;
+  top: ${props => {
+    // Se estiver offline, OfflineIndicator está visível (~50px de altura)
+    if (props.$isOffline) return '50px';
+    // Em desktop, fica abaixo do Navbar (~60px de altura)
+    return '0px';
+  }};
   left: 0;
   width: 100%;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   color: ${({ theme }) => theme.colors.textMain};
-  padding: 10px 15px max(env(safe-area-inset-bottom), 10px) 15px;
+  padding: max(env(safe-area-inset-top), 10px) 15px 10px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  border-top: 3px solid ${({ theme }) => theme.colors.primary};
-  z-index: 1001; /* Acima da BottomNav (z-index 1000) */
-  transition: transform 0.3s ease-in-out;
+  border-bottom: 3px solid ${({ theme }) => theme.colors.primary};
+  z-index: 999; /* Abaixo do Navbar (1000) e OfflineIndicator (9999) mas acima do conteúdo */
+  transition: top 0.3s ease-in-out, transform 0.3s ease-in-out;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   
-  /* Em mobile, adicionar padding bottom para não sobrepor com BottomNav */
-  @media (max-width: 768px) {
-    padding-bottom: max(calc(env(safe-area-inset-bottom) + 70px), 70px);
+  /* Em desktop, ajustar topo se houver Navbar */
+  @media (min-width: 769px) {
+    top: ${props => {
+      // Se estiver offline, fica abaixo do OfflineIndicator + Navbar
+      if (props.$isOffline) return '110px'; // ~50px (OfflineIndicator) + ~60px (Navbar)
+      // Se não estiver offline, fica abaixo do Navbar
+      return '60px'; // Altura aproximada do Navbar em desktop
+    }};
   }
 
   &:hover {
@@ -113,9 +125,20 @@ function App() {
   const { authState } = useAuth();
   const { activeWorkout, isMinimized, setIsMinimized, cancelWorkout } = useWorkout();
   const [showCancelWorkoutModal, setShowCancelWorkoutModal] = useState(false);
+  const [isOffline, setIsOffline] = useState(!isOnline());
 
   useEffect(() => {
-  }, [authState]);
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleCancelWorkoutClick = (e) => {
     e.stopPropagation();
@@ -198,7 +221,10 @@ function App() {
       )}
       
       {activeWorkout && isMinimized && (
-        <MinimizedBar onClick={() => setIsMinimized(false)}>
+        <MinimizedBar 
+          onClick={() => setIsMinimized(false)}
+          $isOffline={isOffline}
+        >
           <span>Treino em Andamento: {activeWorkout.name}</span>
           <CancelButton onClick={handleCancelWorkoutClick}>
             Cancelar
