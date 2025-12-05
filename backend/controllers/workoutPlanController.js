@@ -85,6 +85,7 @@ const getAllGlobalWorkoutPlans = async (req, res) => {
         model: db.WorkoutPlanExercise,
         as: 'planExercises',
         required: false, // LEFT JOIN para não excluir planos sem exercícios
+        order: [['order', 'ASC'], ['internalOrder', 'ASC']], // GARANTIR ORDENAÇÃO
         include: [{ 
           model: db.Exercise, 
           as: 'exerciseDetails', 
@@ -93,7 +94,26 @@ const getAllGlobalWorkoutPlans = async (req, res) => {
         }]
       }]
     });
-    res.status(200).json(workoutPlans);
+    
+    // Garantir ordenação mesmo após o include (por vezes Sequelize não respeita order em includes)
+    const plansWithOrderedExercises = workoutPlans.map(plan => {
+      const planJSON = plan.toJSON ? plan.toJSON() : plan;
+      if (planJSON.planExercises && Array.isArray(planJSON.planExercises)) {
+        planJSON.planExercises.sort((a, b) => {
+          const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
+          const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
+          const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
+          return internalOrderA - internalOrderB;
+        });
+      }
+      return planJSON;
+    });
+    
+    res.status(200).json(plansWithOrderedExercises);
   } catch (error) {
     console.error('Erro (admin) ao listar planos de treino globais:', error);
     res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { logger } from '../utils/logger';
 import useWakeLock from '../hooks/useWakeLock';
+import { sortPlanExercises } from '../utils/exerciseOrderUtils';
 import { FaChevronDown, FaStopwatch, FaTimes, FaHistory } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard'; 
 import SupersetCard from '../components/Workout/SupersetCard';
@@ -125,17 +126,8 @@ const LiveWorkoutSessionPage = () => {
       return [];
     }
 
-    // Ordenar exercícios: primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
-    const exercisesInOrder = [...activeWorkout.planExercises].sort((a, b) => {
-      const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
-      const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
-      const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
-      return internalOrderA - internalOrderB;
-    });
+    // GARANTIR ordenação usando função utilitária
+    const exercisesInOrder = sortPlanExercises(activeWorkout.planExercises);
     
     // Usamos 'reduce' para agrupar por 'order', que representa a ordem dos blocos.
     const blocksByOrder = exercisesInOrder.reduce((acc, exercise) => {

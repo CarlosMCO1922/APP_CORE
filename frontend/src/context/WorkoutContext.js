@@ -4,6 +4,7 @@ import { getMyLastPerformancesService, checkPersonalRecordsService, logExerciseP
 import { useAuth } from './AuthContext';
 import { safeGetItem, safeSetItem, validateWorkoutSession, clearInvalidStorage } from '../utils/storageUtils';
 import { logger } from '../utils/logger';
+import { ensurePlanExercisesOrdered } from '../utils/exerciseOrderUtils';
 
 const WorkoutContext = createContext();
 
@@ -22,9 +23,11 @@ export const WorkoutProvider = ({ children }) => {
         // Tenta carregar treino com validação
         const savedWorkout = safeGetItem('activeWorkoutSession', validateWorkoutSession);
         if (savedWorkout) {
-            setActiveWorkout(savedWorkout);
+            // GARANTIR que os exercícios estão ordenados ao carregar do localStorage
+            const orderedWorkout = ensurePlanExercisesOrdered(savedWorkout);
+            setActiveWorkout(orderedWorkout);
             setIsMinimized(true);
-            logger.log("Treino carregado do localStorage:", savedWorkout);
+            logger.log("Treino carregado do localStorage com exercícios ordenados:", orderedWorkout);
         }
     }, []);
 
@@ -64,9 +67,12 @@ export const WorkoutProvider = ({ children }) => {
         }
 
         try {
-            const workoutSession = { ...planData, startTime: Date.now(), setsData: {} };
+            // GARANTIR que os exercícios estão ordenados antes de iniciar o treino
+            const orderedPlanData = ensurePlanExercisesOrdered(planData);
+            const workoutSession = { ...orderedPlanData, startTime: Date.now(), setsData: {} };
             setActiveWorkout(workoutSession);
             setIsMinimized(false);
+            logger.log("Treino iniciado com exercícios ordenados:", workoutSession.planExercises?.map(e => ({ order: e.order, internalOrder: e.internalOrder, name: e.exerciseDetails?.name })));
             return Promise.resolve(workoutSession);
         } catch (error) {
             logger.error("Erro ao iniciar treino:", error);

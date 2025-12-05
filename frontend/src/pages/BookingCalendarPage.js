@@ -19,7 +19,7 @@ const PageContainer = styled.div`
   font-family: ${({ theme }) => theme.fonts.main};
 `;
 const Header = styled.div`
-  display: flex; align-items: center; gap: 15px; margin-bottom: 15px;
+  display: flex; align-items: center; gap: 15px; margin-bottom: 0;
 `;
 const Title = styled.h1`
   font-size: clamp(1.8rem, 4vw, 2.2rem); color: ${({ theme }) => theme.colors.textMain}; margin: 0;
@@ -30,6 +30,7 @@ const BookingLayout = styled.div`
 `;
 const LeftColumn = styled.div`
   display: flex; flex-direction: column; gap: 15px;
+  margin-top: 10px;
 `;
 const ProfessionalSelector = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
@@ -53,7 +54,7 @@ const TimeSlotsContainer = styled.div`
 `;
 const TimeSlotsHeader = styled.h3`
   font-size: 1.2rem; font-weight: 500; color: ${({ theme }) => theme.colors.textMuted};
-  margin: 0; padding: 15px 25px; text-align: center;
+  margin: 0; padding: 10px 25px; text-align: center;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   span { color: ${({ theme }) => theme.colors.primary}; font-weight: 600; }
 `;

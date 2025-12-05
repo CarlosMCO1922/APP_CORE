@@ -9,6 +9,7 @@ import { getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService';
 import { FaDumbbell, FaChevronRight } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
 import { useWorkout } from '../context/WorkoutContext';
+import { sortPlanExercises } from '../utils/exerciseOrderUtils';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -161,21 +162,9 @@ const WorkoutPlanSummaryPage = () => {
       try {
         setLoading(true);
         const data = await getGlobalWorkoutPlanByIdClient(globalPlanId, authState.token);
-        // Garantir que os exercícios estão ordenados corretamente
-        if (data && data.planExercises && Array.isArray(data.planExercises)) {
-          data.planExercises.sort((a, b) => {
-            // Primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
-            const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
-            const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
-            if (orderA !== orderB) {
-              return orderA - orderB;
-            }
-            const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
-            const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
-            return internalOrderA - internalOrderB;
-          });
-        }
-        setPlan(data);
+        // GARANTIR que os exercícios estão ordenados corretamente usando função utilitária
+        const orderedPlan = ensurePlanExercisesOrdered(data);
+        setPlan(orderedPlan);
       } catch (err) {
         setError(err.message || 'Não foi possível carregar os detalhes do plano.');
       } finally {
@@ -215,17 +204,7 @@ const WorkoutPlanSummaryPage = () => {
       </Header>
       
       <ExerciseList>
-        {plan.planExercises.sort((a, b) => {
-          // Primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
-          const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
-          const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
-          if (orderA !== orderB) {
-            return orderA - orderB;
-          }
-          const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
-          const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
-          return internalOrderA - internalOrderB;
-        }).map(pe => (
+        {sortPlanExercises(plan.planExercises).map((pe, idx) => (
           <ExerciseItem key={pe.id}>
             <div className="info">
               <IconWrapper><FaDumbbell /></IconWrapper>

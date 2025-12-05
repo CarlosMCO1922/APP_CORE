@@ -19,6 +19,7 @@ import { getAllTrainings }
     from '../../services/trainingService';
 import { getAllExercises } from '../../services/exerciseService';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
+import { sortPlanExercises } from '../../utils/exerciseOrderUtils';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -566,17 +567,7 @@ function AdminManageWorkoutPlansPage() {
           </ActionButton>
 
           <ExerciseList>
-            {plan.planExercises && plan.planExercises.length > 0 ? plan.planExercises.sort((a, b) => {
-              // Primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
-              const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
-              const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
-              if (orderA !== orderB) {
-                return orderA - orderB;
-              }
-              const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
-              const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
-              return internalOrderA - internalOrderB;
-            }).map(item => (
+            {plan.planExercises && plan.planExercises.length > 0 ? sortPlanExercises(plan.planExercises).map((item, idx) => (
               <ExerciseItem key={item.id}>
                 <div className="exercise-info">
                   <p><strong>{item.exerciseDetails?.name || 'Exercício Desconhecido'}</strong> (Ordem: {item.order})</p>

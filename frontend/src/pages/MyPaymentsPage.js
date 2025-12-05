@@ -12,6 +12,7 @@ import StripeCheckoutForm from '../components/Forms/StripeCheckoutForm';
 import { useToast } from '../components/Toast/ToastProvider';
 import BackArrow from '../components/BackArrow';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
+import { FaSync } from 'react-icons/fa';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -134,21 +135,28 @@ const ConfirmButton = styled(ActionButton)`
 `;
 
 const RefreshButton = styled.button`
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
   border-radius: ${props => props.theme.borderRadius};
   cursor: pointer;
   border: none;
-  transition: background-color 0.2s ease;
-  font-weight: 500;
-  min-width: 80px;
-  margin: 2px;
-  
+  transition: all 0.2s ease;
   background-color: ${({ theme }) => theme.colors.primary}; 
   color: ${({ theme }) => theme.colors.textButton};
+  margin: 2px;
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 
   &:hover:not(:disabled) {
     filter: brightness(1.1);
+    transform: scale(1.05);
   }
   &:disabled {
     background-color: ${props => props.theme.colors.buttonSecondaryBg};
@@ -445,8 +453,8 @@ if (loading && !showStripeModal) {
           <Title style={{ margin: 0, textAlign: 'left', flex: 1 }}>Pagamentos</Title>
         </div>
         <HeaderActions>
-          <RefreshButton onClick={handleRefreshPayments} disabled={loading}>
-            {loading ? 'A atualizar...' : 'Atualizar Lista'}
+          <RefreshButton onClick={handleRefreshPayments} disabled={loading} title="Atualizar Lista" aria-label="Atualizar Lista">
+            <FaSync style={{ fontSize: '1.2rem', animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           </RefreshButton>
         </HeaderActions>
       </Header>

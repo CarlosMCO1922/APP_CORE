@@ -188,7 +188,7 @@ input, select, textarea {
 
 .react-calendar__tile {
   max-width: 100%;
-  padding: 12px 6.6667px;
+  padding: 12px 8px;
   background: none;
   text-align: center;
   line-height: 16px;
