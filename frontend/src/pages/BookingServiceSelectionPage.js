@@ -71,6 +71,7 @@ const AnimatedView = styled.div`
   left: 0;
   transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
   opacity: ${props => (props.active ? 1 : 0)};
+  display: ${props => (props.active ? "block" : "none")};
   transform: translateX(${props => (props.active ? '0%' : (props.direction === 'right' ? '100%' : '-100%'))});
   pointer-events: ${props => (props.active ? 'auto' : 'none')}; // Permite clicar apenas na vista ativa
 `;
@@ -415,7 +416,7 @@ const BookingServiceSelectionPage = () => {
       <Header>
         <BackArrow onClick={handleBack} />
         <Title>{getTitle()}</Title>
-      </Header>
+      </Header> 
       
       {error && <p style={{color: 'red', textAlign: 'center'}}>{error}</p>}
       {successMessage && <p style={{color: 'green', textAlign: 'center'}}>{successMessage}</p>}
