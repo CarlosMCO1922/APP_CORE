@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyLastPerformancesService, checkPersonalRecordsService, logExercisePerformanceService } from '../services/progressService';
+import { getMyLastPerformancesService, checkPersonalRecordsService, logExercisePerformanceService, getMyPerformanceHistoryForExerciseService } from '../services/progressService';
 import { useAuth } from './AuthContext';
 import { safeGetItem, safeSetItem, validateWorkoutSession, clearInvalidStorage } from '../utils/storageUtils';
 import { logger } from '../utils/logger';
@@ -12,6 +12,7 @@ export const WorkoutProvider = ({ children }) => {
     const [activeWorkout, setActiveWorkout] = useState(null);
     const [isMinimized, setIsMinimized] = useState(true);
     const [lastPerformances, setLastPerformances] = useState({});
+    const [exercisePlaceholders, setExercisePlaceholders] = useState({}); // { planExerciseId: [{ weight, reps }, ...] }
     const { authState } = useAuth();
     const navigate = useNavigate();
 
@@ -69,6 +70,36 @@ export const WorkoutProvider = ({ children }) => {
         try {
             // GARANTIR que os exercícios estão ordenados antes de iniciar o treino
             const orderedPlanData = ensurePlanExercisesOrdered(planData);
+            
+            // Buscar histórico completo (últimas 3 séries) de cada exercício para placeholders
+            const placeholdersMap = {};
+            if (orderedPlanData.planExercises && authState.token) {
+                // Obter trainingId atual se existir (para excluir do histórico)
+                const currentTrainingId = orderedPlanData.trainingId || null;
+                
+                await Promise.all(
+                    orderedPlanData.planExercises.map(async (planExercise) => {
+                        const planExerciseId = planExercise.id || planExercise.planExerciseId;
+                        if (!planExerciseId) return;
+                        
+                        try {
+                            const historyData = await getMyPerformanceHistoryForExerciseService(planExerciseId, authState.token, true, currentTrainingId);
+                            // Mapear as séries do histórico para placeholders (máximo 3)
+                            if (historyData && historyData.length > 0) {
+                                const placeholders = historyData.slice(0, 3).map(set => ({
+                                    weight: set.performedWeight || null,
+                                    reps: set.performedReps || null
+                                }));
+                                placeholdersMap[planExerciseId] = placeholders;
+                            }
+                        } catch (err) {
+                            logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId}:`, err);
+                        }
+                    })
+                );
+            }
+            setExercisePlaceholders(placeholdersMap);
+            
             const workoutSession = { ...orderedPlanData, startTime: Date.now(), setsData: {} };
             setActiveWorkout(workoutSession);
             setIsMinimized(false);
@@ -169,7 +200,7 @@ export const WorkoutProvider = ({ children }) => {
 
     const cancelWorkout = () => { setActiveWorkout(null); };
 
-    const value = { activeWorkout, isMinimized, lastPerformances, startWorkout, finishWorkout, cancelWorkout, updateSetData, setIsMinimized, logSet };
+    const value = { activeWorkout, isMinimized, lastPerformances, exercisePlaceholders, startWorkout, finishWorkout, cancelWorkout, updateSetData, setIsMinimized, logSet };
 
     return ( <WorkoutContext.Provider value={value}>{children}</WorkoutContext.Provider> );
 };

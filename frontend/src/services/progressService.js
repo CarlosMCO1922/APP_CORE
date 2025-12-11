@@ -79,11 +79,17 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
 };
 
 
-export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, token) => {
+export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, token, forPlaceholders = false, excludeTrainingId = null) => {
   if (!token) throw new Error('Token não fornecido para getMyPerformanceHistoryForExerciseService.');
   if (!planExerciseId) throw new Error('ID do Exercício do Plano (planExerciseId) é obrigatório.');
   try {
-    const url = `${API_URL}/progress/my-exercise-history/${planExerciseId}?limit=3`;
+    let url = `${API_URL}/progress/my-exercise-history/${planExerciseId}?limit=3`;
+    if (forPlaceholders) {
+      url += '&forPlaceholders=true';
+    }
+    if (excludeTrainingId) {
+      url += `&excludeTrainingId=${excludeTrainingId}`;
+    }
     logger.log('getMyPerformanceHistoryForExerciseService URL:', url); 
     const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
@@ -288,12 +294,16 @@ export const updateExercisePerformanceService = async (performanceId, performanc
   }
 };
 
-export const getExerciseHistoryService = async (exerciseId, token) => {
+export const getExerciseHistoryService = async (exerciseId, token, excludeTrainingId = null) => {
   if (!token) throw new Error('Token não fornecido para getExerciseHistoryService.');
   if (!exerciseId) throw new Error('ID do Exercício é obrigatório.');
 
   try {
-    const url = `${API_URL}/progress/history/exercise/${exerciseId}?limit=3`;
+    let url = `${API_URL}/progress/history/exercise/${exerciseId}?limit=3`;
+    // Se excludeTrainingId for fornecido, adiciona à query string para excluir registos do treino atual
+    if (excludeTrainingId) {
+      url += `&excludeTrainingId=${excludeTrainingId}`;
+    }
     
     const response = await fetch(url, {
       method: 'GET', // Método GET

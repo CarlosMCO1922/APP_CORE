@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaPlus } from 'react-icons/fa';
 import SetRow from './SetRow';
+import { useWorkout } from '../../context/WorkoutContext';
 
 // --- Styled Components ---
 const CardContainer = styled.div` margin-bottom: 40px; `;
@@ -21,6 +22,11 @@ const ExerciseLiveCard = ({
   lastPerformance,
 }) => {
   const [sets, setSets] = useState([]);
+  const { exercisePlaceholders } = useWorkout();
+  
+  // Obter placeholders para este exercício
+  const planExerciseId = planExercise?.planExerciseId ?? planExercise?.id;
+  const placeholders = exercisePlaceholders[planExerciseId] || [];
 
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));
@@ -52,21 +58,27 @@ const ExerciseLiveCard = ({
       <SetsGridHeader><span>Série</span><span>KG</span><span>Reps</span><span></span></SetsGridHeader>
       
       <div>
-        {sets.map((set, index) => (
-          <SetRow
-            key={set.id}
-            setNumber={index + 1}
-            planExerciseId={planExercise?.planExerciseId ?? planExercise?.id}
-            trainingId={trainingId} 
-            workoutPlanId={workoutPlanId} 
-            onSetComplete={onSetComplete}
-            restSeconds={planExercise.restSeconds}
-            onDeleteSet={() => handleDeleteSet(index)} 
-            lastWeight={lastPerformance?.performedWeight}
-            lastReps={lastPerformance?.performedReps}
-            prescribedReps={planExercise.reps}
-          />
-        ))}
+        {sets.map((set, index) => {
+          // Obter placeholder para esta série (série 1 → índice 0, série 2 → índice 1, etc.)
+          const placeholder = placeholders[index] || { weight: null, reps: null };
+          return (
+            <SetRow
+              key={set.id}
+              setNumber={index + 1}
+              planExerciseId={planExercise?.planExerciseId ?? planExercise?.id}
+              trainingId={trainingId} 
+              workoutPlanId={workoutPlanId} 
+              onSetComplete={onSetComplete}
+              restSeconds={planExercise.restSeconds}
+              onDeleteSet={() => handleDeleteSet(index)} 
+              lastWeight={lastPerformance?.performedWeight}
+              lastReps={lastPerformance?.performedReps}
+              placeholderWeight={placeholder.weight}
+              placeholderReps={placeholder.reps}
+              prescribedReps={planExercise.reps}
+            />
+          );
+        })}
       </div>
 
       <AddSetButton onClick={handleAddSet}><FaPlus /> Adicionar Série ({planExercise.restSeconds || 90}s)</AddSetButton>

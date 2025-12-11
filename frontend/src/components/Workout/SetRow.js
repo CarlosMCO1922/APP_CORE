@@ -307,7 +307,7 @@ const PrescribedRepsNote = styled.div`
 
 // --- Componente SetRow ---
 // ALTERADO: Adicionado 'onDeleteSet' às props recebidas
-const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeight, lastReps, onDeleteSet = () => {}, prescribedReps = null }) => {
+const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeight, lastReps, onDeleteSet = () => {}, prescribedReps = null, placeholderWeight = null, placeholderReps = null }) => {
     const { activeWorkout, updateSetData } = useWorkout();
     const theme = useTheme();
     
@@ -411,14 +411,14 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                     <SetLabel isCompleted={isCompleted}>{setNumber}</SetLabel>
                     <Input 
                         type="number" 
-                        placeholder="-" 
+                        placeholder={placeholderWeight !== null && placeholderWeight !== undefined ? String(placeholderWeight) : "-"} 
                         value={weight} 
                         disabled={isCompleted && !isEditing}
                         onChange={e => updateSetData(planExerciseId, setNumber, 'performedWeight', e.target.value)} 
                     />
                     <Input 
                         type="number" 
-                        placeholder="-" 
+                        placeholder={placeholderReps !== null && placeholderReps !== undefined ? String(placeholderReps) : "-"} 
                         value={reps} 
                         disabled={isCompleted && !isEditing}
                         onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 

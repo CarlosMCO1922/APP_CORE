@@ -263,7 +263,9 @@ const LiveWorkoutSessionPage = () => {
     setSelectedExerciseName(exercise.name);
     setIsHistoryModalOpen(true);
     try {
-      const data = await getExerciseHistoryService(exercise.id, authState.token);
+      // Passa o trainingId atual para excluir registos do treino em andamento
+      const excludeTrainingId = activeWorkout?.trainingId || null;
+      const data = await getExerciseHistoryService(exercise.id, authState.token, excludeTrainingId);
       // mantém só as 3 mais recentes (assumindo que já vem ordenado desc; se não, ordena por createdAt desc antes)
       setHistoryData((data || []).slice(0, 3));
     } catch (error) {

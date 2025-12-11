@@ -170,19 +170,91 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
   const userId = req.user.id;
   const { planExerciseId } = req.params; 
   const limit = Math.min(parseInt(req.query.limit || '3', 10), 20);
+  // Se for para placeholders, buscar as últimas 3 séries ordenadas por setNumber
+  const forPlaceholders = req.query.forPlaceholders === 'true';
+  // Se excludeTrainingId for fornecido, excluir registos desse treino (treino atual em andamento)
+  const excludeTrainingId = req.query.excludeTrainingId ? parseInt(req.query.excludeTrainingId) : null;
 
   try {
-    const performances = await db.ClientExercisePerformance.findAll({
-      where: {
+    let performances;
+    
+    if (forPlaceholders) {
+      // Buscar as últimas 3 séries do último treino concluído, ordenadas por setNumber
+      // Primeiro, encontrar o último treino concluído deste exercício (excluindo o treino atual se fornecido)
+      const whereClause = {
         userId,
-        planExerciseId: parseInt(planExerciseId)
-      },
-      include: [ 
-        { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
-      ],
-      order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],    
-      limit,
-    });
+        planExerciseId: parseInt(planExerciseId),
+        trainingId: { [Op.ne]: null } // Apenas treinos concluídos (com trainingId)
+      };
+      
+      if (excludeTrainingId) {
+        whereClause.trainingId = { 
+          [Op.and]: [
+            { [Op.ne]: null }, 
+            { [Op.ne]: excludeTrainingId }
+          ] 
+        };
+      }
+      
+      const lastTraining = await db.ClientExercisePerformance.findOne({
+        where: whereClause,
+        order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],
+        attributes: ['trainingId'],
+        limit: 1
+      });
+
+      if (lastTraining && lastTraining.trainingId) {
+        // Buscar as séries desse treino, ordenadas por setNumber
+        performances = await db.ClientExercisePerformance.findAll({
+          where: {
+            userId,
+            planExerciseId: parseInt(planExerciseId),
+            trainingId: lastTraining.trainingId
+          },
+          include: [ 
+            { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
+          ],
+          order: [['setNumber', 'ASC']], // Ordenar por número da série
+          limit: 3, // Máximo 3 séries
+        });
+      } else {
+        // Se não houver treino concluído, buscar as últimas 3 séries gerais (excluindo treino atual se fornecido)
+        const generalWhere = {
+          userId,
+          planExerciseId: parseInt(planExerciseId)
+        };
+        
+        if (excludeTrainingId) {
+          generalWhere[Op.or] = [
+            { trainingId: null },
+            { trainingId: { [Op.ne]: excludeTrainingId } }
+          ];
+        }
+        
+        performances = await db.ClientExercisePerformance.findAll({
+          where: generalWhere,
+          include: [ 
+            { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
+          ],
+          order: [['performedAt', 'DESC'], ['setNumber', 'ASC'], ['createdAt', 'DESC']],    
+          limit: 3,
+        });
+      }
+    } else {
+      // Comportamento original: últimas 3 séries por data
+      performances = await db.ClientExercisePerformance.findAll({
+        where: {
+          userId,
+          planExerciseId: parseInt(planExerciseId)
+        },
+        include: [ 
+          { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
+        ],
+        order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],    
+        limit,
+      });
+    }
+    
     res.status(200).json(performances);
   } catch (error) {
     console.error('Erro ao buscar histórico de desempenho do exercício:', error);
@@ -460,18 +532,41 @@ const getExerciseHistoryForClient = async (req, res) => {
     // Obtém o ID do utilizador que está autenticado (através do middleware 'protect')
     const userId = req.user.id;
     const limit = Math.min(parseInt(req.query.limit || '3', 10), 20);
+    // Obtém o trainingId a excluir (treino atual em andamento)
+    const excludeTrainingId = req.query.excludeTrainingId ? parseInt(req.query.excludeTrainingId) : null;
 
     if (!userId) {
       return res.status(403).json({ message: "Utilizador não autenticado." });
     }
 
+    // Constrói o objeto where com condições base
+    let whereConditions = {
+      userId: userId,
+      '$planExerciseDetails.exerciseId$': parseInt(exerciseId)
+    };
+
+    // Se excludeTrainingId for fornecido, exclui registos desse treino (treino atual em andamento)
+    if (excludeTrainingId) {
+      // Usa Op.and para combinar todas as condições
+      // Inclui registos sem trainingId (null) ou com trainingId diferente do atual
+      whereConditions = {
+        [Op.and]: [
+          { userId: userId },
+          { '$planExerciseDetails.exerciseId$': parseInt(exerciseId) },
+          {
+            [Op.or]: [
+              { trainingId: null }, // Inclui registos sem trainingId (treinos antigos ou sem treino associado)
+              { trainingId: { [Op.ne]: excludeTrainingId } } // Exclui registos do treino atual
+            ]
+          }
+        ]
+      };
+    }
+
     // Procura na tabela de performance (ClientExercisePerformance)
     // A consulta é complexa porque precisamos de encontrar o exerciseId que está noutra tabela
     const history = await db.ClientExercisePerformance.findAll({
-      where: {
-        userId: userId,
-        '$planExerciseDetails.exerciseId$': parseInt(exerciseId)
-      },
+      where: whereConditions,
       // Inclui a tabela de "exercício do plano" para podermos filtrar pelo ID do exercício base
       include: [{
         model: db.WorkoutPlanExercise,
