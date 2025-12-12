@@ -24,9 +24,15 @@ const ExerciseLiveCard = ({
   const [sets, setSets] = useState([]);
   const { exercisePlaceholders } = useWorkout();
   
-  // Obter placeholders para este exercício
+  // Obter placeholders para este exercício - tentar ambos os campos
   const planExerciseId = planExercise?.planExerciseId ?? planExercise?.id;
-  const placeholders = exercisePlaceholders[planExerciseId] || [];
+  // Tentar ambos os IDs possíveis para garantir compatibilidade
+  const placeholders = exercisePlaceholders[planExerciseId] || exercisePlaceholders[planExercise?.id] || exercisePlaceholders[planExercise?.planExerciseId] || [];
+  
+  // Debug: log se não encontrar placeholders mas existirem no contexto
+  if (placeholders.length === 0 && Object.keys(exercisePlaceholders).length > 0) {
+    console.log('ExerciseLiveCard: Não encontrou placeholders para planExerciseId:', planExerciseId, 'Disponíveis:', Object.keys(exercisePlaceholders));
+  }
 
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));

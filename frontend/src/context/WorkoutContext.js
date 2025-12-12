@@ -79,8 +79,12 @@ export const WorkoutProvider = ({ children }) => {
                 
                 await Promise.all(
                     orderedPlanData.planExercises.map(async (planExercise) => {
+                        // Tentar ambos os campos para garantir compatibilidade
                         const planExerciseId = planExercise.id || planExercise.planExerciseId;
-                        if (!planExerciseId) return;
+                        if (!planExerciseId) {
+                            logger.warn('planExercise sem ID válido:', planExercise);
+                            return;
+                        }
                         
                         try {
                             const historyData = await getMyPerformanceHistoryForExerciseService(planExerciseId, authState.token, true, currentTrainingId);
@@ -91,6 +95,9 @@ export const WorkoutProvider = ({ children }) => {
                                     reps: set.performedReps || null
                                 }));
                                 placeholdersMap[planExerciseId] = placeholders;
+                                logger.log(`Placeholders carregados para planExerciseId ${planExerciseId}:`, placeholders);
+                            } else {
+                                logger.log(`Nenhum histórico encontrado para planExerciseId ${planExerciseId}`);
                             }
                         } catch (err) {
                             logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId}:`, err);
@@ -171,9 +178,56 @@ export const WorkoutProvider = ({ children }) => {
 
     const finishWorkout = async () => {
         if (!activeWorkout) return;
+        
+        // Obter todos os sets completados
         const completedSets = Object.values(activeWorkout.setsData).filter(
-            set => set.performedWeight && set.performedReps
+            set => set.performedWeight && set.performedReps && set.isCompleted
         );
+
+        // Criar mapa de planExerciseId -> exerciseId
+        const planToExerciseIdMap = {};
+        (activeWorkout.planExercises || []).forEach(pe => {
+            const planId = pe.id ?? pe.planExerciseId;
+            const exId = pe.exerciseDetails?.id;
+            if (planId && exId) planToExerciseIdMap[planId] = exId;
+        });
+
+        // Gravar todos os sets no backend ANTES de navegar
+        if (completedSets.length > 0) {
+            try {
+                const { token } = authState;
+                if (!token) throw new Error('Sem token para gravar sets');
+
+                // Gravar cada set no backend
+                for (const setData of completedSets) {
+                    const exerciseId = planToExerciseIdMap[setData.planExerciseId];
+                    if (!exerciseId) {
+                        logger.warn('Não foi possível mapear planExerciseId -> exerciseId', { planExerciseId: setData.planExerciseId });
+                        continue;
+                    }
+
+                    const fullSetData = {
+                        trainingId: activeWorkout.trainingId || null,
+                        workoutPlanId: activeWorkout.id,
+                        planExerciseId: setData.planExerciseId,
+                        exerciseId,
+                        setNumber: setData.setNumber,
+                        weight: Number(setData.performedWeight),
+                        reps: Number(setData.performedReps),
+                        weightKg: Number(setData.performedWeight),
+                        performedWeight: Number(setData.performedWeight),
+                        performedReps: Number(setData.performedReps),
+                        performedAt: setData.performedAt || new Date().toISOString(),
+                    };
+
+                    await logSet(fullSetData);
+                }
+            } catch (error) {
+                logger.error('Erro ao gravar sets no backend:', error);
+                alert('Falha ao gravar alguns dados do treino. Verifique a ligação e tente novamente.');
+                throw error; // Impede navegação se houver erro
+            }
+        }
 
         const totalVolume = completedSets.reduce((sum, set) => sum + (parseFloat(set.performedWeight) * parseInt(set.performedReps)), 0);
         

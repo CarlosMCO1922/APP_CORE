@@ -179,26 +179,8 @@ const LiveWorkoutSessionPage = () => {
       restSeconds
     } = performanceData;
 
-    const exerciseId = planToExerciseId[planExerciseId];
-    if (!exerciseId) {
-      logger.warn('Não foi possível mapear planExerciseId -> exerciseId', { planExerciseId, performanceData });
-    }
-
-    const fullSetData = {
-      trainingId: activeWorkout.trainingId || null,
-      workoutPlanId: activeWorkout.id,
-      planExerciseId,
-      exerciseId,
-      setNumber,
-      weight: Number(performedWeight),
-      reps: Number(performedReps),
-      weightKg: Number(performedWeight),
-      performedWeight: Number(performedWeight),
-      performedReps: Number(performedReps),
-      performedAt: new Date().toISOString(),
-    };
-
-    logSet(fullSetData);
+    // NÃO gravar no backend ainda - só guardar localmente
+    // A gravação será feita no finishWorkout
     
     // Guardar informação sobre a série completada para processar depois
     setLastCompletedSet({ planExerciseId, setNumber, restSeconds });

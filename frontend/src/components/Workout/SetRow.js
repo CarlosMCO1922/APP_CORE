@@ -318,8 +318,9 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
     const [isEditing, setIsEditing] = useState(false);
 
     const setData = activeWorkout.setsData[`${planExerciseId}-${setNumber}`] || {};
-    const weight = setData.performedWeight ?? lastWeight ?? '';
-    const reps = setData.performedReps ?? lastReps ?? '';
+    // Prioridade: dados já inseridos > placeholder do histórico > último desempenho > vazio
+    const weight = setData.performedWeight ?? placeholderWeight ?? lastWeight ?? '';
+    const reps = setData.performedReps ?? placeholderReps ?? lastReps ?? '';
     const isCompleted = setData.isCompleted || false;
 
     const swipeHandlers = useSwipeable({
