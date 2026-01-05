@@ -414,23 +414,67 @@ const AdminManagePaymentsPage = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setCurrentPaymentData(prev => ({ ...prev, [name]: value }));
+    // Normalizar amount: substituir vírgula por ponto para facilitar parsing
+    if (name === 'amount' && typeof value === 'string') {
+      const normalizedValue = value.replace(',', '.');
+      setCurrentPaymentData(prev => ({ ...prev, [name]: normalizedValue }));
+    } else {
+      setCurrentPaymentData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true); setModalError(''); setPageError(''); setPageSuccessMessage('');
-    const dataToSend = { ...currentPaymentData, amount: parseFloat(currentPaymentData.amount) };
-    if (!dataToSend.userId || isNaN(dataToSend.amount) || dataToSend.amount <= 0 || !dataToSend.paymentDate || !dataToSend.referenceMonth || !dataToSend.category) {
-        setModalError("Campos obrigatórios: Cliente, Valor (>0), Data do Pagamento, Mês de Referência, Categoria.");
-        setFormLoading(false); return;
+    
+    // Converter amount: substituir vírgula por ponto e converter para número
+    let amountValue = currentPaymentData.amount;
+    if (typeof amountValue === 'string') {
+      amountValue = amountValue.replace(',', '.').trim();
     }
+    const parsedAmount = parseFloat(amountValue);
+    
+    // Validar campos obrigatórios
+    if (!currentPaymentData.userId || isNaN(parsedAmount) || parsedAmount <= 0 || !currentPaymentData.paymentDate || !currentPaymentData.referenceMonth || !currentPaymentData.category) {
+        setModalError("Campos obrigatórios: Cliente, Valor (>0), Data do Pagamento, Mês de Referência, Categoria.");
+        setFormLoading(false); 
+        return;
+    }
+    
+    // Garantir que referenceMonth está no formato YYYY-MM
+    let referenceMonth = currentPaymentData.referenceMonth;
+    if (referenceMonth && !referenceMonth.match(/^\d{4}-\d{2}$/)) {
+      // Se não estiver no formato correto, tentar converter
+      const date = new Date(referenceMonth);
+      if (!isNaN(date.getTime())) {
+        referenceMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      } else {
+        setModalError("Mês de Referência inválido. Use o formato YYYY-MM.");
+        setFormLoading(false);
+        return;
+      }
+    }
+    
+    const dataToSend = {
+      ...currentPaymentData,
+      amount: parsedAmount,
+      referenceMonth: referenceMonth,
+      userId: parseInt(currentPaymentData.userId),
+      description: currentPaymentData.description || null,
+    };
+    
     try {
       await adminCreatePayment(dataToSend, authState.token);
       setPageSuccessMessage('Pagamento criado com sucesso!');
-      fetchPageData(filters); handleCloseModal();
+      fetchPageData(filters); 
+      handleCloseModal();
     } catch (err) {
-      setModalError(err.message || 'Falha ao criar pagamento.');
+      // Se o erro tiver detalhes de validação, mostrar mensagens mais específicas
+      if (err.message && err.message.includes('Dados inválidos')) {
+        setModalError(err.message + (err.errors ? `: ${err.errors.map(e => e.message).join(', ')}` : ''));
+      } else {
+        setModalError(err.message || 'Falha ao criar pagamento.');
+      }
     } finally {
       setFormLoading(false);
     }

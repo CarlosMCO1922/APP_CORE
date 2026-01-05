@@ -12,9 +12,20 @@ export const adminCreatePayment = async (paymentData, token) => {
       body: JSON.stringify(paymentData),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao criar pagamento.');
+    if (!response.ok) {
+      // Se houver erros de validação detalhados, incluir na mensagem
+      const errorMessage = data.message || 'Erro ao criar pagamento.';
+      const error = new Error(errorMessage);
+      if (data.errors && Array.isArray(data.errors)) {
+        error.errors = data.errors;
+      }
+      throw error;
+    }
     return data;
-  } catch (error) { logger.error("Erro em adminCreatePayment:", error); throw error; }
+  } catch (error) { 
+    logger.error("Erro em adminCreatePayment:", error); 
+    throw error; 
+  }
 };
 
 export const adminGetAllPayments = async (filters = {}, token) => {
