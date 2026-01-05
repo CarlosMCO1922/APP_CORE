@@ -44,7 +44,7 @@ app.use('/users', express.json(), userRoutes);
 app.use('/trainings', express.json(), trainingRoutes);
 app.use('/appointments', express.json(), appointmentRoutes);
 app.use('/staff', express.json(), staffRoutes);
-app.use('/payments', paymentRoutes); 
+app.use('/payments', express.json(), paymentRoutes); 
 app.use('/exercises', express.json(), exerciseRoutes);
 app.use('/workout-plans', express.json(), workoutPlanRoutes);
 app.use('/notifications', express.json(), notificationRoutes);
