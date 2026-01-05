@@ -161,100 +161,58 @@ const CalendarWrapper = styled.div`
   justify-content: center;
   width: 100%;
   
-  .react-calendar { /* Estilos para o calendário */
-    width: 100% !important;
+  .react-calendar {
+    width: 100%;
     max-width: 400px;
-    min-width: 280px; /* Largura mínima para garantir que não quebra */
+    min-width: 280px;
     background: ${({ theme }) => theme.colors.cardBackground};
     border: 1px solid ${({ theme }) => theme.colors.background};
     border-radius: 8px;
     padding: 10px;
     font-family: ${({ theme }) => theme.fonts.main};
     
-    /* Forçar estrutura do grid - CRÍTICO para alinhamento */
-    * {
+    /* Garantir box-sizing correto */
+    *, *::before, *::after {
       box-sizing: border-box;
     }
     
-    /* Garantir que o month-view ocupa toda a largura */
-    .react-calendar__month-view {
-      width: 100% !important;
-      overflow: hidden;
-    }
-    
-    /* Cabeçalho dos dias da semana - SEMPRE 7 colunas fixas */
-    .react-calendar__month-view__weekdays {
-      display: grid !important;
-      grid-template-columns: repeat(7, 1fr) !important;
-      width: 100% !important;
-      margin-bottom: 8px;
-      gap: 0;
+    /* Estilização básica - não interferir com a estrutura interna */
+    .react-calendar__month-view__weekdays__weekday {
+      text-align: center;
+      padding: 8px 4px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: ${({ theme }) => theme.colors.primary};
       
-      .react-calendar__month-view__weekdays__weekday {
-        text-align: center !important;
-        padding: 8px 2px !important;
-        font-weight: 600;
-        font-size: 0.75rem;
-        color: ${({ theme }) => theme.colors.primary};
-        flex: 0 0 auto !important;
-        width: auto !important;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        
-        abbr {
-          text-decoration: none;
-          cursor: default;
-        }
+      abbr {
+        text-decoration: none;
+        cursor: default;
       }
     }
     
-    /* Grid dos dias - SEMPRE 7 colunas fixas - CRÍTICO */
-    .react-calendar__month-view__days {
-      display: grid !important;
-      grid-template-columns: repeat(7, 1fr) !important;
-      width: 100% !important;
-      gap: 2px;
-      margin: 0 !important;
-      padding: 0 !important;
+    .react-calendar__tile {
+      border-radius: 4px;
+      transition: background-color 0.2s;
       
-      .react-calendar__tile {
-        aspect-ratio: 1; /* Mantém células quadradas */
-        min-height: 36px;
-        max-width: none !important;
-        width: 100% !important;
-        flex: 0 0 auto !important;
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.85rem;
-        padding: 0 !important;
-        margin: 0 !important;
-        border-radius: 4px;
-        transition: background-color 0.2s;
-        position: relative;
-        
-        &:hover {
-          background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
-        }
-        
-        &--active {
-          background-color: ${({ theme }) => theme.colors.primary} !important;
-          color: ${({ theme }) => theme.colors.textDark} !important;
-          font-weight: 700;
-        }
-        
-        &--now {
-          background-color: ${({ theme }) => theme.colors.primary}30;
-        }
-        
-        &--neighboringMonth {
-          opacity: 0.4;
-        }
+      &:hover {
+        background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+      }
+      
+      &--active {
+        background-color: ${({ theme }) => theme.colors.primary} !important;
+        color: ${({ theme }) => theme.colors.textDark} !important;
+        font-weight: 700;
+      }
+      
+      &--now {
+        background-color: ${({ theme }) => theme.colors.primary}30;
+      }
+      
+      &--neighboringMonth {
+        opacity: 0.4;
       }
     }
     
-    /* Navegação */
     .react-calendar__navigation {
       display: flex;
       align-items: center;
@@ -285,22 +243,6 @@ const CalendarWrapper = styled.div`
         font-weight: 700;
         font-size: 1.1rem;
         pointer-events: none;
-      }
-    }
-    
-    /* Garantir que não há quebras de linha */
-    @media (max-width: 320px) {
-      min-width: 260px;
-      padding: 8px;
-      
-      .react-calendar__month-view__weekdays__weekday {
-        font-size: 0.65rem;
-        padding: 6px 1px !important;
-      }
-      
-      .react-calendar__month-view__days .react-calendar__tile {
-        min-height: 32px;
-        font-size: 0.75rem;
       }
     }
   }
@@ -603,7 +545,6 @@ const BookingServiceSelectionPage = () => {
                 value={selectedDate}
                 locale="pt-BR"
                 minDate={new Date()}
-                calendarType="ISO 8601"
                 tileClassName={({ date, view }) => {
                   if (view === 'month' && allTrainings.some(t => moment(t.date).isSame(date, 'day'))) {
                     return 'day-with-training';
