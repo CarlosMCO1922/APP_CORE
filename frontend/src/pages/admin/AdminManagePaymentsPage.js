@@ -414,13 +414,20 @@ const AdminManagePaymentsPage = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
+    
     // Normalizar amount: substituir vírgula por ponto para facilitar parsing
     if (name === 'amount') {
       // Remover espaços e substituir vírgula por ponto
       const normalizedValue = String(value || '').replace(/\s/g, '').replace(',', '.');
       setCurrentPaymentData(prev => ({ ...prev, [name]: normalizedValue }));
-    } else {
-      setCurrentPaymentData(prev => ({ ...prev, [name]: value }));
+    } 
+    // Garantir que userId é sempre uma string (mesmo que vazia)
+    else if (name === 'userId') {
+      setCurrentPaymentData(prev => ({ ...prev, [name]: String(value || '') }));
+    }
+    // Garantir que outros campos são strings
+    else {
+      setCurrentPaymentData(prev => ({ ...prev, [name]: value || '' }));
     }
   };
 
@@ -431,9 +438,20 @@ const AdminManagePaymentsPage = () => {
     setPageError(''); 
     setPageSuccessMessage('');
     
-    // Validar e converter userId
-    const userId = currentPaymentData.userId ? parseInt(currentPaymentData.userId, 10) : null;
-    if (!userId || isNaN(userId)) {
+    // Debug: verificar valores atuais
+    console.log('Form data antes de processar:', currentPaymentData);
+    
+    // Validar e converter userId - garantir que é um número válido
+    let userId = null;
+    if (currentPaymentData.userId) {
+      const userIdStr = String(currentPaymentData.userId).trim();
+      userId = parseInt(userIdStr, 10);
+      if (isNaN(userId) || userId <= 0) {
+        setModalError("Por favor, selecione um cliente válido.");
+        setFormLoading(false);
+        return;
+      }
+    } else {
       setModalError("Por favor, selecione um cliente.");
       setFormLoading(false);
       return;
@@ -441,20 +459,33 @@ const AdminManagePaymentsPage = () => {
     
     // Converter amount: substituir vírgula por ponto e converter para número
     let amountValue = String(currentPaymentData.amount || '').trim();
-    if (amountValue) {
-      amountValue = amountValue.replace(',', '.').replace(/\s/g, '');
-    }
-    const parsedAmount = parseFloat(amountValue);
-    
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setModalError("O valor deve ser um número maior que zero.");
+    if (!amountValue) {
+      setModalError("Por favor, insira um valor.");
       setFormLoading(false);
       return;
     }
     
-    // Validar paymentDate
-    if (!currentPaymentData.paymentDate) {
+    // Normalizar: remover espaços, substituir vírgula por ponto
+    amountValue = amountValue.replace(/\s/g, '').replace(',', '.');
+    const parsedAmount = parseFloat(amountValue);
+    
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setModalError(`O valor "${currentPaymentData.amount}" não é válido. Use um número maior que zero (ex: 42.75 ou 42,75).`);
+      setFormLoading(false);
+      return;
+    }
+    
+    // Validar paymentDate - deve estar no formato YYYY-MM-DD
+    const paymentDate = String(currentPaymentData.paymentDate || '').trim();
+    if (!paymentDate) {
       setModalError("Por favor, selecione a data do pagamento.");
+      setFormLoading(false);
+      return;
+    }
+    
+    // Validar formato de data (YYYY-MM-DD)
+    if (!paymentDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      setModalError("Data do pagamento inválida. Use o formato YYYY-MM-DD.");
       setFormLoading(false);
       return;
     }
@@ -467,42 +498,36 @@ const AdminManagePaymentsPage = () => {
       return;
     }
     
-    // O input type="month" já retorna YYYY-MM, mas vamos garantir
+    // O input type="month" retorna YYYY-MM, mas vamos validar
     if (!referenceMonth.match(/^\d{4}-\d{2}$/)) {
-      // Tentar converter se estiver em outro formato
-      try {
-        const date = new Date(referenceMonth + '-01');
-        if (!isNaN(date.getTime())) {
-          referenceMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        } else {
-          setModalError("Mês de Referência inválido. Use o formato YYYY-MM.");
-          setFormLoading(false);
-          return;
-        }
-      } catch (err) {
-        setModalError("Mês de Referência inválido. Use o formato YYYY-MM.");
-        setFormLoading(false);
-        return;
-      }
+      setModalError(`Mês de Referência inválido: "${referenceMonth}". Use o formato YYYY-MM (ex: 2026-01).`);
+      setFormLoading(false);
+      return;
     }
     
     // Validar category
-    if (!currentPaymentData.category) {
+    const category = String(currentPaymentData.category || '').trim();
+    if (!category) {
       setModalError("Por favor, selecione uma categoria.");
       setFormLoading(false);
       return;
     }
     
-    // Preparar dados para envio
+    // Validar status
+    const status = String(currentPaymentData.status || 'pendente').trim();
+    
+    // Preparar dados para envio - garantir tipos corretos
     const dataToSend = {
-      userId: userId,
-      amount: parsedAmount,
-      paymentDate: currentPaymentData.paymentDate,
-      referenceMonth: referenceMonth,
-      category: currentPaymentData.category,
-      status: currentPaymentData.status || 'pendente',
-      description: currentPaymentData.description && currentPaymentData.description.trim() ? currentPaymentData.description.trim() : null,
+      userId: userId, // número inteiro
+      amount: parsedAmount, // número decimal
+      paymentDate: paymentDate, // string YYYY-MM-DD
+      referenceMonth: referenceMonth, // string YYYY-MM
+      category: category, // string
+      status: status, // string
+      description: currentPaymentData.description && String(currentPaymentData.description).trim() ? String(currentPaymentData.description).trim() : null,
     };
+    
+    console.log('Dados a enviar:', dataToSend);
     
     try {
       await adminCreatePayment(dataToSend, authState.token);
@@ -510,6 +535,7 @@ const AdminManagePaymentsPage = () => {
       fetchPageData(filters); 
       handleCloseModal();
     } catch (err) {
+      console.error('Erro ao criar pagamento:', err);
       // Se o erro tiver detalhes de validação, mostrar mensagens mais específicas
       if (err.message && err.message.includes('Dados inválidos')) {
         const errorDetails = err.errors && Array.isArray(err.errors) 
