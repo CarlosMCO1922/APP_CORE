@@ -415,8 +415,9 @@ const AdminManagePaymentsPage = () => {
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     // Normalizar amount: substituir vírgula por ponto para facilitar parsing
-    if (name === 'amount' && typeof value === 'string') {
-      const normalizedValue = value.replace(',', '.');
+    if (name === 'amount') {
+      // Remover espaços e substituir vírgula por ponto
+      const normalizedValue = String(value || '').replace(/\s/g, '').replace(',', '.');
       setCurrentPaymentData(prev => ({ ...prev, [name]: normalizedValue }));
     } else {
       setCurrentPaymentData(prev => ({ ...prev, [name]: value }));
@@ -425,42 +426,82 @@ const AdminManagePaymentsPage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormLoading(true); setModalError(''); setPageError(''); setPageSuccessMessage('');
+    setFormLoading(true); 
+    setModalError(''); 
+    setPageError(''); 
+    setPageSuccessMessage('');
+    
+    // Validar e converter userId
+    const userId = currentPaymentData.userId ? parseInt(currentPaymentData.userId, 10) : null;
+    if (!userId || isNaN(userId)) {
+      setModalError("Por favor, selecione um cliente.");
+      setFormLoading(false);
+      return;
+    }
     
     // Converter amount: substituir vírgula por ponto e converter para número
-    let amountValue = currentPaymentData.amount;
-    if (typeof amountValue === 'string') {
-      amountValue = amountValue.replace(',', '.').trim();
+    let amountValue = String(currentPaymentData.amount || '').trim();
+    if (amountValue) {
+      amountValue = amountValue.replace(',', '.').replace(/\s/g, '');
     }
     const parsedAmount = parseFloat(amountValue);
     
-    // Validar campos obrigatórios
-    if (!currentPaymentData.userId || isNaN(parsedAmount) || parsedAmount <= 0 || !currentPaymentData.paymentDate || !currentPaymentData.referenceMonth || !currentPaymentData.category) {
-        setModalError("Campos obrigatórios: Cliente, Valor (>0), Data do Pagamento, Mês de Referência, Categoria.");
-        setFormLoading(false); 
-        return;
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setModalError("O valor deve ser um número maior que zero.");
+      setFormLoading(false);
+      return;
+    }
+    
+    // Validar paymentDate
+    if (!currentPaymentData.paymentDate) {
+      setModalError("Por favor, selecione a data do pagamento.");
+      setFormLoading(false);
+      return;
     }
     
     // Garantir que referenceMonth está no formato YYYY-MM
-    let referenceMonth = currentPaymentData.referenceMonth;
-    if (referenceMonth && !referenceMonth.match(/^\d{4}-\d{2}$/)) {
-      // Se não estiver no formato correto, tentar converter
-      const date = new Date(referenceMonth);
-      if (!isNaN(date.getTime())) {
-        referenceMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      } else {
+    let referenceMonth = String(currentPaymentData.referenceMonth || '').trim();
+    if (!referenceMonth) {
+      setModalError("Por favor, selecione o mês de referência.");
+      setFormLoading(false);
+      return;
+    }
+    
+    // O input type="month" já retorna YYYY-MM, mas vamos garantir
+    if (!referenceMonth.match(/^\d{4}-\d{2}$/)) {
+      // Tentar converter se estiver em outro formato
+      try {
+        const date = new Date(referenceMonth + '-01');
+        if (!isNaN(date.getTime())) {
+          referenceMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        } else {
+          setModalError("Mês de Referência inválido. Use o formato YYYY-MM.");
+          setFormLoading(false);
+          return;
+        }
+      } catch (err) {
         setModalError("Mês de Referência inválido. Use o formato YYYY-MM.");
         setFormLoading(false);
         return;
       }
     }
     
+    // Validar category
+    if (!currentPaymentData.category) {
+      setModalError("Por favor, selecione uma categoria.");
+      setFormLoading(false);
+      return;
+    }
+    
+    // Preparar dados para envio
     const dataToSend = {
-      ...currentPaymentData,
+      userId: userId,
       amount: parsedAmount,
+      paymentDate: currentPaymentData.paymentDate,
       referenceMonth: referenceMonth,
-      userId: parseInt(currentPaymentData.userId),
-      description: currentPaymentData.description || null,
+      category: currentPaymentData.category,
+      status: currentPaymentData.status || 'pendente',
+      description: currentPaymentData.description && currentPaymentData.description.trim() ? currentPaymentData.description.trim() : null,
     };
     
     try {
@@ -471,7 +512,10 @@ const AdminManagePaymentsPage = () => {
     } catch (err) {
       // Se o erro tiver detalhes de validação, mostrar mensagens mais específicas
       if (err.message && err.message.includes('Dados inválidos')) {
-        setModalError(err.message + (err.errors ? `: ${err.errors.map(e => e.message).join(', ')}` : ''));
+        const errorDetails = err.errors && Array.isArray(err.errors) 
+          ? err.errors.map(e => `${e.path || 'campo'}: ${e.message}`).join(', ')
+          : '';
+        setModalError(`Dados inválidos${errorDetails ? ': ' + errorDetails : ''}`);
       } else {
         setModalError(err.message || 'Falha ao criar pagamento.');
       }
