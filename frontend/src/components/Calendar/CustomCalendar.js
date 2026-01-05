@@ -24,6 +24,7 @@ import {
   setMinutes,
   isBefore,
   isAfter,
+  isWithinInterval,
   parseISO
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -159,6 +160,38 @@ const FilterButton = styled.button`
       font-size: 0.75rem;
       flex-shrink: 0;
     }
+  }
+`;
+
+const DateFilterInput = styled.input`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 36px;
+  font-family: ${({ theme }) => theme.fonts.main};
+  
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing || 'rgba(212, 175, 55, 0.2)'};
+  }
+  
+  @media (max-width: 768px) {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+    min-height: 30px;
+    flex: 1;
+    min-width: 0;
   }
 `;
 
@@ -787,6 +820,11 @@ const CustomCalendar = ({
   const [currentView, setCurrentView] = useState(initialView);
   const [selectedDate, setSelectedDate] = useState(null);
   const [eventFilter, setEventFilter] = useState('all'); // 'all', 'training', 'appointment'
+  
+  // Estado para filtro de data na agenda (próximos 7 dias por default)
+  const getToday = () => startOfDay(new Date());
+  const getDefaultEndDate = () => addDays(getToday(), 7);
+  const [agendaDateFilter, setAgendaDateFilter] = useState(() => format(getDefaultEndDate(), 'yyyy-MM-dd'));
 
   const weekStartsOn = 1; // Monday
 
@@ -983,7 +1021,43 @@ const CustomCalendar = ({
   const agendaEvents = useMemo(() => {
     if (!filteredEvents || !Array.isArray(filteredEvents)) return {};
     
-    const sorted = [...filteredEvents].filter(event => event && event.start).sort((a, b) => {
+    // Filtrar eventos por intervalo de data quando estiver na vista AGENDA
+    let eventsToProcess = filteredEvents;
+    if (currentView === Views.AGENDA) {
+      const todayDate = getToday();
+      const filterDate = parseISO(agendaDateFilter);
+      
+      // Se a data selecionada for no passado, mostrar desde essa data até hoje
+      // Se for no futuro, mostrar desde hoje até essa data
+      let filterStartDate, filterEndDateEndOfDay;
+      
+      if (isBefore(filterDate, todayDate)) {
+        // Data no passado: mostrar desde essa data até hoje
+        filterStartDate = startOfDay(filterDate);
+        filterEndDateEndOfDay = startOfDay(addDays(todayDate, 1));
+      } else {
+        // Data no futuro ou hoje: mostrar desde hoje até essa data
+        filterStartDate = startOfDay(todayDate);
+        filterEndDateEndOfDay = startOfDay(addDays(filterDate, 1));
+      }
+      
+      eventsToProcess = filteredEvents.filter(event => {
+        if (!event || !event.start) return false;
+        try {
+          const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
+          const eventStartDay = startOfDay(eventStart);
+          return isWithinInterval(eventStartDay, {
+            start: filterStartDate,
+            end: filterEndDateEndOfDay
+          });
+        } catch (error) {
+          console.error('Error filtering agenda event by date:', error, event);
+          return false;
+        }
+      });
+    }
+    
+    const sorted = [...eventsToProcess].filter(event => event && event.start).sort((a, b) => {
       try {
         const aStart = a.start instanceof Date ? a.start : parseISO(a.start);
         const bStart = b.start instanceof Date ? b.start : parseISO(b.start);
@@ -1009,7 +1083,7 @@ const CustomCalendar = ({
     });
 
     return grouped;
-  }, [filteredEvents]);
+  }, [filteredEvents, currentView, agendaDateFilter]);
 
   const handleEventClick = (event, e) => {
     e.stopPropagation();
@@ -1435,6 +1509,14 @@ const CustomCalendar = ({
             <FaUserMd style={{ fontSize: '0.85rem' }} />
             <span>Consultas</span>
           </FilterButton>
+          {currentView === Views.AGENDA && (
+            <DateFilterInput
+              type="date"
+              value={agendaDateFilter}
+              onChange={(e) => setAgendaDateFilter(e.target.value)}
+              title="Mostrar treinos até esta data"
+            />
+          )}
         </FilterContainer>
       </CalendarHeader>
       
