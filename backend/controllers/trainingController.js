@@ -170,7 +170,8 @@ const getTrainingById = async (req, res) => {
 
 const updateTraining = async (req, res) => {
   const { id } = req.params;
-  const { name, description, date, time, capacity, instructorId } = req.body;
+  const { name, description, date, time, capacity, instructorId, durationMinutes } = req.body;
+  const { updateRecurring = 'false' } = req.query; // Query param para atualizar todos os futuros
 
   try {
     const training = await db.Training.findByPk(id);
@@ -178,31 +179,75 @@ const updateTraining = async (req, res) => {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    
-    if (name) training.name = name;
-    if (description) training.description = description;
-    if (date) training.date = date;
-    if (time) training.time = time;
-    if (capacity) {
-        if (isNaN(parseInt(capacity)) || parseInt(capacity) <= 0) {
-            return res.status(400).json({ message: 'A capacidade deve ser um número positivo.' });
-        }
-        training.capacity = parseInt(capacity);
+    // Preparar dados de atualização
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (date !== undefined) updateData.date = date;
+    if (time !== undefined) updateData.time = time;
+    if (durationMinutes !== undefined) {
+      if (isNaN(parseInt(durationMinutes)) || parseInt(durationMinutes) <= 0) {
+        return res.status(400).json({ message: 'A duração deve ser um número positivo.' });
+      }
+      updateData.durationMinutes = parseInt(durationMinutes);
     }
-    if (instructorId) {
-        if (isNaN(parseInt(instructorId))) {
-            return res.status(400).json({ message: 'O ID do instrutor deve ser um número.' });
-        }
-        const instructor = await db.Staff.findByPk(parseInt(instructorId));
-        if (!instructor) {
-            return res.status(404).json({ message: 'Instrutor não encontrado para atualização.' });
-        }
-        if (!['trainer', 'admin'].includes(instructor.role)) {
-            return res.status(400).json({ message: 'O ID fornecido não pertence a um instrutor ou administrador válido.' });
-        }
-        training.instructorId = parseInt(instructorId);
+    if (capacity !== undefined) {
+      if (isNaN(parseInt(capacity)) || parseInt(capacity) <= 0) {
+        return res.status(400).json({ message: 'A capacidade deve ser um número positivo.' });
+      }
+      updateData.capacity = parseInt(capacity);
+    }
+    if (instructorId !== undefined) {
+      if (isNaN(parseInt(instructorId))) {
+        return res.status(400).json({ message: 'O ID do instrutor deve ser um número.' });
+      }
+      const instructor = await db.Staff.findByPk(parseInt(instructorId));
+      if (!instructor) {
+        return res.status(404).json({ message: 'Instrutor não encontrado para atualização.' });
+      }
+      if (!['trainer', 'admin'].includes(instructor.role)) {
+        return res.status(400).json({ message: 'O ID fornecido não pertence a um instrutor ou administrador válido.' });
+      }
+      updateData.instructorId = parseInt(instructorId);
     }
 
+    // Se updateRecurring for true e o treino faz parte de uma série, atualizar todos os futuros
+    if (updateRecurring === 'true' && training.trainingSeriesId) {
+      const trainingDate = new Date(training.date);
+      const trainingTime = training.time;
+      
+      // Encontrar todos os treinos futuros com a mesma série, dia da semana e hora
+      const futureTrainings = await db.Training.findAll({
+        where: {
+          trainingSeriesId: training.trainingSeriesId,
+          date: {
+            [db.Sequelize.Op.gt]: trainingDate.toISOString().split('T')[0] // Apenas posteriores
+          },
+          time: trainingTime
+        }
+      });
+
+      // Atualizar o treino atual
+      Object.assign(training, updateData);
+      await training.save();
+
+      // Atualizar todos os treinos futuros
+      let updatedCount = 0;
+      for (const futureTraining of futureTrainings) {
+        Object.assign(futureTraining, updateData);
+        await futureTraining.save();
+        updatedCount++;
+      }
+
+      return res.status(200).json({ 
+        message: `Treino atualizado com sucesso. ${updatedCount} treino(s) futuro(s) da série também foram atualizados.`,
+        training,
+        updatedCount
+      });
+    }
+
+    // Atualização normal (apenas este treino)
+    Object.assign(training, updateData);
     await training.save();
     res.status(200).json(training);
   } catch (error) {

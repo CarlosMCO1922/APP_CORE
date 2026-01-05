@@ -77,11 +77,14 @@ export const getTrainingById = async (trainingId, token) => {
   } catch (error) { logger.error("Erro em getTrainingById:", error); throw error; }
 };
 
-export const adminUpdateTraining = async (trainingId, trainingData, token) => {
+export const adminUpdateTraining = async (trainingId, trainingData, token, updateRecurring = false) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId) throw new Error('ID do Treino não fornecido para atualização.');
   try {
-    const response = await fetch(`${API_URL}/trainings/${trainingId}`, {
+    const url = updateRecurring 
+      ? `${API_URL}/trainings/${trainingId}?updateRecurring=true`
+      : `${API_URL}/trainings/${trainingId}`;
+    const response = await fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(trainingData),

@@ -525,6 +525,10 @@ const AdminManageTrainingsPage = () => {
   const [showDeleteRecurringModal, setShowDeleteRecurringModal] = useState(false);
   const [deleteRecurringInfo, setDeleteRecurringInfo] = useState(null);
   const [trainingToDelete, setTrainingToDelete] = useState(null);
+  
+  const [showUpdateRecurringModal, setShowUpdateRecurringModal] = useState(false);
+  const [updateRecurringInfo, setUpdateRecurringInfo] = useState(null);
+  const [trainingDataToUpdate, setTrainingDataToUpdate] = useState(null);
 
 
   const fetchPageData = useCallback(async (appliedFilters = activeFilters) => {
@@ -618,7 +622,9 @@ const AdminManageTrainingsPage = () => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setPageError("A tua mensagem de erro aqui");
+    setFormLoading(true);
+    setModalError('');
+    setPageError('');
 
     if (currentTrainingData.isRecurring) {
         // Lógica para criar SÉRIE DE TREINOS
@@ -683,7 +689,25 @@ const AdminManageTrainingsPage = () => {
             setFormLoading(false); return;
         }
         try {
-            if (isEditing && currentTrainingId) { 
+            if (isEditing && currentTrainingId) {
+                // Verificar se o treino faz parte de uma série antes de atualizar
+                try {
+                    const recurringInfo = await checkRecurringTrainings(currentTrainingId, authState.token);
+                    
+                    if (recurringInfo.hasRecurring && recurringInfo.futureCount > 0) {
+                        // Mostrar modal para perguntar se quer atualizar todos os futuros
+                        setUpdateRecurringInfo(recurringInfo);
+                        setTrainingDataToUpdate(dataToSend);
+                        setShowUpdateRecurringModal(true);
+                        setFormLoading(false);
+                        return;
+                    }
+                } catch (checkErr) {
+                    // Se falhar a verificação, continuar com update normal
+                    console.warn("Erro ao verificar treinos recorrentes:", checkErr);
+                }
+                
+                // Update normal (apenas este treino)
                 await adminUpdateTraining(currentTrainingId, dataToSend, authState.token);
                 setSuccessMessage('Treino atualizado com sucesso!');
             } else {
@@ -756,6 +780,55 @@ const AdminManageTrainingsPage = () => {
     setShowDeleteRecurringModal(false);
     setDeleteRecurringInfo(null);
     setTrainingToDelete(null);
+  };
+
+  const handleUpdateAllRecurring = async () => {
+    if (!currentTrainingId || !trainingDataToUpdate) return;
+    setFormLoading(true);
+    setModalError('');
+    setPageError('');
+    try {
+      const result = await adminUpdateTraining(currentTrainingId, trainingDataToUpdate, authState.token, true);
+      setSuccessMessage(result.message || `Treino atualizado com sucesso. ${updateRecurringInfo.futureCount} treino(s) futuro(s) também foram atualizados.`);
+      setShowUpdateRecurringModal(false);
+      setUpdateRecurringInfo(null);
+      setTrainingDataToUpdate(null);
+      fetchPageData(activeFilters);
+      handleCloseModal();
+    } catch (err) {
+      setModalError(err.message || 'Falha ao atualizar treinos.');
+      setShowUpdateRecurringModal(false);
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleUpdateCurrentOnly = async () => {
+    if (!currentTrainingId || !trainingDataToUpdate) return;
+    setFormLoading(true);
+    setModalError('');
+    setPageError('');
+    try {
+      await adminUpdateTraining(currentTrainingId, trainingDataToUpdate, authState.token, false);
+      setSuccessMessage('Treino atualizado com sucesso!');
+      setShowUpdateRecurringModal(false);
+      setUpdateRecurringInfo(null);
+      setTrainingDataToUpdate(null);
+      fetchPageData(activeFilters);
+      handleCloseModal();
+    } catch (err) {
+      setModalError(err.message || 'Falha ao atualizar treino.');
+      setShowUpdateRecurringModal(false);
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleCancelUpdate = () => {
+    setShowUpdateRecurringModal(false);
+    setUpdateRecurringInfo(null);
+    setTrainingDataToUpdate(null);
+    setFormLoading(false);
   };
 
   const handleOpenSignupsModal = async (training) => {
@@ -1214,6 +1287,7 @@ const AdminManageTrainingsPage = () => {
                 type="button" 
                 danger 
                 onClick={handleDeleteAllRecurring}
+                disabled={actionLoading}
                 style={{width: '100%'}}
               >
                 <FaTrashAlt style={{marginRight: '8px'}} />
@@ -1223,6 +1297,7 @@ const AdminManageTrainingsPage = () => {
                 type="button" 
                 primary 
                 onClick={handleDeleteCurrentOnly}
+                disabled={actionLoading}
                 style={{width: '100%'}}
               >
                 <FaTrashAlt style={{marginRight: '8px'}} />
@@ -1232,6 +1307,53 @@ const AdminManageTrainingsPage = () => {
                 type="button" 
                 secondary 
                 onClick={handleCancelDelete}
+                disabled={actionLoading}
+                style={{width: '100%'}}
+              >
+                Cancelar
+              </ModalButton>
+            </ModalActions>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {showUpdateRecurringModal && updateRecurringInfo && (
+        <ModalOverlay onClick={handleCancelUpdate}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={handleCancelUpdate}><FaTimes /></CloseButton>
+            <ModalTitle>Atualizar Treino Recorrente</ModalTitle>
+            <p style={{color: theme.colors.textMain, marginBottom: '20px', lineHeight: '1.6'}}>
+              Este treino faz parte de uma série recorrente.<br/><br/>
+              Existem <strong>{updateRecurringInfo.futureCount}</strong> treino(s) futuro(s) com as mesmas características.
+              <br/><br/>
+              Queres atualizar apenas este treino ou todos os treinos futuros da série?
+            </p>
+            <ModalActions style={{flexDirection: 'column', gap: '12px'}}>
+              <ModalButton 
+                type="button" 
+                primary 
+                onClick={handleUpdateAllRecurring}
+                disabled={formLoading}
+                style={{width: '100%'}}
+              >
+                <FaRedoAlt style={{marginRight: '8px'}} />
+                Atualizar Todos os Posteriores
+              </ModalButton>
+              <ModalButton 
+                type="button" 
+                secondary 
+                onClick={handleUpdateCurrentOnly}
+                disabled={formLoading}
+                style={{width: '100%'}}
+              >
+                <FaEdit style={{marginRight: '8px'}} />
+                Apenas Este Treino
+              </ModalButton>
+              <ModalButton 
+                type="button" 
+                secondary 
+                onClick={handleCancelUpdate}
+                disabled={formLoading}
                 style={{width: '100%'}}
               >
                 Cancelar
