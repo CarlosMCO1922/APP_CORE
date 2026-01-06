@@ -22,6 +22,7 @@ import {
     FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical 
 } from 'react-icons/fa';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
+import SearchableSelect from '../../components/Common/SearchableSelect';
 
 
 
@@ -786,10 +787,18 @@ return (
                                                         <ExerciseFieldsGrid>
                                                           <div style={{gridColumn: 'span 5'}}>
                                                             <ModalLabel htmlFor={`exId-${ex.originalIndex}`}>Exercício</ModalLabel>
-                                                            <ModalSelect id={`exId-${ex.originalIndex}`} value={ex.exerciseId} onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'exerciseId', e.target.value)} required>
-                                                              <option value="">Selecione...</option>
-                                                              {allExercises.map(baseEx => <option key={baseEx.id} value={baseEx.id}>{baseEx.name}</option>)}
-                                                            </ModalSelect>
+                                                            <SearchableSelect
+                                                              id={`exId-${ex.originalIndex}`}
+                                                              name="exerciseId"
+                                                              value={ex.exerciseId || ''}
+                                                              onChange={(e) => handleExerciseChangeInPlan(ex.originalIndex, 'exerciseId', e.target.value)}
+                                                              options={allExercises}
+                                                              placeholder="Selecione..."
+                                                              getOptionLabel={(option) => option.name}
+                                                              getOptionValue={(option) => option.id}
+                                                              searchable={true}
+                                                              required={true}
+                                                            />
                                                           </div>
                                                         </ExerciseFieldsGrid>
                                                         <ExerciseFieldsGrid>

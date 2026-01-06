@@ -19,6 +19,7 @@ import { getAllTrainings }
     from '../../services/trainingService';
 import { getAllExercises } from '../../services/exerciseService';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
+import SearchableSelect from '../../components/Common/SearchableSelect';
 import { sortPlanExercises } from '../../utils/exerciseOrderUtils';
 
 // --- Styled Components ---
@@ -718,10 +719,18 @@ function AdminManageWorkoutPlansPage() {
             {exerciseModalError && <ErrorText>{exerciseModalError}</ErrorText>}
             <ModalForm onSubmit={handleExerciseFormSubmit}>
               <ModalLabel htmlFor="exerciseIdSel">Exercício*</ModalLabel>
-              <ModalSelect name="exerciseId" id="exerciseIdSel" value={currentExerciseData.exerciseId} onChange={handleExerciseFormChange} required>
-                <option value="">Selecione um exercício</option>
-                {allExercises.map(ex => <option key={ex.id} value={ex.id}>{ex.name} ({ex.muscleGroup || 'N/A'})</option>)}
-              </ModalSelect>
+              <SearchableSelect
+                id="exerciseIdSel"
+                name="exerciseId"
+                value={currentExerciseData.exerciseId || ''}
+                onChange={handleExerciseFormChange}
+                options={allExercises}
+                placeholder="Selecione um exercício"
+                getOptionLabel={(option) => `${option.name} (${option.muscleGroup || 'N/A'})`}
+                getOptionValue={(option) => option.id}
+                searchable={true}
+                required={true}
+              />
 
               <ModalLabel htmlFor="exOrder">Ordem no Plano*</ModalLabel>
               <ModalInput type="number" name="order" id="exOrder" value={currentExerciseData.order} onChange={handleExerciseFormChange} required min="0" />
