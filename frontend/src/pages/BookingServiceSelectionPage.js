@@ -176,40 +176,108 @@ const CalendarWrapper = styled.div`
       box-sizing: border-box;
     }
     
-    /* Estilização básica - não interferir com a estrutura interna */
-    .react-calendar__month-view__weekdays__weekday {
-      text-align: center;
-      padding: 8px 4px;
-      font-weight: 600;
-      font-size: 0.75rem;
-      color: ${({ theme }) => theme.colors.primary};
+    /* FORÇAR ESTRUTURA DE TABELA FIXA - CRÍTICO PARA ALINHAMENTO */
+    .react-calendar__month-view {
+      width: 100%;
+      display: block;
+    }
+    
+    /* Cabeçalho dos dias da semana - SEMPRE 7 colunas fixas */
+    .react-calendar__month-view__weekdays {
+      display: table !important;
+      width: 100% !important;
+      table-layout: fixed !important;
+      margin-bottom: 8px;
       
-      abbr {
-        text-decoration: none;
-        cursor: default;
+      .react-calendar__month-view__weekdays__weekday {
+        display: table-cell !important;
+        text-align: center !important;
+        padding: 8px 2px !important;
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: ${({ theme }) => theme.colors.primary};
+        width: calc(100% / 7) !important;
+        min-width: 0 !important;
+        overflow: hidden;
+        
+        abbr {
+          text-decoration: none;
+          cursor: default;
+        }
       }
     }
     
-    .react-calendar__tile {
-      border-radius: 4px;
-      transition: background-color 0.2s;
+    /* Grid dos dias - SEMPRE 7 colunas fixas - CRÍTICO */
+    .react-calendar__month-view__days {
+      display: table !important;
+      width: 100% !important;
+      table-layout: fixed !important;
+      border-collapse: separate;
+      border-spacing: 2px;
       
-      &:hover {
-        background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
-      }
-      
-      &--active {
-        background-color: ${({ theme }) => theme.colors.primary} !important;
-        color: ${({ theme }) => theme.colors.textDark} !important;
-        font-weight: 700;
-      }
-      
-      &--now {
-        background-color: ${({ theme }) => theme.colors.primary}30;
-      }
-      
-      &--neighboringMonth {
-        opacity: 0.4;
+      .react-calendar__tile {
+        display: table-cell !important;
+        width: calc(100% / 7) !important;
+        min-width: 0 !important;
+        aspect-ratio: 1;
+        min-height: 36px;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+        text-align: center;
+        vertical-align: middle;
+        position: relative;
+        
+        /* REMOVER TODAS AS CORES PADRÃO - FORÇAR LARANJA POR PADRÃO */
+        color: ${({ theme }) => theme.colors.primary} !important;
+        background-color: transparent !important;
+        
+        /* Dias passados - cinza */
+        &.past-day {
+          color: ${({ theme }) => theme.colors.textMuted} !important;
+          opacity: 0.6;
+        }
+        
+        /* Remover cor vermelha dos fins de semana - FORÇAR LARANJA */
+        &--weekend {
+          color: ${({ theme }) => theme.colors.primary} !important;
+        }
+        
+        /* Remover qualquer cor branca */
+        abbr, time, span {
+          color: inherit !important;
+        }
+        
+        &:hover:not(&--disabled):not(&--active) {
+          background-color: ${({ theme }) => theme.colors.buttonSecondaryBg} !important;
+        }
+        
+        &--active {
+          background-color: ${({ theme }) => theme.colors.primary} !important;
+          color: ${({ theme }) => theme.colors.textDark} !important;
+          font-weight: 700;
+          
+          abbr, time, span {
+            color: ${({ theme }) => theme.colors.textDark} !important;
+          }
+        }
+        
+        &--now {
+          background-color: ${({ theme }) => theme.colors.primary}30 !important;
+          color: ${({ theme }) => theme.colors.primary} !important;
+        }
+        
+        &--neighboringMonth {
+          opacity: 0.3;
+          color: ${({ theme }) => theme.colors.textMuted} !important;
+        }
+        
+        &--disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+          color: ${({ theme }) => theme.colors.textMuted} !important;
+        }
       }
     }
     
@@ -243,6 +311,21 @@ const CalendarWrapper = styled.div`
         font-weight: 700;
         font-size: 1.1rem;
         pointer-events: none;
+      }
+    }
+    
+    /* Media query para resoluções muito pequenas */
+    @media (max-width: 400px) {
+      padding: 8px;
+      
+      .react-calendar__month-view__weekdays__weekday {
+        font-size: 0.65rem;
+        padding: 6px 1px !important;
+      }
+      
+      .react-calendar__month-view__days .react-calendar__tile {
+        min-height: 32px;
+        font-size: 0.75rem;
       }
     }
   }
@@ -546,10 +629,26 @@ const BookingServiceSelectionPage = () => {
                 locale="pt-BR"
                 minDate={new Date()}
                 tileClassName={({ date, view }) => {
-                  if (view === 'month' && allTrainings.some(t => moment(t.date).isSame(date, 'day'))) {
-                    return 'day-with-training';
+                  if (view !== 'month') return null;
+                  
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const dateToCheck = new Date(date);
+                  dateToCheck.setHours(0, 0, 0, 0);
+                  
+                  const classes = [];
+                  
+                  // Adicionar classe para dias passados
+                  if (dateToCheck < today) {
+                    classes.push('past-day');
                   }
-                  return null;
+                  
+                  // Adicionar classe se tiver treino
+                  if (allTrainings.some(t => moment(t.date).isSame(date, 'day'))) {
+                    classes.push('day-with-training');
+                  }
+                  
+                  return classes.length > 0 ? classes.join(' ') : null;
                 }}
               />
             </CalendarWrapper>
