@@ -1,9 +1,12 @@
 // src/pages/ExploreWorkoutPlansPage.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
-import { getVisibleWorkoutPlansService } from '../services/workoutPlanService'; 
+import { useWorkout } from '../context/WorkoutContext';
+import { getVisibleWorkoutPlansService, getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService'; 
+import { ensurePlanExercisesOrdered } from '../utils/exerciseOrderUtils';
+import { logger } from '../utils/logger';
 import { FaSearch, FaClipboardList, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
 
@@ -111,19 +114,24 @@ const UsePlanButton = styled.button`
   padding: 10px 15px;
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
-  cursor: none;
+  cursor: pointer;
   font-weight: 600;
   margin-top: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, opacity 0.2s;
   width: 100%;
   text-decoration: none;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: ${({ theme }) => theme.colors.backgroundSelect};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
@@ -144,13 +152,37 @@ const ExploreWorkoutPlansPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { authState } = useAuth();
+  const { startWorkout } = useWorkout();
   const navigate = useNavigate();
   const [expandedPlanId, setExpandedPlanId] = useState(null);
   const [viewDirection, setViewDirection] = useState('right');
+  const [startingPlanId, setStartingPlanId] = useState(null);
 
   const handleToggleExpand = (planId) => {
     setExpandedPlanId(prevId => (prevId === planId ? null : planId));
   };
+
+  const handleStartWorkout = useCallback(async (planId) => {
+    if (!authState.token || startingPlanId) return;
+    
+    setStartingPlanId(planId);
+    setError('');
+    
+    try {
+      // Buscar detalhes completos do plano
+      const planData = await getGlobalWorkoutPlanByIdClient(planId, authState.token);
+      // Garantir que os exercícios estão ordenados
+      const orderedPlan = ensurePlanExercisesOrdered(planData);
+      logger.log('DADOS DO PLANO ENVIADOS PARA O TREINO:', JSON.stringify(orderedPlan, null, 2));
+      // Iniciar treino diretamente
+      await startWorkout(orderedPlan);
+    } catch (err) {
+      logger.error('Erro ao iniciar treino:', err);
+      setError('Erro ao iniciar treino. Tente novamente.');
+    } finally {
+      setStartingPlanId(null);
+    }
+  }, [authState.token, startWorkout, startingPlanId]);
 
   const fetchPlans = useCallback(async () => {
     if (!authState.token) {
@@ -224,8 +256,14 @@ const ExploreWorkoutPlansPage = () => {
                     {plan.planExercises.length > 3 && <li>... e mais.</li>}
                   </ExercisePreviewList>
                 )}
-                <UsePlanButton as={Link} to={`/plano/${plan.id}/resumo`} onClick={(e) => e.stopPropagation()}>
-                  Iniciar treino
+                <UsePlanButton 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartWorkout(plan.id);
+                  }}
+                  disabled={startingPlanId === plan.id}
+                >
+                  {startingPlanId === plan.id ? 'A iniciar...' : 'Iniciar treino'}
                 </UsePlanButton>
               </ExpandableContent>
             </PlanCard>
