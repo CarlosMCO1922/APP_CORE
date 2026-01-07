@@ -183,6 +183,18 @@ export const adminGetTodayTrainingsCount = async (token) => {
   } catch (error) { logger.error("Erro em adminGetTodayTrainingsCount:", error); throw error; }
 };
 
+export const adminGetTodayTrainingsEnrollmentsCount = async (token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/trainings/stats/today-enrollments-count`, { 
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar contagem de inscrições nos treinos de hoje.');
+    return data;
+  } catch (error) { logger.error("Erro em adminGetTodayTrainingsEnrollmentsCount:", error); throw error; }
+};
+
 export const adminBookClientForTrainingService = async (trainingId, userId, token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   if (!trainingId || !userId) throw new Error('ID do Treino e ID do Utilizador são obrigatórios.');

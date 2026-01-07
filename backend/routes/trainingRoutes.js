@@ -44,6 +44,13 @@ router.get(
     trainingController.getTodayTrainingsCount
 );
 
+router.get(
+    '/stats/today-enrollments-count',
+    protect,
+    isAdminStaff,
+    trainingController.getTodayTrainingsEnrollmentsCount
+);
+
 // --- Rotas para Planos de Treino (WorkoutPlan) aninhadas sob um Treino específico ---
 router.get(
   '/:trainingId/workout-plans',

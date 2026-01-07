@@ -1,10 +1,10 @@
 // src/pages/admin/AdminDashboardPage.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { adminGetTotalPaid } from '../services/paymentService';
-import { adminGetCurrentWeekSignups, adminGetTodayTrainingsCount } from '../services/trainingService'; 
+import { adminGetCurrentWeekSignups, adminGetTodayTrainingsCount, adminGetTodayTrainingsEnrollmentsCount } from '../services/trainingService'; 
 import { adminGetTodayAppointmentsCount } from '../services/appointmentService';
 import {
     FaDollarSign, FaUsers, FaCalendarDay,
@@ -151,6 +151,15 @@ const StatCard = styled.div`
   align-items: center;
   text-align: center;
   border-left: 5px solid ${({ theme, color }) => color || theme.colors.primary};
+  cursor: ${props => props.$clickable ? 'pointer' : 'default'};
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  
+  &:hover {
+    ${props => props.$clickable && `
+      transform: translateY(-2px);
+      background-color: ${props.theme.colors.cardBackgroundDarker};
+    `}
+  }
 `;
 
 const StatIcon = styled.div`
@@ -203,9 +212,10 @@ const ErrorText = styled.p`
 const AdminDashboardPage = () => {
   const theme = useTheme();
   const { authState } = useAuth();
+  const navigate = useNavigate();
   const [totalPaidThisMonth, setTotalPaidThisMonth] = useState(null);
   const [weeklySignups, setWeeklySignups] = useState(null);
-  const [todayEventsCount, setTodayEventsCount] = useState({ trainings: null, appointments: null });
+  const [todayEventsCount, setTodayEventsCount] = useState({ trainings: null, appointments: null, enrollments: null });
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState('');
 
@@ -224,19 +234,22 @@ const AdminDashboardPage = () => {
             totalPaidData,
             weeklySignupsData,
             todayTrainingsData,
-            todayAppointmentsData
+            todayAppointmentsData,
+            todayEnrollmentsData
         ] = await Promise.all([
           adminGetTotalPaid(authState.token, { startDate: formattedStartDate, endDate: formattedEndDate }),
           adminGetCurrentWeekSignups(authState.token),
           adminGetTodayTrainingsCount(authState.token),
-          adminGetTodayAppointmentsCount(authState.token)
+          adminGetTodayAppointmentsCount(authState.token),
+          adminGetTodayTrainingsEnrollmentsCount(authState.token)
         ]);
 
         setTotalPaidThisMonth(totalPaidData.totalPaid);
         setWeeklySignups(weeklySignupsData.currentWeekSignups);
         setTodayEventsCount({
             trainings: todayTrainingsData.todayTrainingsCount,
-            appointments: todayAppointmentsData.todayAppointmentsCount
+            appointments: todayAppointmentsData.todayAppointmentsCount,
+            enrollments: todayEnrollmentsData.todayEnrollmentsCount
         });
 
       } catch (err) {
@@ -283,7 +296,11 @@ const AdminDashboardPage = () => {
           <StatLabel>Inscrições Esta Semana</StatLabel>
         </StatCard>
 
-        <StatCard color="#FFC107">
+        <StatCard 
+          color="#FFC107" 
+          $clickable={true}
+          onClick={() => navigate('/admin/calendario-geral?view=agenda')}
+        >
           <StatIcon color="#FFC107"><FaCalendarDay /></StatIcon>
           {loadingStats && totalTodayEvents === null && <LoadingText>A carregar...</LoadingText>}
           {!loadingStats && statsError && totalTodayEvents === null && <ErrorText>Erro</ErrorText>}
@@ -291,7 +308,7 @@ const AdminDashboardPage = () => {
           <StatLabel>Eventos Hoje (Total)</StatLabel>
           {totalTodayEvents !== null && !loadingStats && (
             <p style={{fontSize: '0.75rem', color: theme.colors.textMuted, margin: '5px 0 0 0'}}>
-              (Treinos: {todayEventsCount.trainings ?? '?'}, Consultas: {todayEventsCount.appointments ?? '?'})
+              (Treinos: {todayEventsCount.trainings ?? '?'}, Consultas: {todayEventsCount.appointments ?? '?'}, Inscritos: {todayEventsCount.enrollments ?? '?'})
             </p>
           )}
         </StatCard>

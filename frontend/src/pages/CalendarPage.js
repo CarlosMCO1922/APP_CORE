@@ -400,6 +400,10 @@ const CalendarPage = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { search } = window.location;
+  const searchParams = new URLSearchParams(search);
+  const viewParam = searchParams.get('view');
+  
   const [events, setEvents] = useState([]);
   const [myBookedTrainingIds, setMyBookedTrainingIds] = useState(new Set());
   const [myBookedAppointmentIds, setMyBookedAppointmentIds] = useState(new Set());
@@ -437,7 +441,7 @@ const CalendarPage = () => {
 
   const [actionLoading, setActionLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState(Views.WEEK);
+  const [currentView, setCurrentView] = useState(viewParam === 'agenda' ? Views.AGENDA : Views.WEEK);
   const [agendaVisibleCount, setAgendaVisibleCount] = useState(25);
   const [showCancelRecurringModal, setShowCancelRecurringModal] = useState(false);
   const [cancelRecurringInfo, setCancelRecurringInfo] = useState(null);

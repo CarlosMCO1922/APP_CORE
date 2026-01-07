@@ -648,6 +648,33 @@ const getTodayTrainingsCount = async (req, res) => {
   }
 };
 
+const getTodayTrainingsEnrollmentsCount = async (req, res) => {
+  try {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const trainings = await db.Training.findAll({
+      where: {
+        date: today,
+      },
+      include: [{
+        model: db.User,
+        through: 'UserTrainings',
+        as: 'participants',
+        attributes: ['id'],
+      }],
+    });
+    
+    // Contar total de inscrições (clientes) em todos os treinos de hoje
+    const totalEnrollments = trainings.reduce((sum, training) => {
+      return sum + (training.participants ? training.participants.length : 0);
+    }, 0);
+    
+    res.status(200).json({ todayEnrollmentsCount: totalEnrollments || 0 });
+  } catch (error) {
+    console.error('Erro ao obter contagem de inscrições nos treinos de hoje:', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
+  }
+};
+
 
 const adminBookClientForTraining = async (req, res) => {
   const { trainingId } = req.params;
@@ -1045,6 +1072,7 @@ module.exports = {
   cancelTrainingBooking,
   getCurrentWeekSignups,
   getTodayTrainingsCount,
+  getTodayTrainingsEnrollmentsCount,
   adminBookClientForTraining,
   adminCancelClientBooking,
   adminGetTrainingWaitlist,
