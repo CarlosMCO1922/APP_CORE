@@ -4,13 +4,49 @@
   "description": "Aplicação de gestão para o estúdio CORE e seus clientes.",
   "icons": [
     {
-      "src": "logo192.png",
+      "src": "icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "logo512.png",
+      "src": "icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -30,14 +66,14 @@
       "short_name": "Calendário",
       "description": "Ver calendário e marcações",
       "url": "/calendario",
-      "icons": [{ "src": "logo_core_short_without_back.png", "sizes": "96x96" }]
+      "icons": [{ "src": "icon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "Treinos",
       "short_name": "Treinos",
       "description": "Ver meus treinos",
       "url": "/meus-treinos",
-      "icons": [{ "src": "logo_core_short_without_back.png", "sizes": "96x96" }]
+      "icons": [{ "src": "icon-96x96.png", "sizes": "96x96" }]
     }
   ]
 }
