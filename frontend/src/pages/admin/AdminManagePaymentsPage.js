@@ -14,6 +14,7 @@ import { adminGetAllUsers } from '../../services/userService';
 import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaTimes } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
+import SearchableSelect from '../../components/Common/SearchableSelect';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -713,12 +714,18 @@ const AdminManagePaymentsPage = () => {
             {modalError && <ModalErrorText>{modalError}</ModalErrorText>}
             <ModalForm onSubmit={handleFormSubmit}>
               <ModalLabel htmlFor="modalUserIdPayForm">Cliente*</ModalLabel>
-              <ModalSelect name="userId" id="modalUserIdPayForm" value={currentPaymentData.userId} onChange={handleFormChange} required>
-                <option value="">Selecione um cliente</option>
-                {userList.map(user => (
-                  <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
-                ))}
-              </ModalSelect>
+              <SearchableSelect
+                id="modalUserIdPayForm"
+                name="userId"
+                value={currentPaymentData.userId || ''}
+                onChange={handleFormChange}
+                options={userList}
+                getOptionLabel={(user) => `${user.firstName} ${user.lastName} (${user.email})`}
+                getOptionValue={(user) => user.id}
+                placeholder="Pesquisar e selecionar um cliente..."
+                searchable={true}
+                required={true}
+              />
 
               <ModalLabel htmlFor="modalAmountPayForm">Valor (EUR)*</ModalLabel>
               <ModalInput type="number" name="amount" id="modalAmountPayForm" value={currentPaymentData.amount} onChange={handleFormChange} required step="0.01" min="0.01" />
