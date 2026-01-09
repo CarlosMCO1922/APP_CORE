@@ -722,7 +722,8 @@ const AdminManagePaymentsPage = () => {
                 options={userList}
                 getOptionLabel={(user) => `${user.firstName} ${user.lastName} (${user.email})`}
                 getOptionValue={(user) => user.id}
-                placeholder="Pesquisar e selecionar um cliente..."
+                placeholder="Selecione um cliente..."
+                searchPlaceholder="Pesquisar cliente..."
                 searchable={true}
                 required={true}
               />

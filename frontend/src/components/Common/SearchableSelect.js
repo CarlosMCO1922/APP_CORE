@@ -199,6 +199,7 @@ const SearchableSelect = ({
   onChange,
   options = [],
   placeholder = 'Selecione...',
+  searchPlaceholder = 'Pesquisar...',
   getOptionLabel = (option) => option.name || option.label || String(option),
   getOptionValue = (option) => option.id || option.value || option,
   searchable = true,
@@ -363,7 +364,7 @@ const SearchableSelect = ({
               <SearchInput
                 ref={searchInputRef}
                 type="text"
-                placeholder="Pesquisar exercício..."
+                placeholder={searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
