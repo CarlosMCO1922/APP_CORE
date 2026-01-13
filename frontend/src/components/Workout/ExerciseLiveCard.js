@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { FaPlus } from 'react-icons/fa';
 import SetRow from './SetRow';
 import { useWorkout } from '../../context/WorkoutContext';
+import { useAuth } from '../../context/AuthContext';
 
 // --- Styled Components ---
 const CardContainer = styled.div` margin-bottom: 40px; `;
@@ -22,17 +23,23 @@ const ExerciseLiveCard = ({
   lastPerformance,
 }) => {
   const [sets, setSets] = useState([]);
-  const { exercisePlaceholders } = useWorkout();
+  const { exercisePlaceholders, reloadPlaceholdersForActiveWorkout, activeWorkout } = useWorkout();
+  const { authState } = useAuth();
   
   // Obter placeholders para este exercício - tentar ambos os campos
   const planExerciseId = planExercise?.planExerciseId ?? planExercise?.id;
   // Tentar ambos os IDs possíveis para garantir compatibilidade
   const placeholders = exercisePlaceholders[planExerciseId] || exercisePlaceholders[planExercise?.id] || exercisePlaceholders[planExercise?.planExerciseId] || [];
   
-  // Debug: log se não encontrar placeholders mas existirem no contexto
-  if (placeholders.length === 0 && Object.keys(exercisePlaceholders).length > 0) {
-    console.log('ExerciseLiveCard: Não encontrou placeholders para planExerciseId:', planExerciseId, 'Disponíveis:', Object.keys(exercisePlaceholders));
-  }
+  // Recarregar placeholders quando o exercício é visualizado (se não existirem ou estiverem vazios)
+  useEffect(() => {
+    if (planExerciseId && activeWorkout && authState.token && (!placeholders || placeholders.length === 0)) {
+      // Recarregar placeholders apenas para este exercício
+      if (reloadPlaceholdersForActiveWorkout) {
+        reloadPlaceholdersForActiveWorkout(planExerciseId);
+      }
+    }
+  }, [planExerciseId, activeWorkout?.id]); // Recarregar quando exercício ou treino muda
 
   useEffect(() => {
     const initialSets = Array.from({ length: planExercise.sets || 1 }, (_, i) => ({ id: `initial-${i}` }));

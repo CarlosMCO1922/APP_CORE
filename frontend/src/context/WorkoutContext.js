@@ -29,20 +29,97 @@ export const WorkoutProvider = ({ children }) => {
             setActiveWorkout(orderedWorkout);
             setIsMinimized(true);
             logger.log("Treino carregado do localStorage com exercícios ordenados:", orderedWorkout);
-        }
-    }, []);
-
-    // Guarda o treino no localStorage sempre que ele muda
-    useEffect(() => {
-        if (activeWorkout) {
-            const success = safeSetItem('activeWorkoutSession', activeWorkout);
-            if (!success) {
-                logger.warn("Falha ao guardar treino no localStorage");
+            
+            // Recarregar placeholders quando treino é restaurado
+            if (authState.token && orderedWorkout.planExercises) {
+                const loadPlaceholders = async () => {
+                    const currentTrainingId = orderedWorkout.trainingId || null;
+                    const placeholdersMap = {};
+                    
+                    await Promise.all(
+                        orderedWorkout.planExercises.map(async (planExercise) => {
+                            const planExerciseId = planExercise.id || planExercise.planExerciseId;
+                            if (!planExerciseId) return;
+                            
+                            try {
+                                const historyData = await getMyPerformanceHistoryForExerciseService(
+                                    planExerciseId, 
+                                    authState.token, 
+                                    true, 
+                                    currentTrainingId
+                                );
+                                
+                                if (historyData && historyData.length > 0) {
+                                    const placeholders = historyData.slice(0, 3).map(set => ({
+                                        weight: set.performedWeight || null,
+                                        reps: set.performedReps || null
+                                    }));
+                                    placeholdersMap[planExerciseId] = placeholders;
+                                }
+                            } catch (err) {
+                                logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId}:`, err);
+                            }
+                        })
+                    );
+                    
+                    setExercisePlaceholders(placeholdersMap);
+                };
+                
+                loadPlaceholders();
             }
-        } else {
-            localStorage.removeItem('activeWorkoutSession');
         }
-    }, [activeWorkout]);
+    }, [authState.token]);
+
+    // Função para recarregar placeholders de um exercício específico ou de todos
+    const reloadPlaceholdersForActiveWorkout = React.useCallback(async (specificPlanExerciseId = null) => {
+        if (!activeWorkout || !authState.token) return;
+        
+        try {
+            const currentTrainingId = activeWorkout.trainingId || null;
+            const exercisesToLoad = specificPlanExerciseId 
+                ? activeWorkout.planExercises.filter(pe => {
+                    const id = pe.id || pe.planExerciseId;
+                    return id === specificPlanExerciseId;
+                })
+                : activeWorkout.planExercises;
+
+            const placeholdersMap = {};
+            
+            await Promise.all(
+                exercisesToLoad.map(async (planExercise) => {
+                    const planExerciseId = planExercise.id || planExercise.planExerciseId;
+                    if (!planExerciseId) return;
+                    
+                    try {
+                        const historyData = await getMyPerformanceHistoryForExerciseService(
+                            planExerciseId, 
+                            authState.token, 
+                            true, 
+                            currentTrainingId
+                        );
+                        
+                        if (historyData && historyData.length > 0) {
+                            const placeholders = historyData.slice(0, 3).map(set => ({
+                                weight: set.performedWeight || null,
+                                reps: set.performedReps || null
+                            }));
+                            placeholdersMap[planExerciseId] = placeholders;
+                            logger.log(`Placeholders recarregados para planExerciseId ${planExerciseId}:`, placeholders);
+                        } else {
+                            // Se não há histórico, manter placeholders vazios
+                            placeholdersMap[planExerciseId] = [];
+                        }
+                    } catch (err) {
+                        logger.warn(`Não foi possível recarregar histórico para exercício ${planExerciseId}:`, err);
+                    }
+                })
+            );
+            
+            setExercisePlaceholders(prev => ({ ...prev, ...placeholdersMap }));
+        } catch (error) {
+            logger.error("Erro ao recarregar placeholders:", error);
+        }
+    }, [activeWorkout, authState.token]);
 
     const startWorkout = async (planData) => {
         if (activeWorkout) {
@@ -121,11 +198,17 @@ export const WorkoutProvider = ({ children }) => {
     const updateSetData = (planExerciseId, setNumber, field, value) => {
         if (!activeWorkout) return;
         setActiveWorkout(prev => {
+            if (!prev) return prev;
             const newSetsData = { ...prev.setsData };
             const key = `${planExerciseId}-${setNumber}`;
             if (!newSetsData[key]) newSetsData[key] = { planExerciseId, setNumber };
             newSetsData[key][field] = value;
-            return { ...prev, setsData: newSetsData };
+            const updated = { ...prev, setsData: newSetsData };
+            
+            // Salvar imediatamente no localStorage (sem esperar pelo useEffect)
+            safeSetItem('activeWorkoutSession', updated);
+            
+            return updated;
         });
     };
 
@@ -254,7 +337,19 @@ export const WorkoutProvider = ({ children }) => {
 
     const cancelWorkout = () => { setActiveWorkout(null); };
 
-    const value = { activeWorkout, isMinimized, lastPerformances, exercisePlaceholders, startWorkout, finishWorkout, cancelWorkout, updateSetData, setIsMinimized, logSet };
+    const value = { 
+        activeWorkout, 
+        isMinimized, 
+        lastPerformances, 
+        exercisePlaceholders, 
+        startWorkout, 
+        finishWorkout, 
+        cancelWorkout, 
+        updateSetData, 
+        setIsMinimized, 
+        logSet,
+        reloadPlaceholdersForActiveWorkout 
+    };
 
     return ( <WorkoutContext.Provider value={value}>{children}</WorkoutContext.Provider> );
 };
