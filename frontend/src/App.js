@@ -10,6 +10,7 @@ import OfflineIndicator from './components/OfflineIndicator';
 import ConfirmationModal from './components/Common/ConfirmationModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import { initializeErrorHandlers } from './services/logService';
+import { logger } from './utils/logger';
 
 // Code-splitting for pages (melhora UX e reduz bundle inicial)
 const LoginPage = lazy(() => import('./pages/LoginPage'));
