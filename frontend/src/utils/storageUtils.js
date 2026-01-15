@@ -123,3 +123,75 @@ export const validateUserData = (data) => {
   });
 };
 
+/**
+ * Verifica se um treino é muito antigo e deve ser considerado abandonado
+ * @param {Object} workout - Objeto do treino
+ * @param {number} maxAgeHours - Idade máxima em horas (padrão: 48)
+ * @returns {boolean} - true se o treino é muito antigo
+ */
+export const isWorkoutAbandoned = (workout, maxAgeHours = 48) => {
+  if (!workout || !workout.startTime) return true;
+  
+  const now = Date.now();
+  const workoutAge = now - workout.startTime;
+  const maxAgeMs = maxAgeHours * 60 * 60 * 1000;
+  
+  return workoutAge > maxAgeMs;
+};
+
+/**
+ * Obtém o timestamp da última atualização de um treino
+ * @param {Object} workout - Objeto do treino
+ * @returns {number} - Timestamp da última atualização
+ */
+export const getWorkoutLastUpdate = (workout) => {
+  if (!workout) return 0;
+  
+  // Se houver lastUpdated, usar esse
+  if (workout.lastUpdated) return workout.lastUpdated;
+  
+  // Caso contrário, usar o timestamp do último set completado
+  if (workout.setsData && Object.keys(workout.setsData).length > 0) {
+    const sets = Object.values(workout.setsData);
+    const lastSet = sets.reduce((latest, set) => {
+      const setTime = set.performedAt ? new Date(set.performedAt).getTime() : 0;
+      const latestTime = latest.performedAt ? new Date(latest.performedAt).getTime() : 0;
+      return setTime > latestTime ? set : latest;
+    }, sets[0]);
+    
+    if (lastSet && lastSet.performedAt) {
+      return new Date(lastSet.performedAt).getTime();
+    }
+  }
+  
+  // Fallback: usar startTime
+  return workout.startTime || 0;
+};
+
+/**
+ * Resolve conflito entre dois treinos, retornando o mais recente
+ * @param {Object} workout1 - Primeiro treino
+ * @param {Object} workout2 - Segundo treino
+ * @returns {Object|null} - O treino mais recente, ou null se ambos inválidos
+ */
+export const resolveWorkoutConflict = (workout1, workout2) => {
+  if (!workout1 && !workout2) return null;
+  if (!workout1) return workout2;
+  if (!workout2) return workout1;
+  
+  // Validar ambos
+  const valid1 = validateWorkoutSession(workout1);
+  const valid2 = validateWorkoutSession(workout2);
+  
+  if (!valid1 && !valid2) return null;
+  if (!valid1) return workout2;
+  if (!valid2) return workout1;
+  
+  // Comparar timestamps de última atualização
+  const update1 = getWorkoutLastUpdate(workout1);
+  const update2 = getWorkoutLastUpdate(workout2);
+  
+  // Retornar o mais recente
+  return update1 >= update2 ? workout1 : workout2;
+};
+

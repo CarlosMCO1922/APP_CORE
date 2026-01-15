@@ -342,3 +342,225 @@ export const getMyLastPerformancesService = async (token) => {
     return [];
   }
 };
+
+// ========== TRAINING SESSION DRAFT SERVICES ==========
+
+/**
+ * Guarda ou atualiza um draft de sessão de treino no backend
+ * @param {Object} workoutSession - Objeto com os dados do treino (activeWorkout)
+ * @param {string} token - Token de autenticação
+ * @returns {Promise<Object>} - Resposta do servidor com o draft guardado
+ */
+export const saveTrainingSessionDraftService = async (workoutSession, token) => {
+  if (!token) throw new Error('Token não fornecido para saveTrainingSessionDraftService.');
+  if (!workoutSession || !workoutSession.workoutPlanId || !workoutSession.startTime) {
+    throw new Error('Dados obrigatórios em falta: workoutPlanId, startTime.');
+  }
+
+  try {
+    const url = `${API_URL}/progress/training-session/draft`;
+    const payload = {
+      trainingId: workoutSession.trainingId || null,
+      workoutPlanId: workoutSession.id || workoutSession.workoutPlanId,
+      sessionData: {
+        setsData: workoutSession.setsData || {},
+        planExercises: workoutSession.planExercises || [],
+        name: workoutSession.name,
+        id: workoutSession.id,
+      },
+      startTime: workoutSession.startTime,
+    };
+
+    logger.log('saveTrainingSessionDraftService URL:', url, 'Payload:', payload);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      logger.error("Falha ao fazer parse da resposta JSON de saveTrainingSessionDraftService:", e);
+      logger.error("Resposta recebida (texto):", responseText);
+      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}.`);
+    }
+
+    if (!response.ok) {
+      logger.error('Erro na resposta de saveTrainingSessionDraftService (status não OK):', data);
+      throw new Error(data.message || `Erro ao guardar draft. Status: ${response.status}`);
+    }
+
+    logger.log('Draft guardado com sucesso no backend:', data);
+    return data;
+  } catch (error) {
+    logger.error("Erro em saveTrainingSessionDraftService:", error);
+    throw error;
+  }
+};
+
+/**
+ * Obtém o draft de sessão de treino do utilizador
+ * @param {string} token - Token de autenticação
+ * @param {number|null} trainingId - ID do treino (opcional)
+ * @param {number|null} workoutPlanId - ID do plano de treino (opcional)
+ * @returns {Promise<Object|null>} - Draft encontrado ou null se não existir
+ */
+export const getTrainingSessionDraftService = async (token, trainingId = null, workoutPlanId = null, deviceId = null) => {
+  if (!token) throw new Error('Token não fornecido para getTrainingSessionDraftService.');
+
+  try {
+    let url = `${API_URL}/progress/training-session/draft`;
+    const params = new URLSearchParams();
+    if (trainingId) params.append('trainingId', trainingId);
+    if (workoutPlanId) params.append('workoutPlanId', workoutPlanId);
+    if (deviceId) params.append('deviceId', deviceId);
+    if (params.toString()) url += `?${params.toString()}`;
+
+    logger.log('getTrainingSessionDraftService URL:', url);
+    
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+
+    const responseText = await response.text();
+    
+    // Se não encontrou (404), retornar null em vez de erro
+    if (response.status === 404) {
+      logger.log('Nenhum draft encontrado no backend');
+      return null;
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      logger.error("Falha ao fazer parse da resposta JSON de getTrainingSessionDraftService:", e);
+      logger.error("Resposta recebida (texto):", responseText);
+      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}.`);
+    }
+
+    if (!response.ok) {
+      logger.error('Erro na resposta de getTrainingSessionDraftService (status não OK):', data);
+      throw new Error(data.message || `Erro ao obter draft. Status: ${response.status}`);
+    }
+
+    logger.log('Draft recuperado do backend:', data);
+    return data.draft;
+  } catch (error) {
+    logger.error("Erro em getTrainingSessionDraftService:", error);
+    // Retornar null em caso de erro para não quebrar o fluxo
+    return null;
+  }
+};
+
+/**
+ * Elimina um draft de sessão de treino
+ * @param {string} token - Token de autenticação
+ * @param {number|null} draftId - ID do draft (opcional)
+ * @param {number|null} trainingId - ID do treino (opcional, usado com workoutPlanId)
+ * @param {number|null} workoutPlanId - ID do plano de treino (opcional, usado com trainingId)
+ * @returns {Promise<Object>} - Resposta do servidor
+ */
+/**
+ * Obtém histórico de todos os drafts do utilizador
+ * @param {string} token - Token de autenticação
+ * @param {number} limit - Limite de resultados (padrão: 20)
+ * @param {number} offset - Offset para paginação (padrão: 0)
+ * @returns {Promise<Object>} - Histórico de drafts
+ */
+export const getTrainingSessionDraftsHistoryService = async (token, limit = 20, offset = 0) => {
+  if (!token) throw new Error('Token não fornecido para getTrainingSessionDraftsHistoryService.');
+
+  try {
+    const url = `${API_URL}/progress/training-session/drafts/history?limit=${limit}&offset=${offset}`;
+    logger.log('getTrainingSessionDraftsHistoryService URL:', url);
+    
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+
+    const responseText = await response.text();
+    
+    if (response.status === 404) {
+      return { drafts: [], expiredDrafts: [], total: 0, validCount: 0, expiredCount: 0 };
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      logger.error("Falha ao fazer parse da resposta JSON de getTrainingSessionDraftsHistoryService:", e);
+      logger.error("Resposta recebida (texto):", responseText);
+      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}.`);
+    }
+
+    if (!response.ok) {
+      logger.error('Erro na resposta de getTrainingSessionDraftsHistoryService (status não OK):', data);
+      throw new Error(data.message || `Erro ao obter histórico. Status: ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    logger.error("Erro em getTrainingSessionDraftsHistoryService:", error);
+    throw error;
+  }
+};
+
+export const deleteTrainingSessionDraftService = async (token, draftId = null, trainingId = null, workoutPlanId = null) => {
+  if (!token) throw new Error('Token não fornecido para deleteTrainingSessionDraftService.');
+  if (!draftId && (!trainingId || !workoutPlanId)) {
+    throw new Error('É necessário fornecer draftId ou trainingId + workoutPlanId.');
+  }
+
+  try {
+    let url;
+    if (draftId) {
+      url = `${API_URL}/progress/training-session/draft/${draftId}`;
+    } else {
+      url = `${API_URL}/progress/training-session/draft?trainingId=${trainingId}&workoutPlanId=${workoutPlanId}`;
+    }
+
+    logger.log('deleteTrainingSessionDraftService URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const responseText = await response.text();
+    let data;
+    
+    if (response.status === 204) {
+      return { message: 'Draft eliminado com sucesso.' };
+    }
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      logger.error("Falha ao fazer parse da resposta JSON de deleteTrainingSessionDraftService:", e);
+      if (response.ok) {
+        return { message: responseText || "Operação concluída." };
+      }
+      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}.`);
+    }
+
+    if (!response.ok) {
+      logger.error('Erro na resposta de deleteTrainingSessionDraftService (status não OK):', data);
+      throw new Error(data.message || `Erro ao eliminar draft. Status: ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    logger.error("Erro em deleteTrainingSessionDraftService:", error);
+    throw error;
+  }
+};

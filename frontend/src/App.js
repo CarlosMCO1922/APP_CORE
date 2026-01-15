@@ -60,7 +60,7 @@ const MinimizedBar = styled.div`
   width: 100%;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   color: ${({ theme }) => theme.colors.textMain};
-  padding: 10px 15px;
+  padding: 12px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -81,6 +81,55 @@ const MinimizedBar = styled.div`
 
   &:hover {
     background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+  }
+`;
+
+const MinimizedBarContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+`;
+
+const MinimizedBarTitle = styled.span`
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.textMain};
+`;
+
+const MinimizedBarSubtitle = styled.span`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+`;
+
+const SyncBadge = styled.span`
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background-color: ${({ theme, synced, error }) => 
+    error ? `${theme.colors.error}30` : 
+    synced ? `${theme.colors.success}30` : 
+    `${theme.colors.warning || theme.colors.primary}30`};
+  color: ${({ theme, synced, error }) => 
+    error ? theme.colors.error : 
+    synced ? theme.colors.success : 
+    theme.colors.warning || theme.colors.primary};
+`;
+
+const PauseIndicator = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: ${({ theme }) => theme.colors.primary};
+  font-weight: 500;
+  
+  &::before {
+    content: '⏸';
+    font-size: 0.8rem;
   }
 `;
 
@@ -116,8 +165,51 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
 function App() {
   const { authState } = useAuth();
-  const { activeWorkout, isMinimized, setIsMinimized, cancelWorkout } = useWorkout();
+  const { activeWorkout, isMinimized, setIsMinimized, cancelWorkout, syncStatus } = useWorkout();
   const [showCancelWorkoutModal, setShowCancelWorkoutModal] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  // Calcular tempo decorrido do treino
+  useEffect(() => {
+    if (!activeWorkout || !activeWorkout.startTime) return;
+    
+    const updateElapsedTime = () => {
+      const elapsed = Math.floor((Date.now() - activeWorkout.startTime) / 1000);
+      setElapsedTime(elapsed);
+    };
+    
+    updateElapsedTime();
+    const interval = setInterval(updateElapsedTime, 1000);
+    
+    return () => clearInterval(interval);
+  }, [activeWorkout]);
+
+  // Verificar se há treino pendente ao iniciar
+  useEffect(() => {
+    if (!activeWorkout || !isMinimized || !authState.isAuthenticated) return;
+    
+    // Verificar se o treino foi recuperado do localStorage
+    // Se o treino tem mais de 30 segundos desde o início, provavelmente foi recuperado
+    const timeSinceStart = Date.now() - activeWorkout.startTime;
+    const wasRecovered = timeSinceStart > 30000; // Mais de 30 segundos = recuperado
+    
+    if (wasRecovered) {
+      // Pequeno delay para garantir que a UI está pronta
+      const timer = setTimeout(() => {
+        setShowRecoveryModal(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []); // Apenas ao montar o componente
+
+  const formatTime = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours > 0 ? String(hours).padStart(2, '0') + ':' : ''}${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
 
   const handleCancelWorkoutClick = (e) => {
     e.stopPropagation();
@@ -126,6 +218,16 @@ function App() {
 
   const handleCancelWorkoutConfirm = () => {
     setShowCancelWorkoutModal(false);
+    cancelWorkout();
+  };
+
+  const handleRecoveryContinue = () => {
+    setShowRecoveryModal(false);
+    setIsMinimized(false);
+  };
+
+  const handleRecoveryCancel = () => {
+    setShowRecoveryModal(false);
     cancelWorkout();
   };
 
@@ -201,7 +303,19 @@ function App() {
       
       {activeWorkout && isMinimized && (
         <MinimizedBar onClick={() => setIsMinimized(false)}>
-          <span>Treino em Andamento: {activeWorkout.name}</span>
+          <MinimizedBarContent>
+            <MinimizedBarTitle>
+              <PauseIndicator /> {activeWorkout.name}
+            </MinimizedBarTitle>
+            <MinimizedBarSubtitle>
+              ⏱ {formatTime(elapsedTime)} • Toque para continuar
+              {syncStatus && !syncStatus.synced && (
+                <SyncBadge synced={syncStatus.synced} error={syncStatus.error}>
+                  {syncStatus.error || 'A sincronizar...'}
+                </SyncBadge>
+              )}
+            </MinimizedBarSubtitle>
+          </MinimizedBarContent>
           <CancelButton onClick={handleCancelWorkoutClick}>
             Cancelar
           </CancelButton>
@@ -217,6 +331,18 @@ function App() {
         confirmText="Cancelar Treino"
         cancelText="Continuar"
         danger={true}
+        loading={false}
+      />
+
+      <ConfirmationModal
+        isOpen={showRecoveryModal}
+        onClose={handleRecoveryCancel}
+        onConfirm={handleRecoveryContinue}
+        title="Treino em Pausa"
+        message={`Encontramos um treino em pausa: "${activeWorkout?.name}". Tempo decorrido: ${formatTime(elapsedTime)}. Deseja continuar?`}
+        confirmText="Continuar Treino"
+        cancelText="Cancelar Treino"
+        danger={false}
         loading={false}
       />
   </>

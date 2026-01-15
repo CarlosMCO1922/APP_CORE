@@ -13,6 +13,10 @@ const {
   adminGetFullExerciseHistoryForUser,
   getExerciseHistoryForClient,
   getMyLastPerformances,
+  saveTrainingSessionDraft,
+  getTrainingSessionDraft,
+  deleteTrainingSessionDraft,
+  getTrainingSessionDraftsHistory,
 } = require('../controllers/progressController');
 
 const { protect, isClientUser, isStaff } = require('../middleware/authMiddleware');
@@ -36,5 +40,11 @@ router.get('/my-last-performances', protect, isClientUser, getMyLastPerformances
 router.get('/admin/user-records/:userId', protect, isStaff, adminGetUserRecords);
 router.get('/admin/exercise-history/:userId/:planExerciseId', protect, isStaff, adminGetFullExerciseHistoryForUser);
 
+// --- ROTAS DE TRAINING SESSION DRAFT ---
+router.post('/training-session/draft', protect, isClientUser, saveTrainingSessionDraft);
+router.get('/training-session/draft', protect, isClientUser, getTrainingSessionDraft);
+router.get('/training-session/drafts/history', protect, isClientUser, getTrainingSessionDraftsHistory);
+router.delete('/training-session/draft/:draftId', protect, isClientUser, deleteTrainingSessionDraft);
+router.delete('/training-session/draft', protect, isClientUser, deleteTrainingSessionDraft); // Alternativa com query params
 
 module.exports = router;

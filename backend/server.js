@@ -1,8 +1,10 @@
 // backend/server.js
 const express = require('express');
+const http = require('http');
 const db = require('./models'); 
 const cors = require('cors'); 
 const app = express();
+const server = http.createServer(app);
 const port = process.env.PORT || 3001;
 
 require('dotenv').config();
@@ -55,6 +57,8 @@ app.use('/push', express.json(), pushRoutes);
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
 const { notFound, errorHandler } = require('./middleware/errorHandler');
+const { cleanupExpiredDrafts } = require('./controllers/progressController');
+
 app.use(notFound);
 app.use(errorHandler);
 
@@ -74,6 +78,32 @@ db.sequelize.authenticate()
     logger.error('Não foi possível conectar à base de dados:', err);
   });
 
-app.listen(port, () => {
+// Limpeza automática de drafts expirados
+// Executa a cada hora (3600000 ms)
+const CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hora
+
+const startCleanupJob = () => {
+  // Executar limpeza imediatamente ao iniciar
+  cleanupExpiredDrafts().catch(err => {
+    logger.error('Erro na limpeza inicial de drafts:', err);
+  });
+
+  // Executar limpeza periodicamente
+  setInterval(() => {
+    cleanupExpiredDrafts().catch(err => {
+      logger.error('Erro na limpeza periódica de drafts:', err);
+    });
+  }, CLEANUP_INTERVAL);
+
+  logger.info(`Limpeza automática de drafts configurada (intervalo: ${CLEANUP_INTERVAL / 1000 / 60} minutos)`);
+};
+
+// Inicializar WebSocket server
+const { initializeWebSocket } = require('./utils/websocketServer');
+initializeWebSocket(server);
+
+server.listen(port, () => {
   logger.info(`Servidor a correr na porta ${port}`);
+  // Iniciar job de limpeza após servidor iniciar
+  startCleanupJob();
 });

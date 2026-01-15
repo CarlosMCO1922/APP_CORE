@@ -6,7 +6,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import { logger } from '../utils/logger';
 import useWakeLock from '../hooks/useWakeLock';
 import { sortPlanExercises } from '../utils/exerciseOrderUtils';
-import { FaChevronDown, FaStopwatch, FaTimes, FaHistory } from 'react-icons/fa';
+import { FaChevronDown, FaStopwatch, FaTimes, FaHistory, FaCloud, FaCloudUploadAlt, FaExclamationTriangle } from 'react-icons/fa';
 import ExerciseLiveCard from '../components/Workout/ExerciseLiveCard'; 
 import SupersetCard from '../components/Workout/SupersetCard';
 import RestTimer from '../components/Workout/RestTimer'; 
@@ -35,6 +35,26 @@ const SessionTitle = styled.h1`
 const SessionTimer = styled.div`
   font-size: 1.2rem; font-weight: 500;
   color: ${({ theme }) => theme.colors.textMuted};
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const SyncIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: ${({ theme, synced, error }) => 
+    error ? theme.colors.error : 
+    synced ? theme.colors.success : 
+    theme.colors.warning || theme.colors.primary};
+  padding: 4px 8px;
+  border-radius: 12px;
+  background-color: ${({ theme, synced, error }) => 
+    error ? `${theme.colors.error}20` : 
+    synced ? `${theme.colors.success}20` : 
+    `${theme.colors.warning || theme.colors.primary}20`};
 `;
 const Footer = styled.div`
   position: fixed; bottom: 0; left: 0; right: 0;
@@ -96,7 +116,7 @@ const ActionButton = styled.button`
 
 const LiveWorkoutSessionPage = () => {
   const { authState } = useAuth();
-  const { activeWorkout, finishWorkout, cancelWorkout, logSet, setIsMinimized, lastPerformances} = useWorkout();
+  const { activeWorkout, finishWorkout, cancelWorkout, logSet, setIsMinimized, lastPerformances, syncStatus, syncWithBackend} = useWorkout();
   
   const [elapsedTime, setElapsedTime] = useState(0);
   const [activeRestTimer, setActiveRestTimer] = useState({ active: false, duration: 90, key: 0 });
@@ -275,7 +295,32 @@ const LiveWorkoutSessionPage = () => {
           <button onClick={() => setIsMinimized(true)} style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'white'}}>
             <FaChevronDown />
           </button>
-          <SessionTimer><FaStopwatch /> {formatTime(elapsedTime)}</SessionTimer>
+          <SessionTimer>
+            <FaStopwatch /> {formatTime(elapsedTime)}
+            {syncStatus && (
+              <SyncIndicator 
+                synced={syncStatus.synced} 
+                error={syncStatus.error}
+                onClick={!syncStatus.synced && syncWithBackend ? () => syncWithBackend(activeWorkout) : undefined}
+                style={{ cursor: !syncStatus.synced && syncWithBackend ? 'pointer' : 'default' }}
+                title={syncStatus.error || (syncStatus.synced ? 'Sincronizado' : 'A sincronizar...')}
+              >
+                {syncStatus.error ? (
+                  <>
+                    <FaExclamationTriangle /> {syncStatus.error}
+                  </>
+                ) : syncStatus.synced ? (
+                  <>
+                    <FaCloud /> Sincronizado
+                  </>
+                ) : (
+                  <>
+                    <FaCloudUploadAlt /> A sincronizar...
+                  </>
+                )}
+              </SyncIndicator>
+            )}
+          </SessionTimer>
         </SessionHeader>
 
         <SessionTitle>{activeWorkout.name}</SessionTitle>

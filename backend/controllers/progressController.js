@@ -630,6 +630,307 @@ const getMyLastPerformances = async (req, res) => {
   }
 };
 
+// ========== TRAINING SESSION DRAFT ENDPOINTS ==========
+
+/**
+ * Guarda ou atualiza um draft de sessão de treino
+ * POST /api/progress/training-session/draft
+ */
+const saveTrainingSessionDraft = async (req, res) => {
+  const userId = req.user.id;
+  const { trainingId, workoutPlanId, sessionData, startTime } = req.body;
+
+  if (!workoutPlanId || !sessionData || !startTime) {
+    return res.status(400).json({ 
+      message: 'Campos obrigatórios em falta: workoutPlanId, sessionData, startTime.' 
+    });
+  }
+
+  try {
+    // Calcular data de expiração (24 horas a partir de agora)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    // Verificar se já existe um draft para este utilizador, treino e plano
+    const existingDraft = await db.TrainingSessionDraft.findOne({
+      where: {
+        userId,
+        trainingId: trainingId || null,
+        workoutPlanId: parseInt(workoutPlanId),
+      },
+    });
+
+    if (existingDraft) {
+      // Atualizar draft existente
+      existingDraft.sessionData = sessionData;
+      existingDraft.startTime = parseInt(startTime);
+      existingDraft.expiresAt = expiresAt;
+      await existingDraft.save();
+
+      return res.status(200).json({ 
+        message: 'Draft de treino atualizado com sucesso!', 
+        draft: existingDraft 
+      });
+    } else {
+      // Criar novo draft
+      const newDraft = await db.TrainingSessionDraft.create({
+        userId,
+        trainingId: trainingId ? parseInt(trainingId) : null,
+        workoutPlanId: parseInt(workoutPlanId),
+        sessionData,
+        startTime: parseInt(startTime),
+        expiresAt,
+      });
+
+      return res.status(201).json({ 
+        message: 'Draft de treino guardado com sucesso!', 
+        draft: newDraft 
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao guardar draft de treino:', error);
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        message: 'Erro de validação', 
+        errors: error.errors.map(e => e.message) 
+      });
+    }
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({ 
+        message: 'Já existe um draft para este treino e plano de treino.' 
+      });
+    }
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor ao guardar draft.', 
+      errorDetails: error.message 
+    });
+  }
+};
+
+/**
+ * Obtém o draft de sessão de treino do utilizador
+ * GET /api/progress/training-session/draft
+ * Query params opcionais: trainingId, workoutPlanId, deviceId (para detectar recuperação noutro dispositivo)
+ */
+const getTrainingSessionDraft = async (req, res) => {
+  const userId = req.user.id;
+  const { trainingId, workoutPlanId, deviceId } = req.query;
+
+  try {
+    const whereClause = { userId };
+
+    if (trainingId) {
+      whereClause.trainingId = parseInt(trainingId);
+    } else {
+      whereClause.trainingId = null; // Apenas treinos sem trainingId específico
+    }
+
+    if (workoutPlanId) {
+      whereClause.workoutPlanId = parseInt(workoutPlanId);
+    }
+
+    const draft = await db.TrainingSessionDraft.findOne({
+      where: whereClause,
+      include: [
+        {
+          model: db.Training,
+          as: 'training',
+          attributes: ['id', 'name', 'date', 'time'],
+        },
+        {
+          model: db.WorkoutPlan,
+          as: 'workoutPlan',
+          attributes: ['id', 'name'],
+        },
+      ],
+      order: [['updatedAt', 'DESC']], // Mais recente primeiro
+    });
+
+    if (!draft) {
+      return res.status(404).json({ message: 'Nenhum draft encontrado.' });
+    }
+
+    // Verificar se o draft expirou
+    if (new Date(draft.expiresAt) < new Date()) {
+      // Eliminar draft expirado
+      await draft.destroy();
+      return res.status(404).json({ message: 'Draft expirado e eliminado.' });
+    }
+
+    // NOTIFICAÇÃO: Se deviceId foi fornecido e é diferente do último dispositivo que atualizou
+    // Isso indica que o treino foi recuperado noutro dispositivo
+    if (deviceId && draft.lastDeviceId && draft.lastDeviceId !== deviceId) {
+      const { _internalCreateNotification } = require('./notificationController');
+      const workoutName = draft.workoutPlan?.name || draft.sessionData?.name || 'Treino';
+      
+      // Criar notificação
+      await _internalCreateNotification({
+        recipientUserId: userId,
+        message: `O teu treino "${workoutName}" foi recuperado noutro dispositivo.`,
+        type: 'TRAINING_RECOVERED_OTHER_DEVICE',
+        relatedResourceId: draft.workoutPlanId,
+        relatedResourceType: 'workout_plan',
+        link: '/treino/continuar'
+      });
+
+      // Atualizar lastDeviceId
+      draft.lastDeviceId = deviceId;
+      await draft.save();
+    } else if (deviceId && !draft.lastDeviceId) {
+      // Primeira vez que este draft é acedido - guardar deviceId
+      draft.lastDeviceId = deviceId;
+      await draft.save();
+    }
+
+    return res.status(200).json({ draft });
+  } catch (error) {
+    console.error('Erro ao obter draft de treino:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor ao obter draft.', 
+      errorDetails: error.message 
+    });
+  }
+};
+
+/**
+ * Elimina um draft de sessão de treino
+ * DELETE /api/progress/training-session/draft/:draftId
+ * ou DELETE /api/progress/training-session/draft?trainingId=X&workoutPlanId=Y
+ */
+const deleteTrainingSessionDraft = async (req, res) => {
+  const userId = req.user.id;
+  const { draftId } = req.params;
+  const { trainingId, workoutPlanId } = req.query;
+
+  try {
+    let draft;
+
+    if (draftId) {
+      // Eliminar por ID
+      draft = await db.TrainingSessionDraft.findOne({
+        where: { id: parseInt(draftId), userId },
+      });
+    } else if (trainingId && workoutPlanId) {
+      // Eliminar por trainingId e workoutPlanId
+      draft = await db.TrainingSessionDraft.findOne({
+        where: {
+          userId,
+          trainingId: parseInt(trainingId),
+          workoutPlanId: parseInt(workoutPlanId),
+        },
+      });
+    } else {
+      return res.status(400).json({ 
+        message: 'É necessário fornecer draftId ou trainingId + workoutPlanId.' 
+      });
+    }
+
+    if (!draft) {
+      return res.status(404).json({ message: 'Draft não encontrado.' });
+    }
+
+    await draft.destroy();
+
+    return res.status(200).json({ message: 'Draft eliminado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao eliminar draft de treino:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor ao eliminar draft.', 
+      errorDetails: error.message 
+    });
+  }
+};
+
+/**
+ * Obtém histórico de todos os drafts do utilizador
+ * GET /api/progress/training-session/drafts/history
+ */
+const getTrainingSessionDraftsHistory = async (req, res) => {
+  const userId = req.user.id;
+  const { limit = 20, offset = 0 } = req.query;
+
+  try {
+    const { count, rows } = await db.TrainingSessionDraft.findAndCountAll({
+      where: { userId },
+      include: [
+        {
+          model: db.Training,
+          as: 'training',
+          attributes: ['id', 'name', 'date', 'time'],
+        },
+        {
+          model: db.WorkoutPlan,
+          as: 'workoutPlan',
+          attributes: ['id', 'name'],
+        },
+      ],
+      order: [['updatedAt', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    // Filtrar drafts expirados (mas não eliminá-los ainda)
+    const validDrafts = rows.filter(draft => new Date(draft.expiresAt) >= new Date());
+    const expiredDrafts = rows.filter(draft => new Date(draft.expiresAt) < new Date());
+
+    res.status(200).json({
+      drafts: validDrafts.map(draft => ({
+        id: draft.id,
+        trainingId: draft.trainingId,
+        workoutPlanId: draft.workoutPlanId,
+        workoutPlanName: draft.workoutPlan?.name || draft.sessionData?.name || 'Treino',
+        trainingName: draft.training?.name,
+        trainingDate: draft.training?.date,
+        startTime: draft.startTime,
+        lastUpdated: draft.updatedAt,
+        expiresAt: draft.expiresAt,
+        setsCount: draft.sessionData?.setsData ? Object.keys(draft.sessionData.setsData).length : 0,
+        isExpired: false,
+      })),
+      expiredDrafts: expiredDrafts.map(draft => ({
+        id: draft.id,
+        workoutPlanName: draft.workoutPlan?.name || draft.sessionData?.name || 'Treino',
+        lastUpdated: draft.updatedAt,
+        expiresAt: draft.expiresAt,
+        isExpired: true,
+      })),
+      total: count,
+      validCount: validDrafts.length,
+      expiredCount: expiredDrafts.length,
+      currentPage: Math.floor(offset / limit) + 1,
+      totalPages: Math.ceil(count / limit),
+    });
+  } catch (error) {
+    console.error('Erro ao obter histórico de drafts:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor ao obter histórico.', 
+      errorDetails: error.message 
+    });
+  }
+};
+
+/**
+ * Limpeza automática de drafts expirados
+ * Pode ser chamado por um cron job ou middleware
+ */
+const cleanupExpiredDrafts = async () => {
+  try {
+    const deletedCount = await db.TrainingSessionDraft.destroy({
+      where: {
+        expiresAt: {
+          [Op.lt]: new Date(), // Menor que data atual = expirado
+        },
+      },
+    });
+
+    console.log(`Limpeza automática: ${deletedCount} draft(s) expirado(s) eliminado(s).`);
+    return deletedCount;
+  } catch (error) {
+    console.error('Erro na limpeza automática de drafts:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
@@ -642,4 +943,10 @@ module.exports = {
   adminGetFullExerciseHistoryForUser,
   getExerciseHistoryForClient,
   getMyLastPerformances,
+  // Training Session Draft endpoints
+  saveTrainingSessionDraft,
+  getTrainingSessionDraft,
+  deleteTrainingSessionDraft,
+  getTrainingSessionDraftsHistory,
+  cleanupExpiredDrafts,
 };
