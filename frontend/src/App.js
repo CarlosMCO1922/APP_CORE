@@ -154,6 +154,10 @@ const ProtectedRoute = ({ allowedRoles }) => {
   const [validationError, setValidationError] = React.useState(null);
   const hasValidatedRef = React.useRef(false); // Ref para evitar múltiplas validações
 
+  // Calcular valores necessários para os hooks (antes de qualquer return)
+  const currentRole = authState.role;
+  const shouldLogUnauthorized = allowedRoles && currentRole && !allowedRoles.includes(currentRole);
+
   // SEGURANÇA: Validar com backend antes de permitir acesso
   React.useEffect(() => {
     // Se já não está autenticado, não fazer validação
@@ -212,20 +216,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
     hasValidatedRef.current = false;
   }, [authState.token]);
 
-  // Mostrar loading durante validação
-  if (isValidating || authState.isValidating) {
-    return <Fallback>A validar acesso...</Fallback>;
-  }
-
-  // Verificações de autenticação
-  if (!authState.isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  const currentRole = authState.role;
-
-  // Hook para log de segurança de acesso não autorizado (fora das condicionais)
-  const shouldLogUnauthorized = allowedRoles && currentRole && !allowedRoles.includes(currentRole);
+  // Hook para log de segurança de acesso não autorizado (ANTES de qualquer return)
   React.useEffect(() => {
     if (shouldLogUnauthorized && authState.token) {
       fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
@@ -236,7 +227,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
         },
         body: JSON.stringify({
           eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
-          description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles.join(', ')}`,
+          description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles?.join(', ') || ''}`,
           attemptedRole: currentRole,
           actualRole: currentRole,
           url: window.location.pathname,
@@ -245,6 +236,16 @@ const ProtectedRoute = ({ allowedRoles }) => {
       }).catch(() => {}); // Ignorar erros de rede
     }
   }, [shouldLogUnauthorized, authState.token, currentRole, allowedRoles]); // Apenas quando necessário
+
+  // Mostrar loading durante validação (AGORA os returns vêm DEPOIS de todos os hooks)
+  if (isValidating || authState.isValidating) {
+    return <Fallback>A validar acesso...</Fallback>;
+  }
+
+  // Verificações de autenticação
+  if (!authState.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   // Verificar se role atual tem permissão após validação
   if (shouldLogUnauthorized) {
