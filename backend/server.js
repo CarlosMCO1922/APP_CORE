@@ -65,12 +65,25 @@ const { cleanupOldLogs } = require('./controllers/logController');
 app.use(notFound);
 app.use(errorHandler);
 
-db.sequelize.sync({ alter: true})
+// Sync da base de dados - usar alter: true apenas em desenvolvimento
+// Em produção, usar migrações manuais para evitar problemas com alterações de schema
+const syncOptions = process.env.NODE_ENV === 'production' 
+  ? { alter: false } // Em produção, não fazer alterações automáticas
+  : { alter: true }; // Em desenvolvimento, permitir alterações
+
+db.sequelize.sync(syncOptions)
   .then(() => {
-    logger.info('Base de dados sincronizada com sucesso.');
+    logger.info(`Base de dados sincronizada com sucesso (modo: ${process.env.NODE_ENV || 'development'}).`);
   })
   .catch(err => {
     logger.error('Erro ao sincronizar a base de dados:', err);
+    // Em produção, não bloquear o servidor se houver erro de sync
+    if (process.env.NODE_ENV === 'production') {
+      logger.warn('Servidor continuará a funcionar mesmo com erro de sincronização. Verifique a base de dados manualmente.');
+    } else {
+      // Em desenvolvimento, o erro é crítico
+      throw err;
+    }
   });
 
 db.sequelize.authenticate()

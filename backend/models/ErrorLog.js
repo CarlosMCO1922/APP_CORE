@@ -52,7 +52,8 @@ module.exports = (sequelize) => {
       type: DataTypes.ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'),
       allowNull: false,
       defaultValue: 'MEDIUM',
-      comment: 'Severidade do erro',
+      // Removido comment daqui para evitar problemas na migração do Sequelize
+      // O comment pode ser adicionado manualmente via SQL se necessário
     },
     metadata: {
       type: DataTypes.JSON,
