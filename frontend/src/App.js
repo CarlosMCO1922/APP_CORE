@@ -152,67 +152,65 @@ const ProtectedRoute = ({ allowedRoles }) => {
   const { authState, revalidateAuth } = useAuth();
   const [isValidating, setIsValidating] = React.useState(true);
   const [validationError, setValidationError] = React.useState(null);
+  const hasValidatedRef = React.useRef(false); // Ref para evitar múltiplas validações
 
   // SEGURANÇA: Validar com backend antes de permitir acesso
   React.useEffect(() => {
+    // Se já não está autenticado, não fazer validação
+    if (!authState.isAuthenticated || !authState.token) {
+      setIsValidating(false);
+      hasValidatedRef.current = false;
+      return;
+    }
+
+    // Se já validou para este estado, não fazer novamente
+    if (hasValidatedRef.current && !authState.isValidating) {
+      setIsValidating(false);
+      return;
+    }
+
+    // Se já está validando no contexto, esperar
+    if (authState.isValidating) {
+      return;
+    }
+
+    // Validar apenas uma vez quando o componente monta ou quando token muda
     const validateAccess = async () => {
-      if (!authState.isAuthenticated || !authState.token) {
-        setIsValidating(false);
-        return;
-      }
-
-      // Se já está validando, não fazer novamente
-      if (authState.isValidating) {
-        return;
-      }
-
+      if (hasValidatedRef.current) return;
+      
       try {
+        hasValidatedRef.current = true;
         setIsValidating(true);
+        
+        // Revalidar autenticação
         const isValid = await revalidateAuth();
         
         if (!isValid) {
           setValidationError('Autenticação inválida');
           setIsValidating(false);
+          hasValidatedRef.current = false;
           return;
         }
 
-        // Verificar se role atual (após validação) tem permissão
-        const currentRole = authState.role;
-        if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
-          // Tentativa de acesso não autorizado - log de segurança
-          try {
-            await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authState.token}`,
-              },
-              body: JSON.stringify({
-                eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
-                description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles.join(', ')}`,
-                attemptedRole: currentRole,
-                actualRole: currentRole,
-                url: window.location.pathname,
-                severity: 'HIGH',
-              }),
-            }).catch(() => {}); // Ignorar erros de rede
-          } catch (e) {
-            // Ignorar erros
-          }
-          
-          setValidationError('Acesso negado');
-        }
+        // Pequeno delay para garantir que authState foi atualizado
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         setIsValidating(false);
       } catch (error) {
         logger.error('Erro ao validar acesso:', error);
         setValidationError('Erro ao validar acesso');
         setIsValidating(false);
+        hasValidatedRef.current = false;
       }
     };
 
     validateAccess();
-  }, [authState.isAuthenticated, authState.token, allowedRoles, revalidateAuth]);
+  }, [authState.isAuthenticated, authState.token]); // Remover revalidateAuth das dependências
+
+  // Resetar ref quando token muda
+  React.useEffect(() => {
+    hasValidatedRef.current = false;
+  }, [authState.token]);
 
   // Mostrar loading durante validação
   if (isValidating || authState.isValidating) {
@@ -226,17 +224,41 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
   const currentRole = authState.role;
 
-  if (allowedRoles && !currentRole) {
-    return <Navigate to="/login" replace />;
-  }
-
+  // Verificar se role atual tem permissão após validação
   if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
+    // Tentativa de acesso não autorizado - log de segurança
+    React.useEffect(() => {
+      if (authState.token) {
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authState.token}`,
+          },
+          body: JSON.stringify({
+            eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
+            description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles.join(', ')}`,
+            attemptedRole: currentRole,
+            actualRole: currentRole,
+            url: window.location.pathname,
+            severity: 'HIGH',
+          }),
+        }).catch(() => {}); // Ignorar erros de rede
+      }
+    }, []); // Apenas uma vez
+    
+    // Redirecionar conforme role
     if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(currentRole)) {
       return <Navigate to="/admin/dashboard" replace />;
     }
     if (currentRole === 'user') {
       return <Navigate to="/dashboard" replace />;
     }
+    return <Navigate to="/login" replace />;
+  }
+
+  // Se não há role após validação, redirecionar para login
+  if (allowedRoles && !currentRole) {
     return <Navigate to="/login" replace />;
   }
 

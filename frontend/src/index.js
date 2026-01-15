@@ -77,12 +77,22 @@ root.render(
 );
 
 
+// Registrar Service Worker principal (apenas em produção)
 serviceWorkerRegistration.register();
 
 // Regista o SW dedicado a push (independente do da CRA para cache)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistration('/notifications-sw.js').then(reg => {
-    if (!reg) navigator.serviceWorker.register('/notifications-sw.js');
+    if (!reg) {
+      navigator.serviceWorker.register('/notifications-sw.js').catch((error) => {
+        // Erro silencioso - comum em produção com redirects
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Notifications SW registration failed:', error.message);
+        }
+      });
+    }
+  }).catch(() => {
+    // Ignorar erros silenciosamente
   });
 }
 
