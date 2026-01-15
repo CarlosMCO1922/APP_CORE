@@ -20,7 +20,14 @@ export const WorkoutProvider = ({ children }) => {
     const navigate = useNavigate();
 
     // Carrega um treino ativo (tenta backend primeiro, depois localStorage, resolve conflitos)
+    // IMPORTANTE: Este useEffect só executa quando a autenticação está completa
+    // para não interferir com o processo de validação de autenticação
     useEffect(() => {
+        // Não carregar workout se ainda está a validar autenticação ou se não está autenticado
+        if (!authState.isAuthenticated || authState.isValidating || !authState.token) {
+            return;
+        }
+
         const loadWorkout = async () => {
             // Limpa dados inválidos/antigos
             clearInvalidStorage();
@@ -29,9 +36,15 @@ export const WorkoutProvider = ({ children }) => {
             let localWorkout = null;
             
             // PRIORIDADE 1: Tentar recuperar do backend primeiro
+            // Usar Promise.race com timeout para não bloquear
             if (authState.token) {
                 try {
-                    const backendDraft = await getTrainingSessionDraftService(authState.token, null, null, deviceIdRef.current);
+                    // Timeout de 3 segundos - se demorar mais, usar localStorage
+                    const draftPromise = getTrainingSessionDraftService(authState.token, null, null, deviceIdRef.current);
+                    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 3000));
+                    
+                    const backendDraft = await Promise.race([draftPromise, timeoutPromise]);
+                    
                     if (backendDraft && backendDraft.sessionData) {
                         // Reconstruir objeto workout a partir do draft do backend
                         backendWorkout = {
@@ -45,7 +58,8 @@ export const WorkoutProvider = ({ children }) => {
                         logger.log("Treino recuperado do backend:", backendWorkout);
                     }
                 } catch (err) {
-                    logger.warn("Erro ao recuperar draft do backend, tentando localStorage:", err);
+                    // Erro silencioso - não bloquear o fluxo
+                    logger.warn("Erro ao recuperar draft do backend, tentando localStorage:", err.message || err);
                 }
             }
             
@@ -156,7 +170,7 @@ export const WorkoutProvider = ({ children }) => {
         };
         
         loadWorkout();
-    }, [authState.token]);
+    }, [authState.token, authState.isValidating]); // Aguardar validação terminar
 
     // Função auxiliar para sincronizar com backend com retry
     const syncWithBackend = React.useCallback(async (workout, retries = 3, delay = 1000) => {
