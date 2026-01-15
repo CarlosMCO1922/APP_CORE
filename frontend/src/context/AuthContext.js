@@ -1,25 +1,44 @@
 // src/context/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { isValidToken, isTokenExpired } from '../utils/tokenUtils';
+import { isValidToken, isTokenExpired, decodeToken } from '../utils/tokenUtils';
 import { safeGetItem, safeSetItem, validateUserData } from '../utils/storageUtils';
 import { logger } from '../utils/logger';
+import { validateAuthService } from '../services/authService';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  // Hydrate de forma síncrona para evitar flicker e redireções erradas
-  // Valida token antes de usar
+  // SEGURANÇA: Usar JWT como fonte de verdade, não localStorage
   const rawToken = localStorage.getItem('userToken');
   const initialToken = rawToken && isValidToken(rawToken) ? rawToken : null;
-  const initialUser = safeGetItem('userData', validateUserData);
-  const initialRole = initialUser ? (initialUser.role ? initialUser.role : 'user') : null;
-  const initialIsAdminFeatureUser = initialUser ? (initialUser.isAdmin || initialRole === 'admin') : false;
   
-  // Se token estava inválido, limpa dados
-  if (rawToken && !initialToken) {
-    logger.warn("Token expirado ou inválido encontrado, limpando dados de autenticação");
-    localStorage.removeItem('userToken');
-    localStorage.removeItem('userData');
+  // Decodificar JWT para obter role real (não confiar no localStorage)
+  let initialRole = null;
+  let initialIsAdminFeatureUser = false;
+  let initialUser = null;
+  
+  if (initialToken) {
+    const decoded = decodeToken(initialToken);
+    if (decoded) {
+      // Usar dados do JWT como fonte de verdade
+      initialRole = decoded.role || null;
+      initialIsAdminFeatureUser = decoded.isAdmin === true || decoded.role === 'admin';
+      
+      // Carregar userData do localStorage apenas para dados não sensíveis (nome, email)
+      const storedUser = safeGetItem('userData', validateUserData);
+      if (storedUser && storedUser.id === decoded.id) {
+        initialUser = storedUser;
+      } else {
+        // Se userData não corresponde ao token, limpar
+        logger.warn("userData do localStorage não corresponde ao token, limpando");
+        localStorage.removeItem('userData');
+      }
+    } else {
+      // Token inválido, limpar tudo
+      logger.warn("Token inválido encontrado, limpando dados de autenticação");
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userData');
+    }
   }
 
   const [authState, setAuthState] = useState({
@@ -28,31 +47,119 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!initialToken,
     role: initialRole,
     isAdminFeatureUser: initialIsAdminFeatureUser,
+    isValidating: false, // Flag para indicar validação em curso
   });
 
+  // Validação com backend ao montar (verifica role real)
   useEffect(() => {
-    const token = localStorage.getItem('userToken');
-    const userData = safeGetItem('userData', validateUserData);
-    
-    // Valida token antes de usar
-    if (token && isValidToken(token) && userData) {
-      const role = userData.role ? userData.role : 'user';
-      const isAdminUserField = userData.isAdmin || false;
+    const validateWithBackend = async () => {
+      const token = localStorage.getItem('userToken');
+      
+      if (!token || !isValidToken(token)) {
+        if (token) {
+          // Token inválido, limpar
+          logger.warn("Token inválido ou expirado detectado, limpando autenticação");
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('userData');
+          setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false, isValidating: false });
+        }
+        return;
+      }
 
-      setAuthState({
-        token: token,
-        user: userData,
-        isAuthenticated: true,
-        role: role,
-        isAdminFeatureUser: isAdminUserField || (role === 'admin'),
-      });
-    } else if (token) {
-      // Token inválido ou expirado, limpa dados
-      logger.warn("Token inválido ou expirado detectado, limpando autenticação");
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userData');
-      setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false });
-    }
+      // Decodificar JWT primeiro (fonte de verdade local)
+      const decoded = decodeToken(token);
+      if (!decoded) {
+        logger.warn("Não foi possível decodificar token, limpando autenticação");
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+        setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false, isValidating: false });
+        return;
+      }
+
+      // Validar com backend para garantir que role/permissões estão corretas
+      setAuthState(prev => ({ ...prev, isValidating: true }));
+      
+      try {
+        const validationResult = await validateAuthService(token);
+        
+        if (validationResult.valid) {
+          // Backend confirmou - usar dados do backend como fonte de verdade
+          const validatedUser = validationResult.user;
+          const validatedRole = validatedUser.role;
+          const validatedIsAdmin = validationResult.permissions.canAccessAdmin;
+          
+          // Verificar se há discrepância entre JWT e backend
+          if (decoded.role !== validatedRole || 
+              (decoded.isAdmin !== undefined && decoded.isAdmin !== validatedIsAdmin)) {
+            // DISCREPÂNCIA DETETADA - possível tentativa de hack
+            logger.error("DISCREPÂNCIA DE SEGURANÇA DETETADA:", {
+              jwtRole: decoded.role,
+              jwtIsAdmin: decoded.isAdmin,
+              backendRole: validatedRole,
+              backendIsAdmin: validatedIsAdmin,
+            });
+            
+            // Log de segurança (tentar enviar, mas não bloquear se falhar)
+            try {
+              await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  eventType: 'ROLE_MISMATCH',
+                  description: `Discrepância entre JWT e backend. JWT: role=${decoded.role}, isAdmin=${decoded.isAdmin}, Backend: role=${validatedRole}, isAdmin=${validatedIsAdmin}`,
+                  attemptedRole: decoded.role,
+                  actualRole: validatedRole,
+                  severity: 'HIGH',
+                }),
+              }).catch(() => {}); // Ignorar erros de rede
+            } catch (e) {
+              // Ignorar erros
+            }
+          }
+          
+          // Atualizar userData no localStorage com dados validados
+          safeSetItem('userData', validatedUser);
+          
+          setAuthState({
+            token: token,
+            user: validatedUser,
+            isAuthenticated: true,
+            role: validatedRole,
+            isAdminFeatureUser: validatedIsAdmin,
+            isValidating: false,
+          });
+        } else {
+          // Backend rejeitou - limpar tudo
+          logger.warn("Backend rejeitou token, limpando autenticação");
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('userData');
+          setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false, isValidating: false });
+        }
+      } catch (error) {
+        // Erro na validação - usar JWT como fallback (mas marcar como não validado)
+        logger.warn("Erro ao validar com backend, usando JWT como fallback:", error);
+        
+        const userData = safeGetItem('userData', validateUserData);
+        if (userData && userData.id === decoded.id) {
+          // Usar JWT decodificado como fonte de verdade
+          setAuthState({
+            token: token,
+            user: userData,
+            isAuthenticated: true,
+            role: decoded.role || 'user',
+            isAdminFeatureUser: decoded.isAdmin === true || decoded.role === 'admin',
+            isValidating: false,
+          });
+        } else {
+          setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false, isValidating: false });
+        }
+      }
+    };
+
+    validateWithBackend();
   }, []);
 
   const login = async (email, password, isStaffLogin = false) => {
@@ -79,16 +186,17 @@ export const AuthProvider = ({ children }) => {
         const userDataToStore = data.user || data.staff;
         safeSetItem('userData', userDataToStore);
         
-        let determinedRole = null;
-        let determinedIsAdminUserField = false;
-
-        if (isStaffLogin) {
-          determinedRole = userDataToStore.role;
-          determinedIsAdminUserField = (userDataToStore.role === 'admin');
-        } else { 
-          determinedRole = 'user';
-          determinedIsAdminUserField = userDataToStore.isAdmin || false;
+        // SEGURANÇA: Usar JWT como fonte de verdade, não dados do servidor
+        const decoded = decodeToken(data.token);
+        if (!decoded) {
+          throw new Error('Não foi possível decodificar token recebido');
         }
+        
+        // Usar role e isAdmin do JWT (fonte de verdade)
+        const determinedRole = decoded.role || (isStaffLogin ? userDataToStore.role : 'user');
+        const determinedIsAdminUserField = isStaffLogin 
+          ? (decoded.role === 'admin')
+          : (decoded.isAdmin === true);
         
         const newState = {
           token: data.token,
@@ -96,8 +204,28 @@ export const AuthProvider = ({ children }) => {
           isAuthenticated: true,
           role: determinedRole,
           isAdminFeatureUser: determinedIsAdminUserField,
+          isValidating: false,
         };
         setAuthState(newState);
+        
+        // Validar com backend após login (em background)
+        validateAuthService(data.token)
+          .then(validationResult => {
+            if (validationResult.valid) {
+              // Atualizar com dados validados
+              const validatedUser = validationResult.user;
+              safeSetItem('userData', validatedUser);
+              setAuthState(prev => ({
+                ...prev,
+                user: validatedUser,
+                role: validatedUser.role,
+                isAdminFeatureUser: validationResult.permissions.canAccessAdmin,
+              }));
+            }
+          })
+          .catch(err => {
+            logger.warn("Erro ao validar após login (não crítico):", err);
+          });
       }
       return data;
 
@@ -112,11 +240,62 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userData');
-    setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false });
+    setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false, isValidating: false });
+  };
+
+  // Função para revalidar autenticação (útil para ProtectedRoute)
+  const revalidateAuth = async () => {
+    const token = localStorage.getItem('userToken');
+    if (!token || !isValidToken(token)) {
+      logout();
+      return false;
+    }
+
+    try {
+      setAuthState(prev => ({ ...prev, isValidating: true }));
+      const validationResult = await validateAuthService(token);
+      
+      if (validationResult.valid) {
+        const validatedUser = validationResult.user;
+        safeSetItem('userData', validatedUser);
+        setAuthState({
+          token: token,
+          user: validatedUser,
+          isAuthenticated: true,
+          role: validatedUser.role,
+          isAdminFeatureUser: validationResult.permissions.canAccessAdmin,
+          isValidating: false,
+        });
+        return true;
+      } else {
+        logout();
+        return false;
+      }
+    } catch (error) {
+      logger.error("Erro ao revalidar autenticação:", error);
+      // Em caso de erro, usar JWT como fallback
+      const decoded = decodeToken(token);
+      if (decoded) {
+        const userData = safeGetItem('userData', validateUserData);
+        if (userData) {
+          setAuthState({
+            token: token,
+            user: userData,
+            isAuthenticated: true,
+            role: decoded.role || 'user',
+            isAdminFeatureUser: decoded.isAdmin === true || decoded.role === 'admin',
+            isValidating: false,
+          });
+          return true;
+        }
+      }
+      logout();
+      return false;
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ authState, login, logout }}>
+    <AuthContext.Provider value={{ authState, login, logout, revalidateAuth }}>
       {children}
     </AuthContext.Provider>
   );

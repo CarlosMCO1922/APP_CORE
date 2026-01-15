@@ -259,13 +259,79 @@ const resetPassword = async (req, res) => {
 };
 
 
+/**
+ * Valida token e retorna informações de autenticação e autorização reais
+ * GET /api/auth/validate
+ * Usado pelo frontend para verificar role/permissões reais antes de permitir acesso
+ */
+const validateAuth = async (req, res) => {
+  try {
+    // O middleware 'protect' já validou o token e populou req.user ou req.staff
+    if (req.user) {
+      // É um utilizador (cliente)
+      const user = await db.User.findByPk(req.user.id, {
+        attributes: { exclude: ['password'] }
+      });
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Utilizador não encontrado.' });
+      }
+
+      return res.status(200).json({
+        valid: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: 'user',
+          isAdmin: user.isAdmin,
+        },
+        permissions: {
+          canAccessAdmin: user.isAdmin === true,
+          allowedRoles: ['user'],
+        }
+      });
+    } else if (req.staff) {
+      // É um funcionário (staff/admin)
+      const staff = await db.Staff.findByPk(req.staff.id, {
+        attributes: { exclude: ['password'] }
+      });
+      
+      if (!staff) {
+        return res.status(401).json({ message: 'Funcionário não encontrado.' });
+      }
+
+      return res.status(200).json({
+        valid: true,
+        user: {
+          id: staff.id,
+          email: staff.email,
+          firstName: staff.firstName,
+          lastName: staff.lastName,
+          role: staff.role,
+        },
+        permissions: {
+          canAccessAdmin: ['admin', 'trainer', 'physiotherapist', 'employee'].includes(staff.role),
+          allowedRoles: ['admin', 'trainer', 'physiotherapist', 'employee'],
+        }
+      });
+    } else {
+      return res.status(401).json({ message: 'Não autenticado.' });
+    }
+  } catch (error) {
+    console.error('Erro ao validar autenticação:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor ao validar autenticação.' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   registerStaff,
   loginStaff,
-  // Adicionar as novas funções ao export
   requestPasswordReset,
   verifyResetCode,
   resetPassword,
+  validateAuth,
 };

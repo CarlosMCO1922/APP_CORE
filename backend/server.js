@@ -35,6 +35,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const trainingSeriesRoutes = require('./routes/trainingSeriesRoutes');
 const pushRoutes = require('./routes/pushRoutes');
+const logRoutes = require('./routes/logRoutes');
 
 
 app.get('/', (req, res) => {
@@ -53,11 +54,13 @@ app.use('/notifications', express.json(), notificationRoutes);
 app.use('/progress', express.json(), progressRoutes);
 app.use('/training-series', express.json(), trainingSeriesRoutes);
 app.use('/push', express.json(), pushRoutes);
+app.use('/logs', express.json(), logRoutes);
 
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { cleanupExpiredDrafts } = require('./controllers/progressController');
+const { cleanupOldLogs } = require('./controllers/logController');
 
 app.use(notFound);
 app.use(errorHandler);
@@ -82,13 +85,18 @@ db.sequelize.authenticate()
 // Executa a cada hora (3600000 ms)
 const CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hora
 
+// Limpeza automática de logs antigos
+// Executa diariamente (24 horas)
+const LOGS_CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 horas
+const LOGS_DAYS_TO_KEEP = parseInt(process.env.LOGS_RETENTION_DAYS || '90', 10); // 90 dias por padrão
+
 const startCleanupJob = () => {
-  // Executar limpeza imediatamente ao iniciar
+  // Executar limpeza de drafts imediatamente ao iniciar
   cleanupExpiredDrafts().catch(err => {
     logger.error('Erro na limpeza inicial de drafts:', err);
   });
 
-  // Executar limpeza periodicamente
+  // Executar limpeza de drafts periodicamente
   setInterval(() => {
     cleanupExpiredDrafts().catch(err => {
       logger.error('Erro na limpeza periódica de drafts:', err);
@@ -96,6 +104,15 @@ const startCleanupJob = () => {
   }, CLEANUP_INTERVAL);
 
   logger.info(`Limpeza automática de drafts configurada (intervalo: ${CLEANUP_INTERVAL / 1000 / 60} minutos)`);
+
+  // Executar limpeza de logs antigos diariamente
+  setInterval(() => {
+    cleanupOldLogs(LOGS_DAYS_TO_KEEP).catch(err => {
+      logger.error('Erro na limpeza periódica de logs:', err);
+    });
+  }, LOGS_CLEANUP_INTERVAL);
+
+  logger.info(`Limpeza automática de logs configurada (intervalo: ${LOGS_CLEANUP_INTERVAL / 1000 / 60 / 60} horas, mantém últimos ${LOGS_DAYS_TO_KEEP} dias)`);
 };
 
 // Inicializar WebSocket server

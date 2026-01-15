@@ -8,6 +8,8 @@ import Navbar from './components/Layout/Navbar';
 import BottomNav from './components/Layout/BottomNav';
 import OfflineIndicator from './components/OfflineIndicator';
 import ConfirmationModal from './components/Common/ConfirmationModal';
+import ErrorBoundary from './components/ErrorBoundary';
+import { initializeErrorHandlers } from './services/logService';
 
 // Code-splitting for pages (melhora UX e reduz bundle inicial)
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -46,6 +48,7 @@ const AdminTrainingSeriesPage = lazy(() => import('./pages/admin/AdminTrainingSe
 const AdminManageGlobalWorkoutPlansPage = lazy(() => import('./pages/admin/AdminManageGlobalWorkoutPlansPage'));
 const AdminClientProgressDetailPage = lazy(() => import('./pages/admin/AdminClientProgressDetailPage'));
 const AdminClientSelectionPage = lazy(() => import('./pages/admin/AdminClientSelectionPage'));
+const AdminLogsPage = lazy(() => import('./pages/admin/AdminLogsPage'));
 
 // Componente de Layout
 
@@ -145,21 +148,101 @@ const CancelButton = styled.button`
 
 // --- Componente ProtectedRoute  ---
 const ProtectedRoute = ({ allowedRoles }) => {
-  const { authState } = useAuth();
-  if (!authState.isAuthenticated) return <Navigate to="/login" replace />;
-  const currentRole = authState.role; 
+  const { authState, revalidateAuth } = useAuth();
+  const [isValidating, setIsValidating] = React.useState(true);
+  const [validationError, setValidationError] = React.useState(null);
+
+  // SEGURANÇA: Validar com backend antes de permitir acesso
+  React.useEffect(() => {
+    const validateAccess = async () => {
+      if (!authState.isAuthenticated || !authState.token) {
+        setIsValidating(false);
+        return;
+      }
+
+      // Se já está validando, não fazer novamente
+      if (authState.isValidating) {
+        return;
+      }
+
+      try {
+        setIsValidating(true);
+        const isValid = await revalidateAuth();
+        
+        if (!isValid) {
+          setValidationError('Autenticação inválida');
+          setIsValidating(false);
+          return;
+        }
+
+        // Verificar se role atual (após validação) tem permissão
+        const currentRole = authState.role;
+        if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
+          // Tentativa de acesso não autorizado - log de segurança
+          try {
+            await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authState.token}`,
+              },
+              body: JSON.stringify({
+                eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
+                description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles.join(', ')}`,
+                attemptedRole: currentRole,
+                actualRole: currentRole,
+                url: window.location.pathname,
+                severity: 'HIGH',
+              }),
+            }).catch(() => {}); // Ignorar erros de rede
+          } catch (e) {
+            // Ignorar erros
+          }
+          
+          setValidationError('Acesso negado');
+        }
+        
+        setIsValidating(false);
+      } catch (error) {
+        logger.error('Erro ao validar acesso:', error);
+        setValidationError('Erro ao validar acesso');
+        setIsValidating(false);
+      }
+    };
+
+    validateAccess();
+  }, [authState.isAuthenticated, authState.token, allowedRoles, revalidateAuth]);
+
+  // Mostrar loading durante validação
+  if (isValidating || authState.isValidating) {
+    return <Fallback>A validar acesso...</Fallback>;
+  }
+
+  // Verificações de autenticação
+  if (!authState.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const currentRole = authState.role;
 
   if (allowedRoles && !currentRole) {
     return <Navigate to="/login" replace />;
-  } else if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
+  }
+
+  if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
     if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(currentRole)) {
       return <Navigate to="/admin/dashboard" replace />;
     }
     if (currentRole === 'user') {
       return <Navigate to="/dashboard" replace />;
     }
-    return <Navigate to="/login" replace />; 
+    return <Navigate to="/login" replace />;
   }
+
+  if (validationError) {
+    return <Navigate to="/login" replace />;
+  }
+
   return <Outlet />;
 };
 
@@ -169,6 +252,11 @@ function App() {
   const [showCancelWorkoutModal, setShowCancelWorkoutModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+
+  // Inicializar handlers globais de erro
+  useEffect(() => {
+    initializeErrorHandlers(() => authState.token);
+  }, [authState.token]);
 
   // Calcular tempo decorrido do treino
   useEffect(() => {
@@ -232,7 +320,7 @@ function App() {
   };
 
   return (
-    <>
+    <ErrorBoundary>
       <OfflineIndicator />
       {authState.isAuthenticated && <Navbar />}
       {authState.isAuthenticated && <BottomNav />}
@@ -278,6 +366,7 @@ function App() {
             <Route path="/admin/manage-global-plans" element={<AdminManageGlobalWorkoutPlansPage />} />
             <Route path="/admin/progresso-clientes" element={<AdminClientSelectionPage />} />
             <Route path="/admin/progresso-clientes/:userId" element={<AdminClientProgressDetailPage />} />
+            <Route path="/admin/logs" element={<AdminLogsPage />} />
           </Route>
           {/* Rota Genérica para Notificações (para qualquer utilizador autenticado) */}
           <Route element={<ProtectedRoute allowedRoles={['user', 'admin', 'trainer', 'physiotherapist', 'employee']} />}>
@@ -345,7 +434,7 @@ function App() {
         danger={false}
         loading={false}
       />
-  </>
+    </ErrorBoundary>
   );
 }
 export default App;
