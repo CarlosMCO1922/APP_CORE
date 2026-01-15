@@ -149,11 +149,25 @@ export const WorkoutProvider = ({ children }) => {
                                     );
                                     
                                     if (historyData && historyData.length > 0) {
-                                        const placeholders = historyData.slice(0, 3).map(set => ({
-                                            weight: set.performedWeight || null,
-                                            reps: set.performedReps || null
-                                        }));
-                                        placeholdersMap[planExerciseId] = placeholders;
+                                        // Ordenar por setNumber para garantir ordem correta
+                                        const sortedHistory = [...historyData].sort((a, b) => {
+                                            const setNumA = a.setNumber || 999;
+                                            const setNumB = b.setNumber || 999;
+                                            return setNumA - setNumB;
+                                        });
+                                        
+                                        // Mapear usando setNumber como índice (setNumber 1 → índice 0)
+                                        const placeholdersArray = [];
+                                        sortedHistory.slice(0, 3).forEach(set => {
+                                            const setNumber = set.setNumber || 1;
+                                            const arrayIndex = setNumber - 1;
+                                            placeholdersArray[arrayIndex] = {
+                                                weight: set.performedWeight || null,
+                                                reps: set.performedReps || null,
+                                                setNumber: setNumber
+                                            };
+                                        });
+                                        placeholdersMap[planExerciseId] = placeholdersArray;
                                     }
                                 } catch (err) {
                                     logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId}:`, err);
@@ -308,11 +322,26 @@ export const WorkoutProvider = ({ children }) => {
                         );
                         
                         if (historyData && historyData.length > 0) {
-                            const placeholders = historyData.slice(0, 3).map(set => ({
-                                weight: set.performedWeight || null,
-                                reps: set.performedReps || null
-                            }));
-                            placeholdersMap[planExerciseId] = placeholders;
+                            // Ordenar por setNumber para garantir ordem correta (o backend já ordena, mas garantir)
+                            const sortedHistory = [...historyData].sort((a, b) => {
+                                const setNumA = a.setNumber || 999; // Séries sem setNumber vão para o fim
+                                const setNumB = b.setNumber || 999;
+                                return setNumA - setNumB;
+                            });
+                            
+                            // Mapear usando setNumber como índice (setNumber 1 → índice 0, setNumber 2 → índice 1, etc.)
+                            // Criar array com até 3 posições, usando setNumber - 1 como índice
+                            const placeholdersArray = [];
+                            sortedHistory.slice(0, 3).forEach(set => {
+                                const setNumber = set.setNumber || 1;
+                                const arrayIndex = setNumber - 1; // setNumber 1 → índice 0
+                                placeholdersArray[arrayIndex] = {
+                                    weight: set.performedWeight || null,
+                                    reps: set.performedReps || null,
+                                    setNumber: setNumber
+                                };
+                            });
+                            placeholdersMap[planExerciseId] = placeholdersArray;
                             logger.log(`Placeholders recarregados para planExerciseId ${planExerciseId}:`, placeholders);
                         } else {
                             // Se não há histórico, manter placeholders vazios
@@ -375,12 +404,26 @@ export const WorkoutProvider = ({ children }) => {
                         try {
                             const historyData = await getMyPerformanceHistoryForExerciseService(planExerciseId, authState.token, true, currentTrainingId);
                             // Mapear as séries do histórico para placeholders (máximo 3)
-                            if (historyData && historyData.length > 0) {
-                                const placeholders = historyData.slice(0, 3).map(set => ({
+                        if (historyData && historyData.length > 0) {
+                            // Ordenar por setNumber para garantir ordem correta
+                            const sortedHistory = [...historyData].sort((a, b) => {
+                                const setNumA = a.setNumber || 999;
+                                const setNumB = b.setNumber || 999;
+                                return setNumA - setNumB;
+                            });
+                            
+                            // Mapear usando setNumber como índice (setNumber 1 → índice 0)
+                            const placeholdersArray = [];
+                            sortedHistory.slice(0, 3).forEach(set => {
+                                const setNumber = set.setNumber || 1;
+                                const arrayIndex = setNumber - 1;
+                                placeholdersArray[arrayIndex] = {
                                     weight: set.performedWeight || null,
-                                    reps: set.performedReps || null
-                                }));
-                                placeholdersMap[planExerciseId] = placeholders;
+                                    reps: set.performedReps || null,
+                                    setNumber: setNumber
+                                };
+                            });
+                            placeholdersMap[planExerciseId] = placeholdersArray;
                                 logger.log(`Placeholders carregados para planExerciseId ${planExerciseId}:`, placeholders);
                             } else {
                                 logger.log(`Nenhum histórico encontrado para planExerciseId ${planExerciseId}`);
