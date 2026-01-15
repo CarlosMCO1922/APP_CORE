@@ -184,15 +184,31 @@ export const WorkoutProvider = ({ children }) => {
                 return true;
             } catch (err) {
                 const isNetworkError = err.message?.includes('fetch') || err.message?.includes('network') || err.message?.includes('Failed to fetch');
+                const isTimeoutError = err.message?.includes('Timeout') || err.message?.includes('timeout');
+                const is404Error = err.message?.includes('404') || err.message?.includes('Not Found');
                 const isLastAttempt = attempt === retries;
                 
+                // 404 não é um erro crítico - pode significar que ainda não existe draft
+                if (is404Error && attempt < retries) {
+                    logger.log('Draft não encontrado no backend (normal em primeira sincronização), tentando criar...');
+                    // Continuar tentativa
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                }
+                
                 if (isLastAttempt) {
-                    setSyncStatus({ 
-                        synced: false, 
-                        lastSync: null, 
-                        error: isNetworkError ? 'Sem conexão' : 'Erro de sincronização' 
-                    });
-                    logger.warn(`Falha ao sincronizar treino com backend após ${retries} tentativas:`, err);
+                    // Só mostrar erro ao utilizador se for um erro real de rede ou servidor
+                    // Timeout ou 404 após múltiplas tentativas = provavelmente sem conexão
+                    if (isNetworkError || isTimeoutError || is404Error) {
+                        setSyncStatus({ 
+                            synced: false, 
+                            lastSync: null, 
+                            error: 'Sem conexão' 
+                        });
+                    } else {
+                        // Outros erros - manter status atual, não atualizar para não alarmar desnecessariamente
+                        logger.warn(`Falha ao sincronizar treino com backend após ${retries} tentativas:`, err.message || err);
+                    }
                     return false;
                 }
                 
@@ -651,15 +667,17 @@ export const WorkoutProvider = ({ children }) => {
         }
     }, [activeWorkout]);
 
-    // Conectar WebSocket quando há token e treino ativo
+    // Conectar WebSocket quando há token, treino ativo E autenticação completa
     useEffect(() => {
-        if (!authState.token) {
+        // Não conectar se ainda está a validar autenticação ou se não está autenticado
+        if (!authState.isAuthenticated || authState.isValidating || !authState.token) {
             disconnectWebSocket();
             return;
         }
 
         if (!activeWorkout) {
-            // Se não há treino ativo, manter conexão mas não sincronizar
+            // Se não há treino ativo, não conectar WebSocket
+            disconnectWebSocket();
             return;
         }
 
@@ -724,7 +742,7 @@ export const WorkoutProvider = ({ children }) => {
             // Não desconectar completamente, apenas limpar callbacks
             // A conexão pode ser útil para outras funcionalidades
         };
-    }, [authState.token, activeWorkout?.id, activeWorkout?.trainingId]);
+    }, [authState.token, authState.isAuthenticated, authState.isValidating, activeWorkout?.id, activeWorkout?.trainingId]);
 
     // Tentar sincronizar novamente quando conexão voltar
     useEffect(() => {

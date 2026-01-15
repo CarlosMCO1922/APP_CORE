@@ -158,58 +158,72 @@ const ProtectedRoute = ({ allowedRoles }) => {
   const currentRole = authState.role;
   const shouldLogUnauthorized = allowedRoles && currentRole && !allowedRoles.includes(currentRole);
 
-  // SEGURANÇA: Validar com backend antes de permitir acesso
+  // SEGURANÇA: Validar com backend - mas permitir acesso baseado em JWT enquanto valida em background
   React.useEffect(() => {
-    // Se já não está autenticado, não fazer validação
+    // Se não está autenticado, não fazer validação
     if (!authState.isAuthenticated || !authState.token) {
       setIsValidating(false);
       hasValidatedRef.current = false;
       return;
     }
 
-    // Se já validou para este estado, não fazer novamente
-    if (hasValidatedRef.current && !authState.isValidating) {
+    // Se já validou recentemente (nos últimos 5 minutos), não revalidar
+    // Isso evita revalidações desnecessárias quando navega entre páginas
+    const lastValidationKey = `lastValidation_${authState.token?.substring(0, 20)}`;
+    const lastValidation = sessionStorage.getItem(lastValidationKey);
+    const now = Date.now();
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    
+    if (lastValidation && (now - parseInt(lastValidation)) < FIVE_MINUTES) {
+      // Validação recente - permitir acesso imediatamente
+      setIsValidating(false);
+      hasValidatedRef.current = true;
+      return;
+    }
+
+    // Se o AuthContext já está a validar, esperar que termine
+    if (authState.isValidating) {
+      // Aguardar até que a validação do contexto termine (máximo 10 segundos)
+      const timeout = setTimeout(() => {
+        setIsValidating(false);
+      }, 10000);
+      
+      return () => clearTimeout(timeout);
+    }
+
+    // Se já validou para este token, não fazer novamente
+    if (hasValidatedRef.current) {
       setIsValidating(false);
       return;
     }
 
-    // Se já está validando no contexto, esperar
-    if (authState.isValidating) {
-      return;
-    }
-
-    // Validar apenas uma vez quando o componente monta ou quando token muda
+    // Validar em background - não bloquear acesso se JWT é válido localmente
     const validateAccess = async () => {
-      if (hasValidatedRef.current) return;
-      
       try {
         hasValidatedRef.current = true;
-        setIsValidating(true);
+        // Não bloquear - permitir acesso baseado em JWT enquanto valida em background
+        setIsValidating(false);
         
-        // Revalidar autenticação
+        // Validar em background
         const isValid = await revalidateAuth();
         
-        if (!isValid) {
-          setValidationError('Autenticação inválida');
-          setIsValidating(false);
+        if (isValid) {
+          // Guardar timestamp da validação bem-sucedida
+          sessionStorage.setItem(lastValidationKey, now.toString());
+        } else {
+          // Se falhou, marcar como não validado para forçar revalidação na próxima vez
           hasValidatedRef.current = false;
-          return;
+          setValidationError('Autenticação inválida');
         }
-
-        // Pequeno delay para garantir que authState foi atualizado
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        setIsValidating(false);
       } catch (error) {
-        logger.error('Erro ao validar acesso:', error);
-        setValidationError('Erro ao validar acesso');
-        setIsValidating(false);
+        logger.error('Erro ao validar acesso (não crítico):', error);
+        // Não bloquear por erro - JWT local ainda é válido
         hasValidatedRef.current = false;
       }
     };
 
     validateAccess();
-  }, [authState.isAuthenticated, authState.token]); // Remover revalidateAuth das dependências
+  }, [authState.isAuthenticated, authState.token, authState.isValidating]);
 
   // Resetar ref quando token muda
   React.useEffect(() => {

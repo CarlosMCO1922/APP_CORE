@@ -34,18 +34,43 @@ const initializeWebSocket = (server) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Verificar se o utilizador existe
-      const user = await db.User.findByPk(decoded.userId);
+      // O JWT usa 'id' e não 'userId' (consistente com authMiddleware)
+      const userId = decoded.id;
+      const userRole = decoded.role;
+      
+      if (!userId || !userRole) {
+        return next(new Error('Token inválido: id ou role ausentes'));
+      }
+
+      // Verificar se o utilizador existe na tabela correta (User ou Staff)
+      let user = null;
+      if (userRole === 'user') {
+        user = await db.User.findByPk(userId, {
+          attributes: { exclude: ['password'] }
+        });
+      } else if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(userRole)) {
+        user = await db.Staff.findByPk(userId, {
+          attributes: { exclude: ['password'] }
+        });
+      }
+      
       if (!user) {
         return next(new Error('Utilizador não encontrado'));
       }
 
-      socket.userId = decoded.userId;
+      socket.userId = userId;
       socket.user = user;
+      socket.userRole = userRole;
       next();
     } catch (error) {
       logger.error('Erro na autenticação WebSocket:', error);
-      next(new Error('Token inválido'));
+      if (error.message.includes('jwt expired')) {
+        return next(new Error('Token expirado'));
+      }
+      if (error.message.includes('jwt malformed') || error.message.includes('invalid token')) {
+        return next(new Error('Token inválido'));
+      }
+      return next(new Error('Erro na autenticação'));
     }
   });
 

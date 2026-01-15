@@ -48,7 +48,18 @@ export const connectWebSocket = (token, callbacks = {}) => {
 
     socket.on('connect_error', (error) => {
       reconnectAttempts++;
-      logger.error('Erro na conexão WebSocket:', error);
+      // Não logar erro como crítico se for apenas "Utilizador não encontrado" ou erro de auth
+      // Isso pode acontecer se o token ainda não foi validado completamente
+      const isAuthError = error.message?.includes('Utilizador não encontrado') || 
+                         error.message?.includes('Token') || 
+                         error.message?.includes('autenticação');
+      
+      if (isAuthError) {
+        logger.warn('Erro de autenticação WebSocket (pode ser temporário):', error.message);
+      } else {
+        logger.error('Erro na conexão WebSocket:', error);
+      }
+      
       if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
         logger.error('Máximo de tentativas de reconexão atingido');
         if (callbacks.onMaxReconnectAttempts) callbacks.onMaxReconnectAttempts();
