@@ -76,7 +76,7 @@ const initializeWebSocket = (server) => {
 
   io.on('connection', (socket) => {
     const userId = socket.userId;
-    logger.log(`Cliente WebSocket conectado: User ${userId}, Socket ${socket.id}`);
+    logger.info(`Cliente WebSocket conectado: User ${userId}, Socket ${socket.id}`);
 
     // Juntar o utilizador à sua sala privada
     socket.join(`user:${userId}`);
@@ -91,7 +91,7 @@ const initializeWebSocket = (server) => {
           return;
         }
 
-        logger.log(`Sincronização solicitada: User ${userId}, WorkoutPlan ${workoutPlanId}`);
+        logger.info(`Sincronização solicitada: User ${userId}, WorkoutPlan ${workoutPlanId}`);
 
         // Buscar draft do utilizador
         const draft = await db.TrainingSessionDraft.findOne({
@@ -136,7 +136,7 @@ const initializeWebSocket = (server) => {
       try {
         const { workoutPlanId, trainingId, deviceId, setsData } = data;
         
-        logger.log(`Treino atualizado: User ${userId}, WorkoutPlan ${workoutPlanId}`);
+        logger.info(`Treino atualizado: User ${userId}, WorkoutPlan ${workoutPlanId}`);
 
         // Notificar outros dispositivos do mesmo utilizador
         socket.to(`user:${userId}`).emit('workout:update:received', {
@@ -156,7 +156,7 @@ const initializeWebSocket = (server) => {
       try {
         const { workoutPlanId, trainingId, deviceId } = data;
         
-        logger.log(`Treino terminado: User ${userId}, WorkoutPlan ${workoutPlanId}`);
+        logger.info(`Treino terminado: User ${userId}, WorkoutPlan ${workoutPlanId}`);
 
         // Notificar outros dispositivos
         socket.to(`user:${userId}`).emit('workout:finished:received', {
@@ -172,7 +172,7 @@ const initializeWebSocket = (server) => {
 
     // Evento: Desconexão
     socket.on('disconnect', () => {
-      logger.log(`Cliente WebSocket desconectado: User ${userId}, Socket ${socket.id}`);
+      logger.info(`Cliente WebSocket desconectado: User ${userId}, Socket ${socket.id}`);
     });
 
     // Evento: Erro
