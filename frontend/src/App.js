@@ -224,29 +224,30 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
   const currentRole = authState.role;
 
+  // Hook para log de segurança de acesso não autorizado (fora das condicionais)
+  const shouldLogUnauthorized = allowedRoles && currentRole && !allowedRoles.includes(currentRole);
+  React.useEffect(() => {
+    if (shouldLogUnauthorized && authState.token) {
+      fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authState.token}`,
+        },
+        body: JSON.stringify({
+          eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
+          description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles.join(', ')}`,
+          attemptedRole: currentRole,
+          actualRole: currentRole,
+          url: window.location.pathname,
+          severity: 'HIGH',
+        }),
+      }).catch(() => {}); // Ignorar erros de rede
+    }
+  }, [shouldLogUnauthorized, authState.token, currentRole, allowedRoles]); // Apenas quando necessário
+
   // Verificar se role atual tem permissão após validação
-  if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
-    // Tentativa de acesso não autorizado - log de segurança
-    React.useEffect(() => {
-      if (authState.token) {
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authState.token}`,
-          },
-          body: JSON.stringify({
-            eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
-            description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles.join(', ')}`,
-            attemptedRole: currentRole,
-            actualRole: currentRole,
-            url: window.location.pathname,
-            severity: 'HIGH',
-          }),
-        }).catch(() => {}); // Ignorar erros de rede
-      }
-    }, []); // Apenas uma vez
-    
+  if (shouldLogUnauthorized) {
     // Redirecionar conforme role
     if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(currentRole)) {
       return <Navigate to="/admin/dashboard" replace />;
