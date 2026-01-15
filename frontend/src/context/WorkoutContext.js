@@ -342,7 +342,7 @@ export const WorkoutProvider = ({ children }) => {
                                 };
                             });
                             placeholdersMap[planExerciseId] = placeholdersArray;
-                            logger.log(`Placeholders recarregados para planExerciseId ${planExerciseId}:`, placeholders);
+                            logger.log(`Placeholders recarregados para planExerciseId ${planExerciseId}:`, placeholdersArray);
                         } else {
                             // Se não há histórico, manter placeholders vazios
                             placeholdersMap[planExerciseId] = [];
@@ -424,7 +424,7 @@ export const WorkoutProvider = ({ children }) => {
                                 };
                             });
                             placeholdersMap[planExerciseId] = placeholdersArray;
-                                logger.log(`Placeholders carregados para planExerciseId ${planExerciseId}:`, placeholders);
+                                logger.log(`Placeholders carregados para planExerciseId ${planExerciseId}:`, placeholdersArray);
                             } else {
                                 logger.log(`Nenhum histórico encontrado para planExerciseId ${planExerciseId}`);
                             }
