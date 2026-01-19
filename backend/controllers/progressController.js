@@ -603,7 +603,6 @@ const getMyLastPerformances = async (req, res) => {
       attributes: [
         'id',
         'planExerciseId',
-        'exerciseId',
         'performedAt',
         'performedWeight',
         'performedReps',
@@ -616,7 +615,7 @@ const getMyLastPerformances = async (req, res) => {
     const seen = new Set();
     const out = [];
     for (const r of rows) {
-      const key = r.planExerciseId ?? `ex-${r.exerciseId ?? 'unknown'}`;
+      const key = r.planExerciseId ?? `unknown-${r.id}`;
       if (!seen.has(key)) {
         seen.add(key);
         out.push(r);

@@ -51,30 +51,45 @@ exports.createSeriesSubscription = async (req, res) => {
             transaction
         });
 
+        let periodStart, periodEnd, subscriptionToReturn;
+
         if (existingSubscription) {
-            await transaction.rollback();
-            return res.status(409).json({ message: 'Você já possui uma subscrição ativa para esta série.' });
+            // Merge: alargar o período da subscrição existente e inscrever apenas nas sessões em falta
+            const mergedStart = moment.max(
+                moment(series.seriesStartDate),
+                moment.min(moment(existingSubscription.clientSubscriptionStartDate), moment(effectiveSubStartDate))
+            ).format('YYYY-MM-DD');
+            const mergedEnd = moment.min(
+                moment(series.seriesEndDate),
+                moment.max(moment(existingSubscription.clientSubscriptionEndDate), moment(effectiveSubEndDate))
+            ).format('YYYY-MM-DD');
+            existingSubscription.clientSubscriptionStartDate = mergedStart;
+            existingSubscription.clientSubscriptionEndDate = mergedEnd;
+            await existingSubscription.save({ transaction });
+            periodStart = mergedStart;
+            periodEnd = mergedEnd;
+            subscriptionToReturn = existingSubscription;
+        } else {
+            const newSubscription = await db.SeriesSubscription.create({
+                userId: clientId,
+                trainingSeriesId: series.id,
+                clientSubscriptionStartDate: effectiveSubStartDate,
+                clientSubscriptionEndDate: effectiveSubEndDate,
+                isActive: true,
+            }, { transaction });
+            periodStart = effectiveSubStartDate;
+            periodEnd = effectiveSubEndDate;
+            subscriptionToReturn = newSubscription;
         }
 
-        const newSubscription = await db.SeriesSubscription.create({
-            userId: clientId,
-            trainingSeriesId: series.id,
-            clientSubscriptionStartDate: effectiveSubStartDate,
-            clientSubscriptionEndDate: effectiveSubEndDate,
-            isActive: true,
-        }, { transaction });
-
+        const fromDate = moment(periodStart).isAfter(moment()) ? periodStart : moment().format('YYYY-MM-DD');
         const instancesToBook = await db.Training.findAll({
             where: {
                 trainingSeriesId: series.id,
-                date: {
-                    [Op.gte]: effectiveSubStartDate,
-                    [Op.lte]: effectiveSubEndDate,
-                },
                 isGeneratedInstance: true,
                 date: {
-                    [Op.gte]: moment().format('YYYY-MM-DD'), // A partir do dia atual
-                    [Op.lte]: effectiveSubEndDate,
+                    [Op.gte]: fromDate,
+                    [Op.lte]: periodEnd,
                 },
             },
             transaction
@@ -138,7 +153,7 @@ exports.createSeriesSubscription = async (req, res) => {
 
         res.status(201).json({
             message: responseMessage,
-            subscription: newSubscription,
+            subscription: subscriptionToReturn,
             bookingsCreatedCount: bookingsSuccessful,
             bookingsSkippedCount: bookingsSkippedDueToCapacity
         });

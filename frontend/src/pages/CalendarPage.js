@@ -959,7 +959,31 @@ addToast('Falha ao criar consulta.', { type: 'error', category: 'calendar' });
     if (selectedEvent) {
       handleCloseEventModal();
     }
-};
+  };
+
+  /** Inscrever apenas na sessão atual (treino de série), sem subscrever a série. Permite repor uma sessão cancelada. */
+  const handleBookOnlyThisSessionInSeriesModal = async () => {
+    if (!selectedEvent || selectedEvent.type !== 'training') return;
+    setShowSubscribeSeriesModal(false);
+    setSelectedSeriesDetailsForSubscription(null);
+    setSeriesSubscriptionEndDate('');
+    setSeriesSubscriptionError('');
+    setActionLoading(true);
+    setPageError('');
+    setPageSuccessMessage('');
+    try {
+      await bookTrainingService(selectedEvent.id, authState.token);
+      setPageSuccessMessage('Inscrição no treino realizada com sucesso!');
+      addToast('Inscrição no treino realizada com sucesso!', { type: 'success', category: 'calendar' });
+      await fetchPageData();
+      handleCloseEventModal();
+    } catch (err) {
+      setPageError(err.message || 'Falha ao inscrever no treino.');
+      addToast(err.message || 'Falha ao inscrever no treino.', { type: 'error', category: 'calendar' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleSeriesSubscriptionSubmit = async (e) => {
     e.preventDefault(); 
@@ -1326,6 +1350,17 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
                 <ModalDetail>
                   A série termina em: <strong>{selectedSeriesDetailsForSubscription.seriesEndDate ? new Date(selectedSeriesDetailsForSubscription.seriesEndDate).toLocaleDateString('pt-PT') : 'N/A'}</strong>.
                 </ModalDetail>
+
+                <p style={{ marginBottom: 12, fontSize: '0.9rem' }}>
+                  <button
+                    type="button"
+                    onClick={handleBookOnlyThisSessionInSeriesModal}
+                    disabled={isSubscribingRecurring || actionLoading}
+                    style={{ background: 'none', border: 'none', color: theme.colors.primary, textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                  >
+                    Ou inscrever-me apenas nesta sessão
+                  </button>
+                </p>
 
                 {seriesSubscriptionError && <ModalErrorText>{seriesSubscriptionError}</ModalErrorText>}
 
