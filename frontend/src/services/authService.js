@@ -166,31 +166,46 @@ export const validateAuthService = async (token) => {
   }
 
   try {
-    const response = await fetch(`${API_URL}/auth/validate`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const responseText = await response.text();
-    let data;
+    // Timeout de 8 segundos para a requisição
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      logger.error("Falha ao fazer parse da resposta JSON de validateAuthService:", e);
-      logger.error("Resposta recebida (texto):", responseText);
-      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}.`);
-    }
+      const response = await fetch(`${API_URL}/auth/validate`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      logger.error('Erro na validação de autenticação:', data);
-      throw new Error(data.message || `Erro ao validar autenticação. Status: ${response.status}`);
-    }
+      clearTimeout(timeoutId);
 
-    return data;
+      const responseText = await response.text();
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        logger.error("Falha ao fazer parse da resposta JSON de validateAuthService:", e);
+        logger.error("Resposta recebida (texto):", responseText);
+        throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}.`);
+      }
+
+      if (!response.ok) {
+        logger.error('Erro na validação de autenticação:', data);
+        throw new Error(data.message || `Erro ao validar autenticação. Status: ${response.status}`);
+      }
+
+      return data;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        throw new Error('Timeout na validação de autenticação');
+      }
+      throw fetchError;
+    }
   } catch (error) {
     logger.error("Erro em validateAuthService:", error);
     throw error;

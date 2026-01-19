@@ -425,37 +425,56 @@ export const getTrainingSessionDraftService = async (token, trainingId = null, w
 
     logger.log('getTrainingSessionDraftService URL:', url);
     
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    // Timeout de 5 segundos para não bloquear a aplicação
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const responseText = await response.text();
-    
-    // Se não encontrou (404), retornar null em vez de erro
-    if (response.status === 404) {
-      logger.log('Nenhum draft encontrado no backend');
-      return null;
-    }
-
-    let data;
     try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      logger.error("Falha ao fazer parse da resposta JSON de getTrainingSessionDraftService:", e);
-      logger.error("Resposta recebida (texto):", responseText);
-      throw new Error(`Resposta do servidor não é JSON válido. Status: ${response.status}.`);
-    }
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      logger.error('Erro na resposta de getTrainingSessionDraftService (status não OK):', data);
-      throw new Error(data.message || `Erro ao obter draft. Status: ${response.status}`);
-    }
+      clearTimeout(timeoutId);
 
-    logger.log('Draft recuperado do backend:', data);
-    return data.draft;
+      const responseText = await response.text();
+      
+      // Se não encontrou (404), retornar null em vez de erro
+      if (response.status === 404) {
+        logger.log('Nenhum draft encontrado no backend (404)');
+        return null;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        logger.error("Falha ao fazer parse da resposta JSON de getTrainingSessionDraftService:", e);
+        logger.error("Resposta recebida (texto):", responseText);
+        // Não lançar erro, apenas retornar null
+        return null;
+      }
+
+      if (!response.ok) {
+        // Para erros que não são 404, logar mas não bloquear
+        logger.warn('Erro na resposta de getTrainingSessionDraftService (status não OK):', response.status, data);
+        return null;
+      }
+
+      logger.log('Draft recuperado do backend:', data);
+      return data.draft;
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        logger.warn('Timeout ao buscar draft do backend (não crítico)');
+        return null;
+      }
+      // Para outros erros de rede, não bloquear
+      throw fetchError;
+    }
   } catch (error) {
-    logger.error("Erro em getTrainingSessionDraftService:", error);
-    // Retornar null em caso de erro para não quebrar o fluxo
+    // Qualquer erro é silencioso - não deve bloquear o fluxo da aplicação
+    logger.warn("Erro em getTrainingSessionDraftService (não crítico):", error.message || error);
     return null;
   }
 };

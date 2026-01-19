@@ -95,7 +95,16 @@ function registerValidSW(swUrl, config) {
       };
     })
     .catch((error) => {
-      console.error('Error during service worker registration:', error);
+      // Erro silencioso para erros comuns de redirect (comum em produção)
+      // Apenas logar em modo desenvolvimento
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Service Worker registration failed (non-critical):', error.message);
+      }
+      // Ignorar erros de redirect que são comuns em ambientes de produção
+      if (error.name === 'SecurityError' && error.message.includes('redirect')) {
+        // Erro de redirect - comum em produção com CDN/proxies
+        return;
+      }
     });
 }
 

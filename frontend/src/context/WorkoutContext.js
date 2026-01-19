@@ -20,7 +20,14 @@ export const WorkoutProvider = ({ children }) => {
     const navigate = useNavigate();
 
     // Carrega um treino ativo (tenta backend primeiro, depois localStorage, resolve conflitos)
+    // IMPORTANTE: Este useEffect só executa quando a autenticação está completa
+    // para não interferir com o processo de validação de autenticação
     useEffect(() => {
+        // Não carregar workout se ainda está a validar autenticação ou se não está autenticado
+        if (!authState.isAuthenticated || authState.isValidating || !authState.token) {
+            return;
+        }
+
         const loadWorkout = async () => {
             // Limpa dados inválidos/antigos
             clearInvalidStorage();
@@ -29,9 +36,15 @@ export const WorkoutProvider = ({ children }) => {
             let localWorkout = null;
             
             // PRIORIDADE 1: Tentar recuperar do backend primeiro
+            // Usar Promise.race com timeout para não bloquear
             if (authState.token) {
                 try {
-                    const backendDraft = await getTrainingSessionDraftService(authState.token, null, null, deviceIdRef.current);
+                    // Timeout de 3 segundos - se demorar mais, usar localStorage
+                    const draftPromise = getTrainingSessionDraftService(authState.token, null, null, deviceIdRef.current);
+                    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 3000));
+                    
+                    const backendDraft = await Promise.race([draftPromise, timeoutPromise]);
+                    
                     if (backendDraft && backendDraft.sessionData) {
                         // Reconstruir objeto workout a partir do draft do backend
                         backendWorkout = {
@@ -45,7 +58,8 @@ export const WorkoutProvider = ({ children }) => {
                         logger.log("Treino recuperado do backend:", backendWorkout);
                     }
                 } catch (err) {
-                    logger.warn("Erro ao recuperar draft do backend, tentando localStorage:", err);
+                    // Erro silencioso - não bloquear o fluxo
+                    logger.warn("Erro ao recuperar draft do backend, tentando localStorage:", err.message || err);
                 }
             }
             
@@ -135,11 +149,25 @@ export const WorkoutProvider = ({ children }) => {
                                     );
                                     
                                     if (historyData && historyData.length > 0) {
-                                        const placeholders = historyData.slice(0, 3).map(set => ({
-                                            weight: set.performedWeight || null,
-                                            reps: set.performedReps || null
-                                        }));
-                                        placeholdersMap[planExerciseId] = placeholders;
+                                        // Ordenar por setNumber para garantir ordem correta
+                                        const sortedHistory = [...historyData].sort((a, b) => {
+                                            const setNumA = a.setNumber || 999;
+                                            const setNumB = b.setNumber || 999;
+                                            return setNumA - setNumB;
+                                        });
+                                        
+                                        // Mapear usando setNumber como índice (setNumber 1 → índice 0)
+                                        const placeholdersArray = [];
+                                        sortedHistory.slice(0, 3).forEach(set => {
+                                            const setNumber = set.setNumber || 1;
+                                            const arrayIndex = setNumber - 1;
+                                            placeholdersArray[arrayIndex] = {
+                                                weight: set.performedWeight || null,
+                                                reps: set.performedReps || null,
+                                                setNumber: setNumber
+                                            };
+                                        });
+                                        placeholdersMap[planExerciseId] = placeholdersArray;
                                     }
                                 } catch (err) {
                                     logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId}:`, err);
@@ -156,7 +184,7 @@ export const WorkoutProvider = ({ children }) => {
         };
         
         loadWorkout();
-    }, [authState.token]);
+    }, [authState.token, authState.isValidating]); // Aguardar validação terminar
 
     // Função auxiliar para sincronizar com backend com retry
     const syncWithBackend = React.useCallback(async (workout, retries = 3, delay = 1000) => {
@@ -170,15 +198,31 @@ export const WorkoutProvider = ({ children }) => {
                 return true;
             } catch (err) {
                 const isNetworkError = err.message?.includes('fetch') || err.message?.includes('network') || err.message?.includes('Failed to fetch');
+                const isTimeoutError = err.message?.includes('Timeout') || err.message?.includes('timeout');
+                const is404Error = err.message?.includes('404') || err.message?.includes('Not Found');
                 const isLastAttempt = attempt === retries;
                 
+                // 404 não é um erro crítico - pode significar que ainda não existe draft
+                if (is404Error && attempt < retries) {
+                    logger.log('Draft não encontrado no backend (normal em primeira sincronização), tentando criar...');
+                    // Continuar tentativa
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                }
+                
                 if (isLastAttempt) {
-                    setSyncStatus({ 
-                        synced: false, 
-                        lastSync: null, 
-                        error: isNetworkError ? 'Sem conexão' : 'Erro de sincronização' 
-                    });
-                    logger.warn(`Falha ao sincronizar treino com backend após ${retries} tentativas:`, err);
+                    // Só mostrar erro ao utilizador se for um erro real de rede ou servidor
+                    // Timeout ou 404 após múltiplas tentativas = provavelmente sem conexão
+                    if (isNetworkError || isTimeoutError || is404Error) {
+                        setSyncStatus({ 
+                            synced: false, 
+                            lastSync: null, 
+                            error: 'Sem conexão' 
+                        });
+                    } else {
+                        // Outros erros - manter status atual, não atualizar para não alarmar desnecessariamente
+                        logger.warn(`Falha ao sincronizar treino com backend após ${retries} tentativas:`, err.message || err);
+                    }
                     return false;
                 }
                 
@@ -278,12 +322,27 @@ export const WorkoutProvider = ({ children }) => {
                         );
                         
                         if (historyData && historyData.length > 0) {
-                            const placeholders = historyData.slice(0, 3).map(set => ({
-                                weight: set.performedWeight || null,
-                                reps: set.performedReps || null
-                            }));
-                            placeholdersMap[planExerciseId] = placeholders;
-                            logger.log(`Placeholders recarregados para planExerciseId ${planExerciseId}:`, placeholders);
+                            // Ordenar por setNumber para garantir ordem correta (o backend já ordena, mas garantir)
+                            const sortedHistory = [...historyData].sort((a, b) => {
+                                const setNumA = a.setNumber || 999; // Séries sem setNumber vão para o fim
+                                const setNumB = b.setNumber || 999;
+                                return setNumA - setNumB;
+                            });
+                            
+                            // Mapear usando setNumber como índice (setNumber 1 → índice 0, setNumber 2 → índice 1, etc.)
+                            // Criar array com até 3 posições, usando setNumber - 1 como índice
+                            const placeholdersArray = [];
+                            sortedHistory.slice(0, 3).forEach(set => {
+                                const setNumber = set.setNumber || 1;
+                                const arrayIndex = setNumber - 1; // setNumber 1 → índice 0
+                                placeholdersArray[arrayIndex] = {
+                                    weight: set.performedWeight || null,
+                                    reps: set.performedReps || null,
+                                    setNumber: setNumber
+                                };
+                            });
+                            placeholdersMap[planExerciseId] = placeholdersArray;
+                            logger.log(`Placeholders recarregados para planExerciseId ${planExerciseId}:`, placeholdersArray);
                         } else {
                             // Se não há histórico, manter placeholders vazios
                             placeholdersMap[planExerciseId] = [];
@@ -345,13 +404,27 @@ export const WorkoutProvider = ({ children }) => {
                         try {
                             const historyData = await getMyPerformanceHistoryForExerciseService(planExerciseId, authState.token, true, currentTrainingId);
                             // Mapear as séries do histórico para placeholders (máximo 3)
-                            if (historyData && historyData.length > 0) {
-                                const placeholders = historyData.slice(0, 3).map(set => ({
+                        if (historyData && historyData.length > 0) {
+                            // Ordenar por setNumber para garantir ordem correta
+                            const sortedHistory = [...historyData].sort((a, b) => {
+                                const setNumA = a.setNumber || 999;
+                                const setNumB = b.setNumber || 999;
+                                return setNumA - setNumB;
+                            });
+                            
+                            // Mapear usando setNumber como índice (setNumber 1 → índice 0)
+                            const placeholdersArray = [];
+                            sortedHistory.slice(0, 3).forEach(set => {
+                                const setNumber = set.setNumber || 1;
+                                const arrayIndex = setNumber - 1;
+                                placeholdersArray[arrayIndex] = {
                                     weight: set.performedWeight || null,
-                                    reps: set.performedReps || null
-                                }));
-                                placeholdersMap[planExerciseId] = placeholders;
-                                logger.log(`Placeholders carregados para planExerciseId ${planExerciseId}:`, placeholders);
+                                    reps: set.performedReps || null,
+                                    setNumber: setNumber
+                                };
+                            });
+                            placeholdersMap[planExerciseId] = placeholdersArray;
+                                logger.log(`Placeholders carregados para planExerciseId ${planExerciseId}:`, placeholdersArray);
                             } else {
                                 logger.log(`Nenhum histórico encontrado para planExerciseId ${planExerciseId}`);
                             }
@@ -637,15 +710,17 @@ export const WorkoutProvider = ({ children }) => {
         }
     }, [activeWorkout]);
 
-    // Conectar WebSocket quando há token e treino ativo
+    // Conectar WebSocket quando há token, treino ativo E autenticação completa
     useEffect(() => {
-        if (!authState.token) {
+        // Não conectar se ainda está a validar autenticação ou se não está autenticado
+        if (!authState.isAuthenticated || authState.isValidating || !authState.token) {
             disconnectWebSocket();
             return;
         }
 
         if (!activeWorkout) {
-            // Se não há treino ativo, manter conexão mas não sincronizar
+            // Se não há treino ativo, não conectar WebSocket
+            disconnectWebSocket();
             return;
         }
 
@@ -710,7 +785,7 @@ export const WorkoutProvider = ({ children }) => {
             // Não desconectar completamente, apenas limpar callbacks
             // A conexão pode ser útil para outras funcionalidades
         };
-    }, [authState.token, activeWorkout?.id, activeWorkout?.trainingId]);
+    }, [authState.token, authState.isAuthenticated, authState.isValidating, activeWorkout?.id, activeWorkout?.trainingId]);
 
     // Tentar sincronizar novamente quando conexão voltar
     useEffect(() => {

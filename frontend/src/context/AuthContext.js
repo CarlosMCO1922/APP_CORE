@@ -1,5 +1,5 @@
 // src/context/AuthContext.js
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { isValidToken, isTokenExpired, decodeToken } from '../utils/tokenUtils';
 import { safeGetItem, safeSetItem, validateUserData } from '../utils/storageUtils';
 import { logger } from '../utils/logger';
@@ -154,7 +154,19 @@ export const AuthProvider = ({ children }) => {
             isValidating: false,
           });
         } else {
-          setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false, isValidating: false });
+          // Se não há userData válido, ainda permitir acesso baseado apenas no JWT
+          setAuthState({
+            token: token,
+            user: {
+              id: decoded.id,
+              email: decoded.email || '',
+              firstName: decoded.firstName || '',
+            },
+            isAuthenticated: true,
+            role: decoded.role || 'user',
+            isAdminFeatureUser: decoded.isAdmin === true || decoded.role === 'admin',
+            isValidating: false,
+          });
         }
       }
     };
@@ -244,7 +256,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Função para revalidar autenticação (útil para ProtectedRoute)
-  const revalidateAuth = async () => {
+  // Memoizada para evitar loops infinitos em useEffect
+  const revalidateAuth = useCallback(async () => {
     const token = localStorage.getItem('userToken');
     if (!token || !isValidToken(token)) {
       logout();
@@ -253,7 +266,16 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setAuthState(prev => ({ ...prev, isValidating: true }));
-      const validationResult = await validateAuthService(token);
+      
+      // Timeout de 10 segundos para evitar esperas infinitas
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na validação de autenticação')), 10000);
+      });
+      
+      const validationResult = await Promise.race([
+        validateAuthService(token),
+        timeoutPromise
+      ]);
       
       if (validationResult.valid) {
         const validatedUser = validationResult.user;
@@ -273,11 +295,12 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       logger.error("Erro ao revalidar autenticação:", error);
-      // Em caso de erro, usar JWT como fallback
+      // Em caso de erro (incluindo timeout), usar JWT como fallback
       const decoded = decodeToken(token);
       if (decoded) {
         const userData = safeGetItem('userData', validateUserData);
-        if (userData) {
+        if (userData && userData.id === decoded.id) {
+          // Permitir acesso baseado no JWT se a validação do backend falhar
           setAuthState({
             token: token,
             user: userData,
@@ -292,7 +315,7 @@ export const AuthProvider = ({ children }) => {
       logout();
       return false;
     }
-  };
+  }, []); // Dependências vazias - logout é estável
 
   return (
     <AuthContext.Provider value={{ authState, login, logout, revalidateAuth }}>

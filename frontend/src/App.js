@@ -152,69 +152,106 @@ const ProtectedRoute = ({ allowedRoles }) => {
   const { authState, revalidateAuth } = useAuth();
   const [isValidating, setIsValidating] = React.useState(true);
   const [validationError, setValidationError] = React.useState(null);
+  const hasValidatedRef = React.useRef(false); // Ref para evitar múltiplas validações
 
-  // SEGURANÇA: Validar com backend antes de permitir acesso
+  // Calcular valores necessários para os hooks (antes de qualquer return)
+  const currentRole = authState.role;
+  const shouldLogUnauthorized = allowedRoles && currentRole && !allowedRoles.includes(currentRole);
+
+  // SEGURANÇA: Validar com backend - mas permitir acesso baseado em JWT enquanto valida em background
   React.useEffect(() => {
-    const validateAccess = async () => {
-      if (!authState.isAuthenticated || !authState.token) {
+    // Se não está autenticado, não fazer validação
+    if (!authState.isAuthenticated || !authState.token) {
+      setIsValidating(false);
+      hasValidatedRef.current = false;
+      return;
+    }
+
+    // Se já validou recentemente (nos últimos 5 minutos), não revalidar
+    // Isso evita revalidações desnecessárias quando navega entre páginas
+    const lastValidationKey = `lastValidation_${authState.token?.substring(0, 20)}`;
+    const lastValidation = sessionStorage.getItem(lastValidationKey);
+    const now = Date.now();
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    
+    if (lastValidation && (now - parseInt(lastValidation)) < FIVE_MINUTES) {
+      // Validação recente - permitir acesso imediatamente
+      setIsValidating(false);
+      hasValidatedRef.current = true;
+      return;
+    }
+
+    // Se o AuthContext já está a validar, esperar que termine
+    if (authState.isValidating) {
+      // Aguardar até que a validação do contexto termine (máximo 10 segundos)
+      const timeout = setTimeout(() => {
         setIsValidating(false);
-        return;
-      }
+      }, 10000);
+      
+      return () => clearTimeout(timeout);
+    }
 
-      // Se já está validando, não fazer novamente
-      if (authState.isValidating) {
-        return;
-      }
+    // Se já validou para este token, não fazer novamente
+    if (hasValidatedRef.current) {
+      setIsValidating(false);
+      return;
+    }
 
+    // Validar em background - não bloquear acesso se JWT é válido localmente
+    const validateAccess = async () => {
       try {
-        setIsValidating(true);
+        hasValidatedRef.current = true;
+        // Não bloquear - permitir acesso baseado em JWT enquanto valida em background
+        setIsValidating(false);
+        
+        // Validar em background
         const isValid = await revalidateAuth();
         
-        if (!isValid) {
+        if (isValid) {
+          // Guardar timestamp da validação bem-sucedida
+          sessionStorage.setItem(lastValidationKey, now.toString());
+        } else {
+          // Se falhou, marcar como não validado para forçar revalidação na próxima vez
+          hasValidatedRef.current = false;
           setValidationError('Autenticação inválida');
-          setIsValidating(false);
-          return;
         }
-
-        // Verificar se role atual (após validação) tem permissão
-        const currentRole = authState.role;
-        if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
-          // Tentativa de acesso não autorizado - log de segurança
-          try {
-            await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authState.token}`,
-              },
-              body: JSON.stringify({
-                eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
-                description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles.join(', ')}`,
-                attemptedRole: currentRole,
-                actualRole: currentRole,
-                url: window.location.pathname,
-                severity: 'HIGH',
-              }),
-            }).catch(() => {}); // Ignorar erros de rede
-          } catch (e) {
-            // Ignorar erros
-          }
-          
-          setValidationError('Acesso negado');
-        }
-        
-        setIsValidating(false);
       } catch (error) {
-        logger.error('Erro ao validar acesso:', error);
-        setValidationError('Erro ao validar acesso');
-        setIsValidating(false);
+        logger.error('Erro ao validar acesso (não crítico):', error);
+        // Não bloquear por erro - JWT local ainda é válido
+        hasValidatedRef.current = false;
       }
     };
 
     validateAccess();
-  }, [authState.isAuthenticated, authState.token, allowedRoles, revalidateAuth]);
+  }, [authState.isAuthenticated, authState.token, authState.isValidating]);
 
-  // Mostrar loading durante validação
+  // Resetar ref quando token muda
+  React.useEffect(() => {
+    hasValidatedRef.current = false;
+  }, [authState.token]);
+
+  // Hook para log de segurança de acesso não autorizado (ANTES de qualquer return)
+  React.useEffect(() => {
+    if (shouldLogUnauthorized && authState.token) {
+      fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/logs/security`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authState.token}`,
+        },
+        body: JSON.stringify({
+          eventType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
+          description: `Tentativa de acesso a rota protegida. Role atual: ${currentRole}, Roles permitidos: ${allowedRoles?.join(', ') || ''}`,
+          attemptedRole: currentRole,
+          actualRole: currentRole,
+          url: window.location.pathname,
+          severity: 'HIGH',
+        }),
+      }).catch(() => {}); // Ignorar erros de rede
+    }
+  }, [shouldLogUnauthorized, authState.token, currentRole, allowedRoles]); // Apenas quando necessário
+
+  // Mostrar loading durante validação (AGORA os returns vêm DEPOIS de todos os hooks)
   if (isValidating || authState.isValidating) {
     return <Fallback>A validar acesso...</Fallback>;
   }
@@ -224,19 +261,20 @@ const ProtectedRoute = ({ allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
 
-  const currentRole = authState.role;
-
-  if (allowedRoles && !currentRole) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
+  // Verificar se role atual tem permissão após validação
+  if (shouldLogUnauthorized) {
+    // Redirecionar conforme role
     if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(currentRole)) {
       return <Navigate to="/admin/dashboard" replace />;
     }
     if (currentRole === 'user') {
       return <Navigate to="/dashboard" replace />;
     }
+    return <Navigate to="/login" replace />;
+  }
+
+  // Se não há role após validação, redirecionar para login
+  if (allowedRoles && !currentRole) {
     return <Navigate to="/login" replace />;
   }
 
