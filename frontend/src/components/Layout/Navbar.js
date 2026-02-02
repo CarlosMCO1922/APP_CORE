@@ -357,7 +357,7 @@ function Navbar() {
         <DropdownLink to="/admin/manage-payments" onClick={() => setTimeout(closeAllMenus, 150)}><FaMoneyBillWave /> Pagamentos</DropdownLink>
         <DropdownLink to="/admin/manage-exercises" onClick={() => setTimeout(closeAllMenus, 150)}><FaListOl /> Exercícios</DropdownLink>
         <DropdownLink to="/admin/manage-global-plans" onClick={() => setTimeout(closeAllMenus, 150)}><FaClipboardList /> Planos Modelo</DropdownLink>
-        <DropdownLink to="/admin/logs" onClick={() => setTimeout(closeAllMenus, 150)}><FaExclamationTriangle /> Logs do Sistema</DropdownLink>
+        <DropdownLink to="/admin/logs" onClick={() => setTimeout(closeAllMenus, 150)}><FaExclamationTriangle /> Central do Programador</DropdownLink>
       </DropdownContent>
     </NavItem>
   );

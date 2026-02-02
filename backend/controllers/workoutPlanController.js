@@ -46,7 +46,8 @@ const createGlobalWorkoutPlan = async (req, res) => {
             exerciseId: parseInt(exercise.exerciseId),
             sets: exercise.sets ? parseInt(exercise.sets) : null,
             reps: exercise.reps || null,
-            restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
+            durationSeconds: exercise.durationSeconds != null ? parseInt(exercise.durationSeconds) : null,
+            restSeconds: exercise.restSeconds != null ? parseInt(exercise.restSeconds) : null,
             notes: exercise.notes || null,
             order: blockOrder,
             internalOrder: internalOrder,
@@ -158,7 +159,7 @@ const updateGlobalWorkoutPlan = async (req, res) => {
     await workoutPlan.update({ name, notes, isVisible }, { transaction });
 
     if (exercises && Array.isArray(exercises)) {
-      await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: planId }, transaction });
+      await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: parseInt(planId) }, transaction });
 
       const validExercises = exercises.filter(ex => ex.exerciseId && String(ex.exerciseId).trim() !== '');
 
@@ -193,7 +194,8 @@ const updateGlobalWorkoutPlan = async (req, res) => {
             exerciseId: parseInt(exercise.exerciseId || exercise.exerciseDetails?.id),
             sets: exercise.sets ? parseInt(exercise.sets) : null,
             reps: exercise.reps || null,
-            restSeconds: exercise.restSeconds ? parseInt(exercise.restSeconds) : null,
+            durationSeconds: exercise.durationSeconds != null ? parseInt(exercise.durationSeconds) : null,
+            restSeconds: exercise.restSeconds != null ? parseInt(exercise.restSeconds) : null,
             notes: exercise.notes || null,
             order: blockOrder,
             internalOrder: internalOrder,
@@ -319,19 +321,19 @@ const getWorkoutPlansForTraining = async (req, res) => {
       ]
     });
 
-    // Ordenar os exercícios de cada plano manualmente
+    // Ordenar os exercícios de cada plano e expor orderInTraining no plano (join table)
     const plansWithOrderedExercises = (associatedPlans || []).map(plan => {
       try {
         const planJSON = plan.toJSON ? plan.toJSON() : plan;
+        // Expor orderInTraining da tabela de junção para o frontend
+        const orderInTraining = plan.TrainingWorkoutPlan?.orderInTraining ?? planJSON.TrainingWorkoutPlan?.orderInTraining ?? 0;
+        planJSON.orderInTraining = orderInTraining;
+        if (planJSON.TrainingWorkoutPlan) delete planJSON.TrainingWorkoutPlan;
         if (planJSON.planExercises && Array.isArray(planJSON.planExercises)) {
           planJSON.planExercises.sort((a, b) => {
-            // Primeiro por order (bloco), depois por internalOrder (ordem dentro do bloco)
             const orderA = a.order !== null && a.order !== undefined ? a.order : 0;
             const orderB = b.order !== null && b.order !== undefined ? b.order : 0;
-            if (orderA !== orderB) {
-              return orderA - orderB;
-            }
-            // Se estão no mesmo bloco, ordenar por internalOrder
+            if (orderA !== orderB) return orderA - orderB;
             const internalOrderA = a.internalOrder !== null && a.internalOrder !== undefined ? a.internalOrder : 0;
             const internalOrderB = b.internalOrder !== null && b.internalOrder !== undefined ? b.internalOrder : 0;
             return internalOrderA - internalOrderB;

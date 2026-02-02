@@ -38,6 +38,33 @@ export const logErrorService = async (errorData, token = null) => {
 };
 
 /**
+ * Obtém um log de erro por ID (apenas admin/staff)
+ * @param {string} token - Token de autenticação
+ * @param {number} logId - ID do log
+ */
+export const getErrorLogByIdService = async (token, logId) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!logId) throw new Error('ID do log é obrigatório.');
+
+  try {
+    const response = await fetch(`${API_URL}/logs/errors/${logId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao obter detalhe do log.');
+    }
+    return data;
+  } catch (error) {
+    logger.error('Erro em getErrorLogByIdService:', error);
+    throw error;
+  }
+};
+
+/**
  * Obtém logs de erro (apenas admin/staff)
  * @param {string} token - Token de autenticação
  * @param {Object} filters - Filtros (severity, errorType, resolved, userId, startDate, endDate)

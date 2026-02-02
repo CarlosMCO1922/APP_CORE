@@ -6,20 +6,12 @@ import BackArrow from '../../components/BackArrow';
 import { useAuth } from '../../context/AuthContext';
 import {
     getWorkoutPlansByTrainingId,
-    createWorkoutPlanForTraining,
-    updateWorkoutPlan,
-    deleteWorkoutPlan,
-    addExerciseToPlan,
-    updateExerciseInPlan,
-    removeExerciseFromPlan,
     adminGetAllGlobalWorkoutPlans,
-    adminAssignPlanToTraining
+    adminAssignPlanToTraining,
+    adminRemovePlanFromTraining,
 } from '../../services/workoutPlanService';
-import { getAllTrainings }
-    from '../../services/trainingService';
-import { getAllExercises } from '../../services/exerciseService';
+import { getAllTrainings } from '../../services/trainingService';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
-import SearchableSelect from '../../components/Common/SearchableSelect';
 import { sortPlanExercises } from '../../utils/exerciseOrderUtils';
 
 // --- Styled Components ---
@@ -199,52 +191,19 @@ const ModalCheckbox = styled.input`
 
 const NoItemsText = styled.p` font-size: 0.95rem; color: ${({ theme }) => theme.colors.textMuted}; text-align: center; padding: 15px 0; font-style: italic; `;
 
-const initialWorkoutPlanForm = { name: '', order: 0, notes: '' };
-const initialExercisePlanForm = {
-  exerciseId: '', sets: '', reps: '',
-  durationSeconds: '', restSeconds: '', order: 0, notes: ''
-};
-
-// Função auxiliar para extrair o ID do vídeo do YouTube
-const getYouTubeVideoId = (url) => {
-  if (!url) return null;
-  const regExp = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-  const match = url.match(regExp);
-  return match ? match[1] : null;
-};
-
 function AdminManageWorkoutPlansPage() {
   const { trainingId } = useParams();
   const { authState } = useAuth();
 
   const [workoutPlans, setWorkoutPlans] = useState([]);
-  const [allExercises, setAllExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [trainingName, setTrainingName] = useState('');
 
-  const [showPlanModal, setShowPlanModal] = useState(false);
-  const [isEditingPlan, setIsEditingPlan] = useState(false);
-  const [currentPlanData, setCurrentPlanData] = useState(initialWorkoutPlanForm);
-  const [currentPlanId, setCurrentPlanId] = useState(null);
-  const [planFormLoading, setPlanFormLoading] = useState(false);
-  const [planModalError, setPlanModalError] = useState('');
-
-  const [showExerciseModal, setShowExerciseModal] = useState(false);
-  const [isEditingExercise, setIsEditingExercise] = useState(false);
-  const [currentExerciseData, setCurrentExerciseData] = useState(initialExercisePlanForm);
-  const [currentExercisePlanId, setCurrentExercisePlanId] = useState(null);
-  const [selectedPlanIdForExercise, setSelectedPlanIdForExercise] = useState(null);
-  const [exerciseFormLoading, setExerciseFormLoading] = useState(false);
-  const [exerciseModalError, setExerciseModalError] = useState('');
   const [showDeletePlanConfirmModal, setShowDeletePlanConfirmModal] = useState(false);
-  const [showDeleteExerciseConfirmModal, setShowDeleteExerciseConfirmModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const [showMediaModal, setShowMediaModal] = useState(false);
-  const [mediaModalContent, setMediaModalContent] = useState({ type: '', src: '', alt: '' });
 
   const [showSelectPlanModal, setShowSelectPlanModal] = useState(false);
   const [globalPlans, setGlobalPlans] = useState([]);
@@ -286,24 +245,10 @@ function AdminManageWorkoutPlansPage() {
     }
   }, [authState.token, trainingId]);
 
-  const fetchAllExercisesList = useCallback(async () => {
-    if (authState.token) {
-      try {
-        const exercisesData = await getAllExercises(authState.token);
-        setAllExercises(exercisesData || []);
-      } catch (err) {
-        console.error("Erro ao buscar lista de exercícios base:", err);
-        setError(prev => `${prev ? prev + '\n' : ''}Erro ao carregar lista de exercícios.`);
-        setAllExercises([]);
-      }
-    }
-  }, [authState.token]);
-
   useEffect(() => {
     fetchTrainingDetails();
     fetchWorkoutPlans();
-    fetchAllExercisesList();
-  }, [fetchTrainingDetails, fetchWorkoutPlans, fetchAllExercisesList]);
+  }, [fetchTrainingDetails, fetchWorkoutPlans]);
 
   const handleOpenCreatePlanModal = async () => {
     // Abrir modal de seleção de planos
@@ -352,48 +297,6 @@ function AdminManageWorkoutPlansPage() {
     }
   };
 
-  const handleCreateNewPlan = () => {
-    setShowSelectPlanModal(false);
-    setIsEditingPlan(false);
-    setCurrentPlanData({ ...initialWorkoutPlanForm, order: workoutPlans.length });
-    setCurrentPlanId(null);
-    setPlanModalError('');
-    setShowPlanModal(true);
-  };
-
-  const handleOpenEditPlanModal = (plan) => {
-    setIsEditingPlan(true);
-    setCurrentPlanData({ name: plan.name, order: plan.order, notes: plan.notes || '' });
-    setCurrentPlanId(plan.id);
-    setPlanModalError('');
-    setShowPlanModal(true);
-  };
-
-  const handlePlanFormChange = (e) => {
-    const { name, value } = e.target;
-    setCurrentPlanData(prev => ({ ...prev, [name]: name === 'order' ? parseInt(value, 10) || 0 : value }));
-  };
-
-  const handlePlanFormSubmit = async (e) => {
-    e.preventDefault();
-    setPlanFormLoading(true); setPlanModalError(''); setError(''); setSuccessMessage('');
-    try {
-      if (isEditingPlan) {
-        await updateWorkoutPlan(currentPlanId, currentPlanData, authState.token);
-        setSuccessMessage('Plano de treino atualizado!');
-      } else {
-        await createWorkoutPlanForTraining(trainingId, currentPlanData, authState.token);
-        setSuccessMessage('Plano de treino criado!');
-      }
-      fetchWorkoutPlans();
-      setShowPlanModal(false);
-    } catch (err) {
-      setPlanModalError(err.message || 'Erro ao guardar plano.');
-    } finally {
-      setPlanFormLoading(false);
-    }
-  };
-
   const handleDeletePlan = (planIdToDelete) => {
     setItemToDelete({ type: 'plan', id: planIdToDelete });
     setShowDeletePlanConfirmModal(true);
@@ -406,130 +309,24 @@ function AdminManageWorkoutPlansPage() {
     setSuccessMessage('');
     setShowDeletePlanConfirmModal(false);
     try {
-      await deleteWorkoutPlan(itemToDelete.id, authState.token);
-      setSuccessMessage('Plano de treino eliminado.');
+      await adminRemovePlanFromTraining(itemToDelete.id, trainingId, authState.token);
+      setSuccessMessage('Plano removido do treino.');
       setItemToDelete(null);
       fetchWorkoutPlans();
     } catch (err) {
-      setError(err.message || 'Erro ao eliminar plano.');
+      setError(err.message || 'Erro ao remover plano do treino.');
       setItemToDelete(null);
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  const handleOpenAddExerciseModal = (planId) => {
-    setSelectedPlanIdForExercise(planId);
-    setIsEditingExercise(false);
-    const targetPlan = workoutPlans.find(p => p.id === planId);
-    const nextOrder = targetPlan && targetPlan.planExercises ? targetPlan.planExercises.length : 0;
-    setCurrentExerciseData({ ...initialExercisePlanForm, order: nextOrder });
-    setCurrentExercisePlanId(null);
-    setExerciseModalError('');
-    setShowExerciseModal(true);
-  };
-
-  const handleOpenEditExerciseModal = (exerciseInPlan) => {
-    setSelectedPlanIdForExercise(exerciseInPlan.workoutPlanId);
-    setIsEditingExercise(true);
-    setCurrentExerciseData({
-      exerciseId: exerciseInPlan.exerciseId,
-      sets: exerciseInPlan.sets === null || exerciseInPlan.sets === undefined ? '' : exerciseInPlan.sets,
-      reps: exerciseInPlan.reps === null || exerciseInPlan.reps === undefined ? '' : exerciseInPlan.reps,
-      durationSeconds: exerciseInPlan.durationSeconds === null || exerciseInPlan.durationSeconds === undefined ? '' : exerciseInPlan.durationSeconds,
-      restSeconds: exerciseInPlan.restSeconds === null || exerciseInPlan.restSeconds === undefined ? '' : exerciseInPlan.restSeconds,
-      order: exerciseInPlan.order,
-      notes: exerciseInPlan.notes || ''
-    });
-    setCurrentExercisePlanId(exerciseInPlan.id);
-    setExerciseModalError('');
-    setShowExerciseModal(true);
-  };
-
-  const handleExerciseFormChange = (e) => {
-    const { name, value } = e.target;
-    const isNumericField = ['sets', 'durationSeconds', 'restSeconds', 'order', 'exerciseId'].includes(name);
-    const processedValue = (isNumericField && value !== '' && !isNaN(value)) ? parseInt(value, 10) : (isNumericField && value === '' ? '' : value);
-    setCurrentExerciseData(prev => ({ ...prev, [name]: processedValue }));
-  };
-
-  const handleExerciseFormSubmit = async (e) => {
-    e.preventDefault();
-    if (!currentExerciseData.exerciseId) {
-      setExerciseModalError('Por favor, selecione um exercício.');
-      return;
-    }
-    setExerciseFormLoading(true); setExerciseModalError(''); setError(''); setSuccessMessage('');
-
-    const dataToSend = { ...currentExerciseData };
-    ['sets', 'durationSeconds', 'restSeconds'].forEach(field => {
-      if (dataToSend[field] === '' || dataToSend[field] === null || isNaN(dataToSend[field])) {
-        dataToSend[field] = null;
-      } else {
-        dataToSend[field] = parseInt(dataToSend[field], 10);
-      }
-    });
-    if (dataToSend.order === '' || dataToSend.order === null || isNaN(dataToSend.order)) {
-      dataToSend.order = 0;
-    } else {
-      dataToSend.order = parseInt(dataToSend.order, 10);
-    }
-    if (dataToSend.exerciseId === '') dataToSend.exerciseId = null;
-
-    try {
-      if (isEditingExercise) {
-        await updateExerciseInPlan(currentExercisePlanId, dataToSend, authState.token);
-        setSuccessMessage('Exercício atualizado no plano!');
-      } else {
-        await addExerciseToPlan(selectedPlanIdForExercise, dataToSend, authState.token);
-        setSuccessMessage('Exercício adicionado ao plano!');
-      }
-      fetchWorkoutPlans();
-      setShowExerciseModal(false);
-    } catch (err) {
-      setExerciseModalError(err.message || 'Erro ao guardar exercício no plano.');
-    } finally {
-      setExerciseFormLoading(false);
-    }
-  };
-
-  const handleDeleteExerciseFromPlan = (exercisePlanIdToDelete) => {
-    setItemToDelete({ type: 'exercise', id: exercisePlanIdToDelete });
-    setShowDeleteExerciseConfirmModal(true);
-  };
-
-  const handleDeleteExerciseConfirm = async () => {
-    if (!itemToDelete || itemToDelete.type !== 'exercise') return;
-    setDeleteLoading(true);
-    setError(''); 
-    setSuccessMessage('');
-    setShowDeleteExerciseConfirmModal(false);
-    try {
-      await removeExerciseFromPlan(itemToDelete.id, authState.token);
-      setSuccessMessage('Exercício removido do plano.');
-      setItemToDelete(null);
-      fetchWorkoutPlans();
-    } catch (err) {
-      setError(err.message || 'Erro ao remover exercício.');
-    }
-  };
-
-  const handleOpenMediaModal = (type, src, altText = 'Visualização do exercício') => {
-    if (!src) return;
-    setMediaModalContent({ type, src, alt: altText });
-    setShowMediaModal(true);
-  };
-
-  const handleCloseMediaModal = () => {
-    setShowMediaModal(false);
-    if (mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube') { 
-      const videoElement = document.getElementById('media-modal-video-iframe') || document.getElementById('media-modal-video');
-      if (videoElement && videoElement.tagName === 'VIDEO') {
-          videoElement.pause();
-      }
-    }
-    setMediaModalContent({ type: '', src: '', alt: '' }); 
-  };
+  /** Ordena planos por orderInTraining (vindo da API) */
+  const sortedPlans = [...workoutPlans].sort((a, b) => {
+    const orderA = a.orderInTraining != null ? a.orderInTraining : 0;
+    const orderB = b.orderInTraining != null ? b.orderInTraining : 0;
+    return orderA - orderB;
+  });
 
   if (loading) return <PageContainer><LoadingText>A carregar detalhes do plano de treino...</LoadingText></PageContainer>;
 
@@ -546,64 +343,39 @@ function AdminManageWorkoutPlansPage() {
 
       <CreateButtonStyled onClick={handleOpenCreatePlanModal}>Adicionar Novo Plano de Treino</CreateButtonStyled>
 
-      {workoutPlans.length > 0 ? workoutPlans.sort((a,b) => a.order - b.order).map(plan => (
+      {sortedPlans.length > 0 ? sortedPlans.map(plan => (
         <PlanSection key={plan.id}>
           <PlanHeader>
-            <h2>{plan.name} (Ordem: {plan.order})</h2>
+            <h2>{plan.name}</h2>
             <div>
-              <ActionButton secondary onClick={() => handleOpenEditPlanModal(plan)}>Editar Plano</ActionButton>
-              <ActionButton danger onClick={() => handleDeletePlan(plan.id)}>Eliminar Plano</ActionButton>
+              <ActionButton
+                as={Link}
+                to="/admin/global-workout-plans"
+                secondary
+                style={{ textDecoration: 'none' }}
+              >
+                Editar plano modelo
+              </ActionButton>
+              <ActionButton danger onClick={() => handleDeletePlan(plan.id)}>
+                Remover do treino
+              </ActionButton>
             </div>
           </PlanHeader>
           {plan.notes && <NotesText>Notas do plano: {plan.notes}</NotesText>}
 
-          <ActionButton
-            primary
-            small
-            noMarginLeft
-            onClick={() => handleOpenAddExerciseModal(plan.id)}
-            style={{ marginBottom: '15px' }}
-          >
-            Adicionar Exercício a Este Plano
-          </ActionButton>
-
           <ExerciseList>
-            {plan.planExercises && plan.planExercises.length > 0 ? sortPlanExercises(plan.planExercises).map((item, idx) => (
+            {plan.planExercises && plan.planExercises.length > 0 ? sortPlanExercises(plan.planExercises).map((item) => (
               <ExerciseItem key={item.id}>
                 <div className="exercise-info">
-                  <p><strong>{item.exerciseDetails?.name || 'Exercício Desconhecido'}</strong> (Ordem: {item.order})</p>
-                  <div className="exercise-media-buttons">
-                    {item.exerciseDetails?.imageUrl && (
-                      <ActionButton
-                        small
-                        secondary
-                        onClick={() => handleOpenMediaModal('image', item.exerciseDetails.imageUrl, item.exerciseDetails.name)}
-                      >
-                        Ver Imagem
-                      </ActionButton>
-                    )}
-                    {item.exerciseDetails?.videoUrl && (
-                      <ActionButton
-                        small
-                        secondary
-                        onClick={() => handleOpenMediaModal('video', item.exerciseDetails.videoUrl, item.exerciseDetails.name)} 
-                      >
-                        Ver Vídeo
-                      </ActionButton>
-                    )}
-                  </div>
+                  <p><strong>{item.exerciseDetails?.name || 'Exercício Desconhecido'}</strong></p>
                   {item.sets !== null && item.sets !== undefined && <p><span>Séries:</span> {item.sets}</p>}
                   {item.reps && <p><span>Reps:</span> {item.reps}</p>}
-                  {item.durationSeconds !== null && item.durationSeconds !== undefined ? <p><span>Duração:</span> {item.durationSeconds}s</p> : null}
-                  {item.restSeconds !== null && item.restSeconds >= 0 ? <p><span>Descanso:</span> {item.restSeconds}s</p> : null}
+                  {item.durationSeconds != null && item.durationSeconds !== undefined && <p><span>Duração:</span> {item.durationSeconds}s</p>}
+                  {item.restSeconds != null && item.restSeconds >= 0 && <p><span>Descanso:</span> {item.restSeconds}s</p>}
                   {item.notes && <p><em>Notas: {item.notes}</em></p>}
                 </div>
-                <div className="exercise-actions">
-                  <ActionButton secondary small onClick={() => handleOpenEditExerciseModal(item)}>Editar Ex.</ActionButton>
-                  <ActionButton danger small onClick={() => handleDeleteExerciseFromPlan(item.id)}>Remover Ex.</ActionButton>
-                </div>
               </ExerciseItem>
-            )) : <NoItemsText>Nenhum exercício neste plano ainda.</NoItemsText>}
+            )) : <NoItemsText>Nenhum exercício neste plano.</NoItemsText>}
           </ExerciseList>
         </PlanSection>
       )) : (
@@ -649,190 +421,14 @@ function AdminManageWorkoutPlansPage() {
                     </ModalActions>
                   </>
                 ) : (
-                  <NoItemsText>Nenhum plano global disponível.</NoItemsText>
+                  <NoItemsText>Nenhum plano modelo disponível. Crie planos em &quot;Planos de Treino Modelo&quot;.</NoItemsText>
                 )}
-                
-                <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '1px solid #383838' }}>
-                  <ModalLabel style={{ marginBottom: '10px' }}>Ou criar um novo plano</ModalLabel>
-                  <ModalButton 
-                    type="button" 
-                    onClick={handleCreateNewPlan}
-                    primary
-                    style={{ width: '100%' }}
-                  >
-                    Criar Novo Plano de Treino
-                  </ModalButton>
-                </div>
               </>
             )}
             
             <ModalActions style={{ marginTop: '20px' }}>
               <ModalButton type="button" onClick={handleCloseSelectPlanModal}>Cancelar</ModalButton>
             </ModalActions>
-          </ModalContent>
-        </ModalOverlay>
-      )}
-
-      {/* Modal para Criar/Editar WorkoutPlan */}
-      {showPlanModal && (
-        <ModalOverlay onClick={() => setShowPlanModal(false)}>
-          <ModalContent onClick={e => e.stopPropagation()}>
-            <CloseButton onClick={() => setShowPlanModal(false)}>&times;</CloseButton>
-            <ModalTitle>{isEditingPlan ? 'Editar Plano de Treino' : 'Criar Novo Plano de Treino'}</ModalTitle>
-            {planModalError && <ErrorText>{planModalError}</ErrorText>}
-            <ModalForm onSubmit={handlePlanFormSubmit}>
-              <ModalLabel htmlFor="planName">Nome do Plano*</ModalLabel>
-              <ModalInput type="text" name="name" id="planName" value={currentPlanData.name} onChange={handlePlanFormChange} required />
-              <ModalLabel htmlFor="planOrder">Ordem*</ModalLabel>
-              <ModalInput type="number" name="order" id="planOrder" value={currentPlanData.order} onChange={handlePlanFormChange} required min="0" />
-              <ModalLabel htmlFor="planNotes">Notas (Opcional)</ModalLabel>
-              <ModalTextarea name="notes" id="planNotes" value={currentPlanData.notes} onChange={handlePlanFormChange} />
-              <ModalActions>
-                <ModalButton type="button" onClick={() => setShowPlanModal(false)} disabled={planFormLoading}>Cancelar</ModalButton>
-                <ModalButton type="submit" primary disabled={planFormLoading}>
-                  {planFormLoading ? 'A guardar...' : (isEditingPlan ? 'Guardar Alterações' : 'Criar Plano')}
-                </ModalButton>
-              </ModalActions>
-              <ModalCheckboxContainer>
-                <ModalCheckbox
-                  type="checkbox"
-                  name="isVisible"
-                  id="planIsVisible"
-                  checked={currentPlanData.isVisible || false}
-                  onChange={(e) => setCurrentPlanData(prev => ({ ...prev, isVisible: e.target.checked }))}
-                />
-                <ModalLabel htmlFor="planIsVisible" style={{ marginBottom: 0, cursor: 'pointer' }}>
-                  Visível para Clientes
-                </ModalLabel>
-              </ModalCheckboxContainer>
-            </ModalForm>
-          </ModalContent>
-        </ModalOverlay>
-      )}
-
-      {/* Modal para Adicionar/Editar WorkoutPlanExercise */}
-      {showExerciseModal && (
-        <ModalOverlay onClick={() => setShowExerciseModal(false)}>
-          <ModalContent onClick={e => e.stopPropagation()}>
-            <CloseButton onClick={() => setShowExerciseModal(false)}>&times;</CloseButton>
-            <ModalTitle>{isEditingExercise ? 'Editar Exercício no Plano' : 'Adicionar Exercício ao Plano'}</ModalTitle>
-            {exerciseModalError && <ErrorText>{exerciseModalError}</ErrorText>}
-            <ModalForm onSubmit={handleExerciseFormSubmit}>
-              <ModalLabel htmlFor="exerciseIdSel">Exercício*</ModalLabel>
-              <SearchableSelect
-                id="exerciseIdSel"
-                name="exerciseId"
-                value={currentExerciseData.exerciseId || ''}
-                onChange={handleExerciseFormChange}
-                options={allExercises}
-                placeholder="Selecione um exercício"
-                getOptionLabel={(option) => `${option.name} (${option.muscleGroup || 'N/A'})`}
-                getOptionValue={(option) => option.id}
-                searchable={true}
-                required={true}
-              />
-
-              <ModalLabel htmlFor="exOrder">Ordem no Plano*</ModalLabel>
-              <ModalInput type="number" name="order" id="exOrder" value={currentExerciseData.order} onChange={handleExerciseFormChange} required min="0" />
-
-              <ModalLabel htmlFor="exSets">Séries</ModalLabel>
-              <ModalInput type="number" name="sets" id="exSets" value={currentExerciseData.sets} onChange={handleExerciseFormChange} min="0" placeholder="Ex: 3 (opcional)" />
-
-              <ModalLabel htmlFor="exReps">Repetições</ModalLabel>
-              <ModalInput type="text" name="reps" id="exReps" value={currentExerciseData.reps} onChange={handleExerciseFormChange} placeholder="Ex: 10-12 ou 30s (opcional)" />
-
-              <ModalLabel htmlFor="exDurationSeconds">Duração (segundos)</ModalLabel>
-              <ModalInput type="number" name="durationSeconds" id="exDurationSeconds" value={currentExerciseData.durationSeconds} onChange={handleExerciseFormChange} min="0" placeholder="Ex: 60 (opcional)" />
-
-              <ModalLabel htmlFor="exRestSeconds">Descanso (segundos)</ModalLabel>
-              <ModalInput type="number" name="restSeconds" id="exRestSeconds" value={currentExerciseData.restSeconds} onChange={handleExerciseFormChange} min="0" placeholder="Ex: 30 (opcional)" />
-
-              <ModalLabel htmlFor="exNotes">Notas do Exercício</ModalLabel>
-              <ModalTextarea name="notes" id="exNotes" value={currentExerciseData.notes} onChange={handleExerciseFormChange} />
-
-              <ModalActions>
-                <ModalButton type="button" onClick={() => setShowExerciseModal(false)} disabled={exerciseFormLoading}>Cancelar</ModalButton>
-                <ModalButton type="submit" primary disabled={exerciseFormLoading}>
-                  {exerciseFormLoading ? 'A guardar...' : (isEditingExercise ? 'Guardar Alterações' : 'Adicionar Exercício')}
-                </ModalButton>
-              </ModalActions>
-            </ModalForm>
-          </ModalContent>
-        </ModalOverlay>
-      )}
-
-      {/* Modal para Visualizar Imagem/Vídeo */}
-      {showMediaModal && mediaModalContent.src && (
-        <ModalOverlay onClick={handleCloseMediaModal} style={{ zIndex: 1060 }}>
-          <ModalContent
-            onClick={e => e.stopPropagation()}
-            style={{
-              maxWidth: mediaModalContent.type === 'image' ? '80vw' : '700px',
-              width: mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube_video' ? '80vw' : 'auto', // Ajuste para incluir youtube_video
-              maxHeight: '90vh',
-              padding: (mediaModalContent.type === 'video' || mediaModalContent.type === 'youtube_video') ? '20px' : '5px',
-              backgroundColor: '#181818',
-              display: 'flex', flexDirection: 'column', justifyContent: 'center'
-            }}
-          >
-            <CloseButton
-              onClick={handleCloseMediaModal}
-              style={{ top: '10px', right: '10px', color: 'white', fontSize: '1.5rem', background: 'rgba(0,0,0,0.5)', borderRadius: '50%', width: '35px', height: '35px', lineHeight: '35px', textAlign: 'center', zIndex: 1061 }}
-            >
-              &times;
-            </CloseButton>
-
-            {mediaModalContent.type === 'image' && (
-              <img
-                src={mediaModalContent.src}
-                alt={mediaModalContent.alt}
-                style={{ display: 'block', maxWidth: '100%', maxHeight: 'calc(90vh - 40px)', margin: 'auto', borderRadius: '4px' }}
-              />
-            )}
-            
-            {/* Lógica para Vídeo (YouTube ou Direto) */}
-            {(mediaModalContent.type === 'video') && (() => {
-              const youtubeVideoId = getYouTubeVideoId(mediaModalContent.src);
-              if (youtubeVideoId) {
-                return (
-                  <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', maxWidth: '100%', background: '#000' }}>
-                    <iframe
-                      id="media-modal-video-iframe"
-                      src={`https://www.youtube.com/watch?v=tXflBB70v-s${youtubeVideoId}?autoplay=1`}
-                      title="YouTube video player"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                    ></iframe>
-                  </div>
-                );
-              } else {
-                return (
-                  <video
-                    id="media-modal-video"
-                    src={mediaModalContent.src}
-                    controls
-                    autoPlay
-                    style={{ display: 'block', width: '100%', maxHeight: 'calc(90vh - 70px)', borderRadius: '4px' }}
-                    onError={(e) => {
-                      console.error("Erro ao carregar vídeo direto:", mediaModalContent.src, e);
-                      setMediaModalContent(prev => ({ ...prev, type: 'video_error', originalType: 'video' }));
-                    }}
-                  >
-                    O teu navegador não suporta o elemento de vídeo. Podes tentar descarregar <a href={mediaModalContent.src} download style={{color: '#D4AF37'}}>aqui</a>.
-                  </video>
-                );
-              }
-            })()}
-
-            {mediaModalContent.type === 'video_error' && (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'white' }}>
-                <p style={{ color: '#FF6B6B' }}>Não foi possível carregar o vídeo.</p>
-                <p>URL: <a href={mediaModalContent.src} target="_blank" rel="noopener noreferrer" style={{ color: '#D4AF37' }}>{mediaModalContent.src}</a></p>
-                {mediaModalContent.originalType === 'video' && <p>(Verifica se o URL é um link direto para um ficheiro de vídeo como .mp4 ou um link válido do YouTube)</p>}
-              </div>
-            )}
           </ModalContent>
         </ModalOverlay>
       )}
@@ -846,25 +442,8 @@ function AdminManageWorkoutPlansPage() {
           }
         }}
         onConfirm={handleDeletePlanConfirm}
-        title="Eliminar Plano de Treino"
-        message="Tem certeza que deseja eliminar este plano de treino e todos os seus exercícios?"
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        danger={true}
-        loading={deleteLoading}
-      />
-
-      <ConfirmationModal
-        isOpen={showDeleteExerciseConfirmModal}
-        onClose={() => {
-          if (!deleteLoading) {
-            setShowDeleteExerciseConfirmModal(false);
-            setItemToDelete(null);
-          }
-        }}
-        onConfirm={handleDeleteExerciseConfirm}
-        title="Remover Exercício do Plano"
-        message="Tem certeza que deseja remover este exercício do plano?"
+        title="Remover plano do treino"
+        message="Este plano deixa de estar associado a este treino. O plano modelo continua disponível em Planos de Treino Modelo."
         confirmText="Remover"
         cancelText="Cancelar"
         danger={true}

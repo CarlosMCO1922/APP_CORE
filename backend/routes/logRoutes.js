@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   logError,
   logSecurityEvent,
+  getErrorLogById,
   getErrorLogs,
   getSecurityLogs,
   resolveErrorLog,
@@ -18,6 +19,7 @@ router.post('/security', protect, logSecurityEvent); // Requer autenticação
 
 // Rotas protegidas (apenas staff/admin)
 router.get('/errors', protect, isStaff, getErrorLogs);
+router.get('/errors/:id', protect, isStaff, getErrorLogById);
 router.get('/security', protect, isStaff, getSecurityLogs);
 router.patch('/errors/:logId/resolve', protect, isStaff, resolveErrorLog);
 router.get('/stats', protect, isStaff, getLogsStats);

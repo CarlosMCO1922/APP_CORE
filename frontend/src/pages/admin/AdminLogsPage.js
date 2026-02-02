@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { getErrorLogsService, getSecurityLogsService, resolveErrorLogService, getLogsStatsService, exportLogsService } from '../../services/logService';
+import { getErrorLogsService, getErrorLogByIdService, getSecurityLogsService, resolveErrorLogService, getLogsStatsService, exportLogsService } from '../../services/logService';
 import { FaExclamationTriangle, FaShieldAlt, FaCheck, FaTimes, FaSearch, FaFilter, FaDownload, FaChartLine } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import { format } from 'date-fns';
@@ -294,6 +294,54 @@ const TabsWithActions = styled.div`
   gap: 15px;
 `;
 
+const DetailModalOverlay = styled.div`
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  padding: 20px;
+`;
+
+const DetailModalContent = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker || '#1e1e1e'};
+  padding: 24px;
+  border-radius: ${({ theme }) => theme.borderRadius || '8px'};
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+`;
+
+const DetailModalTitle = styled.h3`
+  color: ${({ theme }) => theme.colors.primary};
+  margin: 0 0 16px 0;
+  font-size: 1.2rem;
+`;
+
+const DetailRow = styled.div`
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  word-break: break-all;
+  & strong { color: ${({ theme }) => theme.colors.textMuted}; display: inline-block; min-width: 100px; }
+`;
+
+const DetailPre = styled.pre`
+  background: rgba(0,0,0,0.3);
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
 const AdminLogsPage = () => {
   const { authState } = useAuth();
   const [activeTab, setActiveTab] = useState('errors'); // 'errors' ou 'security'
@@ -306,6 +354,8 @@ const AdminLogsPage = () => {
   const [chartsLoading, setChartsLoading] = useState(false);
   const [showCharts, setShowCharts] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [detailLog, setDetailLog] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   
   // Filtros
   const [filters, setFilters] = useState({
@@ -460,11 +510,34 @@ const AdminLogsPage = () => {
     }
   };
 
+  const handleOpenErrorDetail = async (log) => {
+    setDetailLog(null);
+    setDetailLoading(true);
+    try {
+      const full = await getErrorLogByIdService(authState.token, log.id);
+      setDetailLog(full);
+    } catch (err) {
+      console.error('Erro ao carregar detalhe:', err);
+      setDetailLog(log); // fallback para dados da linha
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleCloseDetail = () => {
+    setDetailLog(null);
+  };
+
   return (
     <PageContainer>
       <BackArrow />
       <HeaderContainer>
-        <Title>Logs do Sistema</Title>
+        <div>
+          <Title>Central do Programador</Title>
+          <p style={{ margin: '4px 0 0', fontSize: '0.95rem', color: 'var(--text-muted, #888)' }}>
+            Erros e eventos de segurança — utilizador, hora e contexto
+          </p>
+        </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <ExportButton onClick={handleExport} disabled={exporting || loading}>
             <FaDownload /> {exporting ? 'A exportar...' : 'Exportar CSV'}
@@ -708,9 +781,10 @@ const AdminLogsPage = () => {
                 {activeTab === 'errors' ? (
                   <tr>
                     <th>ID</th>
-                    <th>Data</th>
+                    <th>Data / Hora</th>
                     <th>Tipo</th>
                     <th>Mensagem</th>
+                    <th>URL</th>
                     <th>Severidade</th>
                     <th>Utilizador</th>
                     <th>Estado</th>
@@ -732,32 +806,35 @@ const AdminLogsPage = () => {
                 {activeTab === 'errors' ? (
                   errorLogs.length === 0 ? (
                     <tr>
-                      <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan="9" style={{ textAlign: 'center', padding: '40px' }}>
                         Nenhum log de erro encontrado
                       </td>
                     </tr>
                   ) : (
                     errorLogs.map((log) => (
-                      <tr key={log.id}>
+                      <tr key={log.id} style={{ cursor: 'pointer' }} onClick={() => handleOpenErrorDetail(log)}>
                         <td>{log.id}</td>
                         <td>{formatDate(log.createdAt)}</td>
                         <td>{log.errorType}</td>
-                        <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {log.message}
+                        </td>
+                        <td style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={log.url || ''}>
+                          {log.url || '-'}
                         </td>
                         <td><SeverityBadge severity={log.severity}>{log.severity}</SeverityBadge></td>
                         <td>
-                          {log.user ? `${log.user.firstName} ${log.user.lastName} (${log.user.id})` : '-'}
+                          {log.user ? `${log.user.firstName} ${log.user.lastName}${log.user.email ? ` (${log.user.email})` : ''} [ID: ${log.user.id}]` : '-'}
                         </td>
                         <td>
                           <ResolvedBadge resolved={log.resolved}>
                             {log.resolved ? 'Resolvido' : 'Pendente'}
                           </ResolvedBadge>
                         </td>
-                        <td>
+                        <td onClick={(e) => e.stopPropagation()}>
                           {!log.resolved && (
                             <ActionButton onClick={() => handleResolveError(log.id)}>
-                              <FaCheck /> Marcar como Resolvido
+                              <FaCheck /> Resolvido
                             </ActionButton>
                           )}
                         </td>
@@ -813,6 +890,58 @@ const AdminLogsPage = () => {
             </PaginationContainer>
           )}
         </>
+      )}
+
+      {/* Modal de detalhe do erro */}
+      {(detailLog || detailLoading) && (
+        <DetailModalOverlay onClick={handleCloseDetail}>
+          <DetailModalContent onClick={(e) => e.stopPropagation()}>
+            {detailLoading ? (
+              <LoadingText>A carregar detalhe...</LoadingText>
+            ) : detailLog ? (
+              <>
+                <DetailModalTitle>Detalhe do erro #{detailLog.id}</DetailModalTitle>
+                <DetailRow><strong>Data / Hora:</strong> {formatDate(detailLog.createdAt)}</DetailRow>
+                <DetailRow><strong>Tipo:</strong> {detailLog.errorType}</DetailRow>
+                <DetailRow><strong>Severidade:</strong> <SeverityBadge severity={detailLog.severity}>{detailLog.severity}</SeverityBadge></DetailRow>
+                <DetailRow><strong>Mensagem:</strong> {detailLog.message}</DetailRow>
+                <DetailRow><strong>URL:</strong> {detailLog.url || '-'}</DetailRow>
+                <DetailRow>
+                  <strong>Utilizador:</strong>{' '}
+                  {detailLog.user
+                    ? `${detailLog.user.firstName} ${detailLog.user.lastName}${detailLog.user.email ? ` (${detailLog.user.email})` : ''} [ID: ${detailLog.user.id}]`
+                    : '-'}
+                </DetailRow>
+                {detailLog.stackTrace && (
+                  <>
+                    <DetailRow><strong>Stack trace:</strong></DetailRow>
+                    <DetailPre>{detailLog.stackTrace}</DetailPre>
+                  </>
+                )}
+                {detailLog.deviceInfo && (
+                  <>
+                    <DetailRow><strong>Dispositivo:</strong></DetailRow>
+                    <DetailPre>{JSON.stringify(detailLog.deviceInfo, null, 2)}</DetailPre>
+                  </>
+                )}
+                {detailLog.metadata && Object.keys(detailLog.metadata).length > 0 && (
+                  <>
+                    <DetailRow><strong>Metadata:</strong></DetailRow>
+                    <DetailPre>{JSON.stringify(detailLog.metadata, null, 2)}</DetailPre>
+                  </>
+                )}
+                <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                  {!detailLog.resolved && (
+                    <ActionButton onClick={() => { handleResolveError(detailLog.id); handleCloseDetail(); loadErrorLogs(); }}>
+                      <FaCheck /> Marcar como Resolvido
+                    </ActionButton>
+                  )}
+                  <ActionButton onClick={handleCloseDetail}><FaTimes /> Fechar</ActionButton>
+                </div>
+              </>
+            ) : null}
+          </DetailModalContent>
+        </DetailModalOverlay>
       )}
     </PageContainer>
   );

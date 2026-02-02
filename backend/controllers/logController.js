@@ -168,6 +168,33 @@ const logSecurityEvent = async (req, res) => {
 };
 
 /**
+ * Obtém um log de erro por ID (apenas admin/staff)
+ * GET /api/logs/errors/:id
+ */
+const getErrorLogById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const errorLog = await db.ErrorLog.findByPk(parseInt(id), {
+      include: [
+        {
+          model: db.User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+          required: false,
+        },
+      ],
+    });
+    if (!errorLog) {
+      return res.status(404).json({ message: 'Log de erro não encontrado.' });
+    }
+    res.status(200).json(errorLog);
+  } catch (error) {
+    logger.error('Erro ao obter log de erro por ID:', error);
+    res.status(500).json({ message: 'Erro interno ao obter log.' });
+  }
+};
+
+/**
  * Obtém logs de erro (apenas admin/staff)
  * GET /api/logs/errors
  */
@@ -580,6 +607,7 @@ const getLogsStats = async (req, res) => {
 module.exports = {
   logError,
   logSecurityEvent,
+  getErrorLogById,
   getErrorLogs,
   getSecurityLogs,
   resolveErrorLog,
