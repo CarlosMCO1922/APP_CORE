@@ -505,6 +505,7 @@ export const WorkoutProvider = ({ children }) => {
                         performedAt: saved.performedAt ?? performanceData.performedAt,
                         performedWeight: performanceData.performedWeight,
                         performedReps: performanceData.performedReps,
+                        materialUsed: performanceData.materialUsed ?? saved.materialUsed ?? null,
                     },
                 }));
             }
@@ -546,6 +547,9 @@ export const WorkoutProvider = ({ children }) => {
                         continue;
                     }
 
+                    const firstSetKey = `${setData.planExerciseId}-1`;
+                    const materialUsed = activeWorkout.setsData[firstSetKey]?.materialUsed ?? setData.materialUsed ?? null;
+
                     const fullSetData = {
                         trainingId: activeWorkout.trainingId || null,
                         workoutPlanId: activeWorkout.id,
@@ -558,6 +562,7 @@ export const WorkoutProvider = ({ children }) => {
                         performedWeight: Number(setData.performedWeight),
                         performedReps: Number(setData.performedReps),
                         performedAt: setData.performedAt || new Date().toISOString(),
+                        materialUsed: materialUsed && String(materialUsed).trim() ? String(materialUsed).trim() : undefined,
                     };
 
                     await logSet(fullSetData);

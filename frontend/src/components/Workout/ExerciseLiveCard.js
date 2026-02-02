@@ -10,9 +10,39 @@ import { useAuth } from '../../context/AuthContext';
 const CardContainer = styled.div` margin-bottom: 40px; `;
 const CardHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; `;
 const ExerciseName = styled.h2` color: ${({ theme }) => theme.colors.textMain}; font-size: 1.05rem; margin: 0; `;
+const LastMaterialHint = styled.p`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin: 0 0 10px 0;
+  font-style: italic;
+`;
+const MaterialLabel = styled.label`
+  display: block;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 6px;
+  font-weight: 500;
+`;
+const MaterialInput = styled.input`
+  width: 100%;
+  padding: 10px 12px;
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing};
+  }
+`;
 const SetsGridHeader = styled.div` display: grid; grid-template-columns: 50px 1fr 1fr 60px; gap: 10px; padding: 0 10px; margin-bottom: 8px; color: ${({ theme }) => theme.colors.textMuted}; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; text-align: center; span:first-child { text-align: left; }`;
 const AddSetButton = styled.button` background-color: transparent; color: ${({ theme }) => theme.colors.textMuted}; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; margin-top: 15px; transition: all 0.2s; display: block; width: 100%; text-align: center; &:hover { background-color: ${({ theme }) => theme.colors.cardBackground}; color: ${({ theme }) => theme.colors.primary}; }`;
-// Removido: texto de último desempenho e botão de histórico duplicado
 
 const ExerciseLiveCard = ({ 
   planExercise, 
@@ -23,11 +53,19 @@ const ExerciseLiveCard = ({
   lastPerformance,
 }) => {
   const [sets, setSets] = useState([]);
-  const { exercisePlaceholders, reloadPlaceholdersForActiveWorkout, activeWorkout } = useWorkout();
+  const { exercisePlaceholders, reloadPlaceholdersForActiveWorkout, activeWorkout, updateSetData } = useWorkout();
   const { authState } = useAuth();
-  
-  // Obter placeholders para este exercício - tentar ambos os campos
+
   const planExerciseId = planExercise?.planExerciseId ?? planExercise?.id;
+  const firstSetKey = planExerciseId ? `${planExerciseId}-1` : null;
+  const savedMaterial = activeWorkout?.setsData?.[firstSetKey]?.materialUsed ?? lastPerformance?.materialUsed ?? '';
+  const [materialUsed, setMaterialUsed] = useState(savedMaterial);
+
+  useEffect(() => {
+    const next = activeWorkout?.setsData?.[firstSetKey]?.materialUsed ?? lastPerformance?.materialUsed ?? '';
+    setMaterialUsed(prev => (next !== undefined && next !== null ? next : prev));
+  }, [firstSetKey, activeWorkout?.setsData, lastPerformance?.materialUsed]);
+  
   // Tentar ambos os IDs possíveis para garantir compatibilidade
   const placeholders = exercisePlaceholders[planExerciseId] || exercisePlaceholders[planExercise?.id] || exercisePlaceholders[planExercise?.planExerciseId] || [];
   
@@ -60,6 +98,14 @@ const ExerciseLiveCard = ({
   // Se for null, não mostrar nada (exercício único já tem nome no header)
   const displayName = exerciseName || null;
 
+  const handleMaterialChange = (e) => {
+    const value = e.target.value;
+    setMaterialUsed(value);
+    if (planExerciseId && updateSetData) {
+      updateSetData(planExerciseId, 1, 'materialUsed', value);
+    }
+  };
+
   return (
     <CardContainer>
       {displayName && (
@@ -67,6 +113,19 @@ const ExerciseLiveCard = ({
           <ExerciseName>{displayName}</ExerciseName>
         </CardHeader>
       )}
+
+      {lastPerformance?.materialUsed && (
+        <LastMaterialHint>Da última vez usaste: {lastPerformance.materialUsed}</LastMaterialHint>
+      )}
+
+      <MaterialLabel htmlFor={`material-${planExerciseId}`}>Material / Observações (opcional)</MaterialLabel>
+      <MaterialInput
+        id={`material-${planExerciseId}`}
+        type="text"
+        placeholder="Ex.: Haltere 12kg, elástico vermelho..."
+        value={materialUsed}
+        onChange={handleMaterialChange}
+      />
       
       <SetsGridHeader><span>Série</span><span>KG</span><span>Reps</span><span></span></SetsGridHeader>
       

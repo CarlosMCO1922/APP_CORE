@@ -14,7 +14,8 @@ const logExercisePerformance = async (req, res) => {
     performedReps,
     performedWeight,
     performedDurationSeconds,
-    notes
+    notes,
+    materialUsed,
   } = req.body;
 
   if (!workoutPlanId || !planExerciseId || !performedAt) {
@@ -32,7 +33,8 @@ const logExercisePerformance = async (req, res) => {
       performedReps: performedReps ? parseInt(performedReps) : null,
       performedWeight: performedWeight ? parseFloat(performedWeight) : null,
       performedDurationSeconds: performedDurationSeconds ? parseInt(performedDurationSeconds) : null,
-      notes
+      notes,
+      materialUsed: materialUsed != null && String(materialUsed).trim() !== '' ? String(materialUsed).trim() : null,
     });
 
     res.status(201).json({ message: 'Desempenho registado com sucesso!', performance: newPerformance });
@@ -606,19 +608,36 @@ const getMyLastPerformances = async (req, res) => {
         'performedAt',
         'performedWeight',
         'performedReps',
+        'materialUsed',
       ],
+      include: [{
+        model: db.WorkoutPlanExercise,
+        as: 'planExerciseDetails',
+        attributes: ['exerciseId'],
+        required: false,
+      }],
       order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],
       limit: 200,
-      raw: true,
     });
 
     const seen = new Set();
     const out = [];
     for (const r of rows) {
-      const key = r.planExerciseId ?? `unknown-${r.id}`;
+      const plain = r.get ? r.get({ plain: true }) : r;
+      const planExerciseId = plain.planExerciseId ?? plain.id;
+      const key = planExerciseId;
       if (!seen.has(key)) {
         seen.add(key);
-        out.push(r);
+        const exerciseId = plain.planExerciseDetails?.exerciseId ?? null;
+        out.push({
+          id: plain.id,
+          planExerciseId: plain.planExerciseId,
+          exerciseId,
+          performedAt: plain.performedAt,
+          performedWeight: plain.performedWeight,
+          performedReps: plain.performedReps,
+          materialUsed: plain.materialUsed || null,
+        });
       }
     }
 
