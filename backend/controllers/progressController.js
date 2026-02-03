@@ -18,17 +18,64 @@ const logExercisePerformance = async (req, res) => {
     materialUsed,
   } = req.body;
 
-  if (!workoutPlanId || !planExerciseId || !performedAt) {
-    return res.status(400).json({ message: 'Campos obrigatórios em falta: trainingId, workoutPlanId, planExerciseId, performedAt.' });
+  // Validação mais rigorosa dos campos obrigatórios
+  const missingFields = [];
+  if (!workoutPlanId) missingFields.push('workoutPlanId');
+  if (!planExerciseId) missingFields.push('planExerciseId');
+  if (!performedAt) missingFields.push('performedAt');
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({ 
+      message: `Campos obrigatórios em falta: ${missingFields.join(', ')}.`,
+      missingFields 
+    });
+  }
+
+  // Validar se os IDs são números válidos
+  const parsedWorkoutPlanId = parseInt(workoutPlanId);
+  const parsedPlanExerciseId = parseInt(planExerciseId);
+  
+  if (isNaN(parsedWorkoutPlanId) || parsedWorkoutPlanId <= 0) {
+    return res.status(400).json({ message: 'workoutPlanId deve ser um número válido maior que zero.' });
+  }
+  
+  if (isNaN(parsedPlanExerciseId) || parsedPlanExerciseId <= 0) {
+    return res.status(400).json({ message: 'planExerciseId deve ser um número válido maior que zero.' });
+  }
+
+  // Validar se performedAt é uma data válida
+  const performedAtDate = new Date(performedAt);
+  if (isNaN(performedAtDate.getTime())) {
+    return res.status(400).json({ message: 'performedAt deve ser uma data válida.' });
   }
 
   try {
+    // Verificar se o workoutPlanId existe
+    const workoutPlan = await db.WorkoutPlan.findByPk(parsedWorkoutPlanId);
+    if (!workoutPlan) {
+      return res.status(404).json({ message: `Plano de treino com ID ${parsedWorkoutPlanId} não encontrado.` });
+    }
+
+    // Verificar se o planExerciseId existe e pertence ao workoutPlan
+    const planExercise = await db.WorkoutPlanExercise.findOne({
+      where: { 
+        id: parsedPlanExerciseId,
+        workoutPlanId: parsedWorkoutPlanId
+      }
+    });
+    
+    if (!planExercise) {
+      return res.status(404).json({ 
+        message: `Exercício do plano com ID ${parsedPlanExerciseId} não encontrado ou não pertence ao plano de treino ${parsedWorkoutPlanId}.` 
+      });
+    }
+
     const newPerformance = await db.ClientExercisePerformance.create({
       userId, 
       trainingId: trainingId ? parseInt(trainingId) : null ,
-      workoutPlanId: parseInt(workoutPlanId),
-      planExerciseId: parseInt(planExerciseId),
-      performedAt,
+      workoutPlanId: parsedWorkoutPlanId,
+      planExerciseId: parsedPlanExerciseId,
+      performedAt: performedAtDate,
       setNumber: setNumber ? parseInt(setNumber) : null,
       performedReps: performedReps ? parseInt(performedReps) : null,
       performedWeight: performedWeight ? parseFloat(performedWeight) : null,
@@ -41,9 +88,20 @@ const logExercisePerformance = async (req, res) => {
   } catch (error) {
     console.error('Erro ao registar desempenho do exercício:', error);
     if (error.name === 'SequelizeValidationError') {
-        return res.status(400).json({ message: 'Erro de validação', errors: error.errors.map(e => e.message) });
+        return res.status(400).json({ 
+          message: 'Erro de validação', 
+          errors: error.errors.map(e => e.message) 
+        });
     }
-    res.status(500).json({ message: 'Erro interno do servidor ao registar desempenho.', errorDetails: error.message });
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({ 
+          message: 'Erro de integridade referencial. Verifique se o workoutPlanId e planExerciseId são válidos.' 
+        });
+    }
+    res.status(500).json({ 
+      message: 'Erro interno do servidor ao registar desempenho.', 
+      errorDetails: error.message 
+    });
   }
 };
 

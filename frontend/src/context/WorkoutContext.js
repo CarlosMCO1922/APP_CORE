@@ -527,11 +527,36 @@ export const WorkoutProvider = ({ children }) => {
 
         // Criar mapa de planExerciseId -> exerciseId
         const planToExerciseIdMap = {};
+        const missingExerciseDetails = [];
         (activeWorkout.planExercises || []).forEach(pe => {
             const planId = pe.id ?? pe.planExerciseId;
             const exId = pe.exerciseDetails?.id;
-            if (planId && exId) planToExerciseIdMap[planId] = exId;
+            if (planId && exId) {
+                planToExerciseIdMap[planId] = exId;
+            } else if (planId) {
+                missingExerciseDetails.push(planId);
+            }
         });
+
+        // Se houver planExercises sem exerciseDetails, tentar carregar do backend
+        if (missingExerciseDetails.length > 0 && authState.token) {
+            logger.warn('Alguns planExercises não têm exerciseDetails, tentando carregar...', missingExerciseDetails);
+            // Nota: Por agora, vamos apenas avisar. Se necessário, podemos implementar carregamento dinâmico aqui.
+        }
+
+        // Validar que todos os sets têm exerciseId mapeado ANTES de tentar gravar
+        const setsWithoutExerciseId = completedSets.filter(set => !planToExerciseIdMap[set.planExerciseId]);
+        if (setsWithoutExerciseId.length > 0) {
+            logger.error('Sets sem exerciseId mapeado:', setsWithoutExerciseId);
+            logger.error('PlanExercises disponíveis:', activeWorkout.planExercises?.map(pe => ({
+                id: pe.id ?? pe.planExerciseId,
+                hasExerciseDetails: !!pe.exerciseDetails,
+                exerciseId: pe.exerciseDetails?.id
+            })));
+            const missingPlanExerciseIds = setsWithoutExerciseId.map(s => s.planExerciseId).join(', ');
+            alert(`Erro: Não foi possível mapear alguns exercícios (IDs: ${missingPlanExerciseIds}). Isto pode acontecer se os dados do treino estiverem corrompidos. Por favor, contacte o suporte ou tente reiniciar o treino.`);
+            throw new Error(`Não foi possível mapear planExerciseId para exerciseId. PlanExerciseIds: ${missingPlanExerciseIds}`);
+        }
 
         // Gravar todos os sets no backend ANTES de navegar
         if (completedSets.length > 0) {
@@ -539,37 +564,77 @@ export const WorkoutProvider = ({ children }) => {
                 const { token } = authState;
                 if (!token) throw new Error('Sem token para gravar sets');
 
+                const failedSets = [];
+                const successfulSets = [];
+
                 // Gravar cada set no backend
                 for (const setData of completedSets) {
-                    const exerciseId = planToExerciseIdMap[setData.planExerciseId];
-                    if (!exerciseId) {
-                        logger.warn('Não foi possível mapear planExerciseId -> exerciseId', { planExerciseId: setData.planExerciseId });
-                        continue;
+                    try {
+                        // Verificar se o set já foi gravado (tem ID)
+                        if (setData.id) {
+                            logger.log(`Set ${setData.planExerciseId}-${setData.setNumber} já foi gravado (ID: ${setData.id}), a saltar...`);
+                            successfulSets.push(setData);
+                            continue;
+                        }
+
+                        const exerciseId = planToExerciseIdMap[setData.planExerciseId];
+                        if (!exerciseId) {
+                            throw new Error(`Não foi possível mapear planExerciseId ${setData.planExerciseId} para exerciseId`);
+                        }
+
+                        const firstSetKey = `${setData.planExerciseId}-1`;
+                        const materialUsed = activeWorkout.setsData[firstSetKey]?.materialUsed ?? setData.materialUsed ?? null;
+
+                        const fullSetData = {
+                            trainingId: activeWorkout.trainingId || null,
+                            workoutPlanId: activeWorkout.id,
+                            planExerciseId: setData.planExerciseId,
+                            exerciseId,
+                            setNumber: setData.setNumber,
+                            weight: Number(setData.performedWeight),
+                            reps: Number(setData.performedReps),
+                            weightKg: Number(setData.performedWeight),
+                            performedWeight: Number(setData.performedWeight),
+                            performedReps: Number(setData.performedReps),
+                            performedAt: setData.performedAt || new Date().toISOString(),
+                            materialUsed: materialUsed && String(materialUsed).trim() ? String(materialUsed).trim() : undefined,
+                        };
+
+                        await logSet(fullSetData);
+                        successfulSets.push(setData);
+                        logger.log(`Set ${setData.planExerciseId}-${setData.setNumber} gravado com sucesso`);
+                    } catch (setError) {
+                        logger.error(`Erro ao gravar set ${setData.planExerciseId}-${setData.setNumber}:`, setError);
+                        failedSets.push({ setData, error: setError });
                     }
+                }
 
-                    const firstSetKey = `${setData.planExerciseId}-1`;
-                    const materialUsed = activeWorkout.setsData[firstSetKey]?.materialUsed ?? setData.materialUsed ?? null;
-
-                    const fullSetData = {
-                        trainingId: activeWorkout.trainingId || null,
-                        workoutPlanId: activeWorkout.id,
-                        planExerciseId: setData.planExerciseId,
-                        exerciseId,
-                        setNumber: setData.setNumber,
-                        weight: Number(setData.performedWeight),
-                        reps: Number(setData.performedReps),
-                        weightKg: Number(setData.performedWeight),
-                        performedWeight: Number(setData.performedWeight),
-                        performedReps: Number(setData.performedReps),
-                        performedAt: setData.performedAt || new Date().toISOString(),
-                        materialUsed: materialUsed && String(materialUsed).trim() ? String(materialUsed).trim() : undefined,
-                    };
-
-                    await logSet(fullSetData);
+                // Se houver sets que falharam, mostrar erro mas permitir continuar se pelo menos alguns foram gravados
+                if (failedSets.length > 0) {
+                    const errorMessage = failedSets.length === completedSets.length
+                        ? 'Falha ao gravar todos os dados do treino. Verifique a ligação e tente novamente.'
+                        : `Falha ao gravar ${failedSets.length} de ${completedSets.length} séries. Alguns dados podem não ter sido guardados.`;
+                    
+                    logger.error('Alguns sets falharam ao gravar:', failedSets);
+                    
+                    // Se nenhum set foi gravado, impedir navegação
+                    if (successfulSets.length === 0) {
+                        alert(errorMessage);
+                        throw new Error('Nenhum set foi gravado com sucesso');
+                    } else {
+                        // Se pelo menos alguns foram gravados, avisar mas permitir continuar
+                        const shouldContinue = window.confirm(`${errorMessage}\n\nDeseja continuar mesmo assim?`);
+                        if (!shouldContinue) {
+                            throw new Error('Utilizador cancelou após erro ao gravar sets');
+                        }
+                    }
                 }
             } catch (error) {
                 logger.error('Erro ao gravar sets no backend:', error);
-                alert('Falha ao gravar alguns dados do treino. Verifique a ligação e tente novamente.');
+                // Só mostrar alert se não foi já mostrado
+                if (!error.message.includes('Utilizador cancelou')) {
+                    alert('Falha ao gravar alguns dados do treino. Verifique a ligação e tente novamente.');
+                }
                 throw error; // Impede navegação se houver erro
             }
         }
