@@ -130,50 +130,61 @@ export const WorkoutProvider = ({ children }) => {
                 logger.log("Treino carregado com exercícios ordenados:", orderedWorkout);
                 
                 // Recarregar placeholders quando treino é restaurado
+                // NOTA: Se falhar, não bloqueia - placeholders são opcionais
                 if (authState.token && orderedWorkout.planExercises) {
                     const loadPlaceholders = async () => {
                         const currentTrainingId = orderedWorkout.trainingId || null;
                         const placeholdersMap = {};
                         
-                        await Promise.all(
-                            orderedWorkout.planExercises.map(async (planExercise) => {
-                                const planExerciseId = planExercise.id || planExercise.planExerciseId;
-                                if (!planExerciseId) return;
+                        // Usar Promise.allSettled para não bloquear se algum falhar
+                        const placeholderPromises = orderedWorkout.planExercises.map(async (planExercise) => {
+                            const planExerciseId = planExercise.id || planExercise.planExerciseId;
+                            if (!planExerciseId) return { planExerciseId: null, placeholders: null };
+                            
+                            try {
+                                const historyData = await getMyPerformanceHistoryForExerciseService(
+                                    planExerciseId, 
+                                    authState.token, 
+                                    true, 
+                                    currentTrainingId
+                                );
                                 
-                                try {
-                                    const historyData = await getMyPerformanceHistoryForExerciseService(
-                                        planExerciseId, 
-                                        authState.token, 
-                                        true, 
-                                        currentTrainingId
-                                    );
+                                if (historyData && historyData.length > 0) {
+                                    // Ordenar por setNumber para garantir ordem correta
+                                    const sortedHistory = [...historyData].sort((a, b) => {
+                                        const setNumA = a.setNumber || 999;
+                                        const setNumB = b.setNumber || 999;
+                                        return setNumA - setNumB;
+                                    });
                                     
-                                    if (historyData && historyData.length > 0) {
-                                        // Ordenar por setNumber para garantir ordem correta
-                                        const sortedHistory = [...historyData].sort((a, b) => {
-                                            const setNumA = a.setNumber || 999;
-                                            const setNumB = b.setNumber || 999;
-                                            return setNumA - setNumB;
-                                        });
-                                        
-                                        // Mapear usando setNumber como índice (setNumber 1 → índice 0)
-                                        const placeholdersArray = [];
-                                        sortedHistory.slice(0, 3).forEach(set => {
-                                            const setNumber = set.setNumber || 1;
-                                            const arrayIndex = setNumber - 1;
-                                            placeholdersArray[arrayIndex] = {
-                                                weight: set.performedWeight || null,
-                                                reps: set.performedReps || null,
-                                                setNumber: setNumber
-                                            };
-                                        });
-                                        placeholdersMap[planExerciseId] = placeholdersArray;
-                                    }
-                                } catch (err) {
-                                    logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId}:`, err);
+                                    // Mapear usando setNumber como índice (setNumber 1 → índice 0)
+                                    const placeholdersArray = [];
+                                    sortedHistory.slice(0, 3).forEach(set => {
+                                        const setNumber = set.setNumber || 1;
+                                        const arrayIndex = setNumber - 1;
+                                        placeholdersArray[arrayIndex] = {
+                                            weight: set.performedWeight || null,
+                                            reps: set.performedReps || null,
+                                            setNumber: setNumber
+                                        };
+                                    });
+                                    return { planExerciseId, placeholders: placeholdersArray };
                                 }
-                            })
-                        );
+                                return { planExerciseId, placeholders: [] };
+                            } catch (err) {
+                                // Erro ao buscar histórico - não crítico, apenas logar
+                                logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId} (não crítico):`, err.message || err);
+                                return { planExerciseId, placeholders: [] };
+                            }
+                        });
+                        
+                        // Aguardar todos, mesmo que alguns falhem
+                        const results = await Promise.allSettled(placeholderPromises);
+                        results.forEach((result) => {
+                            if (result.status === 'fulfilled' && result.value && result.value.planExerciseId) {
+                                placeholdersMap[result.value.planExerciseId] = result.value.placeholders || [];
+                            }
+                        });
                         
                         setExercisePlaceholders(placeholdersMap);
                     };
@@ -308,50 +319,59 @@ export const WorkoutProvider = ({ children }) => {
 
             const placeholdersMap = {};
             
-            await Promise.all(
-                exercisesToLoad.map(async (planExercise) => {
-                    const planExerciseId = planExercise.id || planExercise.planExerciseId;
-                    if (!planExerciseId) return;
+            // Usar Promise.allSettled para não bloquear se algum falhar
+            const placeholderPromises = exercisesToLoad.map(async (planExercise) => {
+                const planExerciseId = planExercise.id || planExercise.planExerciseId;
+                if (!planExerciseId) return { planExerciseId: null, placeholders: null };
+                
+                try {
+                    const historyData = await getMyPerformanceHistoryForExerciseService(
+                        planExerciseId, 
+                        authState.token, 
+                        true, 
+                        currentTrainingId
+                    );
                     
-                    try {
-                        const historyData = await getMyPerformanceHistoryForExerciseService(
-                            planExerciseId, 
-                            authState.token, 
-                            true, 
-                            currentTrainingId
-                        );
+                    if (historyData && historyData.length > 0) {
+                        // Ordenar por setNumber para garantir ordem correta (o backend já ordena, mas garantir)
+                        const sortedHistory = [...historyData].sort((a, b) => {
+                            const setNumA = a.setNumber || 999; // Séries sem setNumber vão para o fim
+                            const setNumB = b.setNumber || 999;
+                            return setNumA - setNumB;
+                        });
                         
-                        if (historyData && historyData.length > 0) {
-                            // Ordenar por setNumber para garantir ordem correta (o backend já ordena, mas garantir)
-                            const sortedHistory = [...historyData].sort((a, b) => {
-                                const setNumA = a.setNumber || 999; // Séries sem setNumber vão para o fim
-                                const setNumB = b.setNumber || 999;
-                                return setNumA - setNumB;
-                            });
-                            
-                            // Mapear usando setNumber como índice (setNumber 1 → índice 0, setNumber 2 → índice 1, etc.)
-                            // Criar array com até 3 posições, usando setNumber - 1 como índice
-                            const placeholdersArray = [];
-                            sortedHistory.slice(0, 3).forEach(set => {
-                                const setNumber = set.setNumber || 1;
-                                const arrayIndex = setNumber - 1; // setNumber 1 → índice 0
-                                placeholdersArray[arrayIndex] = {
-                                    weight: set.performedWeight || null,
-                                    reps: set.performedReps || null,
-                                    setNumber: setNumber
-                                };
-                            });
-                            placeholdersMap[planExerciseId] = placeholdersArray;
-                            logger.log(`Placeholders recarregados para planExerciseId ${planExerciseId}:`, placeholdersArray);
-                        } else {
-                            // Se não há histórico, manter placeholders vazios
-                            placeholdersMap[planExerciseId] = [];
-                        }
-                    } catch (err) {
-                        logger.warn(`Não foi possível recarregar histórico para exercício ${planExerciseId}:`, err);
+                        // Mapear usando setNumber como índice (setNumber 1 → índice 0, setNumber 2 → índice 1, etc.)
+                        // Criar array com até 3 posições, usando setNumber - 1 como índice
+                        const placeholdersArray = [];
+                        sortedHistory.slice(0, 3).forEach(set => {
+                            const setNumber = set.setNumber || 1;
+                            const arrayIndex = setNumber - 1; // setNumber 1 → índice 0
+                            placeholdersArray[arrayIndex] = {
+                                weight: set.performedWeight || null,
+                                reps: set.performedReps || null,
+                                setNumber: setNumber
+                            };
+                        });
+                        logger.log(`Placeholders recarregados para planExerciseId ${planExerciseId}:`, placeholdersArray);
+                        return { planExerciseId, placeholders: placeholdersArray };
+                    } else {
+                        // Se não há histórico, manter placeholders vazios
+                        return { planExerciseId, placeholders: [] };
                     }
-                })
-            );
+                } catch (err) {
+                    // Erro ao buscar histórico - não crítico, apenas logar
+                    logger.warn(`Não foi possível recarregar histórico para exercício ${planExerciseId} (não crítico):`, err.message || err);
+                    return { planExerciseId, placeholders: [] };
+                }
+            });
+            
+            // Aguardar todos, mesmo que alguns falhem
+            const results = await Promise.allSettled(placeholderPromises);
+            results.forEach((result) => {
+                if (result.status === 'fulfilled' && result.value && result.value.planExerciseId) {
+                    placeholdersMap[result.value.planExerciseId] = result.value.placeholders || [];
+                }
+            });
             
             setExercisePlaceholders(prev => ({ ...prev, ...placeholdersMap }));
         } catch (error) {
@@ -387,23 +407,24 @@ export const WorkoutProvider = ({ children }) => {
             const orderedPlanData = ensurePlanExercisesOrdered(planData);
             
             // Buscar histórico completo (últimas 3 séries) de cada exercício para placeholders
+            // NOTA: Se falhar, não bloqueia o início do treino - placeholders são opcionais
             const placeholdersMap = {};
             if (orderedPlanData.planExercises && authState.token) {
                 // Obter trainingId atual se existir (para excluir do histórico)
                 const currentTrainingId = orderedPlanData.trainingId || null;
                 
-                await Promise.all(
-                    orderedPlanData.planExercises.map(async (planExercise) => {
-                        // Tentar ambos os campos para garantir compatibilidade
-                        const planExerciseId = planExercise.id || planExercise.planExerciseId;
-                        if (!planExerciseId) {
-                            logger.warn('planExercise sem ID válido:', planExercise);
-                            return;
-                        }
-                        
-                        try {
-                            const historyData = await getMyPerformanceHistoryForExerciseService(planExerciseId, authState.token, true, currentTrainingId);
-                            // Mapear as séries do histórico para placeholders (máximo 3)
+                // Usar Promise.allSettled para não bloquear se algum falhar
+                const placeholderPromises = orderedPlanData.planExercises.map(async (planExercise) => {
+                    // Tentar ambos os campos para garantir compatibilidade
+                    const planExerciseId = planExercise.id || planExercise.planExerciseId;
+                    if (!planExerciseId) {
+                        logger.warn('planExercise sem ID válido:', planExercise);
+                        return { planExerciseId: null, placeholders: null };
+                    }
+                    
+                    try {
+                        const historyData = await getMyPerformanceHistoryForExerciseService(planExerciseId, authState.token, true, currentTrainingId);
+                        // Mapear as séries do histórico para placeholders (máximo 3)
                         if (historyData && historyData.length > 0) {
                             // Ordenar por setNumber para garantir ordem correta
                             const sortedHistory = [...historyData].sort((a, b) => {
@@ -423,16 +444,26 @@ export const WorkoutProvider = ({ children }) => {
                                     setNumber: setNumber
                                 };
                             });
-                            placeholdersMap[planExerciseId] = placeholdersArray;
-                                logger.log(`Placeholders carregados para planExerciseId ${planExerciseId}:`, placeholdersArray);
-                            } else {
-                                logger.log(`Nenhum histórico encontrado para planExerciseId ${planExerciseId}`);
-                            }
-                        } catch (err) {
-                            logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId}:`, err);
+                            logger.log(`Placeholders carregados para planExerciseId ${planExerciseId}:`, placeholdersArray);
+                            return { planExerciseId, placeholders: placeholdersArray };
+                        } else {
+                            logger.log(`Nenhum histórico encontrado para planExerciseId ${planExerciseId}`);
+                            return { planExerciseId, placeholders: [] };
                         }
-                    })
-                );
+                    } catch (err) {
+                        // Erro ao buscar histórico - não crítico, apenas logar
+                        logger.warn(`Não foi possível buscar histórico para exercício ${planExerciseId} (não crítico):`, err.message || err);
+                        return { planExerciseId, placeholders: [] }; // Retornar array vazio em caso de erro
+                    }
+                });
+                
+                // Aguardar todos, mesmo que alguns falhem
+                const results = await Promise.allSettled(placeholderPromises);
+                results.forEach((result) => {
+                    if (result.status === 'fulfilled' && result.value && result.value.planExerciseId) {
+                        placeholdersMap[result.value.planExerciseId] = result.value.placeholders || [];
+                    }
+                });
             }
             setExercisePlaceholders(placeholdersMap);
             

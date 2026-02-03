@@ -18,61 +18,36 @@ const logExercisePerformance = async (req, res) => {
     materialUsed,
   } = req.body;
 
-  // Validação mais rigorosa dos campos obrigatórios
-  const missingFields = [];
-  if (!workoutPlanId) missingFields.push('workoutPlanId');
-  if (!planExerciseId) missingFields.push('planExerciseId');
-  if (!performedAt) missingFields.push('performedAt');
-
-  if (missingFields.length > 0) {
+  // Validação básica dos campos obrigatórios
+  if (!workoutPlanId || !planExerciseId || !performedAt) {
     return res.status(400).json({ 
-      message: `Campos obrigatórios em falta: ${missingFields.join(', ')}.`,
-      missingFields 
+      message: 'Campos obrigatórios em falta: workoutPlanId, planExerciseId, performedAt.' 
     });
-  }
-
-  // Validar se os IDs são números válidos
-  const parsedWorkoutPlanId = parseInt(workoutPlanId);
-  const parsedPlanExerciseId = parseInt(planExerciseId);
-  
-  if (isNaN(parsedWorkoutPlanId) || parsedWorkoutPlanId <= 0) {
-    return res.status(400).json({ message: 'workoutPlanId deve ser um número válido maior que zero.' });
-  }
-  
-  if (isNaN(parsedPlanExerciseId) || parsedPlanExerciseId <= 0) {
-    return res.status(400).json({ message: 'planExerciseId deve ser um número válido maior que zero.' });
-  }
-
-  // Validar se performedAt é uma data válida
-  const performedAtDate = new Date(performedAt);
-  if (isNaN(performedAtDate.getTime())) {
-    return res.status(400).json({ message: 'performedAt deve ser uma data válida.' });
   }
 
   try {
-    // Verificar se o workoutPlanId existe
-    const workoutPlan = await db.WorkoutPlan.findByPk(parsedWorkoutPlanId);
-    if (!workoutPlan) {
-      return res.status(404).json({ message: `Plano de treino com ID ${parsedWorkoutPlanId} não encontrado.` });
-    }
-
-    // Verificar se o planExerciseId existe e pertence ao workoutPlan
-    const planExercise = await db.WorkoutPlanExercise.findOne({
-      where: { 
-        id: parsedPlanExerciseId,
-        workoutPlanId: parsedWorkoutPlanId
-      }
-    });
+    // Converter e validar tipos básicos (sem queries à BD)
+    const parsedWorkoutPlanId = parseInt(workoutPlanId);
+    const parsedPlanExerciseId = parseInt(planExerciseId);
     
-    if (!planExercise) {
-      return res.status(404).json({ 
-        message: `Exercício do plano com ID ${parsedPlanExerciseId} não encontrado ou não pertence ao plano de treino ${parsedWorkoutPlanId}.` 
-      });
+    if (isNaN(parsedWorkoutPlanId) || parsedWorkoutPlanId <= 0) {
+      return res.status(400).json({ message: 'workoutPlanId deve ser um número válido maior que zero.' });
+    }
+    
+    if (isNaN(parsedPlanExerciseId) || parsedPlanExerciseId <= 0) {
+      return res.status(400).json({ message: 'planExerciseId deve ser um número válido maior que zero.' });
     }
 
+    // Validar se performedAt é uma data válida
+    const performedAtDate = new Date(performedAt);
+    if (isNaN(performedAtDate.getTime())) {
+      return res.status(400).json({ message: 'performedAt deve ser uma data válida.' });
+    }
+
+    // Criar o registo - o Sequelize vai validar as foreign keys automaticamente
     const newPerformance = await db.ClientExercisePerformance.create({
       userId, 
-      trainingId: trainingId ? parseInt(trainingId) : null ,
+      trainingId: trainingId ? parseInt(trainingId) : null,
       workoutPlanId: parsedWorkoutPlanId,
       planExerciseId: parsedPlanExerciseId,
       performedAt: performedAtDate,
@@ -87,20 +62,33 @@ const logExercisePerformance = async (req, res) => {
     res.status(201).json({ message: 'Desempenho registado com sucesso!', performance: newPerformance });
   } catch (error) {
     console.error('Erro ao registar desempenho do exercício:', error);
+    
+    // Tratar erros específicos do Sequelize
     if (error.name === 'SequelizeValidationError') {
-        return res.status(400).json({ 
-          message: 'Erro de validação', 
-          errors: error.errors.map(e => e.message) 
-        });
+      return res.status(400).json({ 
+        message: 'Erro de validação', 
+        errors: error.errors.map(e => e.message) 
+      });
     }
+    
     if (error.name === 'SequelizeForeignKeyConstraintError') {
-        return res.status(400).json({ 
-          message: 'Erro de integridade referencial. Verifique se o workoutPlanId e planExerciseId são válidos.' 
-        });
+      return res.status(400).json({ 
+        message: 'Erro de integridade referencial. Verifique se o workoutPlanId e planExerciseId são válidos.',
+        errorDetails: error.message
+      });
     }
+    
+    if (error.name === 'SequelizeDatabaseError') {
+      return res.status(400).json({ 
+        message: 'Erro na base de dados. Verifique os dados fornecidos.',
+        errorDetails: error.message
+      });
+    }
+    
+    // Erro genérico
     res.status(500).json({ 
       message: 'Erro interno do servidor ao registar desempenho.', 
-      errorDetails: error.message 
+      errorDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -235,24 +223,34 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
   // Se excludeTrainingId for fornecido, excluir registos desse treino (treino atual em andamento)
   const excludeTrainingId = req.query.excludeTrainingId ? parseInt(req.query.excludeTrainingId) : null;
 
+  // Validar planExerciseId
+  const parsedPlanExerciseId = parseInt(planExerciseId);
+  if (isNaN(parsedPlanExerciseId) || parsedPlanExerciseId <= 0) {
+    return res.status(400).json({ message: 'planExerciseId deve ser um número válido maior que zero.' });
+  }
+
   try {
     let performances;
     
     if (forPlaceholders) {
       // Buscar as últimas 3 séries do último treino concluído, ordenadas por setNumber
       // Primeiro, encontrar o último treino concluído deste exercício (excluindo o treino atual se fornecido)
-      const whereClause = {
+      let whereClause = {
         userId,
-        planExerciseId: parseInt(planExerciseId),
+        planExerciseId: parsedPlanExerciseId,
         trainingId: { [Op.ne]: null } // Apenas treinos concluídos (com trainingId)
       };
       
       if (excludeTrainingId) {
-        whereClause.trainingId = { 
-          [Op.and]: [
-            { [Op.ne]: null }, 
-            { [Op.ne]: excludeTrainingId }
-          ] 
+        whereClause = {
+          userId,
+          planExerciseId: parsedPlanExerciseId,
+          trainingId: { 
+            [Op.and]: [
+              { [Op.ne]: null }, 
+              { [Op.ne]: excludeTrainingId }
+            ] 
+          }
         };
       }
       
@@ -260,7 +258,8 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
         where: whereClause,
         order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],
         attributes: ['trainingId'],
-        limit: 1
+        limit: 1,
+        raw: false
       });
 
       if (lastTraining && lastTraining.trainingId) {
@@ -268,33 +267,47 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
         performances = await db.ClientExercisePerformance.findAll({
           where: {
             userId,
-            planExerciseId: parseInt(planExerciseId),
+            planExerciseId: parsedPlanExerciseId,
             trainingId: lastTraining.trainingId
           },
           include: [ 
-            { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
+            { 
+              model: db.Training, 
+              as: 'training', 
+              attributes: ['id', 'name', 'date'],
+              required: false
+            }
           ],
           order: [['setNumber', 'ASC']], // Ordenar por número da série
           limit: 3, // Máximo 3 séries
         });
       } else {
         // Se não houver treino concluído, buscar as últimas 3 séries gerais (excluindo treino atual se fornecido)
-        const generalWhere = {
+        let generalWhere = {
           userId,
-          planExerciseId: parseInt(planExerciseId)
+          planExerciseId: parsedPlanExerciseId
         };
         
         if (excludeTrainingId) {
-          generalWhere[Op.or] = [
-            { trainingId: null },
-            { trainingId: { [Op.ne]: excludeTrainingId } }
-          ];
+          generalWhere = {
+            userId,
+            planExerciseId: parsedPlanExerciseId,
+            [Op.or]: [
+              { trainingId: null },
+              { trainingId: { [Op.ne]: excludeTrainingId } }
+            ]
+          };
         }
         
         performances = await db.ClientExercisePerformance.findAll({
           where: generalWhere,
           include: [ 
-            { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
+            { 
+              model: db.Training, 
+              as: 'training', 
+              attributes: ['id', 'name', 'date'],
+              required: false
+            }
           ],
           order: [['performedAt', 'DESC'], ['setNumber', 'ASC'], ['createdAt', 'DESC']],    
           limit: 3,
@@ -305,10 +318,15 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
       performances = await db.ClientExercisePerformance.findAll({
         where: {
           userId,
-          planExerciseId: parseInt(planExerciseId)
+          planExerciseId: parsedPlanExerciseId
         },
         include: [ 
-          { model: db.Training, as: 'training', attributes: ['id', 'name', 'date'] }
+          { 
+            model: db.Training, 
+            as: 'training', 
+            attributes: ['id', 'name', 'date'],
+            required: false
+          }
         ],
         order: [['performedAt', 'DESC'], ['createdAt', 'DESC']],    
         limit,
@@ -318,7 +336,20 @@ const getMyPerformanceHistoryForExercise = async (req, res) => {
     res.status(200).json(performances);
   } catch (error) {
     console.error('Erro ao buscar histórico de desempenho do exercício:', error);
-    res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
+    console.error('Stack trace:', error.stack);
+    
+    // Tratar erros específicos
+    if (error.name === 'SequelizeDatabaseError') {
+      return res.status(500).json({ 
+        message: 'Erro na base de dados ao buscar histórico.', 
+        errorDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Erro interno do servidor.', 
+      errorDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
