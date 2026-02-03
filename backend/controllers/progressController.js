@@ -44,7 +44,7 @@ const logExercisePerformance = async (req, res) => {
       return res.status(400).json({ message: 'performedAt deve ser uma data válida.' });
     }
 
-    // Preparar dados para inserção
+    // Preparar dados para inserção (SEM materialUsed por agora - coluna pode não existir)
     const performanceData = {
       userId, 
       trainingId: trainingId ? parseInt(trainingId) : null,
@@ -58,14 +58,14 @@ const logExercisePerformance = async (req, res) => {
       notes,
     };
 
-    // Adicionar materialUsed apenas se fornecido (a coluna pode não existir em algumas instalações antigas)
-    // Se a coluna não existir, o Sequelize vai ignorar este campo automaticamente
-    if (materialUsed != null && String(materialUsed).trim() !== '') {
-      performanceData.materialUsed = String(materialUsed).trim();
-    }
+    // NÃO incluir materialUsed - a coluna pode não existir na BD
+    // Quando a migração for executada, podemos adicionar de volta
+    // Por agora, o sistema funciona sem este campo
 
     // Criar o registo - o Sequelize vai validar as foreign keys automaticamente
-    const newPerformance = await db.ClientExercisePerformance.create(performanceData);
+    const newPerformance = await db.ClientExercisePerformance.create(performanceData, {
+      fields: ['userId', 'trainingId', 'workoutPlanId', 'planExerciseId', 'performedAt', 'setNumber', 'performedReps', 'performedWeight', 'performedDurationSeconds', 'notes']
+    });
 
     res.status(201).json({ message: 'Desempenho registado com sucesso!', performance: newPerformance });
   } catch (error) {
@@ -87,18 +87,6 @@ const logExercisePerformance = async (req, res) => {
     }
     
     if (error.name === 'SequelizeDatabaseError') {
-      // Verificar se é erro de coluna não existente (materialUsed)
-      if (error.message && error.message.includes('materialUsed') && error.message.includes('does not exist')) {
-        console.error('ERRO CRÍTICO: Coluna materialUsed não existe na base de dados.');
-        console.error('Execute a migração: node backend/database/addMaterialUsedColumn.js');
-        console.error('Ou consulte: backend/database/README_MIGRATION.md');
-        
-        return res.status(500).json({ 
-          message: 'Erro na base de dados: A coluna materialUsed não existe. Execute a migração: node backend/database/addMaterialUsedColumn.js',
-          errorDetails: process.env.NODE_ENV === 'development' ? error.message : 'Coluna materialUsed não existe na base de dados'
-        });
-      }
-      
       return res.status(400).json({ 
         message: 'Erro na base de dados. Verifique os dados fornecidos.',
         errorDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -717,7 +705,7 @@ const getMyLastPerformances = async (req, res) => {
         'performedAt',
         'performedWeight',
         'performedReps',
-        'materialUsed',
+        // 'materialUsed', // Temporariamente removido - coluna não existe na BD
       ],
       include: [{
         model: db.WorkoutPlanExercise,
@@ -745,7 +733,7 @@ const getMyLastPerformances = async (req, res) => {
           performedAt: plain.performedAt,
           performedWeight: plain.performedWeight,
           performedReps: plain.performedReps,
-          materialUsed: plain.materialUsed || null,
+          // materialUsed: plain.materialUsed || null, // Temporariamente removido
         });
       }
     }

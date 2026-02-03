@@ -66,11 +66,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    materialUsed: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      comment: 'Material/equipamento usado pelo cliente (ex.: Haltere 12kg). Mostrado na próxima vez como "Da última vez usaste: ..."',
-    },
+    // TEMPORARIAMENTE COMENTADO - Coluna não existe na BD ainda
+    // Descomentar após executar migração: node backend/database/addMaterialUsedColumn.js
+    // materialUsed: {
+    //   type: DataTypes.TEXT,
+    //   allowNull: true,
+    //   comment: 'Material/equipamento usado pelo cliente (ex.: Haltere 12kg). Mostrado na próxima vez como "Da última vez usaste: ..."',
+    // },
   }, {
     tableName: 'client_exercise_performances',
     timestamps: true,
