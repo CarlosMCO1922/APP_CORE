@@ -44,8 +44,8 @@ const logExercisePerformance = async (req, res) => {
       return res.status(400).json({ message: 'performedAt deve ser uma data válida.' });
     }
 
-    // Criar o registo - o Sequelize vai validar as foreign keys automaticamente
-    const newPerformance = await db.ClientExercisePerformance.create({
+    // Preparar dados para inserção
+    const performanceData = {
       userId, 
       trainingId: trainingId ? parseInt(trainingId) : null,
       workoutPlanId: parsedWorkoutPlanId,
@@ -56,8 +56,16 @@ const logExercisePerformance = async (req, res) => {
       performedWeight: performedWeight ? parseFloat(performedWeight) : null,
       performedDurationSeconds: performedDurationSeconds ? parseInt(performedDurationSeconds) : null,
       notes,
-      materialUsed: materialUsed != null && String(materialUsed).trim() !== '' ? String(materialUsed).trim() : null,
-    });
+    };
+
+    // Adicionar materialUsed apenas se fornecido (a coluna pode não existir em algumas instalações antigas)
+    // Se a coluna não existir, o Sequelize vai ignorar este campo automaticamente
+    if (materialUsed != null && String(materialUsed).trim() !== '') {
+      performanceData.materialUsed = String(materialUsed).trim();
+    }
+
+    // Criar o registo - o Sequelize vai validar as foreign keys automaticamente
+    const newPerformance = await db.ClientExercisePerformance.create(performanceData);
 
     res.status(201).json({ message: 'Desempenho registado com sucesso!', performance: newPerformance });
   } catch (error) {
@@ -79,9 +87,21 @@ const logExercisePerformance = async (req, res) => {
     }
     
     if (error.name === 'SequelizeDatabaseError') {
+      // Verificar se é erro de coluna não existente (materialUsed)
+      if (error.message && error.message.includes('materialUsed') && error.message.includes('does not exist')) {
+        console.error('ERRO CRÍTICO: Coluna materialUsed não existe na base de dados.');
+        console.error('Execute a migração: node backend/database/addMaterialUsedColumn.js');
+        console.error('Ou consulte: backend/database/README_MIGRATION.md');
+        
+        return res.status(500).json({ 
+          message: 'Erro na base de dados: A coluna materialUsed não existe. Execute a migração: node backend/database/addMaterialUsedColumn.js',
+          errorDetails: process.env.NODE_ENV === 'development' ? error.message : 'Coluna materialUsed não existe na base de dados'
+        });
+      }
+      
       return res.status(400).json({ 
         message: 'Erro na base de dados. Verifique os dados fornecidos.',
-        errorDetails: error.message
+        errorDetails: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
     
