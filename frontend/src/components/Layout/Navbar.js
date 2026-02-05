@@ -339,6 +339,7 @@ function Navbar() {
       <NavItem><NavLinkStyled to="/admin/dashboard" onClick={closeAllMenus}><FaHome /> Início</NavLinkStyled></NavItem>
       <NavItem><NavLinkStyled to="/admin/calendario-geral" onClick={closeAllMenus}><FaCalendarAlt /> Calendário</NavLinkStyled></NavItem>
       <NavItem><NavLinkStyled to="/admin/appointment-requests" onClick={closeAllMenus}><FaRegCalendarCheck /> Pedidos</NavLinkStyled></NavItem>
+      <NavItem><NavLinkStyled to="/admin/guest-signups" onClick={closeAllMenus}><FaDumbbell /> Treino experimental</NavLinkStyled></NavItem>
     </>
   );
   

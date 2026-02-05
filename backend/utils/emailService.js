@@ -226,7 +226,90 @@ async function sendGuestAppointmentTimeChanged({ to, guestName, professionalName
   });
 }
 
-module.exports = { 
+// --- Emails para treino experimental (visitante sem conta) ---
+
+async function sendGuestTrainingRequestReceived({ to, guestName, trainingName, date, time }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#d4af37">Inscrição em treino experimental recebida</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>Recebemos a sua inscrição no treino <strong>${trainingName || 'experimental'}</strong> para <strong>${dateFormatted}</strong>.</p>
+      <p>A inscrição está pendente de confirmação. Será contactado assim que o responsável aprovar ou rejeitar.</p>
+      <p>Obrigado,<br/>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Inscrição em treino experimental recebida - CORE',
+    html,
+  });
+}
+
+async function sendGuestTrainingAccepted({ to, guestName, trainingName, date, time }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#28a745">Inscrição no treino confirmada</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>A sua inscrição no treino <strong>${trainingName || 'experimental'}</strong> foi <strong>aceite</strong>.</p>
+      <p>Data e hora: <strong>${dateFormatted}</strong>.</p>
+      <p>Até breve!<br/>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Inscrição no treino confirmada - CORE',
+    html,
+  });
+}
+
+async function sendGuestTrainingRejected({ to, guestName, trainingName, date, time }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#6c757d">Inscrição no treino não aceite</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>Informamos que a sua inscrição no treino <strong>${trainingName || 'experimental'}</strong> para <strong>${dateFormatted}</strong> não pôde ser aceite.</p>
+      <p>Pode inscrever-se noutro treino. Obrigado.</p>
+      <p>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Inscrição no treino não aceite - CORE',
+    html,
+  });
+}
+
+async function sendGuestTrainingTimeChanged({ to, guestName, trainingName, newDate, newTime }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(newDate, newTime);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#d4af37">Alteração de horário do treino</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>A data ou hora do treino <strong>${trainingName || 'experimental'}</strong> foi alterada.</p>
+      <p>Nova data e hora: <strong>${dateFormatted}</strong>.</p>
+      <p>Se tiver dúvidas, contacte-nos.</p>
+      <p>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Alteração de horário do treino - CORE',
+    html,
+  });
+}
+
+module.exports = {
   sendPasswordResetEmail,
   sendCriticalErrorAlert,
   sendCriticalSecurityAlert,
@@ -234,4 +317,8 @@ module.exports = {
   sendGuestAppointmentAccepted,
   sendGuestAppointmentRejected,
   sendGuestAppointmentTimeChanged,
+  sendGuestTrainingRequestReceived,
+  sendGuestTrainingAccepted,
+  sendGuestTrainingRejected,
+  sendGuestTrainingTimeChanged,
 };

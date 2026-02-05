@@ -366,3 +366,45 @@ export const createSeriesSubscriptionService = async (subscriptionData, token) =
   }
   return response.json();
 };
+
+// --- Inscrições de visitantes em treino experimental (staff aprova) ---
+
+/**
+ * Lista inscrições de visitantes em treinos pendentes de aprovação (instrutor do treino ou admin).
+ * @param {string} token
+ * @returns {Promise<Array>}
+ */
+export const getGuestSignupsPending = async (token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  const response = await fetch(`${API_URL}/trainings/guest-signups/pending`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao carregar inscrições pendentes.');
+  return data;
+};
+
+/**
+ * Aprovar ou rejeitar inscrição de visitante num treino.
+ * @param {number} signupId - ID da TrainingGuestSignup
+ * @param {{ decision: 'accept'|'reject' }} payload
+ * @param {string} token
+ * @returns {Promise<{ message: string, signup: object }>}
+ */
+export const respondToGuestSignup = async (signupId, payload, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!payload?.decision || !['accept', 'reject'].includes(payload.decision)) {
+    throw new Error("Decisão inválida. Use 'accept' ou 'reject'.");
+  }
+  const response = await fetch(`${API_URL}/trainings/guest-signups/${signupId}/respond`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ decision: payload.decision }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao processar.');
+  return data;
+};

@@ -92,6 +92,12 @@ module.exports = (sequelize) => {
       foreignKey: 'trainingSeriesId',
       as: 'series',
     });
+
+    Training.hasMany(models.TrainingGuestSignup, {
+      foreignKey: 'trainingId',
+      as: 'guestSignups',
+      onDelete: 'CASCADE',
+    });
   };
 
   return Training;

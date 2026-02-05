@@ -42,6 +42,7 @@ const AdminManageTrainingsPage = lazy(() => import('./pages/admin/AdminManageTra
 const AdminManageAppointmentsPage = lazy(() => import('./pages/admin/AdminManageAppointmentsPage'));
 const AdminManagePaymentsPage = lazy(() => import('./pages/admin/AdminManagePaymentsPage'));
 const StaffManageRequestsPage = lazy(() => import('./pages/admin/StaffManageRequestsPage'));
+const StaffGuestSignupsPage = lazy(() => import('./pages/admin/StaffGuestSignupsPage'));
 const AdminManageWorkoutPlansPage = lazy(() => import('./pages/admin/AdminManageWorkoutPlansPage'));
 const AdminManageExercisesPage = lazy(() => import('./pages/admin/AdminManageExercisesPage'));
 const ClientTrainingPlanPage = lazy(() => import('./pages/ClientTrainingPlanPage'));
@@ -400,7 +401,8 @@ function App() {
             <Route path="/admin/trainings/:trainingId/manage-plans" element={<AdminManageWorkoutPlansPage />} />
             <Route path="/admin/manage-appointments" element={<AdminManageAppointmentsPage />} />
             <Route path="/admin/manage-payments" element={<AdminManagePaymentsPage />} />
-            <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} /> 
+            <Route path="/admin/appointment-requests" element={<StaffManageRequestsPage />} />
+            <Route path="/admin/guest-signups" element={<StaffGuestSignupsPage />} /> 
             <Route path="/admin/manage-exercises" element={<AdminManageExercisesPage />} />
             <Route path="/admin/users/:userId/details" element={<AdminUserDetailsPage />} /> 
             <Route path='/admin/training-series' element={<AdminTrainingSeriesPage />} /> 

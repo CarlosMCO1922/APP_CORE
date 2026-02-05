@@ -59,3 +59,39 @@ export const submitPublicAppointmentRequest = async (payload) => {
     throw error;
   }
 };
+
+export const getPublicTrainings = async () => {
+  try {
+    const response = await fetch(`${base}/trainings`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao carregar treinos.');
+    return data;
+  } catch (error) {
+    logger.error('Erro em getPublicTrainings:', error);
+    throw error;
+  }
+};
+
+export const submitGuestTrainingSignup = async (trainingId, payload) => {
+  const { guestName, guestEmail, guestPhone } = payload;
+  if (!guestName || !guestEmail || !guestPhone || !trainingId) {
+    throw new Error('Nome, email, telemóvel e treino são obrigatórios.');
+  }
+  try {
+    const response = await fetch(`${base}/trainings/${trainingId}/guest-signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        guestName: guestName.trim(),
+        guestEmail: guestEmail.trim(),
+        guestPhone: guestPhone.trim(),
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao enviar inscrição.');
+    return data;
+  } catch (error) {
+    logger.error('Erro em submitGuestTrainingSignup:', error);
+    throw error;
+  }
+};

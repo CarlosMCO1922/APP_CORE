@@ -49,10 +49,14 @@ module.exports = (sequelize) => {
     // Associação: Um Staff (profissional) pode ter várias Appointments (consultas)
     // Esta é a única definição desta associação com este alias.
     Staff.hasMany(models.Appointment, {
-      foreignKey: 'staffId', 
-      as: 'appointmentsAsProfessional', 
+      foreignKey: 'staffId',
+      as: 'appointmentsAsProfessional',
     });
-    // A contraparte (Appointment.belongsTo(Staff)) está definida em Appointment.js
+
+    Staff.hasMany(models.TrainingGuestSignup, {
+      foreignKey: 'staffApprovedById',
+      as: 'guestSignupsApproved',
+    });
   };
 
   return Staff;

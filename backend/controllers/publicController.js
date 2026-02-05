@@ -8,6 +8,7 @@ const { checkForStaffAppointmentConflict } = require('./appointmentController');
 const { _internalCreateNotification } = require('./notificationController');
 const {
   sendGuestAppointmentRequestReceived,
+  sendGuestTrainingRequestReceived,
 } = require('../utils/emailService');
 
 /** GET /public/staff-for-appointments - Lista profissionais que podem ter consultas (para dropdown público). */
@@ -166,8 +167,147 @@ const postAppointmentRequest = async (req, res) => {
   }
 };
 
+/** GET /public/trainings - Lista treinos futuros para a página de treino experimental (sem auth). */
+const getPublicTrainings = async (req, res) => {
+  try {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const trainings = await db.Training.findAll({
+      where: { date: { [Op.gte]: today } },
+      include: [
+        { model: db.Staff, as: 'instructor', attributes: ['id', 'firstName', 'lastName'] },
+        { model: db.User, as: 'participants', attributes: ['id'], through: { attributes: [] } },
+      ],
+      order: [['date', 'ASC'], ['time', 'ASC']],
+    });
+    const trainingIds = trainings.map((t) => t.id);
+    const guestSignups = trainingIds.length
+      ? await db.TrainingGuestSignup.findAll({
+          where: { status: 'APPROVED', trainingId: trainingIds },
+          attributes: ['trainingId'],
+        })
+      : [];
+    const guestCountByTraining = guestSignups.reduce((acc, g) => {
+      acc[g.trainingId] = (acc[g.trainingId] || 0) + 1;
+      return acc;
+    }, {});
+    const list = trainings.map((t) => {
+      const participantsCount = (t.participants?.length || 0) + (guestCountByTraining[t.id] || 0);
+      return {
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        date: t.date,
+        time: String(t.time).substring(0, 5),
+        durationMinutes: t.durationMinutes,
+        capacity: t.capacity,
+        participantsCount,
+        hasVacancies: participantsCount < t.capacity,
+        instructor: t.instructor ? { id: t.instructor.id, firstName: t.instructor.firstName, lastName: t.instructor.lastName } : null,
+      };
+    });
+    res.status(200).json(list);
+  } catch (error) {
+    console.error('Erro ao listar treinos públicos:', error);
+    res.status(500).json({ message: 'Erro ao listar treinos.', error: error.message });
+  }
+};
+
+/** POST /public/trainings/:trainingId/guest-signup - Inscrição de visitante num treino experimental (sem auth). */
+const postGuestTrainingSignup = async (req, res) => {
+  const { trainingId } = req.params;
+  const { guestName, guestEmail, guestPhone } = req.body;
+
+  if (!guestName || !guestEmail || !guestPhone) {
+    return res.status(400).json({ message: 'Nome, email e telemóvel são obrigatórios.' });
+  }
+  const trimmedName = String(guestName).trim();
+  const trimmedEmail = String(guestEmail).trim().toLowerCase();
+  const trimmedPhone = String(guestPhone).trim();
+  if (!trimmedName || !trimmedEmail || !trimmedPhone) {
+    return res.status(400).json({ message: 'Nome, email e telemóvel não podem estar vazios.' });
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmedEmail)) {
+    return res.status(400).json({ message: 'Email inválido.' });
+  }
+
+  const tid = parseInt(trainingId, 10);
+  if (isNaN(tid)) {
+    return res.status(400).json({ message: 'ID do treino inválido.' });
+  }
+
+  try {
+    const training = await db.Training.findByPk(tid, {
+      include: [{ model: db.Staff, as: 'instructor', attributes: ['id', 'firstName', 'lastName'] }],
+    });
+    if (!training) {
+      return res.status(404).json({ message: 'Treino não encontrado.' });
+    }
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (training.date < today) {
+      return res.status(400).json({ message: 'Não é possível inscrever-se num treino já realizado.' });
+    }
+
+    const existing = await db.TrainingGuestSignup.findOne({
+      where: { trainingId: tid, guestEmail: trimmedEmail },
+    });
+    if (existing) {
+      return res.status(409).json({ message: 'Já existe uma inscrição com este email neste treino.' });
+    }
+
+    const participantsCount = await training.countParticipants();
+    const approvedGuests = await db.TrainingGuestSignup.count({
+      where: { trainingId: tid, status: 'APPROVED' },
+    });
+    if (participantsCount + approvedGuests >= training.capacity) {
+      return res.status(409).json({ message: 'Este treino já está completo.' });
+    }
+
+    const signup = await db.TrainingGuestSignup.create({
+      trainingId: tid,
+      guestName: trimmedName,
+      guestEmail: trimmedEmail,
+      guestPhone: trimmedPhone,
+      status: 'PENDING_APPROVAL',
+    });
+
+    const instructorName = training.instructor ? `${training.instructor.firstName} ${training.instructor.lastName}` : 'o instrutor';
+    _internalCreateNotification({
+      recipientStaffId: training.instructorId,
+      message: `Nova inscrição de visitante (${trimmedName}) no treino "${training.name}" para ${format(new Date(training.date), 'dd/MM/yyyy')} às ${String(training.time).substring(0, 5)}.`,
+      type: 'NEW_TRAINING_ASSIGNED',
+      relatedResourceId: training.id,
+      relatedResourceType: 'training',
+      link: '/admin/manage-trainings',
+    });
+
+    setImmediate(() => {
+      sendGuestTrainingRequestReceived({
+        to: trimmedEmail,
+        guestName: trimmedName,
+        trainingName: training.name,
+        date: training.date,
+        time: String(training.time).substring(0, 5),
+      }).catch((err) => console.error('Erro ao enviar email de inscrição treino:', err));
+    });
+
+    res.status(201).json({
+      message: 'Inscrição enviada com sucesso. Aguarde confirmação por parte do responsável.',
+      signupId: signup.id,
+    });
+  } catch (error) {
+    console.error('Erro ao criar inscrição de visitante no treino:', error);
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ message: 'Erro de validação.', errors: error.errors.map((e) => e.message) });
+    }
+    res.status(500).json({ message: 'Erro ao enviar inscrição.', error: error.message });
+  }
+};
+
 module.exports = {
   getStaffForAppointments,
   getAvailableSlots,
   postAppointmentRequest,
+  getPublicTrainings,
+  postGuestTrainingSignup,
 };

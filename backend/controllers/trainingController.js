@@ -915,6 +915,81 @@ const adminPromoteFromWaitlist = async (req, res) => {
   }
 };
 
+/** GET /trainings/guest-signups/pending - Lista inscrições de visitantes pendentes (instrutor do treino ou admin). */
+const getGuestSignupsPending = async (req, res) => {
+  try {
+    const signups = await db.TrainingGuestSignup.findAll({
+      where: { status: 'PENDING_APPROVAL' },
+      include: [
+        { model: db.Training, as: 'training', attributes: ['id', 'name', 'date', 'time', 'instructorId'], include: [{ model: db.Staff, as: 'instructor', attributes: ['id', 'firstName', 'lastName'] }] },
+      ],
+      order: [[{ model: db.Training, as: 'training' }, 'date', 'ASC'], [{ model: db.Training, as: 'training' }, 'time', 'ASC']],
+    });
+    const filtered = req.staff.role === 'admin'
+      ? signups
+      : signups.filter((s) => s.training && s.training.instructorId === req.staff.id);
+    res.status(200).json(filtered);
+  } catch (error) {
+    console.error('Erro ao listar inscrições de visitantes pendentes:', error);
+    res.status(500).json({ message: 'Erro ao listar inscrições.', error: error.message });
+  }
+};
+
+/** PATCH /trainings/guest-signups/:id/respond - Aprovar ou rejeitar inscrição de visitante (instrutor ou admin). */
+const respondToGuestSignup = async (req, res) => {
+  const { id } = req.params;
+  const { decision } = req.body;
+  if (!decision || !['accept', 'reject'].includes(decision)) {
+    return res.status(400).json({ message: "Decisão inválida. Use 'accept' ou 'reject'." });
+  }
+  try {
+    const signup = await db.TrainingGuestSignup.findByPk(id, {
+      include: [{ model: db.Training, as: 'training', include: [{ model: db.Staff, as: 'instructor' }] }],
+    });
+    if (!signup) return res.status(404).json({ message: 'Inscrição não encontrada.' });
+    if (signup.status !== 'PENDING_APPROVAL') {
+      return res.status(400).json({ message: 'Esta inscrição já foi processada.' });
+    }
+    const training = signup.training;
+    if (!training) return res.status(404).json({ message: 'Treino não encontrado.' });
+    const canRespond = req.staff.role === 'admin' || training.instructorId === req.staff.id;
+    if (!canRespond) {
+      return res.status(403).json({ message: 'Não tem permissão para responder a esta inscrição.' });
+    }
+    signup.status = decision === 'accept' ? 'APPROVED' : 'REJECTED';
+    signup.staffApprovedById = req.staff.id;
+    await signup.save();
+
+    const {
+      sendGuestTrainingAccepted,
+      sendGuestTrainingRejected,
+    } = require('../utils/emailService');
+    const trainingName = training.name || 'treino';
+    const dateStr = training.date;
+    const timeStr = String(training.time).substring(0, 5);
+    setImmediate(() => {
+      const fn = decision === 'accept' ? sendGuestTrainingAccepted : sendGuestTrainingRejected;
+      if (fn) {
+        fn({
+          to: signup.guestEmail,
+          guestName: signup.guestName || 'Visitante',
+          trainingName,
+          date: dateStr,
+          time: timeStr,
+        }).catch((err) => console.error('Erro ao enviar email ao visitante (treino):', err));
+      }
+    });
+
+    res.status(200).json({
+      message: decision === 'accept' ? 'Inscrição aprovada.' : 'Inscrição rejeitada.',
+      signup: await db.TrainingGuestSignup.findByPk(id, { include: [{ model: db.Training, as: 'training' }] }),
+    });
+  } catch (error) {
+    console.error('Erro ao responder a inscrição de visitante:', error);
+    res.status(500).json({ message: 'Erro ao processar.', error: error.message });
+  }
+};
+
 const adminGetCurrentWeekSignups = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
@@ -1077,6 +1152,8 @@ module.exports = {
   adminCancelClientBooking,
   adminGetTrainingWaitlist,
   adminPromoteFromWaitlist,
+  getGuestSignupsPending,
+  respondToGuestSignup,
   subscribeToRecurringTrainingService,
   adminGetTrainingWaitlistService,
   adminCancelClientBookingService,

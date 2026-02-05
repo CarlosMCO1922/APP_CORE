@@ -3,7 +3,11 @@ const express = require('express');
 const router = express.Router();
 const trainingController = require('../controllers/trainingController');
 const workoutPlanController = require('../controllers/workoutPlanController'); // Adicionar
-const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddleware');
+const { protect, isAdminStaff, isClientUser, isStaff } = require('../middleware/authMiddleware');
+
+// --- Inscrições de visitantes (treino experimental) - rotas antes de /:id ---
+router.get('/guest-signups/pending', protect, isStaff, trainingController.getGuestSignupsPending);
+router.patch('/guest-signups/:id/respond', protect, isStaff, trainingController.respondToGuestSignup);
 
 // --- Rotas de Treino (Training) ---
 router.get('/', protect, trainingController.getAllTrainings);
