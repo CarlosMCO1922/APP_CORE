@@ -193,6 +193,11 @@ const RegisterLinkText = styled.p`
   }
 `;
 
+const GuestBookingContainer = styled.div`
+  text-align: center;
+  margin-top: 1rem;
+`;
+
 const StaffLoginLinkContainer = styled.div`
   text-align: center;
   margin-top: 1.5rem;
@@ -297,6 +302,10 @@ function LoginPage() {
           Não tens conta de cliente?{'  '}
           <StyledLink to="/register">Regista-te aqui</StyledLink>
         </RegisterLinkText>
+
+        <GuestBookingContainer>
+          <StyledLink to="/marcar">Marcar consulta como convidado</StyledLink>
+        </GuestBookingContainer>
 
         <StaffLoginLinkContainer>
           <StyledLink to="/login-staff">Aceder à área de funcionários</StyledLink>
