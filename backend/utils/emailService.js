@@ -133,8 +133,105 @@ async function sendCriticalSecurityAlert(securityLog) {
   });
 }
 
+/**
+ * Emails para visitantes (pedidos de consulta/treino sem conta)
+ * Enviar em background; não bloquear a resposta da API.
+ */
+
+function _formatDatePt(dateStr, timeStr) {
+  if (!dateStr) return 'N/A';
+  const d = new Date(dateStr + (timeStr ? `T${timeStr}` : ''));
+  return isNaN(d.getTime()) ? dateStr : d.toLocaleString('pt-PT', { dateStyle: 'long', timeStyle: 'short' });
+}
+
+async function sendGuestAppointmentRequestReceived({ to, guestName, professionalName, date, time }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#d4af37">Pedido de consulta recebido</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>Recebemos o seu pedido de consulta com <strong>${professionalName || 'o profissional'}</strong> para <strong>${dateFormatted}</strong>.</p>
+      <p>O seu pedido está pendente de confirmação. Será contactado assim que o profissional aprovar ou rejeitar.</p>
+      <p>Obrigado,<br/>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Pedido de consulta recebido - CORE',
+    html,
+  });
+}
+
+async function sendGuestAppointmentAccepted({ to, guestName, professionalName, date, time }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#28a745">Consulta confirmada</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>O seu pedido de consulta foi <strong>aceite</strong>.</p>
+      <p>Consulta com <strong>${professionalName || 'o profissional'}</strong> no dia <strong>${dateFormatted}</strong>.</p>
+      <p>Se tiver sido informado de pagamento de sinal ou outras instruções, siga-as para confirmar a marcação.</p>
+      <p>Obrigado,<br/>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Consulta confirmada - CORE',
+    html,
+  });
+}
+
+async function sendGuestAppointmentRejected({ to, guestName, professionalName, date, time }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#6c757d">Pedido de consulta não aceite</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>Informamos que o seu pedido de consulta com <strong>${professionalName || 'o profissional'}</strong> para <strong>${dateFormatted}</strong> não pôde ser aceite.</p>
+      <p>Pode efetuar um novo pedido para outra data ou profissional. Obrigado.</p>
+      <p>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Pedido de consulta não aceite - CORE',
+    html,
+  });
+}
+
+async function sendGuestAppointmentTimeChanged({ to, guestName, professionalName, newDate, newTime }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(newDate, newTime);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#d4af37">Alteração de horário da sua consulta</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>A data ou hora da sua consulta foi alterada.</p>
+      <p>Nova data e hora: <strong>${dateFormatted}</strong> com <strong>${professionalName || 'o profissional'}</strong>.</p>
+      <p>Se tiver dúvidas, contacte-nos.</p>
+      <p>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Alteração de horário da consulta - CORE',
+    html,
+  });
+}
+
 module.exports = { 
   sendPasswordResetEmail,
   sendCriticalErrorAlert,
   sendCriticalSecurityAlert,
+  sendGuestAppointmentRequestReceived,
+  sendGuestAppointmentAccepted,
+  sendGuestAppointmentRejected,
+  sendGuestAppointmentTimeChanged,
 };

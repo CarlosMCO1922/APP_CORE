@@ -41,10 +41,17 @@ export const updateMyProfile = async (token, profileData) => {
   } catch (error) { logger.error(error); throw error; }
 };
 
-export const adminGetAllUsers = async (token) => {
+/**
+ * @param {string} token
+ * @param {{ approved?: 'true' | 'false' }} [params] - approved=false para listar apenas pendentes de aprovação
+ */
+export const adminGetAllUsers = async (token, params = {}) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/users`, {
+    const query = new URLSearchParams();
+    if (params.approved !== undefined) query.set('approved', params.approved);
+    const url = `${API_URL}/users${query.toString() ? `?${query.toString()}` : ''}`;
+    const response = await fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
@@ -91,6 +98,21 @@ export const adminUpdateUser = async (userId, userData, token) => {
     if (!response.ok) throw new Error(data.message || 'Erro ao atualizar utilizador.');
     return data;
   } catch (error) { logger.error("Erro em adminUpdateUser:", error); throw error; }
+};
+
+/** Aprova um utilizador (conta pendente). Apenas admin. */
+export const adminApproveUser = async (userId, token) => {
+  if (!token) throw new Error('Token de administrador não fornecido.');
+  if (!userId) throw new Error('ID do utilizador não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}/approve`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao aprovar utilizador.');
+    return data;
+  } catch (error) { logger.error('Erro em adminApproveUser:', error); throw error; }
 };
 
 export const adminDeleteUser = async (userId, token) => {

@@ -50,6 +50,12 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true,
     },
+    /** Conta aprovada por admin. Null = pendente; preenchido = aprovada (pode fazer login). */
+    approvedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'approved_at',
+    },
     // ---------------------------------
   }, {
     tableName: 'users',

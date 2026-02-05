@@ -20,6 +20,7 @@ const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const PublicBookingPage = lazy(() => import('./pages/PublicBookingPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const MyPaymentsPage = lazy(() => import('./pages/MyPaymentsPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
@@ -370,6 +371,7 @@ function App() {
           <Route path="/register" element={ !authState.isAuthenticated ? <RegisterPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)}/>
           <Route path='/login-staff' element={ !authState.isAuthenticated ? <StaffLoginPage/> : <Navigate to="/admin/dashboard" replace/>}/>
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/marcar" element={<PublicBookingPage />} />
           {/* Rotas de Cliente */}
           <Route element={<ProtectedRoute allowedRoles={['user']} />}>
             <Route path="/dashboard" element={<DashboardPage />} />

@@ -15,6 +15,7 @@ router.get('/', protect, isAdminStaff, userController.getAllUsersAsAdmin);
 router.post('/', protect, isAdminStaff, userController.createUserAsAdmin);
 router.get('/:id', protect, isAdminStaff, userController.getUserByIdAsAdmin);
 router.put('/:id', protect, isAdminStaff, userController.updateUserAsAdmin);
+router.patch('/:id/approve', protect, isAdminStaff, userController.approveUserAsAdmin);
 router.delete('/:id', protect, isAdminStaff, userController.deleteUserAsAdmin);
 router.get('/:userId/trainings', protect, isAdminStaff, userController.adminGetUserTrainings);
 router.get('/:userId/appointments', protect, isAdminStaff, userController.adminGetUserAppointments);

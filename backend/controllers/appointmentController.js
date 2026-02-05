@@ -1,9 +1,20 @@
 // backend/controllers/appointmentController.js
 const db = require('../models');
-const { Op, Sequelize } = require('sequelize'); 
-const { format } = require('date-fns'); 
+const { Op, Sequelize } = require('sequelize');
+const { format } = require('date-fns');
 const moment = require('moment');
 const { _internalCreateNotification } = require('./notificationController');
+let sendGuestAppointmentAccepted;
+let sendGuestAppointmentRejected;
+let sendGuestAppointmentTimeChanged;
+try {
+  const emailService = require('../utils/emailService');
+  sendGuestAppointmentAccepted = emailService.sendGuestAppointmentAccepted;
+  sendGuestAppointmentRejected = emailService.sendGuestAppointmentRejected;
+  sendGuestAppointmentTimeChanged = emailService.sendGuestAppointmentTimeChanged;
+} catch (e) {
+  sendGuestAppointmentAccepted = sendGuestAppointmentRejected = sendGuestAppointmentTimeChanged = () => {};
+}
 
 // --- Função Auxiliar para Verificar Conflitos de Consulta ---
 const checkForStaffAppointmentConflict = async (staffId, date, time, durationMinutes, excludeAppointmentId = null) => {
@@ -97,28 +108,32 @@ const internalCreateSignalPayment = async (appointmentInstance, staffIdRequestin
 
 // --- Funções do Controlador ---
 const adminCreateAppointment = async (req, res) => {
-  const { date, time, staffId, userId, notes, status, durationMinutes, totalCost } = req.body;
+  const { date, time, staffId, userId, notes, status, durationMinutes, totalCost, guestName, guestEmail, guestPhone } = req.body;
 
   if (!date || !time || !staffId || durationMinutes === undefined) {
     return res.status(400).json({ message: 'Data, hora, ID do profissional e duração são obrigatórios.' });
   }
   const parsedDuration = parseInt(durationMinutes);
-  if (isNaN(parsedDuration) || parsedDuration <=0) {
+  if (isNaN(parsedDuration) || parsedDuration <= 0) {
     return res.status(400).json({ message: 'Duração deve ser um número positivo.' });
   }
   if (userId && (totalCost === undefined || parseFloat(totalCost) <= 0)) {
     return res.status(400).json({ message: 'Se atribuir um cliente, o custo total da consulta (positivo) é obrigatório para gerar o sinal.' });
   }
+  const isGuestBooking = !userId && (guestName != null || guestEmail != null || guestPhone != null);
+  if (isGuestBooking && (!guestName || !guestEmail || !guestPhone)) {
+    return res.status(400).json({ message: 'Para marcar para visitante (sem conta), nome, email e telemóvel são obrigatórios.' });
+  }
 
   try {
     const professional = await db.Staff.findByPk(parseInt(staffId));
     if (!professional) { return res.status(404).json({ message: 'Profissional (staff) não encontrado.' }); }
-    if (!['physiotherapist', 'trainer', 'admin'].includes(professional.role)) { return res.status(400).json({ message: 'O ID do profissional fornecido não tem permissão para consultas.' });}
+    if (!['physiotherapist', 'trainer', 'admin'].includes(professional.role)) { return res.status(400).json({ message: 'O ID do profissional fornecido não tem permissão para consultas.' }); }
 
     let clientUser = null;
     if (userId) {
-        clientUser = await db.User.findByPk(parseInt(userId));
-        if (!clientUser) { return res.status(404).json({ message: 'Cliente (user) não encontrado.' }); }
+      clientUser = await db.User.findByPk(parseInt(userId));
+      if (!clientUser) { return res.status(404).json({ message: 'Cliente (user) não encontrado.' }); }
     }
 
     const conflict = await checkForStaffAppointmentConflict(parseInt(staffId), date, time, parsedDuration);
@@ -132,10 +147,15 @@ const adminCreateAppointment = async (req, res) => {
       staffId: parseInt(staffId),
       userId: userId ? parseInt(userId) : null,
       notes,
-      status: userId ? (status || 'agendada') : (status || 'disponível'),
+      status: userId ? (status || 'agendada') : (isGuestBooking ? (status || 'agendada') : (status || 'disponível')),
       durationMinutes: parsedDuration,
-      totalCost: userId && totalCost ? parseFloat(totalCost) : null,
+      totalCost: (userId || isGuestBooking) && totalCost ? parseFloat(totalCost) : null,
       signalPaid: false,
+      ...(isGuestBooking && {
+        guestName: String(guestName).trim(),
+        guestEmail: String(guestEmail).trim().toLowerCase(),
+        guestPhone: String(guestPhone).trim(),
+      }),
     });
 
     newAppointment.professional = professional; 
@@ -295,13 +315,14 @@ const adminUpdateAppointment = async (req, res) => {
     const { date, time, staffId, userId, notes, status, durationMinutes, totalCost } = req.body;
     try {
         const appointment = await db.Appointment.findByPk(id, {
-            include: [{model: db.Staff, as: 'professional'}] 
+            include: [{ model: db.Staff, as: 'professional' }]
         });
-        if (!appointment) { return res.status(404).json({ message: 'Consulta não encontrada.' });}
+        if (!appointment) { return res.status(404).json({ message: 'Consulta não encontrada.' }); }
 
         const originalUserId = appointment.userId;
         const originalStatus = appointment.status;
-        
+        const originalDate = appointment.date;
+        const originalTime = appointment.time;
 
         if (date) appointment.date = date;
         if (time) appointment.time = time;
@@ -362,7 +383,23 @@ const adminUpdateAppointment = async (req, res) => {
              await internalCreateSignalPayment(appointment, req.staff.id);
         }
 
-        const updatedAppointment = await db.Appointment.findByPk(id, { include: [{ model: db.User, as: 'client' }, { model: db.Staff, as: 'professional' }]});
+        const updatedAppointment = await db.Appointment.findByPk(id, { include: [{ model: db.User, as: 'client' }, { model: db.Staff, as: 'professional' }] });
+
+        // Email ao visitante se data ou hora foram alteradas
+        if (appointment.guestEmail && sendGuestAppointmentTimeChanged &&
+            (appointment.date !== originalDate || String(appointment.time).substring(0, 5) !== String(originalTime).substring(0, 5))) {
+          const professionalName = appointment.professional ? `${appointment.professional.firstName} ${appointment.professional.lastName}` : 'o profissional';
+          setImmediate(() => {
+            sendGuestAppointmentTimeChanged({
+              to: appointment.guestEmail,
+              guestName: appointment.guestName || 'Visitante',
+              professionalName,
+              newDate: appointment.date,
+              newTime: String(appointment.time).substring(0, 5),
+            }).catch(err => console.error('Erro ao enviar email de alteração de horário ao visitante:', err));
+          });
+        }
+
         res.status(200).json(updatedAppointment);
     } catch (error) {
         console.error('Erro (admin) ao atualizar consulta:', error);
@@ -656,14 +693,14 @@ const staffRespondToAppointmentRequest = async (req, res) => {
       include: [{ model: db.User, as: 'client' }, { model: db.Staff, as: 'professional' }]
     });
 
-    // Notificar o cliente da decisão
+    // Notificar o cliente da decisão (utilizador com conta)
     if (appointment.userId) {
       let clientMessage = '';
       let notificationType = '';
       if (decision === 'accept') {
         clientMessage = `O seu pedido de consulta com ${appointment.professional?.firstName} para ${format(new Date(appointment.date), 'dd/MM/yyyy')} foi ACEITE! Por favor, proceda ao pagamento do sinal para confirmar.`;
         notificationType = 'APPOINTMENT_REQUEST_ACCEPTED_CLIENT';
-      } else { // decision === 'reject'
+      } else {
         clientMessage = `O seu pedido de consulta com ${appointment.professional?.firstName} para ${format(new Date(appointment.date), 'dd/MM/yyyy')} foi REJEITADO.`;
         notificationType = 'APPOINTMENT_REQUEST_REJECTED_CLIENT';
       }
@@ -674,6 +711,24 @@ const staffRespondToAppointmentRequest = async (req, res) => {
         relatedResourceId: appointment.id,
         relatedResourceType: 'appointment',
         link: decision === 'accept' ? `/meus-pagamentos` : `/calendario`
+      });
+    }
+
+    // Email ao visitante (sem conta) quando staff aceita ou rejeita
+    if (appointment.guestEmail && (sendGuestAppointmentAccepted || sendGuestAppointmentRejected)) {
+      const professionalName = appointment.professional ? `${appointment.professional.firstName} ${appointment.professional.lastName}` : 'o profissional';
+      const timeStr = String(appointment.time).substring(0, 5);
+      setImmediate(() => {
+        const fn = decision === 'accept' ? sendGuestAppointmentAccepted : sendGuestAppointmentRejected;
+        if (fn) {
+          fn({
+            to: appointment.guestEmail,
+            guestName: appointment.guestName || 'Visitante',
+            professionalName,
+            date: appointment.date,
+            time: timeStr,
+          }).catch(err => console.error('Erro ao enviar email ao visitante (aceite/rejeição):', err));
+        }
       });
     }
 

@@ -107,7 +107,15 @@ const getMyBookings = async (req, res) => {
 // --- Funções para ADMINISTRAÇÃO de Utilizadores ---
 const getAllUsersAsAdmin = async (req, res) => {
   try {
+    const { approved } = req.query;
+    const whereClause = {};
+    if (approved === 'false' || approved === '0') {
+      whereClause.approvedAt = null;
+    } else if (approved === 'true' || approved === '1') {
+      whereClause.approvedAt = { [Op.ne]: null };
+    }
     const users = await db.User.findAll({
+      where: Object.keys(whereClause).length ? whereClause : undefined,
       attributes: { exclude: ['password'] },
       order: [['lastName', 'ASC'], ['firstName', 'ASC']],
     });
@@ -174,7 +182,8 @@ const createUserAsAdmin = async (req, res) => {
       lastName,
       email,
       password: hashedPassword,
-      isAdmin: isAdmin || false, 
+      isAdmin: isAdmin || false,
+      approvedAt: new Date(), // Utilizadores criados por admin ficam já aprovados
     });
 
     const { password: _, ...userResponse } = newUser.get({ plain: true });
@@ -230,6 +239,27 @@ const updateUserAsAdmin = async (req, res) => {
         return res.status(400).json({ message: 'Erro de validação', errors: messages });
     }
     res.status(500).json({ message: 'Erro interno do servidor ao atualizar utilizador.', error: error.message });
+  }
+};
+
+
+const approveUserAsAdmin = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await db.User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilizador não encontrado.' });
+    }
+    if (user.approvedAt) {
+      return res.status(400).json({ message: 'Este utilizador já está aprovado.' });
+    }
+    user.approvedAt = new Date();
+    await user.save();
+    const { password: _, ...userResponse } = user.get({ plain: true });
+    res.status(200).json({ message: 'Utilizador aprovado com sucesso. Pode agora iniciar sessão.', user: userResponse });
+  } catch (error) {
+    console.error('Erro (admin) ao aprovar utilizador:', error);
+    res.status(500).json({ message: 'Erro interno do servidor ao aprovar utilizador.', error: error.message });
   }
 };
 
@@ -332,6 +362,7 @@ module.exports = {
   getUserByIdAsAdmin,
   createUserAsAdmin,
   updateUserAsAdmin,
+  approveUserAsAdmin,
   deleteUserAsAdmin,
   adminGetUserTrainings,
   adminGetUserAppointments,

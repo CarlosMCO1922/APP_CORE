@@ -61,6 +61,10 @@ module.exports = (sequelize) => {
       defaultValue: false,
       allowNull: false,
     },
+    /** Visitante sem conta: nome, email e telemóvel (obrigatórios quando userId é null no pedido público). */
+    guestName: { type: DataTypes.STRING, allowNull: true, field: 'guest_name' },
+    guestEmail: { type: DataTypes.STRING, allowNull: true, field: 'guest_email' },
+    guestPhone: { type: DataTypes.STRING, allowNull: true, field: 'guest_phone' },
   }, {
     tableName: 'appointments',
     timestamps: true,

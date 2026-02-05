@@ -47,7 +47,7 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       gdprConsent: true, // Assumido automaticamente ao criar conta
-      // gdprConsentDate não é necessário - o timestamp de criação serve como prova
+      approvedAt: null,  // Conta pendente de aprovação por um administrador
     });
 
     const userResponse = {
@@ -58,7 +58,10 @@ const registerUser = async (req, res) => {
       isAdmin: newUser.isAdmin,
     };
 
-    res.status(201).json({ message: 'Utilizador registado com sucesso!', user: userResponse });
+    res.status(201).json({
+      message: 'Conta criada com sucesso! Aguarde a aprovação por um administrador para poder iniciar sessão.',
+      user: userResponse,
+    });
   } catch (error) {
     console.error('Erro no registo do utilizador:', error);
     res.status(500).json({ message: 'Erro interno do servidor ao registar o utilizador.', error: error.message });
@@ -78,6 +81,12 @@ const loginUser = async (req, res) => {
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Credenciais inválidas (password incorreta).' });
+    }
+
+    if (!user.approvedAt) {
+      return res.status(403).json({
+        message: 'A sua conta está pendente de aprovação. Contacte o suporte ou aguarde que um administrador aprove o seu registo.',
+      });
     }
 
     const payload = {
@@ -275,6 +284,9 @@ const validateAuth = async (req, res) => {
       
       if (!user) {
         return res.status(401).json({ message: 'Utilizador não encontrado.' });
+      }
+      if (!user.approvedAt) {
+        return res.status(401).json({ message: 'Conta pendente de aprovação.' });
       }
 
       return res.status(200).json({

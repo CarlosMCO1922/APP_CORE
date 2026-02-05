@@ -248,11 +248,13 @@ function RegisterPage() {
       };
       const responseData = await registerUserAPI(registrationData);
       
-      setMessage({ type: 'success', text: `${responseData.message || 'Registo bem-sucedido!'} Serás redirecionado para o login.` });
-      
+      setMessage({
+        type: 'success',
+        text: responseData.message || 'Conta criada com sucesso! Aguarde a aprovação por um administrador para poder iniciar sessão. Serás redirecionado para o login.',
+      });
       setTimeout(() => {
         navigate('/login');
-      }, 3000);
+      }, 4000);
 
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Ocorreu um erro durante o registo.' });

@@ -36,6 +36,7 @@ const progressRoutes = require('./routes/progressRoutes');
 const trainingSeriesRoutes = require('./routes/trainingSeriesRoutes');
 const pushRoutes = require('./routes/pushRoutes');
 const logRoutes = require('./routes/logRoutes');
+const publicRoutes = require('./routes/publicRoutes');
 
 
 app.get('/', (req, res) => {
@@ -55,7 +56,7 @@ app.use('/progress', express.json(), progressRoutes);
 app.use('/training-series', express.json(), trainingSeriesRoutes);
 app.use('/push', express.json(), pushRoutes);
 app.use('/logs', express.json(), logRoutes);
-
+app.use('/public', express.json(), publicRoutes);
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
 const { notFound, errorHandler } = require('./middleware/errorHandler');

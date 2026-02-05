@@ -373,8 +373,18 @@ const StaffManageRequestsPage = () => {
             <RequestCard key={request.id}>
               <CardHeader>
                 <FaUserCircle />
-                <h3>{request.client?.firstName} {request.client?.lastName}</h3>
+                <h3>
+                  {request.client
+                    ? `${request.client.firstName} ${request.client.lastName}`
+                    : (request.guestName || 'Visitante') + (request.guestEmail ? ' (visitante)' : '')}
+                </h3>
               </CardHeader>
+              {(request.guestEmail || request.client?.email) && (
+                <DetailItem><FaUserCircle /> <strong>Email:</strong> {request.guestEmail || request.client?.email}</DetailItem>
+              )}
+              {request.guestPhone && (
+                <DetailItem><FaUserCircle /> <strong>Telemóvel:</strong> {request.guestPhone}</DetailItem>
+              )}
               <DetailItem><FaUserCircle /> <strong>Profissional:</strong> {request.professional?.firstName} {request.professional?.lastName}</DetailItem>
               <DetailItem><FaCalendarDay /> <strong>Data:</strong> {new Date(request.date).toLocaleDateString('pt-PT')} às {request.time.substring(0,5)}</DetailItem>
               <DetailItem><FaClock /> <strong>Duração:</strong> {request.durationMinutes} min</DetailItem>

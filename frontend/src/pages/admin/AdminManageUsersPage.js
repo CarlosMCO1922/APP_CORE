@@ -7,9 +7,10 @@ import {
     adminGetAllUsers,
     adminCreateUser,
     adminUpdateUser,
-    adminDeleteUser
+    adminDeleteUser,
+    adminApproveUser,
 } from '../../services/userService';
-import { FaPlus, FaEdit, FaTrashAlt, FaTimes, FaEye, FaUserPlus, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrashAlt, FaTimes, FaEye, FaUserPlus, FaSearch, FaCheckCircle } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
@@ -365,13 +366,16 @@ const AdminManageUsersPage = () => {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [approvalFilter, setApprovalFilter] = useState('all'); // 'all' | 'pending'
+  const [approvingUserId, setApprovingUserId] = useState(null);
 
   const fetchUsers = useCallback(async () => {
     if (authState.token) {
       setLoading(true);
       setError('');
       try {
-        const data = await adminGetAllUsers(authState.token);
+        const params = approvalFilter === 'pending' ? { approved: 'false' } : {};
+        const data = await adminGetAllUsers(authState.token, params);
         // Ordenar por nome (firstName) alfabeticamente
         const sortedData = [...data].sort((a, b) => {
           const nameA = (a.firstName || '').toLowerCase();
@@ -385,7 +389,7 @@ const AdminManageUsersPage = () => {
         setLoading(false);
       }
     }
-  }, [authState.token]);
+  }, [authState.token, approvalFilter]);
 
   // Filtrar utilizadores com base no termo de pesquisa
   const filteredUsers = useMemo(() => {
@@ -511,6 +515,21 @@ const AdminManageUsersPage = () => {
     }
   };
 
+  const handleApproveUser = async (userId) => {
+    setApprovingUserId(userId);
+    setError('');
+    setSuccessMessage('');
+    try {
+      await adminApproveUser(userId, authState.token);
+      setSuccessMessage('Utilizador aprovado com sucesso. Já pode iniciar sessão.');
+      fetchUsers();
+    } catch (err) {
+      setError(err.message || 'Falha ao aprovar utilizador.');
+    } finally {
+      setApprovingUserId(null);
+    }
+  };
+
   if (loading && !showModal) {
     return <PageContainer><LoadingText>A carregar utilizadores...</LoadingText></PageContainer>;
   }
@@ -538,6 +557,21 @@ const AdminManageUsersPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </SearchInputWrapper>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.9rem', color: theme.colors.textMuted }}>Estado:</span>
+          <ActionButton
+            onClick={() => setApprovalFilter('all')}
+            style={{ background: approvalFilter === 'all' ? theme.colors.primary : theme.colors.buttonSecondaryBg, color: approvalFilter === 'all' ? theme.colors.textDark : theme.colors.textMain }}
+          >
+            Todos
+          </ActionButton>
+          <ActionButton
+            onClick={() => setApprovalFilter('pending')}
+            style={{ background: approvalFilter === 'pending' ? theme.colors.primary : theme.colors.buttonSecondaryBg, color: approvalFilter === 'pending' ? theme.colors.textDark : theme.colors.textMain }}
+          >
+            Pendentes de aprovação
+          </ActionButton>
+        </div>
       </SearchContainer>
 
       <TableWrapper>
@@ -548,6 +582,7 @@ const AdminManageUsersPage = () => {
               <th>Nome</th>
               <th>Apelido</th>
               <th>Email</th>
+              <th>Estado</th>
               <th>Admin?</th>
               <th className="actions-cell">Ações</th>
             </tr>
@@ -559,9 +594,19 @@ const AdminManageUsersPage = () => {
                 <td>{user.firstName}</td>
                 <td>{user.lastName}</td>
                 <td>{user.email}</td>
+                <td>{user.approvedAt ? 'Aprovado' : 'Pendente'}</td>
                 <td>{user.isAdmin ? 'Sim' : 'Não'}</td>
                 <td className="actions-cell">
                   <ActionButtonContainer>
+                    {!user.approvedAt && (
+                      <ActionButton
+                        onClick={() => handleApproveUser(user.id)}
+                        disabled={approvingUserId === user.id}
+                        style={{ background: theme.colors.success || '#28a745', color: 'white' }}
+                      >
+                        <FaCheckCircle /> {approvingUserId === user.id ? 'A aprovar...' : 'Aprovar'}
+                      </ActionButton>
+                    )}
                     <ActionButton
                       details
                       onClick={() => navigate(`/admin/users/${user.id}/details`)}
@@ -579,8 +624,8 @@ const AdminManageUsersPage = () => {
               </tr>
             )) : (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
-                  {searchTerm ? 'Nenhum utilizador encontrado com o termo de pesquisa.' : 'Nenhum utilizador encontrado.'}
+                <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
+                  {searchTerm ? 'Nenhum utilizador encontrado com o termo de pesquisa.' : approvalFilter === 'pending' ? 'Nenhum utilizador pendente de aprovação.' : 'Nenhum utilizador encontrado.'}
                 </td>
               </tr>
             )}
