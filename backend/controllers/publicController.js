@@ -170,31 +170,24 @@ const postAppointmentRequest = async (req, res) => {
 };
 
 /** GET /public/trainings - Lista treinos futuros para a página de treino experimental (sem auth).
- *  Aceita query params dateFrom e dateTo (YYYY-MM-DD) para evitar discrepâncias de timezone
- *  entre servidor (ex: UTC no Render) e cliente. Se não passados, usa today e today+10 no servidor. */
+ *  Aceita query params dateFrom e dateTo (YYYY-MM-DD). Usa a mesma lógica que getAllTrainings.
+ *  Se omitir filtro de data, devolve todos os treinos futuros (date >= hoje) para alinhar com o calendário. */
 const getPublicTrainings = async (req, res) => {
   const now = Date.now();
   const oneHourMs = 60 * 60 * 1000;
   const { dateFrom: qDateFrom, dateTo: qDateTo } = req.query;
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-  let dateFrom;
-  let dateTo;
+  const whereClause = {};
   if (qDateFrom && dateRegex.test(qDateFrom) && qDateTo && dateRegex.test(qDateTo) && qDateFrom <= qDateTo) {
-    dateFrom = qDateFrom;
-    dateTo = qDateTo;
+    whereClause.date = { [Op.between]: [qDateFrom, qDateTo] };
   } else {
+    // Sem filtro de datas do cliente: devolver todos os treinos futuros (como o calendário)
     try {
-      dateFrom = format(new Date(), 'yyyy-MM-dd');
+      const today = format(new Date(), 'yyyy-MM-dd');
+      whereClause.date = { [Op.gte]: today };
     } catch (e) {
-      dateFrom = new Date().toISOString().slice(0, 10);
-    }
-    const tenDaysLater = new Date(now);
-    tenDaysLater.setDate(tenDaysLater.getDate() + 10);
-    try {
-      dateTo = format(tenDaysLater, 'yyyy-MM-dd');
-    } catch (e) {
-      dateTo = tenDaysLater.toISOString().slice(0, 10);
+      whereClause.date = { [Op.gte]: new Date().toISOString().slice(0, 10) };
     }
   }
 
@@ -221,7 +214,7 @@ const getPublicTrainings = async (req, res) => {
 
   try {
     const trainings = await db.Training.findAll({
-      where: { date: { [Op.gte]: dateFrom, [Op.lte]: dateTo } },
+      where: whereClause,
       include: [
         { model: db.Staff, as: 'instructor', required: false, attributes: ['id', 'firstName', 'lastName'] },
         { model: db.User, as: 'participants', attributes: ['id'], through: { attributes: [] }, required: false },
@@ -250,7 +243,7 @@ const getPublicTrainings = async (req, res) => {
     console.error('Erro ao listar treinos públicos (query completa):', error.message || error);
     try {
       const trainings = await db.Training.findAll({
-        where: { date: { [Op.gte]: dateFrom, [Op.lte]: dateTo } },
+        where: whereClause,
         attributes: ['id', 'name', 'description', 'date', 'time', 'durationMinutes', 'capacity', 'instructorId'],
         order: [['date', 'ASC'], ['time', 'ASC']],
       });
