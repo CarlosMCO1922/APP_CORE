@@ -45,6 +45,7 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'appointment_reschedule_proposals',
     timestamps: true,
+    underscored: true,
     indexes: [{ fields: ['token'] }, { fields: ['appointmentId'] }],
   });
 
