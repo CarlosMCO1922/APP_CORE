@@ -144,43 +144,119 @@ function _formatDatePt(dateStr, timeStr) {
   return isNaN(d.getTime()) ? dateStr : d.toLocaleString('pt-PT', { dateStyle: 'long', timeStyle: 'short' });
 }
 
-async function sendGuestAppointmentRequestReceived({ to, guestName, professionalName, date, time }) {
+const _emailStyles = {
+  wrapper: 'max-width:560px;margin:0 auto;font-family:"Segoe UI",Arial,sans-serif;background:#f8f9fa;padding:32px 20px;',
+  card: 'background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08);overflow:hidden;',
+  header: 'background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#d4af37;padding:28px 24px;text-align:center;',
+  headerTitle: 'margin:0;font-size:1.5rem;font-weight:700;letter-spacing:0.02em;',
+  body: 'padding:28px 24px;color:#333;line-height:1.7;font-size:16px;',
+  highlight: 'background:#f0f7ff;border-left:4px solid #d4af37;padding:14px 16px;margin:20px 0;border-radius:0 8px 8px 0;',
+  button: 'display:inline-block;padding:14px 28px;background:linear-gradient(135deg,#28a745 0%,#20c997 100%);color:#fff!important;text-decoration:none;border-radius:8px;font-weight:600;margin:16px 0;box-shadow:0 4px 14px rgba(40,167,69,0.4);',
+  footer: 'padding:20px 24px;text-align:center;color:#6c757d;font-size:13px;border-top:1px solid #eee;',
+  amountRow: 'display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;',
+};
+
+/** Email único: pedido de consulta pendente (cliente com conta ou visitante). Design moderno. */
+async function sendAppointmentRequestPending({ to, clientName, professionalName, date, time }) {
   const transport = getTransporter();
   if (!transport || !SMTP_USER) return;
   const dateFormatted = _formatDatePt(date, time);
   const html = `
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
-      <h2 style="color:#d4af37">Pedido de consulta recebido</h2>
-      <p>Olá ${guestName || 'Visitante'},</p>
-      <p>Recebemos o seu pedido de consulta com <strong>${professionalName || 'o profissional'}</strong> para <strong>${dateFormatted}</strong>.</p>
-      <p>O seu pedido está pendente de confirmação. Será contactado assim que o profissional aprovar ou rejeitar.</p>
-      <p>Obrigado,<br/>Equipa CORE</p>
-    </div>`;
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;">
+  <div style="${_emailStyles.wrapper}">
+    <div style="${_emailStyles.card}">
+      <div style="${_emailStyles.header}">
+        <h1 style="${_emailStyles.headerTitle}">Pedido de consulta recebido</h1>
+        <p style="margin:8px 0 0 0;font-size:0.95rem;opacity:0.95;">CORE · A sua marcação está em análise</p>
+      </div>
+      <div style="${_emailStyles.body}">
+        <p>Olá <strong>${clientName || 'Visitante'}</strong>,</p>
+        <p>Recebemos o seu pedido de consulta e agradecemos a sua preferência.</p>
+        <div style="${_emailStyles.highlight}">
+          <p style="margin:0 0 6px 0;font-size:0.9rem;color:#666;">Resumo do pedido</p>
+          <p style="margin:0;font-size:1.1rem;"><strong>${professionalName || 'Profissional'}</strong></p>
+          <p style="margin:4px 0 0 0;font-size:1.05rem;color:#1a1a2e;">📅 ${dateFormatted}</p>
+        </div>
+        <p><strong>Estado atual:</strong> Pendente de confirmação pelo profissional.</p>
+        <p>Será contactado por email assim que o profissional aprovar ou rejeitar o pedido. Se tiver dúvidas, contacte-nos.</p>
+      </div>
+      <div style="${_emailStyles.footer}">
+        Obrigado,<br/><strong>Equipa CORE</strong>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
   await transport.sendMail({
     to,
     from: FROM_EMAIL || SMTP_USER,
-    subject: 'Pedido de consulta recebido - CORE',
+    subject: 'Pedido de consulta recebido – Pendente de confirmação | CORE',
     html,
   });
 }
 
-async function sendGuestAppointmentAccepted({ to, guestName, professionalName, date, time }) {
+/** Compatível com o nome antigo (visitante). */
+async function sendGuestAppointmentRequestReceived({ to, guestName, professionalName, date, time }) {
+  return sendAppointmentRequestPending({ to, clientName: guestName, professionalName, date, time });
+}
+
+/**
+ * Email: consulta aceite pelo profissional.
+ * Se totalCost, signalAmount e paymentUrl forem passados, inclui bloco de pagamento do sinal (20%) com botão.
+ */
+async function sendGuestAppointmentAccepted({ to, guestName, professionalName, date, time, totalCost, signalAmount, paymentUrl }) {
   const transport = getTransporter();
   if (!transport || !SMTP_USER) return;
   const dateFormatted = _formatDatePt(date, time);
+  const hasPayment = paymentUrl && totalCost != null && signalAmount != null && Number(signalAmount) > 0;
+  const totalFormatted = totalCost != null ? `€ ${Number(totalCost).toFixed(2).replace('.', ',')}` : '';
+  const signalFormatted = signalAmount != null ? `€ ${Number(signalAmount).toFixed(2).replace('.', ',')}` : '';
+
+  const paymentBlock = hasPayment ? `
+        <div style="margin:24px 0;padding:20px;background:#f8fff9;border:1px solid #c3e6cb;border-radius:8px;">
+          <p style="margin:0 0 12px 0;font-weight:600;color:#155724;">Pagamento do sinal (20%)</p>
+          <p style="margin:0 0 8px 0;font-size:0.95rem;">Valor total da consulta: <strong>${totalFormatted}</strong></p>
+          <p style="margin:0 0 16px 0;font-size:0.95rem;">Sinal a pagar agora (20%): <strong>${signalFormatted}</strong></p>
+          <p style="margin:0 0 12px 0;font-size:0.9rem;color:#555;">Para confirmar a sua marcação, efetue o pagamento do sinal através do botão abaixo. Após o pagamento, a consulta ficará confirmada.</p>
+          <a href="${paymentUrl}" style="${_emailStyles.button}">Pagar sinal (${signalFormatted})</a>
+        </div>` : '';
+
   const html = `
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
-      <h2 style="color:#28a745">Consulta confirmada</h2>
-      <p>Olá ${guestName || 'Visitante'},</p>
-      <p>O seu pedido de consulta foi <strong>aceite</strong>.</p>
-      <p>Consulta com <strong>${professionalName || 'o profissional'}</strong> no dia <strong>${dateFormatted}</strong>.</p>
-      <p>Se tiver sido informado de pagamento de sinal ou outras instruções, siga-as para confirmar a marcação.</p>
-      <p>Obrigado,<br/>Equipa CORE</p>
-    </div>`;
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;">
+  <div style="${_emailStyles.wrapper}">
+    <div style="${_emailStyles.card}">
+      <div style="background:linear-gradient(135deg,#28a745 0%,#20c997 100%);color:#fff;padding:28px 24px;text-align:center;">
+        <h1 style="margin:0;font-size:1.5rem;font-weight:700;">Consulta aceite</h1>
+        <p style="margin:8px 0 0 0;font-size:0.95rem;opacity:0.95;">A sua marcação foi confirmada pelo profissional</p>
+      </div>
+      <div style="${_emailStyles.body}">
+        <p>Olá <strong>${guestName || 'Visitante'}</strong>,</p>
+        <p>Boa notícia: o profissional aceitou o seu pedido de consulta.</p>
+        <div style="${_emailStyles.highlight}">
+          <p style="margin:0 0 6px 0;font-size:0.9rem;color:#666;">Horário confirmado</p>
+          <p style="margin:0;font-size:1.1rem;"><strong>${professionalName || 'Profissional'}</strong></p>
+          <p style="margin:4px 0 0 0;font-size:1.05rem;color:#1a1a2e;">📅 ${dateFormatted}</p>
+        </div>
+        ${paymentBlock}
+        <p style="margin-top:20px;">Até breve!<br/>Equipa CORE</p>
+      </div>
+      <div style="${_emailStyles.footer}">
+        Obrigado,<br/><strong>Equipa CORE</strong>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
   await transport.sendMail({
     to,
     from: FROM_EMAIL || SMTP_USER,
-    subject: 'Consulta confirmada - CORE',
+    subject: 'Consulta aceite – Horário confirmado | CORE',
     html,
   });
 }
@@ -405,6 +481,7 @@ module.exports = {
   sendPasswordResetEmail,
   sendCriticalErrorAlert,
   sendCriticalSecurityAlert,
+  sendAppointmentRequestPending,
   sendGuestAppointmentRequestReceived,
   sendGuestAppointmentAccepted,
   sendGuestAppointmentRejected,

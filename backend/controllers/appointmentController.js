@@ -8,14 +8,16 @@ let sendGuestAppointmentAccepted;
 let sendGuestAppointmentRejected;
 let sendGuestAppointmentTimeChanged;
 let sendGuestAppointmentRescheduleProposed;
+let sendAppointmentRequestPending;
 try {
   const emailService = require('../utils/emailService');
   sendGuestAppointmentAccepted = emailService.sendGuestAppointmentAccepted;
   sendGuestAppointmentRejected = emailService.sendGuestAppointmentRejected;
   sendGuestAppointmentTimeChanged = emailService.sendGuestAppointmentTimeChanged;
   sendGuestAppointmentRescheduleProposed = emailService.sendGuestAppointmentRescheduleProposed;
+  sendAppointmentRequestPending = emailService.sendAppointmentRequestPending;
 } catch (e) {
-  sendGuestAppointmentAccepted = sendGuestAppointmentRejected = sendGuestAppointmentTimeChanged = sendGuestAppointmentRescheduleProposed = () => {};
+  sendGuestAppointmentAccepted = sendGuestAppointmentRejected = sendGuestAppointmentTimeChanged = sendGuestAppointmentRescheduleProposed = sendAppointmentRequestPending = () => {};
 }
 
 // --- Função Auxiliar para Verificar Conflitos de Consulta ---
@@ -614,15 +616,30 @@ const clientRequestAppointment = async (req, res) => {
     });
 
     // Notificar o profissional do pedido
+    const client = await db.User.findByPk(userId, { attributes: ['id', 'firstName', 'lastName', 'email'] });
     if (newAppointmentRequest.staffId) {
-      const client = await db.User.findByPk(userId);
       _internalCreateNotification({
         recipientStaffId: newAppointmentRequest.staffId,
         message: `Novo pedido de consulta de ${client?.firstName} ${client?.lastName} para ${format(new Date(newAppointmentRequest.date), 'dd/MM/yyyy')} às ${newAppointmentRequest.time.substring(0,5)}.`,
         type: 'APPOINTMENT_REQUESTED_STAFF',
         relatedResourceId: newAppointmentRequest.id,
         relatedResourceType: 'appointment',
-        link: `/admin/appointment-requests` 
+        link: `/admin/appointment-requests`
+      });
+    }
+
+    // Email ao cliente: pedido pendente de confirmação (design incorporado)
+    if (client?.email && sendAppointmentRequestPending) {
+      const professional = await db.Staff.findByPk(newAppointmentRequest.staffId, { attributes: ['firstName', 'lastName'] });
+      const professionalName = professional ? `${professional.firstName} ${professional.lastName}` : 'o profissional';
+      setImmediate(() => {
+        sendAppointmentRequestPending({
+          to: client.email,
+          clientName: `${client.firstName || ''} ${client.lastName || ''}`.trim() || 'Cliente',
+          professionalName,
+          date: newAppointmentRequest.date,
+          time: String(newAppointmentRequest.time).substring(0, 5),
+        }).catch(err => console.error('Erro ao enviar email de pedido pendente ao cliente:', err));
       });
     }
 
@@ -716,20 +733,41 @@ const staffRespondToAppointmentRequest = async (req, res) => {
       });
     }
 
-    // Email ao visitante (sem conta) quando staff aceita ou rejeita
-    if (appointment.guestEmail && (sendGuestAppointmentAccepted || sendGuestAppointmentRejected)) {
+    // Email ao cliente ou visitante quando staff aceita ou rejeita
+    const recipientEmail = appointment.guestEmail || (appointment.client && appointment.client.email);
+    if (recipientEmail && (sendGuestAppointmentAccepted || sendGuestAppointmentRejected)) {
       const professionalName = appointment.professional ? `${appointment.professional.firstName} ${appointment.professional.lastName}` : 'o profissional';
       const timeStr = String(appointment.time).substring(0, 5);
+      const guestName = appointment.guestName || (appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : null) || 'Visitante';
+      const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+      const paymentUrl = `${frontendUrl}/meus-pagamentos`;
+      const totalCost = appointment.totalCost != null ? parseFloat(appointment.totalCost) : null;
+      const signalAmount = totalCost != null ? parseFloat((totalCost * 0.20).toFixed(2)) : null;
+
       setImmediate(() => {
-        const fn = decision === 'accept' ? sendGuestAppointmentAccepted : sendGuestAppointmentRejected;
-        if (fn) {
-          fn({
-            to: appointment.guestEmail,
-            guestName: appointment.guestName || 'Visitante',
-            professionalName,
-            date: appointment.date,
-            time: timeStr,
-          }).catch(err => console.error('Erro ao enviar email ao visitante (aceite/rejeição):', err));
+        if (decision === 'accept') {
+          if (sendGuestAppointmentAccepted) {
+            sendGuestAppointmentAccepted({
+              to: recipientEmail,
+              guestName,
+              professionalName,
+              date: appointment.date,
+              time: timeStr,
+              totalCost: appointment.userId ? totalCost : undefined,
+              signalAmount: appointment.userId ? signalAmount : undefined,
+              paymentUrl: appointment.userId ? paymentUrl : undefined,
+            }).catch(err => console.error('Erro ao enviar email de consulta aceite:', err));
+          }
+        } else {
+          if (sendGuestAppointmentRejected) {
+            sendGuestAppointmentRejected({
+              to: recipientEmail,
+              guestName,
+              professionalName,
+              date: appointment.date,
+              time: timeStr,
+            }).catch(err => console.error('Erro ao enviar email de consulta rejeitada:', err));
+          }
         }
       });
     }
