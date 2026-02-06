@@ -349,15 +349,6 @@ function PublicBookingPage() {
     if (activeTab === TAB_TREINO) fetchTrainings();
   }, [activeTab, fetchTrainings]);
 
-  useEffect(() => {
-    if (trainingsWithVacancies.length > 0 && expandedDays.size === 0) {
-      const firstDayWithTrainings = next10Days.find(
-        (d) => Object.keys(trainingsByDayAndTime[d] || {}).length > 0
-      );
-      if (firstDayWithTrainings) setExpandedDays(new Set([firstDayWithTrainings]));
-    }
-  }, [trainingsWithVacancies.length, expandedDays.size, next10Days, trainingsByDayAndTime]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
@@ -461,6 +452,15 @@ function PublicBookingPage() {
       return next;
     });
   };
+
+  useEffect(() => {
+    if (trainingsWithVacancies.length > 0 && expandedDays.size === 0) {
+      const firstDayWithTrainings = next10Days.find(
+        (d) => Object.keys(trainingsByDayAndTime[d] || {}).length > 0
+      );
+      if (firstDayWithTrainings) setExpandedDays(new Set([firstDayWithTrainings]));
+    }
+  }, [trainingsWithVacancies.length, expandedDays.size, next10Days, trainingsByDayAndTime]);
 
   return (
     <PageContainer>
