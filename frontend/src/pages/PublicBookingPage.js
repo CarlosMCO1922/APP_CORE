@@ -428,10 +428,11 @@ function PublicBookingPage() {
     return days;
   }, []);
 
+  // Mostrar todos os treinos (mesmos que os clientes veem); hasVacancies apenas para permitir/desativar inscrição
   const trainingsWithVacancies = trainings.filter((t) => t.hasVacancies);
   const trainingsByDayAndTime = useMemo(() => {
     const acc = {};
-    trainingsWithVacancies.forEach((t) => {
+    trainings.forEach((t) => {
       const day = t.date || '';
       const time = String(t.time || '').substring(0, 5);
       if (!acc[day]) acc[day] = {};
@@ -442,7 +443,7 @@ function PublicBookingPage() {
       if (!acc[d]) acc[d] = {};
     });
     return acc;
-  }, [trainingsWithVacancies, next10Days]);
+  }, [trainings, next10Days]);
 
   const toggleDay = (day) => {
     setExpandedDays((prev) => {
@@ -454,13 +455,13 @@ function PublicBookingPage() {
   };
 
   useEffect(() => {
-    if (trainingsWithVacancies.length > 0 && expandedDays.size === 0) {
+    if (trainings.length > 0 && expandedDays.size === 0) {
       const firstDayWithTrainings = next10Days.find(
         (d) => Object.keys(trainingsByDayAndTime[d] || {}).length > 0
       );
       if (firstDayWithTrainings) setExpandedDays(new Set([firstDayWithTrainings]));
     }
-  }, [trainingsWithVacancies.length, expandedDays.size, next10Days, trainingsByDayAndTime]);
+  }, [trainings.length, expandedDays.size, next10Days, trainingsByDayAndTime]);
 
   return (
     <PageContainer>
@@ -590,9 +591,14 @@ function PublicBookingPage() {
             ) : (
               <>
                 <Label style={{ marginBottom: 12 }}>Próximos 10 dias</Label>
-                {trainingsWithVacancies.length === 0 && (
+                {trainings.length === 0 && (
                   <p style={{ fontSize: '0.9rem', color: theme.colors.textMuted, margin: '0 0 12px 0' }}>
-                    Não há treinos com vagas nos próximos 10 dias. Expande um dia para verificar.
+                    Não há treinos nos próximos 10 dias.
+                  </p>
+                )}
+                {trainings.length > 0 && trainingsWithVacancies.length === 0 && (
+                  <p style={{ fontSize: '0.9rem', color: theme.colors.textMuted, margin: '0 0 12px 0' }}>
+                    Há treinos listados, mas todos estão completos. Expande um dia para verificar.
                   </p>
                 )}
                 {next10Days.map((day) => {
@@ -627,12 +633,15 @@ function PublicBookingPage() {
                                 {slots[time].map((t) => (
                                   <TrainingCard
                                     key={t.id}
-                                    className={String(selectedTrainingId) === String(t.id) ? 'selected' : ''}
-                                    onClick={() => setSelectedTrainingId(String(t.id))}
+                                    className={`${String(selectedTrainingId) === String(t.id) ? 'selected' : ''} ${!t.hasVacancies ? 'disabled' : ''}`}
+                                    onClick={() => t.hasVacancies && setSelectedTrainingId(String(t.id))}
                                   >
                                     <TrainingCardTitle>{t.name || `Treino ${t.id}`}</TrainingCardTitle>
                                     <TrainingCardMeta>
-                                      {t.participantsCount}/{t.capacity} vagas ·{' '}
+                                      {t.hasVacancies
+                                        ? `${t.capacity - t.participantsCount} vaga(s) · ${t.participantsCount}/${t.capacity}`
+                                        : 'Completo'}
+                                      {' · '}
                                       {t.instructor ? `${t.instructor.firstName} ${t.instructor.lastName}` : '—'}
                                     </TrainingCardMeta>
                                   </TrainingCard>
