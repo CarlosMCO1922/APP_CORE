@@ -1005,6 +1005,74 @@ const respondToGuestSignup = async (req, res) => {
   }
 };
 
+/** PATCH /trainings/guest-signups/:id/propose-reschedule - Staff propõe outro treino; envia email com link para o visitante confirmar. */
+const proposeGuestSignupReschedule = async (req, res) => {
+  const signupId = req.params.id;
+  const { proposedTrainingId } = req.body;
+
+  if (!proposedTrainingId) {
+    return res.status(400).json({ message: 'ID do treino proposto é obrigatório.' });
+  }
+
+  const crypto = require('crypto');
+
+  try {
+    const signup = await db.TrainingGuestSignup.findByPk(signupId, {
+      include: [
+        { model: db.Training, as: 'training' },
+        { model: db.Training, as: 'proposedTraining', required: false },
+      ],
+    });
+    if (!signup) return res.status(404).json({ message: 'Inscrição não encontrada.' });
+    if (signup.status !== 'PENDING_APPROVAL') {
+      return res.status(400).json({ message: 'Só é possível propor reagendamento para inscrições pendentes.' });
+    }
+
+    const training = signup.training;
+    const canRespond = req.staff.role === 'admin' || (training && training.instructorId === req.staff.id);
+    if (!canRespond) return res.status(403).json({ message: 'Não tem permissão para propor reagendamento.' });
+
+    const newTraining = await db.Training.findByPk(proposedTrainingId);
+    if (!newTraining) return res.status(404).json({ message: 'Treino proposto não encontrado.' });
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (newTraining.date < today) return res.status(400).json({ message: 'O treino proposto já passou.' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    signup.status = 'RESCHEDULE_PROPOSED';
+    signup.proposedTrainingId = newTraining.id;
+    signup.rescheduleToken = token;
+    signup.rescheduleTokenExpiresAt = expiresAt;
+    signup.staffApprovedById = req.staff.id;
+    await signup.save();
+
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const confirmUrl = `${frontendUrl}/confirmar-reagendamento-treino?token=${token}`;
+    const {
+      sendGuestTrainingRescheduleProposed,
+    } = require('../utils/emailService');
+    setImmediate(() => {
+      if (sendGuestTrainingRescheduleProposed) {
+        sendGuestTrainingRescheduleProposed({
+          to: signup.guestEmail,
+          guestName: signup.guestName || 'Visitante',
+          trainingName: newTraining.name || 'treino',
+          proposedDate: newTraining.date,
+          proposedTime: String(newTraining.time).substring(0, 5),
+          confirmUrl,
+        }).catch(err => console.error('Erro ao enviar email de proposta de reagendamento treino:', err));
+      }
+    });
+
+    res.status(200).json({
+      message: 'Proposta de reagendamento enviada por email. O visitante deve confirmar pelo link recebido.',
+    });
+  } catch (error) {
+    console.error('Erro ao propor reagendamento de inscrição em treino:', error);
+    res.status(500).json({ message: 'Erro ao propor reagendamento.', error: error.message });
+  }
+};
+
 const adminGetCurrentWeekSignups = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
@@ -1169,6 +1237,7 @@ module.exports = {
   adminPromoteFromWaitlist,
   getGuestSignupsPending,
   respondToGuestSignup,
+  proposeGuestSignupReschedule,
   subscribeToRecurringTrainingService,
   adminGetTrainingWaitlistService,
   adminCancelClientBookingService,

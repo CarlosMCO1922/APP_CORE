@@ -95,3 +95,21 @@ export const submitGuestTrainingSignup = async (trainingId, payload) => {
     throw error;
   }
 };
+
+const publicBase = () => `${(process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/$/, '')}/public`;
+
+/** Confirma reagendamento de consulta (link do email). Token em query. */
+export const confirmAppointmentReschedule = async (token) => {
+  const response = await fetch(`${publicBase()}/confirm-appointment-reschedule?token=${encodeURIComponent(token)}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao confirmar reagendamento.');
+  return data;
+};
+
+/** Confirma reagendamento de treino (link do email). Token em query. */
+export const confirmTrainingReschedule = async (token) => {
+  const response = await fetch(`${publicBase()}/confirm-training-reschedule?token=${encodeURIComponent(token)}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao confirmar reagendamento.');
+  return data;
+};

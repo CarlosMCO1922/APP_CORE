@@ -24,6 +24,7 @@ router.delete('/:appointmentId/book', protect, isClientUser, appointmentControll
 
 
 router.patch('/:appointmentId/respond', protect, isStaff, appointmentController.staffRespondToAppointmentRequest);
+router.post('/:id/propose-reschedule', protect, isStaff, appointmentController.proposeAppointmentReschedule);
 
 router.post('/', protect, isAdminStaff, appointmentController.adminCreateAppointment);
 router.put('/:id', protect, isAdminStaff, appointmentController.adminUpdateAppointment);

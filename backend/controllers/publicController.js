@@ -9,6 +9,8 @@ const { _internalCreateNotification } = require('./notificationController');
 const {
   sendGuestAppointmentRequestReceived,
   sendGuestTrainingRequestReceived,
+  sendGuestAppointmentRescheduleConfirmed,
+  sendGuestTrainingRescheduleConfirmed,
 } = require('../utils/emailService');
 
 /** GET /public/staff-for-appointments - Lista profissionais que podem ter consultas (para dropdown público). */
@@ -315,10 +317,125 @@ const postGuestTrainingSignup = async (req, res) => {
   }
 };
 
+/** GET /public/confirm-appointment-reschedule?token= - Cliente/visitante confirma reagendamento da consulta (link do email). */
+const confirmAppointmentReschedule = async (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.status(400).json({ message: 'Token de confirmação em falta.' });
+  }
+
+  try {
+    const proposal = await db.AppointmentRescheduleProposal.findOne({
+      where: { token },
+      include: [
+        { model: db.Appointment, as: 'appointment', include: [{ model: db.Staff, as: 'professional' }, { model: db.User, as: 'client', attributes: ['email', 'firstName', 'lastName'] }] },
+      ],
+    });
+    if (!proposal) return res.status(404).json({ message: 'Proposta de reagendamento não encontrada.' });
+    if (proposal.usedAt) return res.status(400).json({ message: 'Este reagendamento já foi confirmado.' });
+    if (new Date() > new Date(proposal.expiresAt)) return res.status(400).json({ message: 'O link de confirmação expirou.' });
+
+    const appointment = proposal.appointment;
+    appointment.date = proposal.proposedDate;
+    appointment.time = proposal.proposedTime;
+    appointment.status = 'agendada';
+    await appointment.save();
+
+    proposal.usedAt = new Date();
+    await proposal.save();
+
+    const professionalName = appointment.professional ? `${appointment.professional.firstName} ${appointment.professional.lastName}` : 'o profissional';
+    const guestName = appointment.guestName || (appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : null) || 'Visitante';
+    const to = appointment.guestEmail || (appointment.client && appointment.client.email) || null;
+    if (to && sendGuestAppointmentRescheduleConfirmed) {
+      setImmediate(() => {
+        sendGuestAppointmentRescheduleConfirmed({
+          to,
+          guestName,
+          professionalName,
+          date: appointment.date,
+          time: String(appointment.time).substring(0, 5),
+        }).catch(err => console.error('Erro ao enviar email de reagendamento confirmado:', err));
+      });
+    }
+
+    res.status(200).json({
+      message: 'Reagendamento confirmado com sucesso. A sua consulta foi atualizada para a nova data e hora.',
+      appointment: { id: appointment.id, date: appointment.date, time: String(appointment.time).substring(0, 5) },
+    });
+  } catch (error) {
+    console.error('Erro ao confirmar reagendamento de consulta:', error);
+    res.status(500).json({ message: 'Erro ao confirmar reagendamento.', error: error.message });
+  }
+};
+
+/** GET /public/confirm-training-reschedule?token= - Visitante confirma reagendamento do treino (link do email). */
+const confirmTrainingReschedule = async (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.status(400).json({ message: 'Token de confirmação em falta.' });
+  }
+
+  try {
+    const signup = await db.TrainingGuestSignup.findOne({
+      where: { rescheduleToken: token },
+      include: [
+        { model: db.Training, as: 'training' },
+        { model: db.Training, as: 'proposedTraining' },
+      ],
+    });
+    if (!signup) return res.status(404).json({ message: 'Proposta de reagendamento não encontrada.' });
+    if (signup.status !== 'RESCHEDULE_PROPOSED') return res.status(400).json({ message: 'Esta proposta já foi processada.' });
+    if (!signup.rescheduleTokenExpiresAt || new Date() > new Date(signup.rescheduleTokenExpiresAt)) {
+      return res.status(400).json({ message: 'O link de confirmação expirou.' });
+    }
+
+    const newTraining = signup.proposedTraining;
+    if (!newTraining) return res.status(400).json({ message: 'Treino proposto não encontrado.' });
+
+    await db.TrainingGuestSignup.create({
+      trainingId: newTraining.id,
+      guestName: signup.guestName,
+      guestEmail: signup.guestEmail,
+      guestPhone: signup.guestPhone,
+      status: 'APPROVED',
+      staffApprovedById: signup.staffApprovedById,
+    });
+
+    signup.status = 'REJECTED';
+    signup.rescheduleToken = null;
+    signup.rescheduleTokenExpiresAt = null;
+    signup.proposedTrainingId = null;
+    await signup.save();
+
+    if (sendGuestTrainingRescheduleConfirmed) {
+      setImmediate(() => {
+        sendGuestTrainingRescheduleConfirmed({
+          to: signup.guestEmail,
+          guestName: signup.guestName || 'Visitante',
+          trainingName: newTraining.name || 'treino',
+          date: newTraining.date,
+          time: String(newTraining.time).substring(0, 5),
+        }).catch(err => console.error('Erro ao enviar email de reagendamento treino confirmado:', err));
+      });
+    }
+
+    res.status(200).json({
+      message: 'Reagendamento confirmado com sucesso. A sua inscrição está válida para a nova data.',
+      training: { id: newTraining.id, name: newTraining.name, date: newTraining.date, time: String(newTraining.time).substring(0, 5) },
+    });
+  } catch (error) {
+    console.error('Erro ao confirmar reagendamento de treino:', error);
+    res.status(500).json({ message: 'Erro ao confirmar reagendamento.', error: error.message });
+  }
+};
+
 module.exports = {
   getStaffForAppointments,
   getAvailableSlots,
   postAppointmentRequest,
   getPublicTrainings,
   postGuestTrainingSignup,
+  confirmAppointmentReschedule,
+  confirmTrainingReschedule,
 };

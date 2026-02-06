@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import BackArrow from '../../components/BackArrow';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { getAllAppointments, staffRespondToRequest } from '../../services/appointmentService';
-import { FaUserCircle, FaClock, FaCalendarDay, FaStickyNote, FaCheckCircle, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { getAllAppointments, staffRespondToRequest, proposeAppointmentReschedule } from '../../services/appointmentService';
+import { FaUserCircle, FaClock, FaCalendarDay, FaStickyNote, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaCalendarAlt } from 'react-icons/fa';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
@@ -258,6 +258,15 @@ const StaffManageRequestsPage = () => {
   const [showRejectConfirmModal, setShowRejectConfirmModal] = useState(false);
   const [appointmentToReject, setAppointmentToReject] = useState(null);
 
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleModalData, setRescheduleModalData] = useState({
+    appointmentId: null,
+    proposedDate: '',
+    proposedTime: '',
+  });
+  const [rescheduleModalError, setRescheduleModalError] = useState('');
+  const [rescheduleFormLoading, setRescheduleFormLoading] = useState(false);
+
   const fetchPendingRequests = useCallback(async () => {
     if (authState.token && authState.user) {
       try {
@@ -332,7 +341,7 @@ const StaffManageRequestsPage = () => {
   const handleRejectConfirm = async () => {
     if (!appointmentToReject) return;
     setActionLoading(appointmentToReject);
-    setPageError(''); 
+    setPageError('');
     setPageSuccessMessage('');
     setShowRejectConfirmModal(false);
     try {
@@ -345,6 +354,44 @@ const StaffManageRequestsPage = () => {
       setAppointmentToReject(null);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleOpenRescheduleModal = (request) => {
+    setRescheduleModalData({
+      appointmentId: request.id,
+      proposedDate: '',
+      proposedTime: '',
+    });
+    setRescheduleModalError('');
+    setShowRescheduleModal(true);
+  };
+
+  const handleCloseRescheduleModal = () => {
+    setShowRescheduleModal(false);
+    setRescheduleModalError('');
+    setRescheduleFormLoading(false);
+  };
+
+  const handleRescheduleSubmit = async () => {
+    const { appointmentId, proposedDate, proposedTime } = rescheduleModalData;
+    if (!appointmentId || !proposedDate || !proposedTime) {
+      setRescheduleModalError('Indica a nova data e hora.');
+      return;
+    }
+    setRescheduleFormLoading(true);
+    setRescheduleModalError('');
+    setPageError('');
+    setPageSuccessMessage('');
+    try {
+      await proposeAppointmentReschedule(appointmentId, { proposedDate, proposedTime }, authState.token);
+      setPageSuccessMessage('Proposta de reagendamento enviada por email. O cliente deve confirmar pelo link recebido.');
+      fetchPendingRequests();
+      handleCloseRescheduleModal();
+    } catch (err) {
+      setRescheduleModalError(err.message || 'Falha ao enviar proposta.');
+    } finally {
+      setRescheduleFormLoading(false);
     }
   };
 
@@ -405,6 +452,15 @@ const StaffManageRequestsPage = () => {
                   <FaCheckCircle /> {actionLoading === request.id && costFormLoading ? 'A processar...' : 'Aceitar'}
                 </RespondButton>
                 <RespondButton
+                  as="button"
+                  type="button"
+                  onClick={() => handleOpenRescheduleModal(request)}
+                  disabled={actionLoading === request.id || costFormLoading}
+                  style={{ backgroundColor: 'var(--primary, #d4af37)', color: '#1a1a1a' }}
+                >
+                  <FaCalendarAlt /> Reagendar
+                </RespondButton>
+                <RespondButton
                   onClick={() => handleRespondToRequest(request.id, 'reject')}
                   disabled={actionLoading === request.id}
                 >
@@ -445,6 +501,40 @@ const StaffManageRequestsPage = () => {
               <ModalButton type="button" onClick={handleCloseCostModal} disabled={costFormLoading}>Cancelar</ModalButton>
               <ModalButton primary onClick={handleConfirmAcceptRequest} disabled={costFormLoading}>
                 {costFormLoading ? 'Confirmando...' : 'Confirmar e Aceitar'}
+              </ModalButton>
+            </ModalActions>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {showRescheduleModal && (
+        <ModalOverlay onClick={handleCloseRescheduleModal}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <CloseButton onClick={handleCloseRescheduleModal}>&times;</CloseButton>
+            <ModalTitle>Propor reagendamento</ModalTitle>
+            <p style={{ fontSize: '0.9rem', color: '#b0b0b0', marginBottom: 16 }}>
+              O cliente/visitante receberá um email com a nova data e um link para confirmar. Após confirmar, a consulta fica agendada.
+            </p>
+            {rescheduleModalError && <ModalErrorText>{rescheduleModalError}</ModalErrorText>}
+            <ModalLabel htmlFor="rescheduleDate">Nova data *</ModalLabel>
+            <ModalInput
+              type="date"
+              id="rescheduleDate"
+              value={rescheduleModalData.proposedDate}
+              onChange={(e) => setRescheduleModalData(prev => ({ ...prev, proposedDate: e.target.value }))}
+              min={new Date().toISOString().slice(0, 10)}
+            />
+            <ModalLabel htmlFor="rescheduleTime">Nova hora *</ModalLabel>
+            <ModalInput
+              type="time"
+              id="rescheduleTime"
+              value={rescheduleModalData.proposedTime}
+              onChange={(e) => setRescheduleModalData(prev => ({ ...prev, proposedTime: e.target.value }))}
+            />
+            <ModalActions>
+              <ModalButton type="button" onClick={handleCloseRescheduleModal} disabled={rescheduleFormLoading}>Cancelar</ModalButton>
+              <ModalButton primary onClick={handleRescheduleSubmit} disabled={rescheduleFormLoading}>
+                {rescheduleFormLoading ? 'A enviar...' : 'Enviar proposta'}
               </ModalButton>
             </ModalActions>
           </ModalContent>

@@ -309,6 +309,98 @@ async function sendGuestTrainingTimeChanged({ to, guestName, trainingName, newDa
   });
 }
 
+// --- Reagendamento: proposta (com botão confirmar) e confirmado ---
+
+async function sendGuestAppointmentRescheduleProposed({ to, guestName, professionalName, proposedDate, proposedTime, confirmUrl }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(proposedDate, proposedTime);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#d4af37">Proposta de reagendamento da sua consulta</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>Foi proposta uma nova data e hora para a sua consulta com <strong>${professionalName || 'o profissional'}</strong>:</p>
+      <p style="font-size:1.1em;"><strong>${dateFormatted}</strong></p>
+      <p>Clique no botão abaixo para confirmar esta alteração. Após confirmar, a sua consulta ficará agendada para esta nova data.</p>
+      <p style="margin:24px 0;">
+        <a href="${confirmUrl}" style="display:inline-block;padding:12px 24px;background:#28a745;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Confirmar reagendamento</a>
+      </p>
+      <p style="color:#666;font-size:0.9em;">Se não confirmar, o pedido original mantém-se pendente. Este link expira em 7 dias.</p>
+      <p>Obrigado,<br/>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Proposta de reagendamento - Confirme a nova data - CORE',
+    html,
+  });
+}
+
+async function sendGuestAppointmentRescheduleConfirmed({ to, guestName, professionalName, date, time }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#28a745">Reagendamento confirmado</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>O seu reagendamento foi confirmado. A sua consulta com <strong>${professionalName || 'o profissional'}</strong> está agendada para:</p>
+      <p style="font-size:1.1em;"><strong>${dateFormatted}</strong></p>
+      <p>Até breve!<br/>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Reagendamento confirmado - CORE',
+    html,
+  });
+}
+
+async function sendGuestTrainingRescheduleProposed({ to, guestName, trainingName, proposedDate, proposedTime, confirmUrl }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(proposedDate, proposedTime);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#d4af37">Proposta de reagendamento do seu treino</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>Foi proposta uma nova data e hora para a sua inscrição no treino <strong>${trainingName || 'experimental'}</strong>:</p>
+      <p style="font-size:1.1em;"><strong>${dateFormatted}</strong></p>
+      <p>Clique no botão abaixo para confirmar esta alteração. Após confirmar, a sua inscrição ficará válida para esta nova data.</p>
+      <p style="margin:24px 0;">
+        <a href="${confirmUrl}" style="display:inline-block;padding:12px 24px;background:#28a745;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Confirmar reagendamento</a>
+      </p>
+      <p style="color:#666;font-size:0.9em;">Se não confirmar, o pedido original mantém-se pendente. Este link expira em 7 dias.</p>
+      <p>Obrigado,<br/>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Proposta de reagendamento do treino - Confirme - CORE',
+    html,
+  });
+}
+
+async function sendGuestTrainingRescheduleConfirmed({ to, guestName, trainingName, date, time }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+      <h2 style="color:#28a745">Reagendamento do treino confirmado</h2>
+      <p>Olá ${guestName || 'Visitante'},</p>
+      <p>O seu reagendamento foi confirmado. A sua inscrição no treino <strong>${trainingName || 'experimental'}</strong> está válida para:</p>
+      <p style="font-size:1.1em;"><strong>${dateFormatted}</strong></p>
+      <p>Até breve!<br/>Equipa CORE</p>
+    </div>`;
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Reagendamento do treino confirmado - CORE',
+    html,
+  });
+}
+
 module.exports = {
   sendPasswordResetEmail,
   sendCriticalErrorAlert,
@@ -321,4 +413,8 @@ module.exports = {
   sendGuestTrainingAccepted,
   sendGuestTrainingRejected,
   sendGuestTrainingTimeChanged,
+  sendGuestAppointmentRescheduleProposed,
+  sendGuestAppointmentRescheduleConfirmed,
+  sendGuestTrainingRescheduleProposed,
+  sendGuestTrainingRescheduleConfirmed,
 };

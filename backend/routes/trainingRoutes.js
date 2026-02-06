@@ -8,6 +8,7 @@ const { protect, isAdminStaff, isClientUser, isStaff } = require('../middleware/
 // --- Inscrições de visitantes (treino experimental) - rotas antes de /:id ---
 router.get('/guest-signups/pending', protect, isStaff, trainingController.getGuestSignupsPending);
 router.patch('/guest-signups/:id/respond', protect, isStaff, trainingController.respondToGuestSignup);
+router.patch('/guest-signups/:id/propose-reschedule', protect, isStaff, trainingController.proposeGuestSignupReschedule);
 
 // --- Rotas de Treino (Training) ---
 router.get('/', protect, trainingController.getAllTrainings);

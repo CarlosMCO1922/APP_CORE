@@ -417,3 +417,25 @@ export const respondToGuestSignup = async (signupId, payload, token) => {
   if (!response.ok) throw new Error(data.message || 'Erro ao processar.');
   return data;
 };
+
+/**
+ * Propor reagendamento de inscrição em treino (staff). Envia email ao visitante com link para confirmar.
+ * @param {number} signupId - ID da TrainingGuestSignup
+ * @param {{ proposedTrainingId: number }} payload
+ * @param {string} token
+ */
+export const proposeGuestSignupReschedule = async (signupId, payload, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!payload?.proposedTrainingId) throw new Error('ID do treino proposto é obrigatório.');
+  const response = await fetch(`${API_URL}/trainings/guest-signups/${signupId}/propose-reschedule`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ proposedTrainingId: payload.proposedTrainingId }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Erro ao propor reagendamento.');
+  return data;
+};

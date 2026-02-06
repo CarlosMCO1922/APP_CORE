@@ -31,9 +31,27 @@ module.exports = (sequelize) => {
       field: 'guest_phone',
     },
     status: {
-      type: DataTypes.ENUM('PENDING_APPROVAL', 'APPROVED', 'REJECTED'),
+      type: DataTypes.ENUM('PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'RESCHEDULE_PROPOSED'),
       allowNull: false,
       defaultValue: 'PENDING_APPROVAL',
+    },
+    proposedTrainingId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'trainings', key: 'id' },
+      onDelete: 'SET NULL',
+      field: 'proposed_training_id',
+    },
+    rescheduleToken: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      unique: true,
+      field: 'reschedule_token',
+    },
+    rescheduleTokenExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'reschedule_token_expires_at',
     },
     staffApprovedById: {
       type: DataTypes.INTEGER,
@@ -55,6 +73,10 @@ module.exports = (sequelize) => {
     TrainingGuestSignup.belongsTo(models.Training, {
       foreignKey: 'trainingId',
       as: 'training',
+    });
+    TrainingGuestSignup.belongsTo(models.Training, {
+      foreignKey: 'proposedTrainingId',
+      as: 'proposedTraining',
     });
     TrainingGuestSignup.belongsTo(models.Staff, {
       foreignKey: 'staffApprovedById',

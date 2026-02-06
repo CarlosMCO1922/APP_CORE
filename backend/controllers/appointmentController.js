@@ -7,13 +7,15 @@ const { _internalCreateNotification } = require('./notificationController');
 let sendGuestAppointmentAccepted;
 let sendGuestAppointmentRejected;
 let sendGuestAppointmentTimeChanged;
+let sendGuestAppointmentRescheduleProposed;
 try {
   const emailService = require('../utils/emailService');
   sendGuestAppointmentAccepted = emailService.sendGuestAppointmentAccepted;
   sendGuestAppointmentRejected = emailService.sendGuestAppointmentRejected;
   sendGuestAppointmentTimeChanged = emailService.sendGuestAppointmentTimeChanged;
+  sendGuestAppointmentRescheduleProposed = emailService.sendGuestAppointmentRescheduleProposed;
 } catch (e) {
-  sendGuestAppointmentAccepted = sendGuestAppointmentRejected = sendGuestAppointmentTimeChanged = () => {};
+  sendGuestAppointmentAccepted = sendGuestAppointmentRejected = sendGuestAppointmentTimeChanged = sendGuestAppointmentRescheduleProposed = () => {};
 }
 
 // --- Função Auxiliar para Verificar Conflitos de Consulta ---
@@ -746,6 +748,80 @@ const staffRespondToAppointmentRequest = async (req, res) => {
   }
 };
 
+/** POST /appointments/:id/propose-reschedule - Staff propõe nova data/hora; envia email com link para o cliente/visitante confirmar. */
+const proposeAppointmentReschedule = async (req, res) => {
+  const appointmentId = req.params.id;
+  const { proposedDate, proposedTime } = req.body;
+  const staffId = req.staff.id;
+
+  if (!proposedDate || !proposedTime) {
+    return res.status(400).json({ message: 'Data e hora propostas são obrigatórias.' });
+  }
+
+  try {
+    const appointment = await db.Appointment.findByPk(appointmentId, {
+      include: [{ model: db.Staff, as: 'professional' }, { model: db.User, as: 'client', attributes: ['id', 'firstName', 'lastName', 'email'] }],
+    });
+    if (!appointment) return res.status(404).json({ message: 'Consulta não encontrada.' });
+    if (appointment.staffId !== staffId && req.staff.role !== 'admin') {
+      return res.status(403).json({ message: 'Não tem permissão para propor reagendamento desta consulta.' });
+    }
+    if (appointment.status !== 'pendente_aprovacao_staff') {
+      return res.status(400).json({ message: 'Só é possível propor reagendamento para pedidos pendentes de aprovação.' });
+    }
+
+    const recipientEmail = appointment.guestEmail || (appointment.client && appointment.client.email);
+    if (!recipientEmail) {
+      return res.status(400).json({ message: 'Não há email associado a esta consulta para enviar a proposta.' });
+    }
+
+    const conflict = await checkForStaffAppointmentConflict(
+      appointment.staffId,
+      proposedDate,
+      String(proposedTime).substring(0, 5),
+      appointment.durationMinutes,
+      appointment.id
+    );
+    if (conflict) {
+      return res.status(409).json({ message: 'O horário proposto já está ocupado. Escolha outra data/hora.' });
+    }
+
+    const token = db.AppointmentRescheduleProposal.generateToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await db.AppointmentRescheduleProposal.create({
+      appointmentId: appointment.id,
+      proposedDate,
+      proposedTime: String(proposedTime).substring(0, 5),
+      token,
+      expiresAt,
+    });
+
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const confirmUrl = `${frontendUrl}/confirmar-reagendamento-consulta?token=${token}`;
+    const professionalName = appointment.professional ? `${appointment.professional.firstName} ${appointment.professional.lastName}` : 'o profissional';
+    const guestName = appointment.guestName || (appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Visitante');
+
+    setImmediate(() => {
+      if (sendGuestAppointmentRescheduleProposed) {
+        sendGuestAppointmentRescheduleProposed({
+          to: recipientEmail,
+          guestName,
+          professionalName,
+          proposedDate,
+          proposedTime: String(proposedTime).substring(0, 5),
+          confirmUrl,
+        }).catch(err => console.error('Erro ao enviar email de proposta de reagendamento:', err));
+      }
+    });
+
+    res.status(200).json({
+      message: 'Proposta de reagendamento enviada por email. O cliente/visitante deve confirmar pelo link recebido.',
+    });
+  } catch (error) {
+    console.error('Erro ao propor reagendamento de consulta:', error);
+    res.status(500).json({ message: 'Erro interno ao propor reagendamento.', error: error.message });
+  }
+};
 
 const getTodayAppointmentsCount = async (req, res) => {
   try {
@@ -831,6 +907,7 @@ module.exports = {
   clientCancelAppointmentBooking,
   clientRequestAppointment,
   staffRespondToAppointmentRequest,
+  proposeAppointmentReschedule,
   getTodayAppointmentsCount,
-  getAvailableSlotsForProfessional, 
+  getAvailableSlotsForProfessional,
 };

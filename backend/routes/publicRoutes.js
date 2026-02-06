@@ -9,5 +9,7 @@ router.get('/available-slots', publicController.getAvailableSlots);
 router.post('/appointment-request', publicController.postAppointmentRequest);
 router.get('/trainings', publicController.getPublicTrainings);
 router.post('/trainings/:trainingId/guest-signup', publicController.postGuestTrainingSignup);
+router.get('/confirm-appointment-reschedule', publicController.confirmAppointmentReschedule);
+router.get('/confirm-training-reschedule', publicController.confirmTrainingReschedule);
 
 module.exports = router;

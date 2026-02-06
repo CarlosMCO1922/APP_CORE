@@ -164,6 +164,24 @@ export const staffRespondToRequest = async (appointmentId, decision, token, tota
     }
 };
 
+export const proposeAppointmentReschedule = async (appointmentId, { proposedDate, proposedTime }, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!proposedDate || !proposedTime) throw new Error('Data e hora propostas são obrigatórias.');
+  try {
+    const response = await fetch(`${API_URL.replace(/\/$/, '')}/appointments/${appointmentId}/propose-reschedule`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ proposedDate, proposedTime }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao enviar proposta de reagendamento.');
+    return data;
+  } catch (error) {
+    logger.error('Erro em proposeAppointmentReschedule:', error);
+    throw error;
+  }
+};
+
 export const adminGetTodayAppointmentsCount = async (token) => {
   if (!token) throw new Error('Token de administrador não fornecido.');
   try {
