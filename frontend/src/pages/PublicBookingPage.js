@@ -457,15 +457,6 @@ function PublicBookingPage() {
     });
   };
 
-  useEffect(() => {
-    if (trainings.length > 0 && expandedDays.size === 0) {
-      const firstDayWithTrainings = next10Days.find(
-        (d) => Object.keys(trainingsByDayAndTime[d] || {}).length > 0
-      );
-      if (firstDayWithTrainings) setExpandedDays(new Set([firstDayWithTrainings]));
-    }
-  }, [trainings.length, expandedDays.size, next10Days, trainingsByDayAndTime]);
-
   return (
     <PageContainer>
       <TogglerContainer>
