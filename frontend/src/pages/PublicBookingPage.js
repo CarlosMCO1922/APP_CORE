@@ -343,13 +343,7 @@ function PublicBookingPage() {
     setLoadingTrainings(true);
     setMessage({ type: '', text: '' });
     try {
-      // Pedir com range do cliente; se falhar ou vazio, tentar sem filtro (mesma lógica do calendário)
-      const dateFrom = next10Days[0];
-      const dateTo = next10Days[next10Days.length - 1];
-      let data = await getPublicTrainings({ dateFrom, dateTo });
-      if (!Array.isArray(data) || data.length === 0) {
-        data = await getPublicTrainings({}); // Sem filtro = todos os treinos futuros (como calendário)
-      }
+      const data = await getPublicTrainings();
       setTrainings(Array.isArray(data) ? data : []);
       if (!selectedTrainingId && data.length) setSelectedTrainingId('');
     } catch (err) {

@@ -11,6 +11,8 @@ router.patch('/guest-signups/:id/respond', protect, isStaff, trainingController.
 router.patch('/guest-signups/:id/propose-reschedule', protect, isStaff, trainingController.proposeGuestSignupReschedule);
 
 // --- Rotas de Treino (Training) ---
+// Rota pública para lista (sem auth) - mesma data que o calendário, para página /marcar
+router.get('/public-list', trainingController.getAllTrainingsPublic);
 router.get('/', protect, trainingController.getAllTrainings);
 router.post('/', protect, isAdminStaff, trainingController.createTraining);
 router.get('/:id', protect, trainingController.getTrainingById);

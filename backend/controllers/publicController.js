@@ -169,27 +169,15 @@ const postAppointmentRequest = async (req, res) => {
   }
 };
 
-/** GET /public/trainings - Lista treinos futuros para a página de treino experimental (sem auth).
- *  Aceita query params dateFrom e dateTo (YYYY-MM-DD). Usa a mesma lógica que getAllTrainings.
- *  Se omitir filtro de data, devolve todos os treinos futuros (date >= hoje) para alinhar com o calendário. */
+/** GET /public/trainings - Lista treinos para a página de treino experimental (sem auth).
+ *  Usa a MESMA query que getAllTrainings (calendário) - SEM filtro de data no backend.
+ *  O frontend filtra para mostrar apenas os próximos 10 dias. */
 const getPublicTrainings = async (req, res) => {
   const now = Date.now();
   const oneHourMs = 60 * 60 * 1000;
-  const { dateFrom: qDateFrom, dateTo: qDateTo } = req.query;
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
+  // Sem filtro de data - mesma lógica que o calendário (getAllTrainings sem params)
   const whereClause = {};
-  if (qDateFrom && dateRegex.test(qDateFrom) && qDateTo && dateRegex.test(qDateTo) && qDateFrom <= qDateTo) {
-    whereClause.date = { [Op.between]: [qDateFrom, qDateTo] };
-  } else {
-    // Sem filtro de datas do cliente: devolver todos os treinos futuros (como o calendário)
-    try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      whereClause.date = { [Op.gte]: today };
-    } catch (e) {
-      whereClause.date = { [Op.gte]: new Date().toISOString().slice(0, 10) };
-    }
-  }
 
   const buildList = (trainings, guestCountByTraining, getParticipantsCount, getInstructor) => {
     return trainings.map((t) => {
@@ -240,48 +228,11 @@ const getPublicTrainings = async (req, res) => {
     );
     return res.status(200).json(list);
   } catch (error) {
-    console.error('Erro ao listar treinos públicos (query completa):', error.message || error);
-    try {
-      const trainings = await db.Training.findAll({
-        where: whereClause,
-        attributes: ['id', 'name', 'description', 'date', 'time', 'durationMinutes', 'capacity', 'instructorId'],
-        order: [['date', 'ASC'], ['time', 'ASC']],
-      });
-      if (trainings.length === 0) return res.status(200).json([]);
-      const trainingIds = trainings.map((t) => t.id);
-      const [guestSignups, instructors] = await Promise.all([
-        db.TrainingGuestSignup.findAll({
-          where: { status: 'APPROVED', trainingId: trainingIds },
-          attributes: ['trainingId'],
-        }),
-        db.Staff.findAll({
-          where: { id: [...new Set(trainings.map((t) => t.instructorId).filter(Boolean))] },
-          attributes: ['id', 'firstName', 'lastName'],
-        }),
-      ]);
-      const guestCountByTraining = guestSignups.reduce((acc, g) => {
-        acc[g.trainingId] = (acc[g.trainingId] || 0) + 1;
-        return acc;
-      }, {});
-      const instructorById = (instructors || []).reduce((acc, i) => { acc[i.id] = i; return acc; }, {});
-      const participantCounts = await Promise.all(
-        trainings.map((t) => (t.countParticipants ? t.countParticipants() : Promise.resolve(0)))
-      ).catch(() => trainingIds.map(() => 0));
-      const countByTid = (Array.isArray(participantCounts) ? participantCounts : trainingIds.map(() => 0)).reduce(
-        (acc, n, i) => { acc[trainingIds[i]] = n; return acc; },
-        {}
-      );
-      const list = buildList(
-        trainings,
-        guestCountByTraining,
-        (t) => countByTid[t.id] || 0,
-        (t) => (t.instructorId ? instructorById[t.instructorId] : null)
-      );
-      return res.status(200).json(list);
-    } catch (fallbackError) {
-      console.error('Erro ao listar treinos públicos (fallback):', fallbackError.message || fallbackError);
-      return res.status(200).json([]);
-    }
+    console.error('Erro ao listar treinos públicos:', error.message || error, error.stack);
+    return res.status(500).json({
+      message: 'Erro ao carregar treinos.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
   }
 };
 

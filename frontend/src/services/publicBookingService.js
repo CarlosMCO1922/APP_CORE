@@ -2,8 +2,8 @@
 // Chamadas à API pública (sem autenticação) para pedidos de consulta e treino experimental.
 import { logger } from '../utils/logger';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-const base = `${API_URL.replace(/\/$/, '')}/public`;
+const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+const base = `${API_URL}/public`;
 
 export const getStaffForAppointments = async () => {
   try {
@@ -61,24 +61,28 @@ export const submitPublicAppointmentRequest = async (payload) => {
 };
 
 /**
- * @param {{ dateFrom?: string, dateTo?: string }} options - Range de datas (YYYY-MM-DD).
- *   Se passado, evita discrepância de timezone entre cliente e servidor.
+ * Obtém treinos para a página pública. Tenta /public/trainings primeiro;
+ * se falhar, tenta /trainings/public-list (mesma query que o calendário).
  */
-export const getPublicTrainings = async (options = {}) => {
-  try {
-    const params = new URLSearchParams();
-    if (options.dateFrom) params.append('dateFrom', options.dateFrom);
-    if (options.dateTo) params.append('dateTo', options.dateTo);
-    const query = params.toString();
-    const url = query ? `${base}/trainings?${query}` : `${base}/trainings`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao carregar treinos.');
-    return data;
-  } catch (error) {
-    logger.error('Erro em getPublicTrainings:', error);
-    throw error;
+export const getPublicTrainings = async () => {
+  const urls = [
+    `${API_URL}/public/trainings`,
+    `${API_URL}/trainings/public-list`,
+  ];
+  let lastError;
+  for (const url of urls) {
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || data.errorDetails || `HTTP ${response.status}`);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      lastError = error;
+      logger.warn(`getPublicTrainings: falha em ${url}, a tentar próximo:`, error.message);
+    }
   }
+  logger.error('getPublicTrainings: todas as tentativas falharam', lastError);
+  throw lastError;
 };
 
 export const submitGuestTrainingSignup = async (trainingId, payload) => {
@@ -105,7 +109,7 @@ export const submitGuestTrainingSignup = async (trainingId, payload) => {
   }
 };
 
-const publicBase = () => `${(process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/$/, '')}/public`;
+const publicBase = () => `${API_URL}/public`;
 
 /** Confirma reagendamento de consulta (link do email). Token em query. */
 export const confirmAppointmentReschedule = async (token) => {

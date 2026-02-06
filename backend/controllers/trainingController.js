@@ -62,6 +62,55 @@ const createTraining = async (req, res) => {
 };
 
 
+/** GET /trainings/public-list - Lista todos os treinos (sem auth). Mesma query que getAllTrainings.
+ *  Usado pela página pública /marcar para mostrar os mesmos treinos que o calendário. */
+const getAllTrainingsPublic = async (req, res) => {
+  try {
+    const trainings = await db.Training.findAll({
+      where: {},
+      include: [
+        { model: db.Staff, as: 'instructor', attributes: ['id', 'firstName', 'lastName'] },
+        { model: db.User, as: 'participants', attributes: ['id'], through: { attributes: [] }, required: false },
+      ],
+      order: [['date', 'ASC'], ['time', 'ASC']],
+    });
+    const trainingIds = trainings.map((t) => t.id);
+    const guestSignups = trainingIds.length
+      ? await db.TrainingGuestSignup.findAll({
+          where: { status: 'APPROVED', trainingId: trainingIds },
+          attributes: ['trainingId'],
+        })
+      : [];
+    const guestCountByTraining = guestSignups.reduce((acc, g) => {
+      acc[g.trainingId] = (acc[g.trainingId] || 0) + 1;
+      return acc;
+    }, {});
+    const now = Date.now();
+    const oneHourMs = 60 * 60 * 1000;
+    const list = trainings.map((t) => {
+      const participantsCount = (t.participants?.length || 0) + (guestCountByTraining[t.id] || 0);
+      const start = new Date(`${t.date}T${String(t.time).substring(0, 5)}`);
+      const signupsClosed = !isNaN(start.getTime()) && start.getTime() - now < oneHourMs;
+      return {
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        date: t.date,
+        time: String(t.time).substring(0, 5),
+        durationMinutes: t.durationMinutes,
+        capacity: t.capacity,
+        participantsCount,
+        hasVacancies: participantsCount < t.capacity && !signupsClosed,
+        instructor: t.instructor ? { id: t.instructor.id, firstName: t.instructor.firstName, lastName: t.instructor.lastName } : null,
+      };
+    });
+    res.status(200).json(list);
+  } catch (error) {
+    console.error('Erro getAllTrainingsPublic:', error);
+    res.status(500).json({ message: 'Erro ao carregar treinos.', errorDetails: error.message });
+  }
+};
+
 const getAllTrainings = async (req, res) => {
   try {
     const { instructorId, dateFrom, dateTo, nameSearch } = req.query;
