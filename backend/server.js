@@ -37,7 +37,16 @@ const trainingSeriesRoutes = require('./routes/trainingSeriesRoutes');
 const pushRoutes = require('./routes/pushRoutes');
 const logRoutes = require('./routes/logRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const { rateLimit } = require('express-rate-limit');
 
+// Rate limiting apenas nas rotas públicas (proteção contra abuso sem afetar utilizadores autenticados)
+const publicRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { message: 'Muitos pedidos. Tenta novamente dentro de alguns minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 app.get('/', (req, res) => {
   res.send('Servidor CORE a funcionar!');
@@ -56,7 +65,7 @@ app.use('/progress', express.json(), progressRoutes);
 app.use('/training-series', express.json(), trainingSeriesRoutes);
 app.use('/push', express.json(), pushRoutes);
 app.use('/logs', express.json(), logRoutes);
-app.use('/public', express.json(), publicRoutes);
+app.use('/public', publicRateLimiter, express.json(), publicRoutes);
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
 const { notFound, errorHandler } = require('./middleware/errorHandler');
