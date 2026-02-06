@@ -1271,6 +1271,7 @@ const subscribeToRecurringTrainingService = async (masterTrainingId, clientSubsc
 module.exports = {
   createTraining,
   getAllTrainings,
+  getAllTrainingsPublic,
   getTrainingById,
   updateTraining,
   deleteTraining,
