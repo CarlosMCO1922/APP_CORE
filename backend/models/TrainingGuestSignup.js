@@ -14,6 +14,7 @@ module.exports = (sequelize) => {
       allowNull: false,
       references: { model: 'trainings', key: 'id' },
       onDelete: 'CASCADE',
+      field: 'training_id',
     },
     guestName: {
       type: DataTypes.STRING,
