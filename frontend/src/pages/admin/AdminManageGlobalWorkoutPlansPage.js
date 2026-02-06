@@ -6,6 +6,7 @@ import styled, { useTheme, css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
     adminGetAllGlobalWorkoutPlans,
+    adminGetGlobalWorkoutPlanById,
     adminCreateGlobalWorkoutPlan,
     adminUpdateGlobalWorkoutPlan,
     adminDeleteGlobalWorkoutPlan,
@@ -19,10 +20,11 @@ import { getAllTrainings } from '../../services/trainingService';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
-    FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical 
+    FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical, FaDumbbell
 } from 'react-icons/fa';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 import SearchableSelect from '../../components/Common/SearchableSelect';
+import { sortPlanExercises } from '../../utils/exerciseOrderUtils';
 
 
 
@@ -252,6 +254,131 @@ const DragHandle = styled.div`
   &:active { cursor: grabbing; }
 `;
 
+/* --- Vista de preview do plano (só leitura) --- */
+const PreviewModalOverlay = styled(ModalOverlay)`
+  align-items: flex-start;
+  padding: 24px 16px 40px;
+  overflow-y: auto;
+`;
+const PreviewModalContent = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackgroundDarker};
+  padding: 0;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  overflow: hidden;
+  position: relative;
+`;
+const PreviewHeader = styled.div`
+  padding: 20px 24px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+`;
+const PreviewTitle = styled.h2`
+  margin: 0 0 6px 0;
+  font-size: 1.35rem;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+const PreviewMeta = styled.p`
+  margin: 0;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+const PreviewNotes = styled.p`
+  margin: 12px 0 0 0;
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.colors.textMain};
+  line-height: 1.5;
+  white-space: pre-wrap;
+`;
+const PreviewCloseBtn = styled.button`
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  &:hover { color: ${({ theme }) => theme.colors.textMain}; }
+`;
+const PreviewBody = styled.div`
+  padding: 20px 24px 24px;
+  max-height: 65vh;
+  overflow-y: auto;
+`;
+const PreviewBlock = styled.div`
+  margin-bottom: 20px;
+  &:last-child { margin-bottom: 0; }
+`;
+const PreviewBlockTitle = styled.div`
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.colors.primary};
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+const PreviewExerciseCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  &:last-child { margin-bottom: 0; }
+`;
+const PreviewExerciseIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 8px;
+  background-color: ${({ theme }) => theme.colors.primary}22;
+  color: ${({ theme }) => theme.colors.primary};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+`;
+const PreviewExerciseInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+const PreviewExerciseName = styled.div`
+  font-weight: 600;
+  font-size: 1rem;
+  color: ${({ theme }) => theme.colors.textMain};
+  margin-bottom: 4px;
+`;
+const PreviewExerciseMeta = styled.div`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 6px;
+`;
+const PreviewExerciseParams = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMain};
+  span { color: ${({ theme }) => theme.colors.textMuted}; }
+`;
+const PreviewEmpty = styled.p`
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 0.95rem;
+  padding: 24px 0;
+  margin: 0;
+`;
+
 const initialPlanState = { name: '', notes: '', isVisible: false, exercises: [] };
 const initialExerciseState = { exerciseId: '', order: 0, sets: '', reps: '', durationSeconds: '', restSeconds: '', notes: '' };
 
@@ -279,6 +406,10 @@ const AdminManageGlobalWorkoutPlansPage = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewPlan, setPreviewPlan] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
 
   const fetchAllData = useCallback(async () => {
     if (!authState.token) return;
@@ -341,6 +472,30 @@ const AdminManageGlobalWorkoutPlansPage = () => {
     setPlanToAssign(null);
     setSelectedTrainingToAssign('');
   };
+
+  const handleOpenPreviewModal = useCallback(async (plan) => {
+    setShowPreviewModal(true);
+    setPreviewPlan(null);
+    setPreviewError('');
+    setPreviewLoading(true);
+    try {
+      const data = await adminGetGlobalWorkoutPlanById(plan.id, authState.token);
+      const ordered = data.planExercises && Array.isArray(data.planExercises)
+        ? { ...data, planExercises: sortPlanExercises(data.planExercises) }
+        : data;
+      setPreviewPlan(ordered);
+    } catch (err) {
+      setPreviewError(err.message || 'Erro ao carregar o plano.');
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [authState.token]);
+
+  const handleClosePreviewModal = useCallback(() => {
+    setShowPreviewModal(false);
+    setPreviewPlan(null);
+    setPreviewError('');
+  }, []);
 
   const handlePlanFormChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -705,6 +860,7 @@ return (
                   <td>{plan.isVisible ? <FaEye color={theme.colors.success} /> : <FaEye color={theme.colors.disabledColor} />}</td>
                   <td>{plan.notes?.substring(0, 50) || '-'}{plan.notes && plan.notes.length > 50 ? '...' : ''}</td>
                   <td>
+                    <ActionButton title="Visualizar plano" onClick={() => handleOpenPreviewModal(plan)}><FaEye /></ActionButton>
                     <ActionButton title="Editar Plano e Exercícios" onClick={() => handleOpenEditModal(plan)}><FaEdit /></ActionButton>
                     <ActionButton title="Associar a Treino" onClick={() => handleOpenAssignModal(plan)}><FaLink /></ActionButton>
                     <ActionButton title="Eliminar Plano" className="delete" onClick={() => handleDeletePlan(plan.id)}><FaTrashAlt /></ActionButton>
@@ -872,6 +1028,79 @@ return (
             </ModalForm>
           </ModalContent>
         </ModalOverlay>
+      )}
+
+      {/* Modal de visualização do plano (vista admin, só leitura) */}
+      {showPreviewModal && (
+        <PreviewModalOverlay onClick={handleClosePreviewModal}>
+          <PreviewModalContent onClick={(e) => e.stopPropagation()}>
+            <PreviewCloseBtn onClick={handleClosePreviewModal} aria-label="Fechar">&times;</PreviewCloseBtn>
+            {previewLoading ? (
+              <PreviewBody>
+                <PreviewEmpty>A carregar plano...</PreviewEmpty>
+              </PreviewBody>
+            ) : previewError ? (
+              <PreviewBody>
+                <ErrorText>{previewError}</ErrorText>
+              </PreviewBody>
+            ) : previewPlan ? (
+              <>
+                <PreviewHeader>
+                  <PreviewTitle>{previewPlan.name}</PreviewTitle>
+                  <PreviewMeta>
+                    {previewPlan.planExercises?.length || 0} exercício(s)
+                    {previewPlan.isVisible && ' · Visível na biblioteca'}
+                  </PreviewMeta>
+                  {previewPlan.notes && <PreviewNotes>{previewPlan.notes}</PreviewNotes>}
+                </PreviewHeader>
+                <PreviewBody>
+                  {(!previewPlan.planExercises || previewPlan.planExercises.length === 0) ? (
+                    <PreviewEmpty>Este plano ainda não tem exercícios.</PreviewEmpty>
+                  ) : (
+                    (() => {
+                      const sorted = sortPlanExercises(previewPlan.planExercises);
+                      const groups = [];
+                      let current = [];
+                      sorted.forEach((ex) => {
+                        const sameBlock = current.length > 0 && current[0].order === ex.order && (current[0].supersetGroup == null) === (ex.supersetGroup == null) && current[0].supersetGroup === ex.supersetGroup;
+                        if (sameBlock) current.push(ex);
+                        else {
+                          current = [ex];
+                          groups.push(current);
+                        }
+                      });
+                      return groups.map((block, idx) => (
+                        <PreviewBlock key={idx}>
+                          <PreviewBlockTitle>
+                            Bloco {idx + 1}{block.length > 1 ? ' (Superset)' : ''}
+                          </PreviewBlockTitle>
+                          {block.map((pe) => (
+                            <PreviewExerciseCard key={pe.id}>
+                              <PreviewExerciseIcon><FaDumbbell /></PreviewExerciseIcon>
+                              <PreviewExerciseInfo>
+                                <PreviewExerciseName>{pe.exerciseDetails?.name || 'Exercício'}</PreviewExerciseName>
+                                {pe.exerciseDetails?.muscleGroup && (
+                                  <PreviewExerciseMeta>{pe.exerciseDetails.muscleGroup}</PreviewExerciseMeta>
+                                )}
+                                <PreviewExerciseParams>
+                                  {pe.sets != null && pe.sets !== '' && <span>Séries: <strong>{pe.sets}</strong></span>}
+                                  {pe.reps != null && pe.reps !== '' && <span>Reps: <strong>{pe.reps}</strong></span>}
+                                  {pe.durationSeconds != null && pe.durationSeconds !== '' && <span>Duração: <strong>{pe.durationSeconds}s</strong></span>}
+                                  {pe.restSeconds != null && pe.restSeconds !== '' && <span>Descanso: <strong>{pe.restSeconds}s</strong></span>}
+                                </PreviewExerciseParams>
+                                {pe.notes && <PreviewExerciseMeta style={{ marginTop: 6 }}>{pe.notes}</PreviewExerciseMeta>}
+                              </PreviewExerciseInfo>
+                            </PreviewExerciseCard>
+                          ))}
+                        </PreviewBlock>
+                      ));
+                    })()
+                  )}
+                </PreviewBody>
+              </>
+            ) : null}
+          </PreviewModalContent>
+        </PreviewModalOverlay>
       )}
 
       <ConfirmationModal
