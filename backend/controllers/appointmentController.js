@@ -679,6 +679,7 @@ const staffRespondToAppointmentRequest = async (req, res) => {
     if (appointment.staffId !== staffMemberId && req.staff.role !== 'admin') { return res.status(403).json({ message: 'Não tem permissão para responder a este pedido.' }); }
     if (appointment.status !== 'pendente_aprovacao_staff') { return res.status(400).json({ message: `Este pedido já foi processado (status atual: ${appointment.status}).` }); }
 
+    let signalPaymentCreated = null;
     if (decision === 'accept') {
       const conflict = await checkForStaffAppointmentConflict(
         appointment.staffId,
@@ -693,14 +694,14 @@ const staffRespondToAppointmentRequest = async (req, res) => {
           conflictingAppointmentId: conflict.id
         });
       }
-      appointment.status = 'agendada'; 
+      appointment.status = 'agendada';
       appointment.totalCost = parseFloat(totalCost);
       appointment.signalPaid = false;
       await appointment.save();
 
-      // Criar pagamento de sinal
+      // Criar pagamento de sinal (guardar referência para o link do email / botão Stripe)
       if (appointment.userId && appointment.totalCost > 0) {
-        await internalCreateSignalPayment(appointment, staffMemberId);
+        signalPaymentCreated = await internalCreateSignalPayment(appointment, staffMemberId);
       }
 
     } else { // decision === 'reject'
@@ -713,6 +714,7 @@ const staffRespondToAppointmentRequest = async (req, res) => {
     });
 
     // Notificar o cliente da decisão (utilizador com conta)
+    const payQuery = signalPaymentCreated ? `?pay=${signalPaymentCreated.id}` : '';
     if (appointment.userId) {
       let clientMessage = '';
       let notificationType = '';
@@ -729,18 +731,20 @@ const staffRespondToAppointmentRequest = async (req, res) => {
         type: notificationType,
         relatedResourceId: appointment.id,
         relatedResourceType: 'appointment',
-        link: decision === 'accept' ? `/meus-pagamentos` : `/calendario`
+        link: decision === 'accept' ? `/meus-pagamentos${payQuery}` : `/calendario`
       });
     }
 
-    // Email ao cliente ou visitante quando staff aceita ou rejeita
+    // Email ao cliente ou visitante quando staff aceita ou rejeita (link com pay=ID abre direto o Stripe)
     const recipientEmail = appointment.guestEmail || (appointment.client && appointment.client.email);
     if (recipientEmail && (sendGuestAppointmentAccepted || sendGuestAppointmentRejected)) {
       const professionalName = appointment.professional ? `${appointment.professional.firstName} ${appointment.professional.lastName}` : 'o profissional';
       const timeStr = String(appointment.time).substring(0, 5);
       const guestName = appointment.guestName || (appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : null) || 'Visitante';
       const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-      const paymentUrl = `${frontendUrl}/meus-pagamentos`;
+      const paymentUrl = signalPaymentCreated
+        ? `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`
+        : (appointment.userId ? `${frontendUrl}/meus-pagamentos` : undefined);
       const totalCost = appointment.totalCost != null ? parseFloat(appointment.totalCost) : null;
       const signalAmount = totalCost != null ? parseFloat((totalCost * 0.20).toFixed(2)) : null;
 

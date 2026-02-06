@@ -169,11 +169,19 @@ const postAppointmentRequest = async (req, res) => {
   }
 };
 
-/** GET /public/trainings - Lista treinos futuros para a página de treino experimental (sem auth). */
+/** GET /public/trainings - Lista treinos futuros (próximos 10 dias) para a página de treino experimental (sem auth). */
 const getPublicTrainings = async (req, res) => {
-  const today = format(new Date(), 'yyyy-MM-dd');
   const now = Date.now();
   const oneHourMs = 60 * 60 * 1000;
+  let today;
+  try {
+    today = format(new Date(), 'yyyy-MM-dd');
+  } catch (e) {
+    today = new Date().toISOString().slice(0, 10);
+  }
+  const tenDaysLater = new Date(now);
+  tenDaysLater.setDate(tenDaysLater.getDate() + 10);
+  const maxDate = format(tenDaysLater, 'yyyy-MM-dd');
 
   const buildList = (trainings, guestCountByTraining, getParticipantsCount, getInstructor) => {
     return trainings.map((t) => {
@@ -198,7 +206,7 @@ const getPublicTrainings = async (req, res) => {
 
   try {
     const trainings = await db.Training.findAll({
-      where: { date: { [Op.gte]: today } },
+      where: { date: { [Op.gte]: today, [Op.lte]: maxDate } },
       include: [
         { model: db.Staff, as: 'instructor', required: false, attributes: ['id', 'firstName', 'lastName'] },
         { model: db.User, as: 'participants', attributes: ['id'], through: { attributes: [] }, required: false },
@@ -227,7 +235,7 @@ const getPublicTrainings = async (req, res) => {
     console.error('Erro ao listar treinos públicos (query completa):', error.message || error);
     try {
       const trainings = await db.Training.findAll({
-        where: { date: { [Op.gte]: today } },
+        where: { date: { [Op.gte]: today, [Op.lte]: maxDate } },
         attributes: ['id', 'name', 'description', 'date', 'time', 'durationMinutes', 'capacity', 'instructorId'],
         order: [['date', 'ASC'], ['time', 'ASC']],
       });

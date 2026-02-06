@@ -1,5 +1,5 @@
 // src/pages/MyPaymentsPage.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -287,6 +287,7 @@ const MyPaymentsPage = () => {
   const [viewDirection, setViewDirection] = useState('right');
   const [showConfirmPaymentModal, setShowConfirmPaymentModal] = useState(false);
   const [paymentToConfirm, setPaymentToConfirm] = useState(null);
+  const autoPayAttemptedRef = useRef(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -325,6 +326,21 @@ addToast('Falha ao carregar pagamentos.', { type: 'error', category: 'payment' }
         return () => clearTimeout(timer);
     }
   }, [location, navigate, fetchMyPayments]);
+
+  // Abrir automaticamente o fluxo Stripe quando o utilizador vem do link do email (pay=ID)
+  useEffect(() => {
+    if (loading || !authState.token) return;
+    const payId = new URLSearchParams(location.search).get('pay');
+    if (!payId || autoPayAttemptedRef.current) return;
+    const id = parseInt(payId, 10);
+    if (isNaN(id)) return;
+    const payment = payments.find((p) => p.id === id);
+    if (payment) {
+      autoPayAttemptedRef.current = true;
+      navigate(location.pathname, { replace: true });
+      handleInitiateStripePayment(payment);
+    }
+  }, [loading, payments, location.search, location.pathname, navigate, authState.token]);
 
   const handleInitiateStripePayment = async (payment) => {
     const pagableOnlineCategories = ['sinal_consulta', 'consulta_fisioterapia'];

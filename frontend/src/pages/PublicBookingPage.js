@@ -1,6 +1,6 @@
 // frontend/src/pages/PublicBookingPage.js
 // Página pública para pedir consulta ou inscrever-se em treino experimental (sem conta). Rota: /marcar
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import {
@@ -11,6 +11,7 @@ import {
   submitGuestTrainingSignup,
 } from '../services/publicBookingService';
 import ThemeToggler from '../components/Theme/ThemeToggler';
+import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -202,16 +203,47 @@ const LoginLink = styled(Link)`
 `;
 
 const DayGroup = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 8px;
+  overflow: hidden;
 `;
 
-const DayHeading = styled.div`
-  font-size: 0.9rem;
+const DayHeading = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  font-size: 0.95rem;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.primary};
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s;
+  &:hover {
+    background: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+  }
+`;
+
+const DayContent = styled.div`
+  padding: 0 16px 12px 16px;
+  background: ${({ theme }) => theme.colors.background};
+`;
+
+const TimeSlot = styled.div`
+  margin-top: 12px;
+`;
+
+const TimeSlotLabel = styled.div`
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const QuestionnaireSection = styled.div`
@@ -260,6 +292,7 @@ function PublicBookingPage() {
   const [trainings, setTrainings] = useState([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [selectedTrainingId, setSelectedTrainingId] = useState('');
+  const [expandedDays, setExpandedDays] = useState(new Set());
 
   const fetchStaff = useCallback(async () => {
     setLoadingStaff(true);
@@ -315,6 +348,15 @@ function PublicBookingPage() {
   useEffect(() => {
     if (activeTab === TAB_TREINO) fetchTrainings();
   }, [activeTab, fetchTrainings]);
+
+  useEffect(() => {
+    if (trainingsWithVacancies.length > 0 && expandedDays.size === 0) {
+      const firstDayWithTrainings = next10Days.find(
+        (d) => Object.keys(trainingsByDayAndTime[d] || {}).length > 0
+      );
+      if (firstDayWithTrainings) setExpandedDays(new Set([firstDayWithTrainings]));
+    }
+  }, [trainingsWithVacancies.length, expandedDays.size, next10Days, trainingsByDayAndTime]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -384,14 +426,41 @@ function PublicBookingPage() {
   minDate.setDate(minDate.getDate() + 1);
   const minDateStr = minDate.toISOString().slice(0, 10);
 
+  const next10Days = useMemo(() => {
+    const days = [];
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 10; i++) {
+      days.push(d.toISOString().slice(0, 10));
+      d.setDate(d.getDate() + 1);
+    }
+    return days;
+  }, []);
+
   const trainingsWithVacancies = trainings.filter((t) => t.hasVacancies);
-  const trainingsByDay = trainingsWithVacancies.reduce((acc, t) => {
-    const day = t.date || '';
-    if (!acc[day]) acc[day] = [];
-    acc[day].push(t);
+  const trainingsByDayAndTime = useMemo(() => {
+    const acc = {};
+    trainingsWithVacancies.forEach((t) => {
+      const day = t.date || '';
+      const time = String(t.time || '').substring(0, 5);
+      if (!acc[day]) acc[day] = {};
+      if (!acc[day][time]) acc[day][time] = [];
+      acc[day][time].push(t);
+    });
+    next10Days.forEach((d) => {
+      if (!acc[d]) acc[d] = {};
+    });
     return acc;
-  }, {});
-  const sortedDays = Object.keys(trainingsByDay).sort();
+  }, [trainingsWithVacancies, next10Days]);
+
+  const toggleDay = (day) => {
+    setExpandedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  };
 
   return (
     <PageContainer>
@@ -518,31 +587,64 @@ function PublicBookingPage() {
           <>
             {loadingTrainings ? (
               <p style={{ textAlign: 'center', color: theme.colors.textMuted, margin: '16px 0' }}>A carregar treinos...</p>
-            ) : trainingsWithVacancies.length === 0 ? (
-              <p style={{ textAlign: 'center', color: theme.colors.textMuted, margin: '16px 0' }}>
-                Não há treinos com vagas disponíveis para inscrição experimental no momento.
-              </p>
             ) : (
               <>
-                <Label style={{ marginBottom: 8 }}>Dias e horários com vagas</Label>
-                {sortedDays.map((day) => (
-                  <DayGroup key={day}>
-                    <DayHeading>{formatDayLabel(day)}</DayHeading>
-                    {trainingsByDay[day].map((t) => (
-                      <TrainingCard
-                        key={t.id}
-                        className={String(selectedTrainingId) === String(t.id) ? 'selected' : ''}
-                        onClick={() => setSelectedTrainingId(String(t.id))}
-                      >
-                        <TrainingCardTitle>{t.name || `Treino ${t.id}`}</TrainingCardTitle>
-                        <TrainingCardMeta>
-                          {t.time} · {t.participantsCount}/{t.capacity} vagas ·{' '}
-                          {t.instructor ? `${t.instructor.firstName} ${t.instructor.lastName}` : '—'}
-                        </TrainingCardMeta>
-                      </TrainingCard>
-                    ))}
-                  </DayGroup>
-                ))}
+                <Label style={{ marginBottom: 12 }}>Próximos 10 dias</Label>
+                {trainingsWithVacancies.length === 0 && (
+                  <p style={{ fontSize: '0.9rem', color: theme.colors.textMuted, margin: '0 0 12px 0' }}>
+                    Não há treinos com vagas nos próximos 10 dias. Expande um dia para verificar.
+                  </p>
+                )}
+                {next10Days.map((day) => {
+                  const slots = trainingsByDayAndTime[day] || {};
+                  const slotKeys = Object.keys(slots).sort();
+                  const hasTrainings = slotKeys.length > 0;
+                  const isExpanded = expandedDays.has(day);
+
+                  return (
+                    <DayGroup key={day}>
+                      <DayHeading type="button" onClick={() => toggleDay(day)}>
+                        <span>{formatDayLabel(day)}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {hasTrainings && (
+                            <span style={{ fontSize: '0.8rem', fontWeight: 500, color: theme.colors.textMuted }}>
+                              {slotKeys.reduce((n, k) => n + slots[k].length, 0)} treino(s)
+                            </span>
+                          )}
+                          {isExpanded ? <FaChevronDown size={14} /> : <FaChevronRight size={14} />}
+                        </span>
+                      </DayHeading>
+                      {isExpanded && (
+                        <DayContent>
+                          {!hasTrainings ? (
+                            <p style={{ padding: '12px 0', margin: 0, fontSize: '0.9rem', color: theme.colors.textMuted }}>
+                              Sem treinos disponíveis neste dia.
+                            </p>
+                          ) : (
+                            slotKeys.map((time) => (
+                              <TimeSlot key={time}>
+                                <TimeSlotLabel>{time}</TimeSlotLabel>
+                                {slots[time].map((t) => (
+                                  <TrainingCard
+                                    key={t.id}
+                                    className={String(selectedTrainingId) === String(t.id) ? 'selected' : ''}
+                                    onClick={() => setSelectedTrainingId(String(t.id))}
+                                  >
+                                    <TrainingCardTitle>{t.name || `Treino ${t.id}`}</TrainingCardTitle>
+                                    <TrainingCardMeta>
+                                      {t.participantsCount}/{t.capacity} vagas ·{' '}
+                                      {t.instructor ? `${t.instructor.firstName} ${t.instructor.lastName}` : '—'}
+                                    </TrainingCardMeta>
+                                  </TrainingCard>
+                                ))}
+                              </TimeSlot>
+                            ))
+                          )}
+                        </DayContent>
+                      )}
+                    </DayGroup>
+                  );
+                })}
                 {selectedTrainingId ? (
                   <QuestionnaireSection>
                     <QuestionnaireTitle>Questionário de inscrição</QuestionnaireTitle>
