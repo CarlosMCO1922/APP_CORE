@@ -171,13 +171,37 @@ const postAppointmentRequest = async (req, res) => {
 
 /** GET /public/trainings - Lista treinos futuros para a página de treino experimental (sem auth). */
 const getPublicTrainings = async (req, res) => {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const now = Date.now();
+  const oneHourMs = 60 * 60 * 1000;
+
+  const buildList = (trainings, guestCountByTraining, getParticipantsCount, getInstructor) => {
+    return trainings.map((t) => {
+      const participantsCount = getParticipantsCount(t) + (guestCountByTraining[t.id] || 0);
+      const start = new Date(`${t.date}T${String(t.time).substring(0, 5)}`);
+      const signupsClosed = !isNaN(start.getTime()) && start.getTime() - now < oneHourMs;
+      const instructor = getInstructor(t);
+      return {
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        date: t.date,
+        time: String(t.time).substring(0, 5),
+        durationMinutes: t.durationMinutes,
+        capacity: t.capacity,
+        participantsCount,
+        hasVacancies: participantsCount < t.capacity && !signupsClosed,
+        instructor: instructor ? { id: instructor.id, firstName: instructor.firstName, lastName: instructor.lastName } : null,
+      };
+    });
+  };
+
   try {
-    const today = format(new Date(), 'yyyy-MM-dd');
     const trainings = await db.Training.findAll({
       where: { date: { [Op.gte]: today } },
       include: [
-        { model: db.Staff, as: 'instructor', attributes: ['id', 'firstName', 'lastName'] },
-        { model: db.User, as: 'participants', attributes: ['id'], through: { attributes: [] } },
+        { model: db.Staff, as: 'instructor', required: false, attributes: ['id', 'firstName', 'lastName'] },
+        { model: db.User, as: 'participants', attributes: ['id'], through: { attributes: [] }, required: false },
       ],
       order: [['date', 'ASC'], ['time', 'ASC']],
     });
@@ -192,29 +216,56 @@ const getPublicTrainings = async (req, res) => {
       acc[g.trainingId] = (acc[g.trainingId] || 0) + 1;
       return acc;
     }, {});
-    const now = Date.now();
-    const oneHourMs = 60 * 60 * 1000;
-    const list = trainings.map((t) => {
-      const participantsCount = (t.participants?.length || 0) + (guestCountByTraining[t.id] || 0);
-      const start = new Date(`${t.date}T${String(t.time).substring(0, 5)}`);
-      const signupsClosed = !isNaN(start.getTime()) && start.getTime() - now < oneHourMs;
-      return {
-        id: t.id,
-        name: t.name,
-        description: t.description,
-        date: t.date,
-        time: String(t.time).substring(0, 5),
-        durationMinutes: t.durationMinutes,
-        capacity: t.capacity,
-        participantsCount,
-        hasVacancies: participantsCount < t.capacity && !signupsClosed,
-        instructor: t.instructor ? { id: t.instructor.id, firstName: t.instructor.firstName, lastName: t.instructor.lastName } : null,
-      };
-    });
-    res.status(200).json(list);
+    const list = buildList(
+      trainings,
+      guestCountByTraining,
+      (t) => t.participants?.length || 0,
+      (t) => t.instructor || null
+    );
+    return res.status(200).json(list);
   } catch (error) {
-    console.error('Erro ao listar treinos públicos:', error);
-    res.status(500).json({ message: 'Erro ao listar treinos.', error: error.message });
+    console.error('Erro ao listar treinos públicos (query completa):', error.message || error);
+    try {
+      const trainings = await db.Training.findAll({
+        where: { date: { [Op.gte]: today } },
+        attributes: ['id', 'name', 'description', 'date', 'time', 'durationMinutes', 'capacity', 'instructorId'],
+        order: [['date', 'ASC'], ['time', 'ASC']],
+      });
+      if (trainings.length === 0) return res.status(200).json([]);
+      const trainingIds = trainings.map((t) => t.id);
+      const [guestSignups, instructors] = await Promise.all([
+        db.TrainingGuestSignup.findAll({
+          where: { status: 'APPROVED', trainingId: trainingIds },
+          attributes: ['trainingId'],
+        }),
+        db.Staff.findAll({
+          where: { id: [...new Set(trainings.map((t) => t.instructorId).filter(Boolean))] },
+          attributes: ['id', 'firstName', 'lastName'],
+        }),
+      ]);
+      const guestCountByTraining = guestSignups.reduce((acc, g) => {
+        acc[g.trainingId] = (acc[g.trainingId] || 0) + 1;
+        return acc;
+      }, {});
+      const instructorById = (instructors || []).reduce((acc, i) => { acc[i.id] = i; return acc; }, {});
+      const participantCounts = await Promise.all(
+        trainings.map((t) => (t.countParticipants ? t.countParticipants() : Promise.resolve(0)))
+      ).catch(() => trainingIds.map(() => 0));
+      const countByTid = (Array.isArray(participantCounts) ? participantCounts : trainingIds.map(() => 0)).reduce(
+        (acc, n, i) => { acc[trainingIds[i]] = n; return acc; },
+        {}
+      );
+      const list = buildList(
+        trainings,
+        guestCountByTraining,
+        (t) => countByTid[t.id] || 0,
+        (t) => (t.instructorId ? instructorById[t.instructorId] : null)
+      );
+      return res.status(200).json(list);
+    } catch (fallbackError) {
+      console.error('Erro ao listar treinos públicos (fallback):', fallbackError.message || fallbackError);
+      return res.status(200).json([]);
+    }
   }
 };
 

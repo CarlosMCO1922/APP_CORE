@@ -201,7 +201,40 @@ const LoginLink = styled(Link)`
   }
 `;
 
+const DayGroup = styled.div`
+  margin-bottom: 20px;
+`;
+
+const DayHeading = styled.div`
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.primary};
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const QuestionnaireSection = styled.div`
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const QuestionnaireTitle = styled.p`
+  font-size: 1rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textMain};
+  margin: 0 0 16px 0;
+`;
+
 const DURATION_MINUTES = 60;
+
+function formatDayLabel(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  const options = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
+  return d.toLocaleDateString('pt-PT', options);
+}
 
 const TAB_CONSULTA = 'consulta';
 const TAB_TREINO = 'treino';
@@ -264,10 +297,16 @@ function PublicBookingPage() {
     setMessage({ type: '', text: '' });
     try {
       const data = await getPublicTrainings();
-      setTrainings(data);
+      setTrainings(Array.isArray(data) ? data : []);
       if (!selectedTrainingId && data.length) setSelectedTrainingId('');
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Erro ao carregar treinos.' });
+      const msg = err.message || 'Erro ao carregar treinos.';
+      setMessage({
+        type: 'error',
+        text: msg.includes('fetch') || msg.includes('Failed')
+          ? 'Não foi possível ligar ao servidor. Verifica a ligação e tenta novamente.'
+          : msg,
+      });
     } finally {
       setLoadingTrainings(false);
     }
@@ -346,6 +385,13 @@ function PublicBookingPage() {
   const minDateStr = minDate.toISOString().slice(0, 10);
 
   const trainingsWithVacancies = trainings.filter((t) => t.hasVacancies);
+  const trainingsByDay = trainingsWithVacancies.reduce((acc, t) => {
+    const day = t.date || '';
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(t);
+    return acc;
+  }, {});
+  const sortedDays = Object.keys(trainingsByDay).sort();
 
   return (
     <PageContainer>
@@ -478,62 +524,72 @@ function PublicBookingPage() {
               </p>
             ) : (
               <>
-                <Label style={{ marginBottom: 8 }}>Treino *</Label>
-                {trainingsWithVacancies.map((t) => (
-                  <TrainingCard
-                    key={t.id}
-                    className={
-                      String(selectedTrainingId) === String(t.id)
-                        ? 'selected'
-                        : ''
-                    }
-                    onClick={() => setSelectedTrainingId(String(t.id))}
-                  >
-                    <TrainingCardTitle>{t.name || `Treino ${t.id}`}</TrainingCardTitle>
-                    <TrainingCardMeta>
-                      {t.date} {t.time} · {t.participantsCount}/{t.capacity} ·{' '}
-                      {t.instructor ? `${t.instructor.firstName} ${t.instructor.lastName}` : '—'}
-                    </TrainingCardMeta>
-                  </TrainingCard>
+                <Label style={{ marginBottom: 8 }}>Dias e horários com vagas</Label>
+                {sortedDays.map((day) => (
+                  <DayGroup key={day}>
+                    <DayHeading>{formatDayLabel(day)}</DayHeading>
+                    {trainingsByDay[day].map((t) => (
+                      <TrainingCard
+                        key={t.id}
+                        className={String(selectedTrainingId) === String(t.id) ? 'selected' : ''}
+                        onClick={() => setSelectedTrainingId(String(t.id))}
+                      >
+                        <TrainingCardTitle>{t.name || `Treino ${t.id}`}</TrainingCardTitle>
+                        <TrainingCardMeta>
+                          {t.time} · {t.participantsCount}/{t.capacity} vagas ·{' '}
+                          {t.instructor ? `${t.instructor.firstName} ${t.instructor.lastName}` : '—'}
+                        </TrainingCardMeta>
+                      </TrainingCard>
+                    ))}
+                  </DayGroup>
                 ))}
-                <Form onSubmit={handleSubmitTreino} style={{ marginTop: 20 }}>
-                  <div>
-                    <Label htmlFor="guestNameTreino">Nome completo *</Label>
-                    <Input
-                      id="guestNameTreino"
-                      type="text"
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="O teu nome"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="guestEmailTreino">Email *</Label>
-                    <Input
-                      id="guestEmailTreino"
-                      type="email"
-                      value={guestEmail}
-                      onChange={(e) => setGuestEmail(e.target.value)}
-                      placeholder="email@exemplo.pt"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="guestPhoneTreino">Telemóvel *</Label>
-                    <Input
-                      id="guestPhoneTreino"
-                      type="tel"
-                      value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
-                      placeholder="912 345 678"
-                      required
-                    />
-                  </div>
-                  <SubmitButton type="submit" disabled={submitting || !selectedTrainingId}>
-                    {submitting ? 'A enviar...' : 'Enviar inscrição'}
-                  </SubmitButton>
-                </Form>
+                {selectedTrainingId ? (
+                  <QuestionnaireSection>
+                    <QuestionnaireTitle>Questionário de inscrição</QuestionnaireTitle>
+                    <Form onSubmit={handleSubmitTreino}>
+                      <div>
+                        <Label htmlFor="guestNameTreino">Nome completo *</Label>
+                        <Input
+                          id="guestNameTreino"
+                          type="text"
+                          value={guestName}
+                          onChange={(e) => setGuestName(e.target.value)}
+                          placeholder="O teu nome"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="guestEmailTreino">Email *</Label>
+                        <Input
+                          id="guestEmailTreino"
+                          type="email"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                          placeholder="email@exemplo.pt"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="guestPhoneTreino">Telemóvel *</Label>
+                        <Input
+                          id="guestPhoneTreino"
+                          type="tel"
+                          value={guestPhone}
+                          onChange={(e) => setGuestPhone(e.target.value)}
+                          placeholder="912 345 678"
+                          required
+                        />
+                      </div>
+                      <SubmitButton type="submit" disabled={submitting}>
+                        {submitting ? 'A enviar...' : 'Enviar inscrição'}
+                      </SubmitButton>
+                    </Form>
+                  </QuestionnaireSection>
+                ) : (
+                  <p style={{ textAlign: 'center', color: theme.colors.textMuted, marginTop: 16, fontSize: '0.9rem' }}>
+                    Seleciona um treino acima para preencheres o questionário de inscrição.
+                  </p>
+                )}
               </>
             )}
           </>
