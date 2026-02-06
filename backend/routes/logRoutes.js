@@ -11,10 +11,10 @@ const {
   exportLogsToCSV,
   getLogsStats,
 } = require('../controllers/logController');
-const { protect, isStaff } = require('../middleware/authMiddleware');
+const { protect, optionalProtect, isStaff } = require('../middleware/authMiddleware');
 
-// Rotas públicas (para frontend enviar erros)
-router.post('/error', logError); // Não requer autenticação - pode ser erro antes de login
+// Frontend envia erros aqui; auth opcional para associar userId quando o utilizador está logado
+router.post('/error', optionalProtect, logError);
 router.post('/security', protect, logSecurityEvent); // Requer autenticação
 
 // Rotas protegidas (apenas staff/admin)

@@ -1,5 +1,6 @@
 // src/services/trainingService.js
 import { logger } from '../utils/logger';
+import { reportUserActionError } from './logService';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -139,7 +140,11 @@ export const bookTraining = async (trainingId, token) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao inscrever no treino.');
     return data;
-  } catch (error) { logger.error("Erro em bookTraining:", error); throw error; }
+  } catch (error) {
+    logger.error('Erro em bookTraining:', error);
+    reportUserActionError('inscrever_treino', error, () => token, { trainingId });
+    throw error;
+  }
 };
 
 export const cancelTrainingBooking = async (trainingId, token, cancelRecurring = false) => {
@@ -156,7 +161,11 @@ export const cancelTrainingBooking = async (trainingId, token, cancelRecurring =
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao cancelar inscrição no treino.');
     return data;
-  } catch (error) { logger.error("Erro em cancelTrainingBooking:", error); throw error; }
+  } catch (error) {
+    logger.error('Erro em cancelTrainingBooking:', error);
+    reportUserActionError('cancelar_inscrição_treino', error, () => token, { trainingId });
+    throw error;
+  }
 };
 
 export const adminGetCurrentWeekSignups = async (token) => {

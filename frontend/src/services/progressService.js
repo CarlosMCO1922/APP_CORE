@@ -1,5 +1,6 @@
 // src/services/progressService.js
 import { logger } from '../utils/logger';
+import { reportUserActionError } from './logService';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 logger.log('API_URL em uso no progressService:', API_URL); 
@@ -579,7 +580,8 @@ export const deleteTrainingSessionDraftService = async (token, draftId = null, t
 
     return data;
   } catch (error) {
-    logger.error("Erro em deleteTrainingSessionDraftService:", error);
+    logger.error('Erro em deleteTrainingSessionDraftService:', error);
+    reportUserActionError('apagar_rascunho_treino', error, () => token, { trainingId, workoutPlanId });
     throw error;
   }
 };

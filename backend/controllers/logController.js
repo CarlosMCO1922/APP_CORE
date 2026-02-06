@@ -49,13 +49,14 @@ const logError = async (req, res) => {
       return res.status(400).json({ message: 'Mensagem de erro é obrigatória.' });
     }
 
-    // Obter userId do token se disponível (não requer autenticação obrigatória)
+    // userId = apenas clientes (tabela users). Staff fica em metadata.staffId
     let userId = null;
-    if (req.user) {
-      userId = req.user.id;
-    } else if (req.staff) {
-      userId = req.staff.id;
-    }
+    if (req.user) userId = req.user.id;
+
+    const metadataFinal = {
+      ...(metadata && typeof metadata === 'object' ? metadata : {}),
+      ...(req.staff ? { staffId: req.staff.id } : {}),
+    };
 
     const errorLog = await db.ErrorLog.create({
       userId,
@@ -66,7 +67,7 @@ const logError = async (req, res) => {
       userAgent: userAgent || req.headers['user-agent'],
       deviceInfo,
       severity,
-      metadata,
+      metadata: Object.keys(metadataFinal).length ? metadataFinal : metadata,
     });
 
     logger.error(`Erro registado: ${errorType} - ${message}`, { errorLogId: errorLog.id, userId });

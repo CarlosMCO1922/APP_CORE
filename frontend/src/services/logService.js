@@ -4,6 +4,30 @@ import { logger } from '../utils/logger';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 /**
+ * Reporta um erro de ação do utilizador para a Central do Programador (visível em /admin/logs).
+ * Usar quando uma ação falha (inscrever/cancelar treino, encerrar treino, apagar, etc.).
+ * @param {string} action - Nome da ação (ex: 'inscrever_treino', 'cancelar_inscrição', 'encerrar_treino', 'apagar_rascunho')
+ * @param {Error|string} error - Objeto Error ou mensagem
+ * @param {Function} getToken - () => token (opcional)
+ * @param {Object} context - Dados extra para metadata (ex: { trainingId, workoutPlanId })
+ */
+export const reportUserActionError = (action, error, getToken = null, context = {}) => {
+  const message = typeof error === 'string' ? error : (error?.message || String(error));
+  const errorData = {
+    errorType: 'USER_ACTION_ERROR',
+    message: `[${action}] ${message}`,
+    stackTrace: error?.stack || null,
+    url: typeof window !== 'undefined' ? window.location.href : null,
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+    deviceInfo: typeof getDeviceInfo === 'function' ? getDeviceInfo() : undefined,
+    severity: 'MEDIUM',
+    metadata: { action, ...context },
+  };
+  const token = typeof getToken === 'function' ? getToken() : getToken;
+  logErrorService(errorData, token).catch(() => {});
+};
+
+/**
  * Envia um erro para o backend
  * @param {Object} errorData - Dados do erro
  * @param {string} token - Token de autenticação (opcional)

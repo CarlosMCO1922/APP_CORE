@@ -396,6 +396,14 @@ const bookTraining = async (req, res) => {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
+    // Bloquear inscrições a partir de 1h antes do início do treino
+    const trainingStart = new Date(`${training.date}T${String(training.time).substring(0, 5)}`);
+    if (!isNaN(trainingStart.getTime()) && trainingStart.getTime() - Date.now() < 60 * 60 * 1000) {
+      return res.status(400).json({
+        message: 'As inscrições fecham 1 hora antes do início do treino. Já não é possível inscrever-se neste horário.',
+      });
+    }
+
     const user = await db.User.findByPk(userId);
     if (!user) {
       return res.status(404).json({ message: 'Utilizador não encontrado.' });
@@ -690,6 +698,13 @@ const adminBookClientForTraining = async (req, res) => {
     });
     if (!training) {
       return res.status(404).json({ message: 'Treino não encontrado.' });
+    }
+
+    const trainingStart = new Date(`${training.date}T${String(training.time).substring(0, 5)}`);
+    if (!isNaN(trainingStart.getTime()) && trainingStart.getTime() - Date.now() < 60 * 60 * 1000) {
+      return res.status(400).json({
+        message: 'As inscrições fecham 1 hora antes do início do treino. Já não é possível inscrever neste horário.',
+      });
     }
 
     const userToBook = await db.User.findByPk(userId);

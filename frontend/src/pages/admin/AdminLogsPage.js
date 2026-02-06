@@ -694,6 +694,7 @@ const AdminLogsPage = () => {
               onChange={(e) => setFilters(prev => ({ ...prev, errorType: e.target.value }))}
             >
               <option value="">Todos os tipos</option>
+              <option value="USER_ACTION_ERROR">Ação do utilizador (inscrever, cancelar, encerrar, apagar)</option>
               <option value="JS_ERROR">Erro JavaScript</option>
               <option value="API_ERROR">Erro API</option>
               <option value="VALIDATION_ERROR">Erro de Validação</option>

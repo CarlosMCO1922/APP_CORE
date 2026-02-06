@@ -190,8 +190,12 @@ const getPublicTrainings = async (req, res) => {
       acc[g.trainingId] = (acc[g.trainingId] || 0) + 1;
       return acc;
     }, {});
+    const now = Date.now();
+    const oneHourMs = 60 * 60 * 1000;
     const list = trainings.map((t) => {
       const participantsCount = (t.participants?.length || 0) + (guestCountByTraining[t.id] || 0);
+      const start = new Date(`${t.date}T${String(t.time).substring(0, 5)}`);
+      const signupsClosed = !isNaN(start.getTime()) && start.getTime() - now < oneHourMs;
       return {
         id: t.id,
         name: t.name,
@@ -201,7 +205,7 @@ const getPublicTrainings = async (req, res) => {
         durationMinutes: t.durationMinutes,
         capacity: t.capacity,
         participantsCount,
-        hasVacancies: participantsCount < t.capacity,
+        hasVacancies: participantsCount < t.capacity && !signupsClosed,
         instructor: t.instructor ? { id: t.instructor.id, firstName: t.instructor.firstName, lastName: t.instructor.lastName } : null,
       };
     });
@@ -246,6 +250,13 @@ const postGuestTrainingSignup = async (req, res) => {
     const today = format(new Date(), 'yyyy-MM-dd');
     if (training.date < today) {
       return res.status(400).json({ message: 'Não é possível inscrever-se num treino já realizado.' });
+    }
+
+    const trainingStart = new Date(`${training.date}T${String(training.time).substring(0, 5)}`);
+    if (!isNaN(trainingStart.getTime()) && trainingStart.getTime() - Date.now() < 60 * 60 * 1000) {
+      return res.status(400).json({
+        message: 'As inscrições fecham 1 hora antes do início do treino. Já não é possível inscrever-se neste horário.',
+      });
     }
 
     const existing = await db.TrainingGuestSignup.findOne({

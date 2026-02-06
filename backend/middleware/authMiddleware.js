@@ -52,6 +52,38 @@ const protect = async (req, res, next) => {
   }
 };
 
+/**
+ * Autenticação opcional: se existir Bearer token válido, preenche req.user ou req.staff.
+ * Não rejeita se não houver token ou se for inválido (usa-se em rotas que aceitam anónimos).
+ */
+const optionalProtect = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = verifyToken(token);
+    if (!decoded || !decoded.id || !decoded.role) return next();
+
+    if (decoded.role === 'user') {
+      const user = await db.User.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
+      if (user) {
+        req.user = user;
+        req.authContext = { id: user.id, role: 'user', isAdmin: user.isAdmin };
+      }
+    } else if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(decoded.role)) {
+      const staffMember = await db.Staff.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
+      if (staffMember) {
+        req.staff = staffMember;
+        req.authContext = { id: staffMember.id, role: staffMember.role };
+      }
+    }
+  } catch (_) {
+    // Token inválido ou expirado: continuar sem user/staff
+  }
+  next();
+};
 
 const isAdminUser = (req, res, next) => {
   if (req.authContext && req.authContext.role === 'user' && req.authContext.isAdmin) {
@@ -91,6 +123,7 @@ const isClientUser = (req, res, next) => {
 
 module.exports = {
   protect,
+  optionalProtect,
   isAdminUser, 
   isAdminStaff, 
   isStaff,
