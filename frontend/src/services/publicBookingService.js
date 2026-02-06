@@ -60,9 +60,18 @@ export const submitPublicAppointmentRequest = async (payload) => {
   }
 };
 
-export const getPublicTrainings = async () => {
+/**
+ * @param {{ dateFrom?: string, dateTo?: string }} options - Range de datas (YYYY-MM-DD).
+ *   Se passado, evita discrepância de timezone entre cliente e servidor.
+ */
+export const getPublicTrainings = async (options = {}) => {
   try {
-    const response = await fetch(`${base}/trainings`);
+    const params = new URLSearchParams();
+    if (options.dateFrom) params.append('dateFrom', options.dateFrom);
+    if (options.dateTo) params.append('dateTo', options.dateTo);
+    const query = params.toString();
+    const url = query ? `${base}/trainings?${query}` : `${base}/trainings`;
+    const response = await fetch(url);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao carregar treinos.');
     return data;

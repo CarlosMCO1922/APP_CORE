@@ -325,11 +325,27 @@ function PublicBookingPage() {
       .finally(() => setLoadingSlots(false));
   }, [date, staffId]);
 
+  const next10Days = useMemo(() => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const toLocalYYYYMMDD = (date) =>
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    const days = [];
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 10; i++) {
+      days.push(toLocalYYYYMMDD(d));
+      d.setDate(d.getDate() + 1);
+    }
+    return days;
+  }, []);
+
   const fetchTrainings = useCallback(async () => {
     setLoadingTrainings(true);
     setMessage({ type: '', text: '' });
     try {
-      const data = await getPublicTrainings();
+      const dateFrom = next10Days[0];
+      const dateTo = next10Days[next10Days.length - 1];
+      const data = await getPublicTrainings({ dateFrom, dateTo });
       setTrainings(Array.isArray(data) ? data : []);
       if (!selectedTrainingId && data.length) setSelectedTrainingId('');
     } catch (err) {
@@ -343,7 +359,7 @@ function PublicBookingPage() {
     } finally {
       setLoadingTrainings(false);
     }
-  }, []);
+  }, [next10Days]);
 
   useEffect(() => {
     if (activeTab === TAB_TREINO) fetchTrainings();
@@ -416,17 +432,6 @@ function PublicBookingPage() {
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
   const minDateStr = minDate.toISOString().slice(0, 10);
-
-  const next10Days = useMemo(() => {
-    const days = [];
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    for (let i = 0; i < 10; i++) {
-      days.push(d.toISOString().slice(0, 10));
-      d.setDate(d.getDate() + 1);
-    }
-    return days;
-  }, []);
 
   // Mostrar todos os treinos (mesmos que os clientes veem); hasVacancies apenas para permitir/desativar inscrição
   const trainingsWithVacancies = trainings.filter((t) => t.hasVacancies);
