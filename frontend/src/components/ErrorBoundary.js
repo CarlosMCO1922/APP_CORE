@@ -113,13 +113,21 @@ class ErrorBoundary extends React.Component {
     window.location.reload();
   };
 
+  isChunkLoadError() {
+    const msg = this.state.error?.message || '';
+    return msg.includes('Loading chunk') || msg.includes('ChunkLoadError');
+  }
+
   render() {
     if (this.state.hasError) {
+      const isChunkError = this.isChunkLoadError();
       return (
         <ErrorContainer>
           <ErrorTitle>Algo correu mal</ErrorTitle>
           <ErrorMessage>
-            Ocorreu um erro inesperado na aplicação. O erro foi registado e será analisado.
+            {isChunkError
+              ? 'A aplicação foi atualizada ou houve um problema ao carregar. Recarrega a página para obteres a versão mais recente.'
+              : 'Ocorreu um erro inesperado na aplicação. O erro foi registado e será analisado.'}
           </ErrorMessage>
           <ReloadButton onClick={this.handleReload}>Recarregar Página</ReloadButton>
           {process.env.NODE_ENV === 'development' && this.state.error && (

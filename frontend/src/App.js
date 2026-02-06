@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useEffect, Suspense, lazy, useState } from 'react';
+import React, { useEffect, Suspense, useState } from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useWorkout } from './context/WorkoutContext';
@@ -11,48 +11,49 @@ import ConfirmationModal from './components/Common/ConfirmationModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import { initializeErrorHandlers } from './services/logService';
 import { logger } from './utils/logger';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 
-// Code-splitting for pages (melhora UX e reduz bundle inicial)
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const StaffLoginPage = lazy(() => import('./pages/StaffLoginPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const CalendarPage = lazy(() => import('./pages/CalendarPage'));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
-const PublicBookingPage = lazy(() => import('./pages/PublicBookingPage'));
-const ConfirmReschedulePage = lazy(() => import('./pages/ConfirmReschedulePage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const MyPaymentsPage = lazy(() => import('./pages/MyPaymentsPage'));
-const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
-const ExploreWorkoutPlansPage = lazy(() => import('./pages/ExploreWorkoutPlansPage'));
-const BookingServiceSelectionPage = lazy(() => import('./pages/BookingServiceSelectionPage'));
-const BookingCalendarPage = lazy(() => import('./pages/BookingCalendarPage'));
-const LiveWorkoutSessionPage = lazy(() => import('./pages/LiveWorkoutSessionPage'));
-const WorkoutSummaryPage = lazy(() => import('./pages/WorkoutSummaryPage'));
-const GroupTrainingCalendarPage = lazy(() => import('./pages/GroupTrainingCalendarPage'));
-const IndividualPTRequestPage = lazy(() => import('./pages/IndividualPTRequestPage'));
-const ClientProgressOverviewPage = lazy(() => import('./pages/ClientProgressOverviewPage'));
-const WorkoutPlanSummaryPage = lazy(() => import('./pages/WorkoutPlanSummaryPage'));
-const UserCalendarPage = lazy(() => import('./pages/UserCalendarPage'));
+// Code-splitting com retry para chunks (evita "Loading chunk failed" após deploys)
+const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
+const StaffLoginPage = lazyWithRetry(() => import('./pages/StaffLoginPage'));
+const DashboardPage = lazyWithRetry(() => import('./pages/DashboardPage'));
+const AdminDashboardPage = lazyWithRetry(() => import('./pages/AdminDashboardPage'));
+const RegisterPage = lazyWithRetry(() => import('./pages/RegisterPage'));
+const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'));
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage'));
+const PublicBookingPage = lazyWithRetry(() => import('./pages/PublicBookingPage'));
+const ConfirmReschedulePage = lazyWithRetry(() => import('./pages/ConfirmReschedulePage'));
+const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
+const MyPaymentsPage = lazyWithRetry(() => import('./pages/MyPaymentsPage'));
+const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage'));
+const ExploreWorkoutPlansPage = lazyWithRetry(() => import('./pages/ExploreWorkoutPlansPage'));
+const BookingServiceSelectionPage = lazyWithRetry(() => import('./pages/BookingServiceSelectionPage'));
+const BookingCalendarPage = lazyWithRetry(() => import('./pages/BookingCalendarPage'));
+const LiveWorkoutSessionPage = lazyWithRetry(() => import('./pages/LiveWorkoutSessionPage'));
+const WorkoutSummaryPage = lazyWithRetry(() => import('./pages/WorkoutSummaryPage'));
+const GroupTrainingCalendarPage = lazyWithRetry(() => import('./pages/GroupTrainingCalendarPage'));
+const IndividualPTRequestPage = lazyWithRetry(() => import('./pages/IndividualPTRequestPage'));
+const ClientProgressOverviewPage = lazyWithRetry(() => import('./pages/ClientProgressOverviewPage'));
+const WorkoutPlanSummaryPage = lazyWithRetry(() => import('./pages/WorkoutPlanSummaryPage'));
+const UserCalendarPage = lazyWithRetry(() => import('./pages/UserCalendarPage'));
 
-const AdminManageUsersPage = lazy(() => import('./pages/admin/AdminManageUsersPage'));
-const AdminUserDetailsPage = lazy(() => import('./pages/admin/AdminUserDetailsPage'));
-const AdminManageStaffPage = lazy(() => import('./pages/admin/AdminManageStaffPage'));
-const AdminManageTrainingsPage = lazy(() => import('./pages/admin/AdminManageTrainingsPage'));
-const AdminManageAppointmentsPage = lazy(() => import('./pages/admin/AdminManageAppointmentsPage'));
-const AdminManagePaymentsPage = lazy(() => import('./pages/admin/AdminManagePaymentsPage'));
-const StaffManageRequestsPage = lazy(() => import('./pages/admin/StaffManageRequestsPage'));
-const StaffGuestSignupsPage = lazy(() => import('./pages/admin/StaffGuestSignupsPage'));
-const AdminManageWorkoutPlansPage = lazy(() => import('./pages/admin/AdminManageWorkoutPlansPage'));
-const AdminManageExercisesPage = lazy(() => import('./pages/admin/AdminManageExercisesPage'));
-const ClientTrainingPlanPage = lazy(() => import('./pages/ClientTrainingPlanPage'));
-const ClientProgressPage = lazy(() => import('./pages/ClientProgressPage'));
-const AdminTrainingSeriesPage = lazy(() => import('./pages/admin/AdminTrainingSeriesPage'));
-const AdminManageGlobalWorkoutPlansPage = lazy(() => import('./pages/admin/AdminManageGlobalWorkoutPlansPage'));
-const AdminClientProgressDetailPage = lazy(() => import('./pages/admin/AdminClientProgressDetailPage'));
-const AdminClientSelectionPage = lazy(() => import('./pages/admin/AdminClientSelectionPage'));
-const AdminLogsPage = lazy(() => import('./pages/admin/AdminLogsPage'));
+const AdminManageUsersPage = lazyWithRetry(() => import('./pages/admin/AdminManageUsersPage'));
+const AdminUserDetailsPage = lazyWithRetry(() => import('./pages/admin/AdminUserDetailsPage'));
+const AdminManageStaffPage = lazyWithRetry(() => import('./pages/admin/AdminManageStaffPage'));
+const AdminManageTrainingsPage = lazyWithRetry(() => import('./pages/admin/AdminManageTrainingsPage'));
+const AdminManageAppointmentsPage = lazyWithRetry(() => import('./pages/admin/AdminManageAppointmentsPage'));
+const AdminManagePaymentsPage = lazyWithRetry(() => import('./pages/admin/AdminManagePaymentsPage'));
+const StaffManageRequestsPage = lazyWithRetry(() => import('./pages/admin/StaffManageRequestsPage'));
+const StaffGuestSignupsPage = lazyWithRetry(() => import('./pages/admin/StaffGuestSignupsPage'));
+const AdminManageWorkoutPlansPage = lazyWithRetry(() => import('./pages/admin/AdminManageWorkoutPlansPage'));
+const AdminManageExercisesPage = lazyWithRetry(() => import('./pages/admin/AdminManageExercisesPage'));
+const ClientTrainingPlanPage = lazyWithRetry(() => import('./pages/ClientTrainingPlanPage'));
+const ClientProgressPage = lazyWithRetry(() => import('./pages/ClientProgressPage'));
+const AdminTrainingSeriesPage = lazyWithRetry(() => import('./pages/admin/AdminTrainingSeriesPage'));
+const AdminManageGlobalWorkoutPlansPage = lazyWithRetry(() => import('./pages/admin/AdminManageGlobalWorkoutPlansPage'));
+const AdminClientProgressDetailPage = lazyWithRetry(() => import('./pages/admin/AdminClientProgressDetailPage'));
+const AdminClientSelectionPage = lazyWithRetry(() => import('./pages/admin/AdminClientSelectionPage'));
+const AdminLogsPage = lazyWithRetry(() => import('./pages/admin/AdminLogsPage'));
 
 // Componente de Layout
 
