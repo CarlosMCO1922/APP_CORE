@@ -13,14 +13,18 @@ const {
   sendGuestTrainingRescheduleConfirmed,
 } = require('../utils/emailService');
 
+/** Roles que podem ter consultas (inclui employee/Employee para compatibilidade). */
+const ROLES_FOR_APPOINTMENTS = ['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee', 'Employee'];
+
 /** GET /public/staff-for-appointments - Lista profissionais que podem ter consultas (para dropdown público). */
 const getStaffForAppointments = async (req, res) => {
   try {
     const staff = await db.Staff.findAll({
-      where: { role: { [Op.in]: ['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee'] } },
+      where: { role: { [Op.in]: ROLES_FOR_APPOINTMENTS } },
       attributes: ['id', 'firstName', 'lastName'],
       order: [['firstName', 'ASC'], ['lastName', 'ASC']],
     });
+    res.set('Cache-Control', 'no-store, max-age=0');
     res.status(200).json(staff);
   } catch (error) {
     console.error('Erro ao listar staff para consultas públicas:', error);
