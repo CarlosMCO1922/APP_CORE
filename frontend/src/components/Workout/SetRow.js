@@ -357,6 +357,9 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
         return;
       }
       const currentSetData = { ...setData, performedWeight: weight, performedReps: reps, planExerciseId, setNumber };
+      // Gravar peso, reps e isCompleted para evitar perder dados se o estado ainda não tiver os onChange
+      updateSetData(planExerciseId, setNumber, 'performedWeight', weight);
+      updateSetData(planExerciseId, setNumber, 'performedReps', reps);
       updateSetData(planExerciseId, setNumber, 'isCompleted', true);
       setIsEditing(false);
 

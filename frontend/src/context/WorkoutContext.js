@@ -550,10 +550,19 @@ export const WorkoutProvider = ({ children }) => {
 
     const finishWorkout = async () => {
         if (!activeWorkout) return;
-        
+
+        // Usar a versão mais recente da sessão (localStorage) para evitar closure desatualizada
+        // quando o utilizador clica "Concluir" antes do estado ter as últimas séries
+        const latestFromStorage = safeGetItem('activeWorkoutSession', validateWorkoutSession);
+        const isSameSession = latestFromStorage?.id === activeWorkout.id
+            && latestFromStorage?.startTime === activeWorkout.startTime;
+        const workoutToUse = (isSameSession && latestFromStorage?.setsData)
+            ? { ...activeWorkout, setsData: latestFromStorage.setsData }
+            : activeWorkout;
+
         // Obter todos os sets completados
-        const completedSets = Object.values(activeWorkout.setsData).filter(
-            set => set.performedWeight && set.performedReps && set.isCompleted
+        const completedSets = Object.values(workoutToUse.setsData || {}).filter(
+            set => set.performedWeight != null && set.performedReps != null && set.isCompleted
         );
 
         // Criar mapa de planExerciseId -> exerciseId
@@ -614,7 +623,7 @@ export const WorkoutProvider = ({ children }) => {
                         }
 
                         const firstSetKey = `${setData.planExerciseId}-1`;
-                        const materialUsed = activeWorkout.setsData[firstSetKey]?.materialUsed ?? setData.materialUsed ?? null;
+                        const materialUsed = workoutToUse.setsData[firstSetKey]?.materialUsed ?? setData.materialUsed ?? null;
 
                         const fullSetData = {
                             trainingId: activeWorkout.trainingId || null,
