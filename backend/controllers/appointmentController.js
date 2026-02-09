@@ -153,7 +153,7 @@ const adminCreateAppointment = async (req, res) => {
   try {
     const professional = await db.Staff.findByPk(parseInt(staffId));
     if (!professional) { return res.status(404).json({ message: 'Profissional (staff) não encontrado.' }); }
-    if (!['physiotherapist', 'trainer', 'admin', 'osteopata'].includes(professional.role)) { return res.status(400).json({ message: 'O ID do profissional fornecido não tem permissão para consultas.' }); }
+    if (!['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee'].includes(professional.role)) { return res.status(400).json({ message: 'O ID do profissional fornecido não tem permissão para consultas.' }); }
 
     let clientUser = null;
     if (userId) {

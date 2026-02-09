@@ -17,7 +17,7 @@ const {
 const getStaffForAppointments = async (req, res) => {
   try {
     const staff = await db.Staff.findAll({
-      where: { role: { [Op.in]: ['physiotherapist', 'trainer', 'admin', 'osteopata'] } },
+      where: { role: { [Op.in]: ['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee'] } },
       attributes: ['id', 'firstName', 'lastName'],
       order: [['firstName', 'ASC'], ['lastName', 'ASC']],
     });
@@ -41,7 +41,7 @@ const getAvailableSlots = async (req, res) => {
   }
   try {
     const professional = await db.Staff.findByPk(professionalId);
-    if (!professional || !['physiotherapist', 'trainer', 'admin', 'osteopata'].includes(professional.role)) {
+    if (!professional || !['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee'].includes(professional.role)) {
       return res.status(404).json({ message: 'Profissional não encontrado.' });
     }
     const workingHours = [
@@ -114,7 +114,7 @@ const postAppointmentRequest = async (req, res) => {
 
   try {
     const professional = await db.Staff.findByPk(parsedStaffId);
-    if (!professional || !['physiotherapist', 'trainer', 'admin', 'osteopata'].includes(professional.role)) {
+    if (!professional || !['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee'].includes(professional.role)) {
       return res.status(404).json({ message: 'Profissional não encontrado.' });
     }
 

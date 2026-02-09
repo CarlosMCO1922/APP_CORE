@@ -169,7 +169,7 @@ const getProfessionals = async (req, res) => {
     const professionals = await db.Staff.findAll({
       where: {
         role: {
-          [Op.in]: ['trainer', 'physiotherapist', 'admin', 'osteopata']
+          [Op.in]: ['trainer', 'physiotherapist', 'admin', 'osteopata', 'employee']
         }
       },
       attributes: ['id', 'firstName', 'lastName', 'email', 'role'], 
