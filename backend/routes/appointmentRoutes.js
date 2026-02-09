@@ -12,7 +12,7 @@ router.get('/available-slots', protect, isClientUser, appointmentController.getA
 router.get(
     '/stats/today-count',
     protect,
-    isAdminStaff,
+    isStaff,
     appointmentController.getTodayAppointmentsCount
 );
 
