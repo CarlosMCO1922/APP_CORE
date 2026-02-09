@@ -164,60 +164,31 @@ const MenuItem = styled.button`
   `}
 `;
 
+const ADMIN_ONLY_PATHS = ['/admin/manage-staff', '/admin/manage-trainings', '/admin/training-series', '/admin/manage-exercises', '/admin/manage-global-plans'];
+
 function ManagementModal({ isOpen, onClose }) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, authState } = useAuth();
   const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
+  const isFullAdmin = authState.user?.role === 'admin';
 
   if (!isOpen) return null;
 
-  const menuItems = [
-    {
-      path: '/admin/manage-users',
-      icon: FaUsers,
-      label: 'Clientes'
-    },
-    {
-      path: '/admin/progresso-clientes',
-      icon: FaChartLine,
-      label: 'Progresso Clientes'
-    },
-    {
-      path: '/admin/manage-staff',
-      icon: FaUserTie,
-      label: 'Equipa'
-    },
-    {
-      path: '/admin/manage-trainings',
-      icon: FaDumbbell,
-      label: 'Treinos'
-    },
-    {
-      path: '/admin/training-series',
-      icon: FaCalendarPlus,
-      label: 'Séries'
-    },
-    {
-      path: '/admin/manage-appointments',
-      icon: FaCalendarCheck,
-      label: 'Consultas'
-    },
-    {
-      path: '/admin/manage-payments',
-      icon: FaMoneyBillWave,
-      label: 'Pagamentos'
-    },
-    {
-      path: '/admin/manage-exercises',
-      icon: FaRunning,
-      label: 'Exercícios'
-    },
-    {
-      path: '/admin/manage-global-plans',
-      icon: FaClipboardList,
-      label: 'Planos Modelo'
-    }
+  const allMenuItems = [
+    { path: '/admin/manage-users', icon: FaUsers, label: 'Clientes' },
+    { path: '/admin/progresso-clientes', icon: FaChartLine, label: 'Progresso Clientes' },
+    { path: '/admin/manage-staff', icon: FaUserTie, label: 'Equipa' },
+    { path: '/admin/manage-trainings', icon: FaDumbbell, label: 'Treinos' },
+    { path: '/admin/training-series', icon: FaCalendarPlus, label: 'Séries' },
+    { path: '/admin/manage-appointments', icon: FaCalendarCheck, label: 'Consultas' },
+    { path: '/admin/manage-payments', icon: FaMoneyBillWave, label: 'Pagamentos' },
+    { path: '/admin/manage-exercises', icon: FaRunning, label: 'Exercícios' },
+    { path: '/admin/manage-global-plans', icon: FaClipboardList, label: 'Planos Modelo' }
   ];
+
+  const menuItems = isFullAdmin
+    ? allMenuItems
+    : allMenuItems.filter((item) => !ADMIN_ONLY_PATHS.includes(item.path));
 
   const handleItemClick = (path) => {
     onClose();

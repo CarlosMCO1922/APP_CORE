@@ -77,6 +77,15 @@ const adminGetAllPayments = async (req, res) => {
   if (relatedResourceId) whereClause.relatedResourceId = relatedResourceId;
   if (relatedResourceType) whereClause.relatedResourceType = relatedResourceType;
 
+  if (req.staff && req.staff.role !== 'admin') {
+    const myAppointmentIds = await db.Appointment.findAll({
+      where: { staffId: req.staff.id },
+      attributes: ['id'],
+    });
+    const ids = myAppointmentIds.map((a) => a.id);
+    whereClause.relatedResourceType = 'appointment';
+    whereClause.relatedResourceId = ids.length ? { [Op.in]: ids } : -1;
+  }
 
   try {
     const payments = await db.Payment.findAll({

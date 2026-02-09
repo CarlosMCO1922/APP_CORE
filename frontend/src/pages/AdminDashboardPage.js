@@ -209,6 +209,8 @@ const ErrorText = styled.p`
     border-color: ${({ theme }) => theme.colors.error};
 `;
 
+const ROLES_FULL_ADMIN = ['admin'];
+
 const AdminDashboardPage = () => {
   const theme = useTheme();
   const { authState } = useAuth();
@@ -218,6 +220,8 @@ const AdminDashboardPage = () => {
   const [todayEventsCount, setTodayEventsCount] = useState({ trainings: null, appointments: null, enrollments: null });
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState('');
+
+  const isFullAdmin = ROLES_FULL_ADMIN.includes(authState.user?.role);
 
   const fetchDashboardStats = useCallback(async () => {
     if (authState.token) {
@@ -230,28 +234,35 @@ const AdminDashboardPage = () => {
         const formattedStartDate = firstDayOfMonth.toISOString().split('T')[0];
         const formattedEndDate = lastDayOfMonth.toISOString().split('T')[0];
 
-        const [
-            totalPaidData,
-            weeklySignupsData,
-            todayTrainingsData,
-            todayAppointmentsData,
-            todayEnrollmentsData
-        ] = await Promise.all([
-          adminGetTotalPaid(authState.token, { startDate: formattedStartDate, endDate: formattedEndDate }),
-          adminGetCurrentWeekSignups(authState.token),
-          adminGetTodayTrainingsCount(authState.token),
-          adminGetTodayAppointmentsCount(authState.token),
-          adminGetTodayTrainingsEnrollmentsCount(authState.token)
-        ]);
-
-        setTotalPaidThisMonth(totalPaidData.totalPaid);
-        setWeeklySignups(weeklySignupsData.currentWeekSignups);
-        setTodayEventsCount({
-            trainings: todayTrainingsData.todayTrainingsCount,
-            appointments: todayAppointmentsData.todayAppointmentsCount,
-            enrollments: todayEnrollmentsData.todayEnrollmentsCount
-        });
-
+        if (isFullAdmin) {
+          const [
+              totalPaidData,
+              weeklySignupsData,
+              todayTrainingsData,
+              todayAppointmentsData,
+              todayEnrollmentsData
+          ] = await Promise.all([
+            adminGetTotalPaid(authState.token, { startDate: formattedStartDate, endDate: formattedEndDate }),
+            adminGetCurrentWeekSignups(authState.token),
+            adminGetTodayTrainingsCount(authState.token),
+            adminGetTodayAppointmentsCount(authState.token),
+            adminGetTodayTrainingsEnrollmentsCount(authState.token)
+          ]);
+          setTotalPaidThisMonth(totalPaidData.totalPaid);
+          setWeeklySignups(weeklySignupsData.currentWeekSignups);
+          setTodayEventsCount({
+              trainings: todayTrainingsData.todayTrainingsCount,
+              appointments: todayAppointmentsData.todayAppointmentsCount,
+              enrollments: todayEnrollmentsData.todayEnrollmentsCount
+          });
+        } else {
+          const todayAppointmentsData = await adminGetTodayAppointmentsCount(authState.token);
+          setTodayEventsCount({
+              trainings: 0,
+              appointments: todayAppointmentsData.todayAppointmentsCount,
+              enrollments: 0
+          });
+        }
       } catch (err) {
         console.error("Erro ao buscar estatísticas do dashboard admin:", err);
         setStatsError('Não foi possível carregar todas as estatísticas.');
@@ -259,7 +270,7 @@ const AdminDashboardPage = () => {
         setLoadingStats(false);
       }
     }
-  }, [authState.token]);
+  }, [authState.token, isFullAdmin]);
 
   useEffect(() => {
     fetchDashboardStats();
@@ -280,21 +291,25 @@ const AdminDashboardPage = () => {
       </WelcomeMessage>
 
       <StatsOverviewContainer>
-        <StatCard color={theme.colors.success || '#4CAF50'}>
-          <StatIcon color={theme.colors.success || '#4CAF50'}><FaDollarSign /></StatIcon>
-          {loadingStats && totalPaidThisMonth === null && <LoadingText>A carregar...</LoadingText>}
-          {!loadingStats && statsError && totalPaidThisMonth === null && <ErrorText>Erro</ErrorText>}
-          {totalPaidThisMonth !== null && !loadingStats && <StatValue>{Number(totalPaidThisMonth).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</StatValue>}
-          <StatLabel>Receita Este Mês</StatLabel>
-        </StatCard>
+        {isFullAdmin && (
+          <StatCard color={theme.colors.success || '#4CAF50'}>
+            <StatIcon color={theme.colors.success || '#4CAF50'}><FaDollarSign /></StatIcon>
+            {loadingStats && totalPaidThisMonth === null && <LoadingText>A carregar...</LoadingText>}
+            {!loadingStats && statsError && totalPaidThisMonth === null && <ErrorText>Erro</ErrorText>}
+            {totalPaidThisMonth !== null && !loadingStats && <StatValue>{Number(totalPaidThisMonth).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</StatValue>}
+            <StatLabel>Receita Este Mês</StatLabel>
+          </StatCard>
+        )}
 
-        <StatCard color="#00A9FF">
-          <StatIcon color="#00A9FF"><FaUserPlus /></StatIcon>
-          {loadingStats && weeklySignups === null && <LoadingText>A carregar...</LoadingText>}
-          {!loadingStats && statsError && weeklySignups === null && <ErrorText>Erro</ErrorText>}
-          {weeklySignups !== null && !loadingStats && <StatValue>{weeklySignups}</StatValue>}
-          <StatLabel>Inscrições Esta Semana</StatLabel>
-        </StatCard>
+        {isFullAdmin && (
+          <StatCard color="#00A9FF">
+            <StatIcon color="#00A9FF"><FaUserPlus /></StatIcon>
+            {loadingStats && weeklySignups === null && <LoadingText>A carregar...</LoadingText>}
+            {!loadingStats && statsError && weeklySignups === null && <ErrorText>Erro</ErrorText>}
+            {weeklySignups !== null && !loadingStats && <StatValue>{weeklySignups}</StatValue>}
+            <StatLabel>Inscrições Esta Semana</StatLabel>
+          </StatCard>
+        )}
 
         <StatCard 
           color="#FFC107" 
@@ -305,10 +320,12 @@ const AdminDashboardPage = () => {
           {loadingStats && totalTodayEvents === null && <LoadingText>A carregar...</LoadingText>}
           {!loadingStats && statsError && totalTodayEvents === null && <ErrorText>Erro</ErrorText>}
           {totalTodayEvents !== null && !loadingStats && <StatValue>{totalTodayEvents}</StatValue>}
-          <StatLabel>Eventos Hoje (Total)</StatLabel>
+          <StatLabel>{isFullAdmin ? 'Eventos Hoje (Total)' : 'Consultas Hoje'}</StatLabel>
           {totalTodayEvents !== null && !loadingStats && (
             <p style={{fontSize: '0.75rem', color: theme.colors.textMuted, margin: '5px 0 0 0'}}>
-              (Treinos: {todayEventsCount.trainings ?? '?'}, Consultas: {todayEventsCount.appointments ?? '?'}, Inscritos: {todayEventsCount.enrollments ?? '?'})
+              {isFullAdmin
+                ? `(Treinos: ${todayEventsCount.trainings ?? '?'}, Consultas: ${todayEventsCount.appointments ?? '?'}, Inscritos: ${todayEventsCount.enrollments ?? '?'})`
+                : `Consultas: ${todayEventsCount.appointments ?? '?'}`}
             </p>
           )}
         </StatCard>
@@ -318,39 +335,47 @@ const AdminDashboardPage = () => {
       <AdminNavGrid>
         <AdminNavLinkCard to="/admin/calendario-geral">
           <h2><FaCalendarAlt />Calendário Geral</h2>
-          <p>Visualizar todos os treinos e consultas.</p>
+          <p>{isFullAdmin ? 'Visualizar todos os treinos e consultas.' : 'Visualizar os teus eventos (consultas).'}</p>
         </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/manage-users">
           <h2><FaUsers />Gerir Clientes</h2>
           <p>Ver, criar, editar e eliminar contas de clientes.</p>
         </AdminNavLinkCard>
-        <AdminNavLinkCard to="/admin/manage-staff">
-          <h2><FaUserMd />Gerir Equipa</h2>
-          <p>Adicionar e gerir contas de instrutores e staff.</p>
-        </AdminNavLinkCard>
-        <AdminNavLinkCard to="/admin/manage-trainings">
-          <h2><FaDumbbell />Gerir Treinos</h2>
-          <p>Criar, visualizar, editar e eliminar sessões de treino.</p>
-        </AdminNavLinkCard>
+        {isFullAdmin && (
+          <AdminNavLinkCard to="/admin/manage-staff">
+            <h2><FaUserMd />Gerir Equipa</h2>
+            <p>Adicionar e gerir contas de instrutores e staff.</p>
+          </AdminNavLinkCard>
+        )}
+        {isFullAdmin && (
+          <AdminNavLinkCard to="/admin/manage-trainings">
+            <h2><FaDumbbell />Gerir Treinos</h2>
+            <p>Criar, visualizar, editar e eliminar sessões de treino.</p>
+          </AdminNavLinkCard>
+        )}
         <AdminNavLinkCard to="/admin/manage-appointments">
           <h2><FaCalendarCheckIcon />Gerir Consultas</h2>
-          <p>Criar, visualizar, editar e eliminar horários de consulta.</p>
+          <p>{isFullAdmin ? 'Criar, visualizar, editar e eliminar horários de consulta.' : 'Criar, visualizar, editar e eliminar as tuas consultas.'}</p>
         </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/manage-payments">
           <h2><FaCreditCard />Gerir Pagamentos</h2>
-          <p>Registar e acompanhar pagamentos dos clientes.</p>
+          <p>{isFullAdmin ? 'Registar e acompanhar pagamentos dos clientes.' : 'Registar e acompanhar pagamentos das tuas consultas.'}</p>
         </AdminNavLinkCard>
-        <AdminNavLinkCard to="/admin/manage-global-plans">
-          <h2><FaCreditCard />Gerir Planos de treino</h2>
-          <p>Criar, visualizar, editar e eliminar planos de treino.</p>
-        </AdminNavLinkCard>
-        <AdminNavLinkCard to="/admin/manage-exercises">
-          <h2><FaRunning />Gerir Exercícios Base</h2>
-          <p>Criar e editar os exercícios disponíveis para os planos.</p>
-        </AdminNavLinkCard>
+        {isFullAdmin && (
+          <AdminNavLinkCard to="/admin/manage-global-plans">
+            <h2><FaCreditCard />Gerir Planos de treino</h2>
+            <p>Criar, visualizar, editar e eliminar planos de treino.</p>
+          </AdminNavLinkCard>
+        )}
+        {isFullAdmin && (
+          <AdminNavLinkCard to="/admin/manage-exercises">
+            <h2><FaRunning />Gerir Exercícios Base</h2>
+            <p>Criar e editar os exercícios disponíveis para os planos.</p>
+          </AdminNavLinkCard>
+        )}
         <AdminNavLinkCard to="/admin/appointment-requests">
           <h2><FaRegCalendarCheck />Pedidos de Consulta</h2>
-          <p>Ver e responder a pedidos de consulta pendentes.</p>
+          <p>{isFullAdmin ? 'Ver e responder a pedidos de consulta pendentes.' : 'Ver e responder aos pedidos de consulta destinados a ti.'}</p>
         </AdminNavLinkCard>
       </AdminNavGrid>
     </PageContainer>

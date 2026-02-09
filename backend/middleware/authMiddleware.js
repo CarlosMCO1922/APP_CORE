@@ -24,7 +24,7 @@ const protect = async (req, res, next) => {
         }
         req.user = user; 
         req.authContext = { id: user.id, role: 'user', isAdmin: user.isAdmin };
-      } else if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(decoded.role)) {
+      } else if (['admin', 'trainer', 'physiotherapist', 'employee', 'osteopata'].includes(decoded.role)) {
         const staffMember = await db.Staff.findByPk(decoded.id, {
           attributes: { exclude: ['password'] }
         });
@@ -72,7 +72,7 @@ const optionalProtect = async (req, res, next) => {
         req.user = user;
         req.authContext = { id: user.id, role: 'user', isAdmin: user.isAdmin };
       }
-    } else if (['admin', 'trainer', 'physiotherapist', 'employee'].includes(decoded.role)) {
+    } else if (['admin', 'trainer', 'physiotherapist', 'employee', 'osteopata'].includes(decoded.role)) {
       const staffMember = await db.Staff.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
       if (staffMember) {
         req.staff = staffMember;
@@ -104,7 +104,7 @@ const isAdminStaff = (req, res, next) => {
 
 
 const isStaff = (req, res, next) => {
-  if (req.authContext && ['admin', 'trainer', 'physiotherapist', 'employee'].includes(req.authContext.role)) {
+  if (req.authContext && ['admin', 'trainer', 'physiotherapist', 'employee', 'osteopata'].includes(req.authContext.role)) {
     next();
   } else {
     res.status(403).json({ message: 'Acesso negado. Apenas funcionários.' });

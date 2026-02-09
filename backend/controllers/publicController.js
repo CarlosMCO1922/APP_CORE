@@ -4,7 +4,7 @@ const db = require('../models');
 const { Op } = require('sequelize');
 const moment = require('moment');
 const { format } = require('date-fns');
-const { checkForStaffAppointmentConflict } = require('./appointmentController');
+const { checkForStaffAppointmentConflict, getStaffIdsSharingOffice } = require('./appointmentController');
 const { _internalCreateNotification } = require('./notificationController');
 const {
   sendGuestAppointmentRequestReceived,
@@ -17,7 +17,7 @@ const {
 const getStaffForAppointments = async (req, res) => {
   try {
     const staff = await db.Staff.findAll({
-      where: { role: { [Op.in]: ['physiotherapist', 'trainer', 'admin'] } },
+      where: { role: { [Op.in]: ['physiotherapist', 'trainer', 'admin', 'osteopata'] } },
       attributes: ['id', 'firstName', 'lastName'],
       order: [['firstName', 'ASC'], ['lastName', 'ASC']],
     });
@@ -41,7 +41,7 @@ const getAvailableSlots = async (req, res) => {
   }
   try {
     const professional = await db.Staff.findByPk(professionalId);
-    if (!professional || !['physiotherapist', 'trainer', 'admin'].includes(professional.role)) {
+    if (!professional || !['physiotherapist', 'trainer', 'admin', 'osteopata'].includes(professional.role)) {
       return res.status(404).json({ message: 'Profissional não encontrado.' });
     }
     const workingHours = [
@@ -57,9 +57,10 @@ const getAvailableSlots = async (req, res) => {
         currentTime.add(slotDuration, 'minutes');
       }
     });
+    const staffIdsInOffice = getStaffIdsSharingOffice(professionalId);
     const existingAppointments = await db.Appointment.findAll({
       where: {
-        staffId: professionalId,
+        staffId: { [Op.in]: staffIdsInOffice },
         date,
         status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] },
       },
@@ -113,7 +114,7 @@ const postAppointmentRequest = async (req, res) => {
 
   try {
     const professional = await db.Staff.findByPk(parsedStaffId);
-    if (!professional || !['physiotherapist', 'trainer', 'admin'].includes(professional.role)) {
+    if (!professional || !['physiotherapist', 'trainer', 'admin', 'osteopata'].includes(professional.role)) {
       return res.status(404).json({ message: 'Profissional não encontrado.' });
     }
 

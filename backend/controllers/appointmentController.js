@@ -20,13 +20,34 @@ try {
   sendGuestAppointmentAccepted = sendGuestAppointmentRejected = sendGuestAppointmentTimeChanged = sendGuestAppointmentRescheduleProposed = sendAppointmentRequestPending = () => {};
 }
 
-// --- Função Auxiliar para Verificar Conflitos de Consulta ---
+// --- Gabinete partilhado: profissionais que usam o mesmo espaço físico (ex.: Elsa + Inês Soares) ---
+// Em SHARED_OFFICE_STAFF_IDS listar IDs separados por vírgula (ex.: 2,5). Quando um tem consulta, o outro fica bloqueado.
+const SHARED_OFFICE_STAFF_IDS = (process.env.SHARED_OFFICE_STAFF_IDS || '')
+  .split(',')
+  .map((id) => parseInt(id.trim(), 10))
+  .filter((id) => !isNaN(id) && id > 0);
+
+/**
+ * Devolve os staffIds que partilham gabinete com o dado staffId (incluindo o próprio).
+ * Se o staffId não estiver no grupo, devolve apenas [staffId].
+ */
+const getStaffIdsSharingOffice = (staffId) => {
+  const sid = parseInt(staffId, 10);
+  if (isNaN(sid)) return [staffId];
+  if (SHARED_OFFICE_STAFF_IDS.length === 0) return [sid];
+  if (SHARED_OFFICE_STAFF_IDS.includes(sid)) return [...SHARED_OFFICE_STAFF_IDS];
+  return [sid];
+};
+
+// --- Função Auxiliar para Verificar Conflitos de Consulta (inclui gabinete partilhado) ---
 const checkForStaffAppointmentConflict = async (staffId, date, time, durationMinutes, excludeAppointmentId = null) => {
   const requestedStartTime = new Date(`${date}T${time}Z`);
   const requestedEndTime = new Date(requestedStartTime.getTime() + durationMinutes * 60000);
 
+  const staffIdsToCheck = getStaffIdsSharingOffice(staffId);
+
   const whereClauseForConflict = {
-    staffId: staffId,
+    staffId: { [Op.in]: staffIdsToCheck },
     date: date,
     status: { [Op.in]: ['agendada', 'confirmada', 'concluída', 'não_compareceu', 'pendente_aprovacao_staff'] },
     ...(excludeAppointmentId && { id: { [Op.ne]: excludeAppointmentId } })
@@ -132,7 +153,7 @@ const adminCreateAppointment = async (req, res) => {
   try {
     const professional = await db.Staff.findByPk(parseInt(staffId));
     if (!professional) { return res.status(404).json({ message: 'Profissional (staff) não encontrado.' }); }
-    if (!['physiotherapist', 'trainer', 'admin'].includes(professional.role)) { return res.status(400).json({ message: 'O ID do profissional fornecido não tem permissão para consultas.' }); }
+    if (!['physiotherapist', 'trainer', 'admin', 'osteopata'].includes(professional.role)) { return res.status(400).json({ message: 'O ID do profissional fornecido não tem permissão para consultas.' }); }
 
     let clientUser = null;
     if (userId) {
@@ -868,11 +889,15 @@ const proposeAppointmentReschedule = async (req, res) => {
 const getTodayAppointmentsCount = async (req, res) => {
   try {
     const today = format(new Date(), 'yyyy-MM-dd');
+    const whereClause = {
+      date: today,
+      status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] }
+    };
+    if (req.staff && req.staff.role !== 'admin') {
+      whereClause.staffId = req.staff.id;
+    }
     const count = await db.Appointment.count({
-      where: {
-        date: today,
-        status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] }
-      },
+      where: whereClause,
     });
     res.status(200).json({ todayAppointmentsCount: count || 0 });
   } catch (error) {
@@ -909,9 +934,10 @@ const getAvailableSlotsForProfessional = async (req, res) => {
       }
     });
     
+    const staffIdsInOffice = getStaffIdsSharingOffice(professionalId);
     const existingAppointments = await db.Appointment.findAll({
       where: {
-        staffId: professionalId,
+        staffId: { [Op.in]: staffIdsInOffice },
         date: date,
         status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] }
       },
@@ -938,8 +964,9 @@ const getAvailableSlotsForProfessional = async (req, res) => {
 };
 
 module.exports = {
-  checkForStaffAppointmentConflict, // Se esta função for usada por outros controladores (se não for, pode ser removida daqui)
-  internalCreateSignalPayment, // O mesmo que acima
+  checkForStaffAppointmentConflict,
+  getStaffIdsSharingOffice,
+  internalCreateSignalPayment,
   adminCreateAppointment,
   getAllAppointments,
   getAppointmentById,

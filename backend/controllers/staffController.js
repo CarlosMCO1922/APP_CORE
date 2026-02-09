@@ -10,7 +10,7 @@ const createStaffMember = async (req, res) => {
     return res.status(400).json({ message: 'Por favor, forneça nome, apelido, email, password e role.' });
   }
 
-  const allowedRoles = ['admin', 'trainer', 'physiotherapist', 'employee'];
+  const allowedRoles = ['admin', 'trainer', 'physiotherapist', 'employee', 'osteopata'];
   if (!allowedRoles.includes(role)) {
     return res.status(400).json({ message: `Role inválido. Roles permitidos: ${allowedRoles.join(', ')}` });
   }
@@ -94,7 +94,7 @@ const updateStaffMember = async (req, res) => {
     if (firstName) staffMember.firstName = firstName;
     if (lastName) staffMember.lastName = lastName;
     if (role) {
-      const allowedRoles = ['admin', 'trainer', 'physiotherapist', 'employee'];
+      const allowedRoles = ['admin', 'trainer', 'physiotherapist', 'employee', 'osteopata'];
       if (!allowedRoles.includes(role)) {
         return res.status(400).json({ message: `Role inválido. Roles permitidos: ${allowedRoles.join(', ')}` });
       }
@@ -169,7 +169,7 @@ const getProfessionals = async (req, res) => {
     const professionals = await db.Staff.findAll({
       where: {
         role: {
-          [Op.or]: ['trainer', 'physiotherapist', 'admin'] // Admin também pode ser um profissional
+          [Op.in]: ['trainer', 'physiotherapist', 'admin', 'osteopata']
         }
       },
       attributes: ['id', 'firstName', 'lastName', 'email', 'role'], 

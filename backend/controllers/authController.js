@@ -120,7 +120,7 @@ const registerStaff = async (req, res) => {
   const { firstName, lastName, email, password, role } = req.body;
 
   // Validação simples do role
-  const allowedRoles = ['admin', 'trainer', 'physiotherapist', 'employee'];
+  const allowedRoles = ['admin', 'trainer', 'physiotherapist', 'employee', 'osteopata'];
   if (role && !allowedRoles.includes(role)) {
     return res.status(400).json({ message: `Role inválido. Roles permitidos: ${allowedRoles.join(', ')}` });
   }
@@ -324,8 +324,8 @@ const validateAuth = async (req, res) => {
           role: staff.role,
         },
         permissions: {
-          canAccessAdmin: ['admin', 'trainer', 'physiotherapist', 'employee'].includes(staff.role),
-          allowedRoles: ['admin', 'trainer', 'physiotherapist', 'employee'],
+          canAccessAdmin: ['admin', 'trainer', 'physiotherapist', 'employee', 'osteopata'].includes(staff.role),
+          allowedRoles: ['admin', 'trainer', 'physiotherapist', 'employee', 'osteopata'],
         }
       });
     } else {
