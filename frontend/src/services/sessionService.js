@@ -1,26 +1,33 @@
 // frontend/src/services/sessionService.js
-import { apiClient } from './apiClient';
+import { logger } from '../utils/logger';
 
-const BASE_URL = '/sessions';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 /**
  * Criar uma nova sessão de treino ao finalizar
  */
 export const createTrainingSessionService = async (sessionData, token) => {
   try {
-    const response = await apiClient.post(
-      `${BASE_URL}/create`,
-      sessionData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    return response.data;
+    const url = `${API_URL}/sessions/create`;
+    logger.log('createTrainingSessionService URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(sessionData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('[sessionService] Erro ao criar sessão:', error?.response?.data || error.message);
+    console.error('[sessionService] Erro ao criar sessão:', error.message);
     throw error;
   }
 };
@@ -39,17 +46,23 @@ export const getSessionsHistoryService = async (token, params = {}) => {
     if (params.endDate) queryParams.append('endDate', params.endDate);
     if (params.status) queryParams.append('status', params.status);
 
-    const response = await apiClient.get(
-      `${BASE_URL}/history?${queryParams.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
+    const url = `${API_URL}/sessions/history?${queryParams.toString()}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('[sessionService] Erro ao obter histórico:', error?.response?.data || error.message);
+    console.error('[sessionService] Erro ao obter histórico:', error.message);
     throw error;
   }
 };
@@ -59,17 +72,23 @@ export const getSessionsHistoryService = async (token, params = {}) => {
  */
 export const getSessionDetailsService = async (sessionId, token) => {
   try {
-    const response = await apiClient.get(
-      `${BASE_URL}/${sessionId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
+    const url = `${API_URL}/sessions/${sessionId}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('[sessionService] Erro ao obter detalhes da sessão:', error?.response?.data || error.message);
+    console.error('[sessionService] Erro ao obter detalhes da sessão:', error.message);
     throw error;
   }
 };
@@ -79,21 +98,28 @@ export const getSessionDetailsService = async (sessionId, token) => {
  */
 export const getLastSessionForPlanService = async (workoutPlanId, token) => {
   try {
-    const response = await apiClient.get(
-      `${BASE_URL}/last-for-plan/${workoutPlanId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
+    const url = `${API_URL}/sessions/last-for-plan/${workoutPlanId}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
     // 404 é normal se não houver sessão anterior
-    if (error?.response?.status === 404) {
+    if (response.status === 404) {
       return null;
     }
-    console.error('[sessionService] Erro ao obter última sessão:', error?.response?.data || error.message);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[sessionService] Erro ao obter última sessão:', error.message);
     throw error;
   }
 };
@@ -103,19 +129,25 @@ export const getLastSessionForPlanService = async (workoutPlanId, token) => {
  */
 export const updateSessionService = async (sessionId, updates, token) => {
   try {
-    const response = await apiClient.patch(
-      `${BASE_URL}/${sessionId}`,
-      updates,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    return response.data;
+    const url = `${API_URL}/sessions/${sessionId}`;
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('[sessionService] Erro ao atualizar sessão:', error?.response?.data || error.message);
+    console.error('[sessionService] Erro ao atualizar sessão:', error.message);
     throw error;
   }
 };
@@ -125,17 +157,23 @@ export const updateSessionService = async (sessionId, updates, token) => {
  */
 export const deleteSessionService = async (sessionId, token, permanent = false) => {
   try {
-    const response = await apiClient.delete(
-      `${BASE_URL}/${sessionId}?permanent=${permanent}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
+    const url = `${API_URL}/sessions/${sessionId}?permanent=${permanent}`;
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('[sessionService] Erro ao eliminar sessão:', error?.response?.data || error.message);
+    console.error('[sessionService] Erro ao eliminar sessão:', error.message);
     throw error;
   }
 };
@@ -151,17 +189,23 @@ export const getSessionStatsService = async (token, params = {}) => {
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.endDate) queryParams.append('endDate', params.endDate);
 
-    const response = await apiClient.get(
-      `${BASE_URL}/stats?${queryParams.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
+    const url = `${API_URL}/sessions/stats?${queryParams.toString()}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('[sessionService] Erro ao obter estatísticas:', error?.response?.data || error.message);
+    console.error('[sessionService] Erro ao obter estatísticas:', error.message);
     throw error;
   }
 };
