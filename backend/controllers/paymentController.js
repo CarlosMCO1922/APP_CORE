@@ -148,6 +148,17 @@ const adminUpdatePaymentStatus = async (req, res) => {
             return res.status(404).json({ message: "Pagamento não encontrado." });
         }
 
+        // Staff não-admin só pode atualizar pagamentos das suas consultas
+        if (req.staff && req.staff.role !== 'admin') {
+            if (payment.relatedResourceType !== 'appointment' || !payment.relatedResourceId) {
+                return res.status(403).json({ message: 'Apenas pode alterar pagamentos associados às suas consultas.' });
+            }
+            const appointment = await db.Appointment.findByPk(payment.relatedResourceId, { attributes: ['id', 'staffId'] });
+            if (!appointment || appointment.staffId !== req.staff.id) {
+                return res.status(403).json({ message: 'Apenas pode alterar pagamentos das suas consultas.' });
+            }
+        }
+
         const originalStatus = payment.status;
         payment.status = status;
         await payment.save();
@@ -197,6 +208,16 @@ const adminDeletePayment = async (req, res) => {
         const payment = await db.Payment.findByPk(paymentId);
         if (!payment) {
             return res.status(404).json({ message: "Pagamento não encontrado." });
+        }
+        // Staff não-admin só pode eliminar pagamentos das suas consultas
+        if (req.staff && req.staff.role !== 'admin') {
+            if (payment.relatedResourceType !== 'appointment' || !payment.relatedResourceId) {
+                return res.status(403).json({ message: 'Apenas pode eliminar pagamentos associados às suas consultas.' });
+            }
+            const appointment = await db.Appointment.findByPk(payment.relatedResourceId, { attributes: ['id', 'staffId'] });
+            if (!appointment || appointment.staffId !== req.staff.id) {
+                return res.status(403).json({ message: 'Apenas pode eliminar pagamentos das suas consultas.' });
+            }
         }
         await payment.destroy();
         res.status(200).json({ message: "Pagamento eliminado com sucesso." });

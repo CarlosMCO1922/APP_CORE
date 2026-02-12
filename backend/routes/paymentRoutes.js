@@ -2,25 +2,25 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
-const { protect, isAdminStaff, isClientUser } = require('../middleware/authMiddleware');
+const { protect, isAdminStaff, isClientUser, isStaff } = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validate');
 const { adminCreatePaymentSchema, paymentStatusSchema, paymentIdParams } = require('../validation/schemas');
 
 // --- Rotas do Administrador (Staff com role 'admin') ---
-// Criar um novo pagamento para um utilizador
+// Criar um novo pagamento para um utilizador (qualquer staff pode registar)
 router.post(
     '/',
     protect,
-    isAdminStaff,
+    isStaff,
     validate(adminCreatePaymentSchema),
     paymentController.adminCreatePayment
 );
 
-// Listar todos os pagamentos (com filtros)
+// Listar todos os pagamentos (com filtros); staff não-admin vê só os das suas consultas
 router.get(
     '/', 
     protect, 
-    isAdminStaff, 
+    isStaff, 
     paymentController.adminGetAllPayments
 );
 
@@ -32,20 +32,20 @@ router.get(
     paymentController.adminGetTotalPaid
 );
 
-// Admin atualiza o status de um pagamento
+// Staff atualiza o status de um pagamento
 router.patch(
     '/:paymentId/status',
     protect,
-    isAdminStaff,
+    isStaff,
     validate(paymentStatusSchema),
     paymentController.adminUpdatePaymentStatus
 );
 
-// Admin elimina um pagamento (NOVA ROTA ADICIONADA SE FALTAR)
+// Staff elimina um pagamento
 router.delete(
     '/:paymentId', 
     protect,
-    isAdminStaff,
+    isStaff,
     paymentController.adminDeletePayment 
 );
 

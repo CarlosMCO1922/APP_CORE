@@ -66,6 +66,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    sessionId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'training_sessions',
+        key: 'id',
+      },
+      onDelete: 'SET NULL',
+      comment: 'Referência à sessão de treino completa',
+    },
     // TEMPORARIAMENTE COMENTADO - Coluna não existe na BD ainda
     // Descomentar após executar migração: node backend/database/addMaterialUsedColumn.js
     // materialUsed: {
@@ -94,6 +104,10 @@ module.exports = (sequelize, DataTypes) => {
     ClientExercisePerformance.belongsTo(models.WorkoutPlanExercise, {
       foreignKey: 'planExerciseId',
       as: 'planExerciseDetails', 
+    });
+    ClientExercisePerformance.belongsTo(models.TrainingSession, {
+      foreignKey: 'sessionId',
+      as: 'session',
     });
   };
 

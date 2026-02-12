@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyLastPerformancesService, checkPersonalRecordsService, logExercisePerformanceService, getMyPerformanceHistoryForExerciseService, saveTrainingSessionDraftService, getTrainingSessionDraftService, deleteTrainingSessionDraftService } from '../services/progressService';
+import { createTrainingSessionService } from '../services/sessionService';
 import { useAuth } from './AuthContext';
 import { safeGetItem, safeSetItem, validateWorkoutSession, clearInvalidStorage, isWorkoutAbandoned, resolveWorkoutConflict, getWorkoutLastUpdate } from '../utils/storageUtils';
 import { logger } from '../utils/logger';
@@ -689,6 +690,37 @@ export const WorkoutProvider = ({ children }) => {
             } catch (error) { logger.error("Erro ao verificar PRs:", error); }
         }
 
+        // CRIAR SESSÃO PERMANENTE após gravar todos os sets com sucesso
+        let createdSessionId = null;
+        if (completedSets.length > 0 && authState.token) {
+            try {
+                const performanceIds = completedSets.map(s => s.id).filter(Boolean);
+                
+                if (performanceIds.length > 0) {
+                    const sessionResponse = await createTrainingSessionService({
+                        trainingId: activeWorkout.trainingId || null,
+                        workoutPlanId: activeWorkout.id,
+                        startTime: activeWorkout.startTime,
+                        endTime: Date.now(),
+                        performanceIds,
+                        notes: null,
+                        metadata: {
+                            personalRecords: personalRecords.length > 0 ? personalRecords : undefined,
+                        },
+                    }, authState.token);
+                    
+                    createdSessionId = sessionResponse.session?.id;
+                    logger.log(`Sessão permanente criada com sucesso (ID: ${createdSessionId})`);
+                } else {
+                    logger.warn('Nenhuma performance tem ID - sessão não criada');
+                }
+            } catch (err) {
+                logger.error('Erro ao criar sessão permanente:', err);
+                // Não bloquear navegação - sessão pode ser criada manualmente depois se necessário
+                // O utilizador já tem os sets gravados, que é o mais importante
+            }
+        }
+
         navigate('/treino/resumo', { 
             state: { 
                 sessionData: completedSets,
@@ -697,6 +729,7 @@ export const WorkoutProvider = ({ children }) => {
                 totalVolume: totalVolume,
                 personalRecords: personalRecords,
                 allPlanExercises: activeWorkout.planExercises,
+                sessionId: createdSessionId, // ID da sessão criada (para ver detalhes depois)
             } 
         });
         

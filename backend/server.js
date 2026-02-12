@@ -37,6 +37,7 @@ const trainingSeriesRoutes = require('./routes/trainingSeriesRoutes');
 const pushRoutes = require('./routes/pushRoutes');
 const logRoutes = require('./routes/logRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const sessionRoutes = require('./routes/sessionRoutes');
 const { rateLimit } = require('express-rate-limit');
 
 // Rate limiting apenas nas rotas públicas (proteção contra abuso sem afetar utilizadores autenticados)
@@ -66,6 +67,7 @@ app.use('/training-series', express.json(), trainingSeriesRoutes);
 app.use('/push', express.json(), pushRoutes);
 app.use('/logs', express.json(), logRoutes);
 app.use('/public', publicRateLimiter, express.json(), publicRoutes);
+app.use('/sessions', express.json(), sessionRoutes);
 
 // --- MIDDLEWARE DE TRATAMENTO DE ERROS ---
 const { notFound, errorHandler } = require('./middleware/errorHandler');
