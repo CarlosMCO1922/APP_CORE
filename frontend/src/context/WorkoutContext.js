@@ -696,7 +696,12 @@ export const WorkoutProvider = ({ children }) => {
             try {
                 const performanceIds = completedSets.map(s => s.id).filter(Boolean);
                 
+                logger.log(`[DEBUG] Tentando criar sessão - Total sets: ${completedSets.length}, Sets com ID: ${performanceIds.length}`);
+                logger.log(`[DEBUG] Performance IDs:`, performanceIds);
+                
                 if (performanceIds.length > 0) {
+                    logger.log(`[DEBUG] A chamar createTrainingSessionService...`);
+                    
                     const sessionResponse = await createTrainingSessionService({
                         trainingId: activeWorkout.trainingId || null,
                         workoutPlanId: activeWorkout.id,
@@ -710,15 +715,20 @@ export const WorkoutProvider = ({ children }) => {
                     }, authState.token);
                     
                     createdSessionId = sessionResponse.session?.id;
-                    logger.log(`Sessão permanente criada com sucesso (ID: ${createdSessionId})`);
+                    logger.log(`✅ Sessão permanente criada com sucesso (ID: ${createdSessionId})`);
+                    logger.log(`[DEBUG] Resposta completa da sessão:`, sessionResponse);
                 } else {
-                    logger.warn('Nenhuma performance tem ID - sessão não criada');
+                    logger.warn('⚠️ Nenhuma performance tem ID - sessão não criada');
+                    logger.warn('[DEBUG] Completed sets sem ID:', completedSets);
                 }
             } catch (err) {
-                logger.error('Erro ao criar sessão permanente:', err);
+                logger.error('❌ ERRO ao criar sessão permanente:', err);
+                logger.error('[DEBUG] Erro completo:', err.message, err.stack);
                 // Não bloquear navegação - sessão pode ser criada manualmente depois se necessário
                 // O utilizador já tem os sets gravados, que é o mais importante
             }
+        } else {
+            logger.warn(`[DEBUG] Não tentou criar sessão - completedSets: ${completedSets.length}, token: ${!!authState.token}`);
         }
 
         navigate('/treino/resumo', { 
