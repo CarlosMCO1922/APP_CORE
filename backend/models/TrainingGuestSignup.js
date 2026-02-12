@@ -65,8 +65,8 @@ module.exports = (sequelize) => {
     tableName: 'training_guest_signups',
     timestamps: true,
     indexes: [
-      { fields: ['trainingId', 'status'] },
-      { fields: ['guestEmail', 'trainingId'], unique: true },
+      { fields: ['training_id', 'status'] },
+      { fields: ['guest_email', 'training_id'], unique: true },
     ],
   });
 
