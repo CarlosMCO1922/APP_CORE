@@ -69,6 +69,7 @@ module.exports = (sequelize, DataTypes) => {
     sessionId: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      field: 'session_id', // Mapping para snake_case na BD
       references: {
         model: 'training_sessions',
         key: 'id',
