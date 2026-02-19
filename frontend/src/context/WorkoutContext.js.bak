@@ -606,9 +606,6 @@ export const WorkoutProvider = ({ children }) => {
             throw new Error(`Não foi possível mapear planExerciseId para exerciseId. PlanExerciseIds: ${missingPlanExerciseIds}`);
         }
 
-        /** IDs das performances gravadas no backend (para associar à sessão permanente) */
-        let collectedPerformanceIds = [];
-
         // Gravar todos os sets no backend ANTES de navegar
         if (completedSets.length > 0) {
             try {
@@ -625,7 +622,6 @@ export const WorkoutProvider = ({ children }) => {
                         if (setData.id) {
                             logger.log(`Set ${setData.planExerciseId}-${setData.setNumber} já foi gravado (ID: ${setData.id}), a saltar...`);
                             successfulSets.push(setData);
-                            collectedPerformanceIds.push(setData.id);
                             continue;
                         }
 
@@ -652,11 +648,8 @@ export const WorkoutProvider = ({ children }) => {
                             materialUsed: materialUsed && String(materialUsed).trim() ? String(materialUsed).trim() : undefined,
                         };
 
-                        const saved = await logSet(fullSetData);
+                        await logSet(fullSetData);
                         successfulSets.push(setData);
-                        if (saved?.id) {
-                            collectedPerformanceIds.push(saved.id);
-                        }
                         logger.log(`Set ${setData.planExerciseId}-${setData.setNumber} gravado com sucesso`);
                     } catch (setError) {
                         logger.error(`Erro ao gravar set ${setData.planExerciseId}-${setData.setNumber}:`, setError);
@@ -712,7 +705,7 @@ export const WorkoutProvider = ({ children }) => {
         let createdSessionId = null;
         if (completedSets.length > 0 && authState.token) {
             try {
-                const performanceIds = collectedPerformanceIds;
+                const performanceIds = completedSets.map(s => s.id).filter(Boolean);
                 
                 console.log(`🟡 [DEBUG] Tentando criar sessão - Total sets: ${completedSets.length}, Sets com ID: ${performanceIds.length}`);
                 console.log(`🟡 [DEBUG] Performance IDs:`, performanceIds);
@@ -860,9 +853,12 @@ export const WorkoutProvider = ({ children }) => {
             if (activeWorkout) {
                 // Tentar persistir de forma síncrona (pode não funcionar em todos os browsers)
                 try {
-                    // persistWorkout já chama saveTrainingSessionDraftService (POST /progress/training-session/draft).
-                    // sendBeacon não foi usado: a rota /api/workout/save-draft não existe e o beacon não envia Authorization.
                     persistWorkout(activeWorkout);
+                    // Usar sendBeacon como fallback para garantir que os dados são enviados
+                    if (navigator.sendBeacon) {
+                        const data = JSON.stringify(activeWorkout);
+                        navigator.sendBeacon('/api/workout/save-draft', data);
+                    }
                 } catch (error) {
                     logger.error("Erro ao persistir antes de fechar:", error);
                 }
