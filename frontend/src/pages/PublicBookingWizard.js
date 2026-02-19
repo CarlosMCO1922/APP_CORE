@@ -19,19 +19,36 @@ const STEP_COLLABORATOR = 2;
 const STEP_DATETIME = 3;
 const STEP_CHECKOUT = 4;
 
-const SERVICE_CONSULTA = 'consulta';
+const SERVICE_OSTEOPATIA = 'osteopatia';
+const SERVICE_FISIOTERAPIA_AVANCADA = 'fisioterapia_avançada';
 const SERVICE_TREINO_GRUPO = 'treino_grupo';
 const SERVICE_TREINO_PT = 'treino_pt';
 
 const DURATION_MINUTES = 60;
 
-// Serviços fixos (Consulta e PT) – podem vir da API no futuro
-const CONSULTA_OPTIONS = [
-  { id: 'consulta_60', label: 'Consulta', duration: 60, price: '25,00 €' },
+// Osteopatia – colaboradora: Inês Soares
+const OSTEOPATIA_OPTIONS = [
+  { id: 'ost_1', label: '1ª Consulta Osteopatia', duration: 60, price: '40,00 €' },
+  { id: 'ost_2', label: 'Consulta Osteopatia', duration: 60, price: '35,00 €' },
+  { id: 'ost_3', label: '1ª Consulta Sócios CORE', duration: 60, price: '35,00 €' },
+  { id: 'ost_4', label: 'Consulta Sócios CORE', duration: 60, price: '35,00 €' },
+  { id: 'ost_5', label: 'Osteopatia Pediátrica - 1ª Consulta', duration: 60, price: '40,00 €' },
+  { id: 'ost_6', label: 'Osteopatia Pediátrica', duration: 60, price: '35,00 €' },
 ];
+// Fisioterapia Avançada – colaboradora: Elsa Anjos
+const FISIOTERAPIA_AVANCADA_OPTIONS = [
+  { id: 'fis_1', label: 'Avaliação + Consulta (1ª)', duration: 60, price: '30,00 €' },
+  { id: 'fis_2', label: 'Consulta', duration: 60, price: '25,00 €' },
+  { id: 'fis_3', label: 'Consulta Sócios CORE', duration: 60, price: '25,00 €' },
+];
+// Treino de PT – colaborador: Gonçalo Marques
 const PT_OPTIONS = [
   { id: 'pt_60', label: 'Sessão de PT', duration: 60, price: 'Sob consulta' },
 ];
+
+const STAFF_OSTEOPATIA = 'Inês Soares';
+const STAFF_FISIOTERAPIA = 'Elsa Anjos';
+const STAFF_TREINO = 'Gonçalo Marques';
 
 // --- Styled ---
 const PageContainer = styled.div`
@@ -117,9 +134,10 @@ const ServiceRow = styled.div`
   padding: 14px 18px;
   background: ${({ theme }) => theme.colors.background};
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.65 : 1)};
   &:hover {
-    background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+    background: ${({ theme, $disabled }) => ($disabled ? 'inherit' : theme.colors.buttonSecondaryBg)};
   }
   ${({ $selected, theme }) => $selected && `
     background: ${theme.colors.primary}20;
@@ -161,6 +179,7 @@ const Checkbox = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
   ${({ $checked, theme }) => $checked && `
     background: ${theme.colors.primary};
     border-color: ${theme.colors.primary};
@@ -500,7 +519,8 @@ function PublicBookingWizard() {
   // Service step
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [serviceType, setServiceType] = useState(null);
-  const [selectedConsultaId, setSelectedConsultaId] = useState(null);
+  const [selectedOsteopatiaId, setSelectedOsteopatiaId] = useState(null);
+  const [selectedFisioterapiaId, setSelectedFisioterapiaId] = useState(null);
   const [selectedPTId, setSelectedPTId] = useState(null);
   const [selectedTrainingId, setSelectedTrainingId] = useState(null);
 
@@ -558,7 +578,54 @@ function PublicBookingWizard() {
     if (serviceType === SERVICE_TREINO_GRUPO) fetchTrainings();
   }, [serviceType, fetchTrainings]);
 
-  const effectiveStaffId = anyCollaborator && staff.length ? String(staff[0].id) : staffId;
+  const next10Days = useMemo(() => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const days = [];
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 14; i++) {
+      days.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+      d.setDate(d.getDate() + 1);
+    }
+    return days;
+  }, []);
+
+  const normalizeName = (s) =>
+    (s || '')
+      .normalize('NFD')
+      .replace(/\u0300-\u036f/g, '')
+      .toLowerCase()
+      .trim();
+
+  const availableStaff = useMemo(() => {
+    const fullName = (s) => `${(s.firstName || '').trim()} ${(s.lastName || '').trim()}`.trim();
+    if (serviceType === SERVICE_OSTEOPATIA) {
+      return staff.filter(
+        (s) => normalizeName(fullName(s)) === normalizeName(STAFF_OSTEOPATIA)
+      );
+    }
+    if (serviceType === SERVICE_FISIOTERAPIA_AVANCADA) {
+      return staff.filter(
+        (s) => normalizeName(fullName(s)) === normalizeName(STAFF_FISIOTERAPIA)
+      );
+    }
+    if (serviceType === SERVICE_TREINO_PT || serviceType === SERVICE_TREINO_GRUPO) {
+      return staff.filter(
+        (s) => normalizeName(fullName(s)) === normalizeName(STAFF_TREINO)
+      );
+    }
+    return staff;
+  }, [staff, serviceType]);
+
+  const canProceedService = useMemo(() => {
+    if (serviceType === SERVICE_OSTEOPATIA) return !!selectedOsteopatiaId;
+    if (serviceType === SERVICE_FISIOTERAPIA_AVANCADA) return !!selectedFisioterapiaId;
+    if (serviceType === SERVICE_TREINO_PT) return !!selectedPTId;
+    if (serviceType === SERVICE_TREINO_GRUPO) return !!selectedTrainingId;
+    return false;
+  }, [serviceType, selectedOsteopatiaId, selectedFisioterapiaId, selectedPTId, selectedTrainingId]);
+
+  const effectiveStaffId = anyCollaborator && availableStaff.length ? String(availableStaff[0].id) : staffId;
   useEffect(() => {
     if (serviceType !== SERVICE_TREINO_GRUPO && date && effectiveStaffId) {
       setLoadingSlots(true);
@@ -572,25 +639,6 @@ function PublicBookingWizard() {
       setTime('');
     }
   }, [date, effectiveStaffId, serviceType]);
-
-  const next10Days = useMemo(() => {
-    const pad = (n) => String(n).padStart(2, '0');
-    const days = [];
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    for (let i = 0; i < 14; i++) {
-      days.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
-      d.setDate(d.getDate() + 1);
-    }
-    return days;
-  }, []);
-
-  const canProceedService = useMemo(() => {
-    if (serviceType === SERVICE_CONSULTA) return !!selectedConsultaId;
-    if (serviceType === SERVICE_TREINO_PT) return !!selectedPTId;
-    if (serviceType === SERVICE_TREINO_GRUPO) return !!selectedTrainingId;
-    return false;
-  }, [serviceType, selectedConsultaId, selectedPTId, selectedTrainingId]);
 
   const selectedTraining = useMemo(
     () => trainings.find((t) => String(t.id) === String(selectedTrainingId)),
@@ -762,19 +810,20 @@ function PublicBookingWizard() {
             <CategoryCard>
               <CategoryHeader
                 type="button"
-                onClick={() => setExpandedCategory(expandedCategory === SERVICE_CONSULTA ? null : SERVICE_CONSULTA)}
+                onClick={() => setExpandedCategory(expandedCategory === SERVICE_OSTEOPATIA ? null : SERVICE_OSTEOPATIA)}
               >
-                Consulta
-                {expandedCategory === SERVICE_CONSULTA ? <FaChevronDown /> : <FaChevronRight />}
+                Osteopatia
+                {expandedCategory === SERVICE_OSTEOPATIA ? <FaChevronDown /> : <FaChevronRight />}
               </CategoryHeader>
-              {expandedCategory === SERVICE_CONSULTA &&
-                CONSULTA_OPTIONS.map((opt) => (
+              {expandedCategory === SERVICE_OSTEOPATIA &&
+                OSTEOPATIA_OPTIONS.map((opt) => (
                   <ServiceRow
                     key={opt.id}
-                    $selected={selectedConsultaId === opt.id && serviceType === SERVICE_CONSULTA}
+                    $selected={selectedOsteopatiaId === opt.id && serviceType === SERVICE_OSTEOPATIA}
                     onClick={() => {
-                      setServiceType(SERVICE_CONSULTA);
-                      setSelectedConsultaId(opt.id);
+                      setServiceType(SERVICE_OSTEOPATIA);
+                      setSelectedOsteopatiaId(opt.id);
+                      setSelectedFisioterapiaId(null);
                       setSelectedPTId(null);
                       setSelectedTrainingId(null);
                     }}
@@ -786,8 +835,43 @@ function PublicBookingWizard() {
                         <ServiceMeta>{opt.duration} min • {opt.price}</ServiceMeta>
                       </div>
                     </ServiceLabel>
-                    <Checkbox $checked={selectedConsultaId === opt.id && serviceType === SERVICE_CONSULTA}>
-                      {selectedConsultaId === opt.id && serviceType === SERVICE_CONSULTA && <FaCheck size={12} />}
+                    <Checkbox $checked={selectedOsteopatiaId === opt.id && serviceType === SERVICE_OSTEOPATIA}>
+                      {selectedOsteopatiaId === opt.id && serviceType === SERVICE_OSTEOPATIA && <FaCheck size={12} />}
+                    </Checkbox>
+                  </ServiceRow>
+                ))}
+            </CategoryCard>
+
+            <CategoryCard>
+              <CategoryHeader
+                type="button"
+                onClick={() => setExpandedCategory(expandedCategory === SERVICE_FISIOTERAPIA_AVANCADA ? null : SERVICE_FISIOTERAPIA_AVANCADA)}
+              >
+                Fisioterapia Avançada
+                {expandedCategory === SERVICE_FISIOTERAPIA_AVANCADA ? <FaChevronDown /> : <FaChevronRight />}
+              </CategoryHeader>
+              {expandedCategory === SERVICE_FISIOTERAPIA_AVANCADA &&
+                FISIOTERAPIA_AVANCADA_OPTIONS.map((opt) => (
+                  <ServiceRow
+                    key={opt.id}
+                    $selected={selectedFisioterapiaId === opt.id && serviceType === SERVICE_FISIOTERAPIA_AVANCADA}
+                    onClick={() => {
+                      setServiceType(SERVICE_FISIOTERAPIA_AVANCADA);
+                      setSelectedFisioterapiaId(opt.id);
+                      setSelectedOsteopatiaId(null);
+                      setSelectedPTId(null);
+                      setSelectedTrainingId(null);
+                    }}
+                  >
+                    <ServiceLabel>
+                      <ServiceInitial>{opt.label.charAt(0)}</ServiceInitial>
+                      <div>
+                        <ServiceName>{opt.label}</ServiceName>
+                        <ServiceMeta>{opt.duration} min • {opt.price}</ServiceMeta>
+                      </div>
+                    </ServiceLabel>
+                    <Checkbox $checked={selectedFisioterapiaId === opt.id && serviceType === SERVICE_FISIOTERAPIA_AVANCADA}>
+                      {selectedFisioterapiaId === opt.id && serviceType === SERVICE_FISIOTERAPIA_AVANCADA && <FaCheck size={12} />}
                     </Checkbox>
                   </ServiceRow>
                 ))}
@@ -809,7 +893,8 @@ function PublicBookingWizard() {
                     onClick={() => {
                       setServiceType(SERVICE_TREINO_PT);
                       setSelectedPTId(opt.id);
-                      setSelectedConsultaId(null);
+                      setSelectedOsteopatiaId(null);
+                      setSelectedFisioterapiaId(null);
                       setSelectedTrainingId(null);
                     }}
                   >
@@ -844,35 +929,45 @@ function PublicBookingWizard() {
                   )}
                   {!loadingTrainings && trainings.length === 0 && (
                     <div style={{ padding: 16, color: theme.colors.textMuted }}>
-                      Não há treinos de grupo disponíveis nos próximos dias.
+                      Não há treinos de grupo nos próximos dias.
                     </div>
                   )}
                   {!loadingTrainings &&
-                    trainings.filter((t) => t.hasVacancies).map((t) => (
-                      <ServiceRow
-                        key={t.id}
-                        $selected={selectedTrainingId === String(t.id) && serviceType === SERVICE_TREINO_GRUPO}
-                        onClick={() => {
-                          setServiceType(SERVICE_TREINO_GRUPO);
-                          setSelectedTrainingId(String(t.id));
-                          setSelectedConsultaId(null);
-                          setSelectedPTId(null);
-                        }}
-                      >
-                        <ServiceLabel>
-                          <ServiceInitial>T</ServiceInitial>
-                          <div>
-                            <ServiceName>{t.name || `Treino ${t.id}`}</ServiceName>
-                            <ServiceMeta>
-                              {t.date} {t.time ? String(t.time).substring(0, 5) : ''} • {t.capacity - (t.participantsCount || 0)} vaga(s)
-                            </ServiceMeta>
-                          </div>
-                        </ServiceLabel>
-                        <Checkbox $checked={selectedTrainingId === String(t.id) && serviceType === SERVICE_TREINO_GRUPO}>
-                          {selectedTrainingId === String(t.id) && <FaCheck size={12} />}
-                        </Checkbox>
-                      </ServiceRow>
-                    ))}
+                    trainings.map((t) => {
+                      const hasVacancies = t.hasVacancies;
+                      const isSelected = selectedTrainingId === String(t.id) && serviceType === SERVICE_TREINO_GRUPO;
+                      return (
+                        <ServiceRow
+                          key={t.id}
+                          $selected={isSelected}
+                          $disabled={!hasVacancies}
+                          onClick={() => {
+                            if (!hasVacancies) return;
+                            setServiceType(SERVICE_TREINO_GRUPO);
+                            setSelectedTrainingId(String(t.id));
+                            setSelectedOsteopatiaId(null);
+                            setSelectedFisioterapiaId(null);
+                            setSelectedPTId(null);
+                          }}
+                        >
+                          <ServiceLabel>
+                            <ServiceInitial>T</ServiceInitial>
+                            <div>
+                              <ServiceName>{t.name || `Treino ${t.id}`}</ServiceName>
+                              <ServiceMeta>
+                                {t.date} {t.time ? String(t.time).substring(0, 5) : ''}
+                                {hasVacancies
+                                  ? ` • ${t.capacity - (t.participantsCount || 0)} vaga(s)`
+                                  : ' • Completo'}
+                              </ServiceMeta>
+                            </div>
+                          </ServiceLabel>
+                          <Checkbox $checked={isSelected} $disabled={!hasVacancies}>
+                            {isSelected && <FaCheck size={12} />}
+                          </Checkbox>
+                        </ServiceRow>
+                      );
+                    })}
                 </>
               )}
             </CategoryCard>
@@ -897,7 +992,7 @@ function PublicBookingWizard() {
               $selected={anyCollaborator}
               onClick={() => {
                 setAnyCollaborator(true);
-                setStaffId(staff.length ? String(staff[0].id) : '');
+                setStaffId(availableStaff.length ? String(availableStaff[0].id) : '');
               }}
             >
               <ColabAvatar>?</ColabAvatar>
@@ -906,7 +1001,7 @@ function PublicBookingWizard() {
               </div>
               <FaChevronRight color={theme.colors.textMuted} />
             </CollaboratorRow>
-            {staff.map((s) => (
+            {availableStaff.map((s) => (
               <CollaboratorRow
                 key={s.id}
                 $selected={!anyCollaborator && staffId === String(s.id)}
@@ -1080,7 +1175,7 @@ function PublicBookingWizard() {
                       ? selectedTraining?.instructor
                         ? `${selectedTraining.instructor.firstName} ${selectedTraining.instructor.lastName}`
                         : '—'
-                      : anyCollaborator ? 'Qualquer' : staff.find((s) => String(s.id) === staffId)?.firstName + ' ' + staff.find((s) => String(s.id) === staffId)?.lastName || '—'}
+                      : anyCollaborator ? 'Qualquer' : availableStaff.find((s) => String(s.id) === staffId)?.firstName + ' ' + availableStaff.find((s) => String(s.id) === staffId)?.lastName || '—'}
                   </span>
                 </SummaryRow>
                 <SummaryRow>
@@ -1105,9 +1200,13 @@ function PublicBookingWizard() {
   );
 
   function getSelectedServiceLabel() {
-    if (serviceType === SERVICE_CONSULTA && selectedConsultaId) {
-      const o = CONSULTA_OPTIONS.find((x) => x.id === selectedConsultaId);
-      return o ? o.label : 'Consulta';
+    if (serviceType === SERVICE_OSTEOPATIA && selectedOsteopatiaId) {
+      const o = OSTEOPATIA_OPTIONS.find((x) => x.id === selectedOsteopatiaId);
+      return o ? o.label : 'Osteopatia';
+    }
+    if (serviceType === SERVICE_FISIOTERAPIA_AVANCADA && selectedFisioterapiaId) {
+      const o = FISIOTERAPIA_AVANCADA_OPTIONS.find((x) => x.id === selectedFisioterapiaId);
+      return o ? o.label : 'Fisioterapia Avançada';
     }
     if (serviceType === SERVICE_TREINO_PT && selectedPTId) {
       const o = PT_OPTIONS.find((x) => x.id === selectedPTId);
@@ -1120,8 +1219,12 @@ function PublicBookingWizard() {
   }
 
   function getSelectedServicePrice() {
-    if (serviceType === SERVICE_CONSULTA && selectedConsultaId) {
-      const o = CONSULTA_OPTIONS.find((x) => x.id === selectedConsultaId);
+    if (serviceType === SERVICE_OSTEOPATIA && selectedOsteopatiaId) {
+      const o = OSTEOPATIA_OPTIONS.find((x) => x.id === selectedOsteopatiaId);
+      return o ? o.price : '';
+    }
+    if (serviceType === SERVICE_FISIOTERAPIA_AVANCADA && selectedFisioterapiaId) {
+      const o = FISIOTERAPIA_AVANCADA_OPTIONS.find((x) => x.id === selectedFisioterapiaId);
       return o ? o.price : '';
     }
     if (serviceType === SERVICE_TREINO_PT && selectedPTId) {
