@@ -21,7 +21,8 @@ const AdminDashboardPage = lazyWithRetry(() => import('./pages/AdminDashboardPag
 const RegisterPage = lazyWithRetry(() => import('./pages/RegisterPage'));
 const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'));
 const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage'));
-const PublicBookingPage = lazyWithRetry(() => import('./pages/PublicBookingPage'));
+const EntryPage = lazyWithRetry(() => import('./pages/EntryPage'));
+const PublicBookingPage = lazyWithRetry(() => import('./pages/PublicBookingWizard'));
 const ConfirmReschedulePage = lazyWithRetry(() => import('./pages/ConfirmReschedulePage'));
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
 const MyPaymentsPage = lazyWithRetry(() => import('./pages/MyPaymentsPage'));
@@ -375,6 +376,7 @@ function App() {
           <Route path="/register" element={ !authState.isAuthenticated ? <RegisterPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)}/>
           <Route path='/login-staff' element={ !authState.isAuthenticated ? <StaffLoginPage/> : <Navigate to="/admin/dashboard" replace/>}/>
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/" element={!authState.isAuthenticated ? <EntryPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)} />
           <Route path="/marcar" element={<PublicBookingPage />} />
           <Route path="/confirmar-reagendamento-consulta" element={<ConfirmReschedulePage type="consulta" />} />
           <Route path="/confirmar-reagendamento-treino" element={<ConfirmReschedulePage type="treino" />} />
@@ -427,7 +429,7 @@ function App() {
             element={
               authState.isAuthenticated
                 ? (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)
-                : <Navigate to="/login" replace />
+                : <Navigate to="/" replace />
             }
           />
           </Routes>

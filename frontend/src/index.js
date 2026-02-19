@@ -16,7 +16,11 @@ import { CustomThemeProvider } from './context/ThemeContext';
 import { WorkoutProvider } from './context/WorkoutContext';
 import { ToastProvider } from './components/Toast/ToastProvider';
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+// Só carregar Stripe se a chave publicável estiver definida (evita "reading 'match' of undefined" em local)
+const stripeKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripeKey && typeof stripeKey === 'string' && stripeKey.startsWith('pk_')
+  ? loadStripe(stripeKey)
+  : Promise.resolve(null);
 
 const GlobalStyle = createGlobalStyle`
   :root {
