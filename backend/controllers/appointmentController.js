@@ -9,6 +9,7 @@ let sendGuestAppointmentRejected;
 let sendGuestAppointmentTimeChanged;
 let sendGuestAppointmentRescheduleProposed;
 let sendAppointmentRequestPending;
+let sendAppointmentCreatedByAdmin;
 try {
   const emailService = require('../utils/emailService');
   sendGuestAppointmentAccepted = emailService.sendGuestAppointmentAccepted;
@@ -16,8 +17,9 @@ try {
   sendGuestAppointmentTimeChanged = emailService.sendGuestAppointmentTimeChanged;
   sendGuestAppointmentRescheduleProposed = emailService.sendGuestAppointmentRescheduleProposed;
   sendAppointmentRequestPending = emailService.sendAppointmentRequestPending;
+  sendAppointmentCreatedByAdmin = emailService.sendAppointmentCreatedByAdmin;
 } catch (e) {
-  sendGuestAppointmentAccepted = sendGuestAppointmentRejected = sendGuestAppointmentTimeChanged = sendGuestAppointmentRescheduleProposed = sendAppointmentRequestPending = () => {};
+  sendGuestAppointmentAccepted = sendGuestAppointmentRejected = sendGuestAppointmentTimeChanged = sendGuestAppointmentRescheduleProposed = sendAppointmentRequestPending = sendAppointmentCreatedByAdmin = () => {};
 }
 
 // --- Gabinete partilhado: profissionais que usam o mesmo espaço físico (ex.: Elsa + Inês Soares) ---
@@ -205,7 +207,7 @@ const adminCreateAppointment = async (req, res) => {
       });
     }
     // Notificar o cliente se uma consulta foi criada e atribuída a ele
-    if (newAppointment.userId && clientUser) { 
+    if (newAppointment.userId && clientUser) {
       _internalCreateNotification({
         recipientUserId: newAppointment.userId,
         message: `Uma consulta com ${professional.firstName} foi agendada para si em ${format(new Date(newAppointment.date), 'dd/MM/yyyy')} às ${newAppointment.time.substring(0,5)}.`,
@@ -214,6 +216,13 @@ const adminCreateAppointment = async (req, res) => {
         relatedResourceType: 'appointment',
         link: `/calendario`
       });
+      sendAppointmentCreatedByAdmin({
+        to: clientUser.email,
+        clientName: `${(clientUser.firstName || '').trim()} ${(clientUser.lastName || '').trim()}`.trim() || 'Cliente',
+        professionalName: `${(professional.firstName || '').trim()} ${(professional.lastName || '').trim()}`.trim() || 'Profissional',
+        date: newAppointment.date,
+        time: newAppointment.time,
+      }).catch(err => console.error('Email consulta criada por admin:', err));
     }
 
     res.status(201).json(createdApptWithDetails);

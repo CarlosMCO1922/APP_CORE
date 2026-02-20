@@ -4,6 +4,7 @@ import styled , { useTheme } from 'styled-components';
 import { useAuth } from '../context/AuthContext'; 
 import { useNavigate, Link } from 'react-router-dom';
 import ThemeToggler from '../components/Theme/ThemeToggler';
+import HomeLink from '../components/HomeLink';
 
 // --- Definição das Cores ---
 const coreGold = '#D4AF37';
@@ -256,6 +257,7 @@ function LoginPage() {
 
   return (
     <PageContainer>
+      <HomeLink />
       <TogglerContainer>
         <ThemeToggler />
       </TogglerContainer>

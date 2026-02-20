@@ -39,7 +39,6 @@ const OSTEOPATIA_OPTIONS = [
 const FISIOTERAPIA_AVANCADA_OPTIONS = [
   { id: 'fis_1', label: 'Avaliação + Consulta (1ª)', duration: 60, price: '30,00 €' },
   { id: 'fis_2', label: 'Consulta', duration: 60, price: '25,00 €' },
-  { id: 'fis_3', label: 'Consulta Sócios CORE', duration: 60, price: '25,00 €' },
 ];
 // Treino de PT – colaborador: Gonçalo Marques
 const PT_OPTIONS = [
@@ -545,6 +544,9 @@ function PublicBookingWizard() {
   const [guestPhone, setGuestPhone] = useState('');
   const [notes, setNotes] = useState('');
 
+  // Checkout: 1 = preencher informação, 2 = ver resumo e enviar pedido
+  const [checkoutSubstep, setCheckoutSubstep] = useState(1);
+
   const fetchStaff = useCallback(async () => {
     setLoadingStaff(true);
     try {
@@ -695,6 +697,10 @@ function PublicBookingWizard() {
   }, [calendarMonth]);
 
   const handleBack = () => {
+    if (step === STEP_CHECKOUT && checkoutSubstep === 2) {
+      setCheckoutSubstep(1);
+      return;
+    }
     if (step === STEP_SERVICE) {
       navigate('/');
       return;
@@ -829,7 +835,7 @@ function PublicBookingWizard() {
                     }}
                   >
                     <ServiceLabel>
-                      <ServiceInitial>{opt.label.charAt(0)}</ServiceInitial>
+                      <ServiceInitial>O</ServiceInitial>
                       <div>
                         <ServiceName>{opt.label}</ServiceName>
                         <ServiceMeta>{opt.duration} min • {opt.price}</ServiceMeta>
@@ -864,7 +870,7 @@ function PublicBookingWizard() {
                     }}
                   >
                     <ServiceLabel>
-                      <ServiceInitial>{opt.label.charAt(0)}</ServiceInitial>
+                      <ServiceInitial>F</ServiceInitial>
                       <div>
                         <ServiceName>{opt.label}</ServiceName>
                         <ServiceMeta>{opt.duration} min • {opt.price}</ServiceMeta>
@@ -899,7 +905,7 @@ function PublicBookingWizard() {
                     }}
                   >
                     <ServiceLabel>
-                      <ServiceInitial>P</ServiceInitial>
+                      <ServiceInitial>T</ServiceInitial>
                       <div>
                         <ServiceName>{opt.label}</ServiceName>
                         <ServiceMeta>{opt.duration} min • {opt.price}</ServiceMeta>
@@ -1109,89 +1115,142 @@ function PublicBookingWizard() {
         )}
 
         {step === STEP_CHECKOUT && (
-          <form onSubmit={handleSubmit}>
-            <CheckoutGrid>
-              <CheckoutFormSection>
-                <h2>A sua informação</h2>
-                <Label htmlFor="guestName">Nome *</Label>
-                <Input
-                  id="guestName"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Nome completo"
-                  required
-                />
-                <Label htmlFor="guestPhone">Número de telefone *</Label>
-                <Input
-                  id="guestPhone"
-                  type="tel"
-                  value={guestPhone}
-                  onChange={(e) => setGuestPhone(e.target.value)}
-                  placeholder="+351 912 345 678"
-                  required
-                />
-                <Label htmlFor="guestEmail">Email *</Label>
-                <Input
-                  id="guestEmail"
-                  type="email"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  placeholder="email@exemplo.pt"
-                  required
-                />
-                <Label htmlFor="notes">Comentários (opcional)</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Deseja incluir mais alguma informação adicional?"
-                />
-              </CheckoutFormSection>
+          <>
+            {checkoutSubstep === 1 ? (
+              <>
+                <CheckoutFormSection>
+                  <h2>A sua informação</h2>
+                  <p style={{ fontSize: '0.9rem', color: theme.colors.textMuted, marginBottom: 16 }}>
+                    Preencha os dados abaixo para continuar.
+                  </p>
+                  <Label htmlFor="guestName">Nome *</Label>
+                  <Input
+                    id="guestName"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="Nome completo"
+                    required
+                  />
+                  <Label htmlFor="guestPhone">Número de telefone *</Label>
+                  <Input
+                    id="guestPhone"
+                    type="tel"
+                    value={guestPhone}
+                    onChange={(e) => setGuestPhone(e.target.value)}
+                    placeholder="+351 912 345 678"
+                    required
+                  />
+                  <Label htmlFor="guestEmail">Email *</Label>
+                  <Input
+                    id="guestEmail"
+                    type="email"
+                    value={guestEmail}
+                    onChange={(e) => setGuestEmail(e.target.value)}
+                    placeholder="email@exemplo.pt"
+                    required
+                  />
+                  <Label htmlFor="notes">Comentários (opcional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Deseja incluir mais alguma informação adicional?"
+                  />
+                </CheckoutFormSection>
+                <NextButton
+                  type="button"
+                  onClick={() => setCheckoutSubstep(2)}
+                  disabled={!guestName.trim() || !guestEmail.trim() || !guestPhone.trim()}
+                >
+                  Seguinte
+                </NextButton>
+              </>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <CheckoutGrid>
+                  <CheckoutFormSection>
+                    <h2>A sua informação</h2>
+                    <Label htmlFor="guestName2">Nome *</Label>
+                    <Input
+                      id="guestName2"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="Nome completo"
+                      required
+                    />
+                    <Label htmlFor="guestPhone2">Número de telefone *</Label>
+                    <Input
+                      id="guestPhone2"
+                      type="tel"
+                      value={guestPhone}
+                      onChange={(e) => setGuestPhone(e.target.value)}
+                      placeholder="+351 912 345 678"
+                      required
+                    />
+                    <Label htmlFor="guestEmail2">Email *</Label>
+                    <Input
+                      id="guestEmail2"
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      placeholder="email@exemplo.pt"
+                      required
+                    />
+                    <Label htmlFor="notes2">Comentários (opcional)</Label>
+                    <Textarea
+                      id="notes2"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Deseja incluir mais alguma informação adicional?"
+                    />
+                  </CheckoutFormSection>
 
-              <CheckoutCard>
-                <CheckoutCardLogo>
-                  <CheckoutCardLogoImg src={theme.logoUrl} alt="CORE" />
-                  <div>
-                    <CheckoutCardTitle>CORE - Centro da Otimização da Reabilitação e do Exercício</CheckoutCardTitle>
-                    <CheckoutCardAddress>R. da Marcha Gualteriana 596, 4810-264 Guimarães</CheckoutCardAddress>
-                  </div>
-                </CheckoutCardLogo>
-                <SummaryRow>
-                  <SummaryLabel>Data</SummaryLabel>
-                  <span>
-                    {serviceType === SERVICE_TREINO_GRUPO && selectedTraining
-                      ? `${selectedTraining.date} ${selectedTraining.time ? String(selectedTraining.time).substring(0, 5) : ''}`
-                      : date && time ? `${date} ${time}` : '—'}
-                  </span>
-                </SummaryRow>
-                <SummaryRow>
-                  <SummaryLabel>Duração</SummaryLabel>
-                  <span>{serviceType === SERVICE_TREINO_GRUPO ? '—' : `${DURATION_MINUTES} min`}</span>
-                </SummaryRow>
-                <SummaryRow>
-                  <SummaryLabel>Colaborador</SummaryLabel>
-                  <span>
-                    {serviceType === SERVICE_TREINO_GRUPO
-                      ? selectedTraining?.instructor
-                        ? `${selectedTraining.instructor.firstName} ${selectedTraining.instructor.lastName}`
-                        : '—'
-                      : anyCollaborator ? 'Qualquer' : availableStaff.find((s) => String(s.id) === staffId)?.firstName + ' ' + availableStaff.find((s) => String(s.id) === staffId)?.lastName || '—'}
-                  </span>
-                </SummaryRow>
-                <SummaryRow>
-                  <SummaryLabel>{getSelectedServiceLabel()}</SummaryLabel>
-                  <span>{getSelectedServicePrice()}</span>
-                </SummaryRow>
-                <SummaryRow style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${theme.colors.cardBorder}` }}>
-                  <SummaryLabel>Montante total</SummaryLabel>
-                  <span style={{ fontWeight: 600, color: theme.colors.primary }}>{getSelectedServicePrice()}</span>
-                </SummaryRow>
-              </CheckoutCard>
-            </CheckoutGrid>
-            <NextButton type="submit" disabled={submitting}>
-              {submitting ? 'A enviar...' : 'Enviar pedido'}
-            </NextButton>
-          </form>
+                  <CheckoutCard>
+                    <CheckoutCardLogo>
+                      <CheckoutCardLogoImg src={theme.logoUrl} alt="CORE" />
+                      <div>
+                        <CheckoutCardTitle>CORE - Centro da Otimização da Reabilitação e do Exercício</CheckoutCardTitle>
+                        <CheckoutCardAddress>R. da Marcha Gualteriana 596, 4810-264 Guimarães</CheckoutCardAddress>
+                      </div>
+                    </CheckoutCardLogo>
+                    <SummaryRow>
+                      <SummaryLabel>Data</SummaryLabel>
+                      <span>
+                        {serviceType === SERVICE_TREINO_GRUPO && selectedTraining
+                          ? `${selectedTraining.date} ${selectedTraining.time ? String(selectedTraining.time).substring(0, 5) : ''}`
+                          : date && time ? `${date} ${time}` : '—'}
+                      </span>
+                    </SummaryRow>
+                    <SummaryRow>
+                      <SummaryLabel>Duração</SummaryLabel>
+                      <span>{serviceType === SERVICE_TREINO_GRUPO ? '—' : `${DURATION_MINUTES} min`}</span>
+                    </SummaryRow>
+                    <SummaryRow>
+                      <SummaryLabel>Colaborador</SummaryLabel>
+                      <span>
+                        {serviceType === SERVICE_TREINO_GRUPO
+                          ? selectedTraining?.instructor
+                            ? `${selectedTraining.instructor.firstName} ${selectedTraining.instructor.lastName}`
+                            : '—'
+                          : anyCollaborator ? 'Qualquer' : availableStaff.find((s) => String(s.id) === staffId)?.firstName + ' ' + availableStaff.find((s) => String(s.id) === staffId)?.lastName || '—'}
+                      </span>
+                    </SummaryRow>
+                    <SummaryRow>
+                      <SummaryLabel>{getSelectedServiceLabel()}</SummaryLabel>
+                      <span>{getSelectedServicePrice()}</span>
+                    </SummaryRow>
+                    <SummaryRow style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${theme.colors.cardBorder}` }}>
+                      <SummaryLabel>Montante total</SummaryLabel>
+                      <span style={{ fontWeight: 600, color: theme.colors.primary }}>{getSelectedServicePrice()}</span>
+                    </SummaryRow>
+                  </CheckoutCard>
+                </CheckoutGrid>
+                <NextButton type="submit" disabled={submitting}>
+                  {submitting ? 'A enviar...' : 'Enviar pedido'}
+                </NextButton>
+              </form>
+            )}
+          </>
         )}
 
         <LoginLink to="/login">Já tens conta? Inicia sessão</LoginLink>

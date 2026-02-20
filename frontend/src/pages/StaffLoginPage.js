@@ -3,6 +3,7 @@ import styled, { useTheme }from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import ThemeToggler from '../components/Theme/ThemeToggler';
+import HomeLink from '../components/HomeLink';
 
 const coreGold = '#D4AF37'
 const coreBlack = '#1A1A1A';
@@ -192,6 +193,7 @@ function StaffLoginPage() {
 
     return (
         <PageContainer>
+            <HomeLink />
             <TogglerContainer>
                 <ThemeToggler />
             </TogglerContainer>
