@@ -85,6 +85,8 @@ module.exports = (sequelize) => {
     },
   }, {
     tableName: 'training_sessions',
+    // Migração SQL usa snake_case (user_id, workout_plan_id, …); sem isto o Sequelize gera "userId" e o Postgres falha.
+    underscored: true,
     timestamps: true,
     indexes: [
       {

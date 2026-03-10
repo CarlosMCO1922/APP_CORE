@@ -207,6 +207,27 @@ const getDeviceInfo = () => {
 };
 
 /**
+ * Erros gerados por extensões do browser (Firefox Reader, etc.) — não são da app.
+ * Evita poluir a Central do Programador com JS_ERROR de terceiros.
+ */
+const shouldIgnoreGlobalError = (message, stackTrace) => {
+  const msg = String(message || '');
+  const stack = String(stackTrace || '');
+  const combined = `${msg}\n${stack}`;
+  const lower = combined.toLowerCase();
+  // Firefox/extensões: __firefox_reader, window.__firefox__.reader, playlistLongPressed_, etc.
+  if (lower.includes('__firefox_') || lower.includes('__firefox__')) return true;
+  if (lower.includes('moz-extension://')) return true;
+  if (lower.includes('chrome-extension://')) return true;
+  if (lower.includes('safari-extension://')) return true;
+  if (msg.includes('__firefox_reader') || msg.includes('window.__firefox__')) return true;
+  if (lower.includes('refresh_youtube_quality') || lower.includes('playlistlongpressed')) return true;
+  // MetaMask / carteiras injectam window.ethereum; erros daí não são da app
+  if (lower.includes('window.ethereum') || lower.includes('.ethereum.')) return true;
+  return false;
+};
+
+/**
  * Inicializa handlers globais para capturar erros
  * @param {Function} getToken - Função para obter token atual
  */
@@ -214,10 +235,14 @@ export const initializeErrorHandlers = (getToken) => {
   if (typeof window === 'undefined') return; // SSR safety
   // Handler para erros JavaScript não capturados
   window.onerror = (message, source, lineno, colno, error) => {
+    const stackTrace = error?.stack || `Linha ${lineno}, Coluna ${colno} em ${source}`;
+    if (shouldIgnoreGlobalError(message, stackTrace)) {
+      return false;
+    }
     const errorData = {
       errorType: 'JS_ERROR',
       message: message || 'Erro JavaScript não capturado',
-      stackTrace: error?.stack || `Linha ${lineno}, Coluna ${colno} em ${source}`,
+      stackTrace,
       url: window.location.href,
       userAgent: navigator.userAgent,
       deviceInfo: getDeviceInfo(),
@@ -239,6 +264,10 @@ export const initializeErrorHandlers = (getToken) => {
   // Handler para promessas rejeitadas não tratadas
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
+    const reasonMsg = error?.message || String(error);
+    if (shouldIgnoreGlobalError(reasonMsg, error?.stack)) {
+      return;
+    }
     const errorData = {
       errorType: 'UNHANDLED_PROMISE_REJECTION',
       message: error?.message || 'Promise rejeitada não tratada',
