@@ -1,7 +1,7 @@
 // backend/controllers/authController.js
 const db = require('../models'); 
 const { hashPassword, comparePassword } = require('../utils/passwordUtils');
-const { generateToken } = require('../utils/tokenUtils');
+const { generateToken, generateAccessToken, generateRefreshToken } = require('../utils/tokenUtils');
 const crypto = require('crypto');
 
 // Import opcional do emailService - se não existir, a função será undefined
@@ -92,22 +92,24 @@ const loginUser = async (req, res) => {
     const payload = {
       id: user.id,
       email: user.email,
-      firstName: user.firstName, 
-      role: 'user', 
-      isAdmin: user.isAdmin, 
+      firstName: user.firstName,
+      role: 'user',
+      isAdmin: user.isAdmin,
     };
-    const token = generateToken(payload);
+    const token = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
 
     res.status(200).json({
       message: 'Login bem-sucedido!',
       token,
-      user: { 
+      refreshToken,
+      user: {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         isAdmin: user.isAdmin,
-      }
+      },
     });
   } catch (error) {
     console.error('Erro no login do utilizador:', error);
@@ -180,21 +182,24 @@ const loginStaff = async (req, res) => {
     const payload = {
       id: staffMember.id,
       email: staffMember.email,
-      firstName: staffMember.firstName, 
-      role: staffMember.role, 
+      firstName: staffMember.firstName,
+      role: staffMember.role,
+      isAdmin: staffMember.role === 'admin',
     };
-    const token = generateToken(payload);
+    const token = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
 
     res.status(200).json({
       message: 'Login de funcionário bem-sucedido!',
       token,
-      staff: { 
+      refreshToken,
+      staff: {
         id: staffMember.id,
         firstName: staffMember.firstName,
         lastName: staffMember.lastName,
         email: staffMember.email,
         role: staffMember.role,
-      }
+      },
     });
   } catch (error) {
     console.error('Erro no login do funcionário:', error);

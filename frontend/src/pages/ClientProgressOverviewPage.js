@@ -159,7 +159,13 @@ const ClientProgressOverviewPage = () => {
     setChartData({ exerciseName, history: [] });
     try {
       // O cliente chama o serviço normal, que já usa o seu próprio ID de utilizador
-      const historyData = await getMyPerformanceHistoryForExerciseService(planExerciseId, authState.token);
+      const historyData = await getMyPerformanceHistoryForExerciseService(
+        planExerciseId,
+        authState.token,
+        false,
+        null,
+        200
+      );
       setChartData({ exerciseName, history: historyData });
     } catch (err) {
       console.error("Erro ao carregar histórico para o gráfico:", err);

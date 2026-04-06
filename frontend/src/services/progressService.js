@@ -1,6 +1,7 @@
 // src/services/progressService.js
 import { logger } from '../utils/logger';
 import { reportUserActionError } from './logService';
+import { progressAuthorizedFetch } from '../utils/progressAuthorizedFetch';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 logger.log('API_URL em uso no progressService:', API_URL); 
@@ -14,14 +15,13 @@ export const logExercisePerformanceService = async (performanceData, token) => {
   try {
     const url = `${API_URL}/progress/log-performance`;
     logger.log('logExercisePerformanceService URL:', url, 'Payload:', performanceData);
-    const response = await fetch(url, {
+    const response = await progressAuthorizedFetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(performanceData),
-    });
+    }, token);
     
     const responseText = await response.text();
     let data;
@@ -51,9 +51,7 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
   try {
     const url = `${API_URL}/progress/my-history/training/${trainingId}/plan/${workoutPlanId}`;
     logger.log('getMyPerformanceForWorkoutPlanService URL:', url);
-    const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const response = await progressAuthorizedFetch(url, {}, token);
 
     const responseText = await response.text();
     let data;
@@ -80,11 +78,38 @@ export const getMyPerformanceForWorkoutPlanService = async (trainingId, workoutP
 };
 
 
-export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, token, forPlaceholders = false, excludeTrainingId = null) => {
+/** Todas as performances do utilizador para um plano (todas as sessões). */
+export const getMyPerformancesForWorkoutPlanByPlanIdService = async (workoutPlanId, token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  if (!workoutPlanId) throw new Error('workoutPlanId é obrigatório.');
+  const url = `${API_URL}/progress/my-history/plan/${workoutPlanId}`;
+  const response = await progressAuthorizedFetch(url, {}, token);
+  const responseText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    throw new Error(`Resposta inválida ao carregar progresso do plano. Status: ${response.status}`);
+  }
+  if (!response.ok) {
+    throw new Error(data.message || `Erro ao buscar histórico do plano. Status: ${response.status}`);
+  }
+  return data;
+};
+
+
+export const getMyPerformanceHistoryForExerciseService = async (
+  planExerciseId,
+  token,
+  forPlaceholders = false,
+  excludeTrainingId = null,
+  limit = null
+) => {
   if (!token) throw new Error('Token não fornecido para getMyPerformanceHistoryForExerciseService.');
   if (!planExerciseId) throw new Error('ID do Exercício do Plano (planExerciseId) é obrigatório.');
   try {
-    let url = `${API_URL}/progress/my-exercise-history/${planExerciseId}?limit=3`;
+    const effectiveLimit = limit != null ? limit : forPlaceholders ? 3 : 50;
+    let url = `${API_URL}/progress/my-exercise-history/${planExerciseId}?limit=${effectiveLimit}`;
     if (forPlaceholders) {
       url += '&forPlaceholders=true';
     }
@@ -92,9 +117,7 @@ export const getMyPerformanceHistoryForExerciseService = async (planExerciseId, 
       url += `&excludeTrainingId=${excludeTrainingId}`;
     }
     logger.log('getMyPerformanceHistoryForExerciseService URL:', url); 
-    const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const response = await progressAuthorizedFetch(url, {}, token);
 
     const responseText = await response.text();
     let data;
@@ -127,12 +150,9 @@ export const deleteExercisePerformanceLogService = async (logId, token) => {
   try {
     const url = `${API_URL}/progress/log/${logId}`; 
     logger.log('deleteExercisePerformanceLogService URL:', url);
-    const response = await fetch(url, {
+    const response = await progressAuthorizedFetch(url, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    }, token);
     
    
     if (response.status === 204) { 
@@ -171,14 +191,13 @@ export const checkPersonalRecordsService = async (completedSets, token) => {
   if (!completedSets || completedSets.length === 0) return { records: [] };
   
   try {
-    const response = await fetch(`${API_URL}/progress/check-prs`, {
+    const response = await progressAuthorizedFetch(`${API_URL}/progress/check-prs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(completedSets),
-    });
+    }, token);
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.message || 'Erro ao verificar recordes pessoais.');
@@ -193,9 +212,7 @@ export const checkPersonalRecordsService = async (completedSets, token) => {
 export const getMyRecordsService = async (token) => {
   if (!token) throw new Error('Token não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/progress/my-records`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const response = await progressAuthorizedFetch(`${API_URL}/progress/my-records`, {}, token);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar recordes.');
     return data;
@@ -210,14 +227,13 @@ export const updatePerformanceLogService = async (logId, performanceData, token)
   if (!logId) throw new Error('ID do Log é obrigatório para atualizar.');
 
   try {
-    const response = await fetch(`${API_URL}/progress/log/${logId}`, {
+    const response = await progressAuthorizedFetch(`${API_URL}/progress/log/${logId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(performanceData),
-    });
+    }, token);
 
     const data = await response.json();
     if (!response.ok) {
@@ -234,9 +250,7 @@ export const adminGetRecordsForUserService = async (userId, token) => {
   if (!token) throw new Error('Token não fornecido.');
   if (!userId) throw new Error('ID do Utilizador é obrigatório.');
   try {
-    const response = await fetch(`${API_URL}/progress/admin/user-records/${userId}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const response = await progressAuthorizedFetch(`${API_URL}/progress/admin/user-records/${userId}`, {}, token);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar recordes do cliente.');
     return data;
@@ -250,9 +264,7 @@ export const adminGetFullExerciseHistoryForUserService = async (userId, planExer
   if (!token || !userId || !planExerciseId) throw new Error('Token, UserID e PlanExerciseID são obrigatórios.');
   
   try {
-    const response = await fetch(`${API_URL}/progress/admin/exercise-history/${userId}/${planExerciseId}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const response = await progressAuthorizedFetch(`${API_URL}/progress/admin/exercise-history/${userId}/${planExerciseId}`, {}, token);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar histórico de exercício para o cliente.');
     return data;
@@ -266,14 +278,13 @@ export const updateExercisePerformanceService = async (performanceId, performanc
   try {
     const url = `${API_URL}/progress/log/${performanceId}`;
     
-    const response = await fetch(url, {
+    const response = await progressAuthorizedFetch(url, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(performanceData),
-    });
+    }, token);
 
     // O resto da lógica de tratamento da resposta pode ser mais simples
     if (!response.ok) {
@@ -306,12 +317,9 @@ export const getExerciseHistoryService = async (exerciseId, token, excludeTraini
       url += `&excludeTrainingId=${excludeTrainingId}`;
     }
     
-    const response = await fetch(url, {
-      method: 'GET', // Método GET
-      headers: {
-        'Authorization': `Bearer ${token}`, // Envio do token de autorização
-      },
-    });
+    const response = await progressAuthorizedFetch(url, {
+      method: 'GET',
+    }, token);
 
     const data = await response.json();
     if (!response.ok) {
@@ -328,9 +336,7 @@ export const getExerciseHistoryService = async (exerciseId, token, excludeTraini
 export const getMyLastPerformancesService = async (token) => {
   if (!token) throw new Error('Token não fornecido.');
   try {
-    const response = await fetch(`${API_URL}/progress/my-last-performances`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const response = await progressAuthorizedFetch(`${API_URL}/progress/my-last-performances`, {}, token);
     const data = await response.json();
     if (!response.ok) {
       // Evita rebentar o UI — devolve [] e deixa a página continuar
@@ -374,14 +380,13 @@ export const saveTrainingSessionDraftService = async (workoutSession, token) => 
 
     logger.log('saveTrainingSessionDraftService URL:', url, 'Payload:', payload);
     
-    const response = await fetch(url, {
+    const response = await progressAuthorizedFetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
-    });
+    }, token);
 
     const responseText = await response.text();
     let data;
@@ -431,10 +436,9 @@ export const getTrainingSessionDraftService = async (token, trainingId = null, w
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     try {
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` },
+      const response = await progressAuthorizedFetch(url, {
         signal: controller.signal,
-      });
+      }, token);
 
       clearTimeout(timeoutId);
 
@@ -502,9 +506,7 @@ export const getTrainingSessionDraftsHistoryService = async (token, limit = 20, 
     const url = `${API_URL}/progress/training-session/drafts/history?limit=${limit}&offset=${offset}`;
     logger.log('getTrainingSessionDraftsHistoryService URL:', url);
     
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const response = await progressAuthorizedFetch(url, {}, token);
 
     const responseText = await response.text();
     
@@ -549,12 +551,9 @@ export const deleteTrainingSessionDraftService = async (token, draftId = null, t
 
     logger.log('deleteTrainingSessionDraftService URL:', url);
     
-    const response = await fetch(url, {
+    const response = await progressAuthorizedFetch(url, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    }, token);
 
     const responseText = await response.text();
     let data;

@@ -6,24 +6,51 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 let socket = null;
 let reconnectAttempts = 0;
+/** Último token usado no handshake; se mudar (refresh JWT), é preciso nova ligação */
+let lastTokenUsed = null;
 const MAX_RECONNECT_ATTEMPTS = 5;
+
+function teardownSocket() {
+  if (socket) {
+    try {
+      socket.removeAllListeners();
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      socket.disconnect();
+    } catch (e) {
+      /* ignore */
+    }
+    socket = null;
+  }
+  lastTokenUsed = null;
+}
 
 /**
  * Conecta ao servidor WebSocket
  * @param {string} token - Token de autenticação
- * @param {Object} callbacks - Callbacks para eventos
+ * @param {Object} callbacks - Callbacks para eventos (onAuthError: async () => void — token expirado)
  * @returns {Socket} - Instância do socket
  */
 export const connectWebSocket = (token, callbacks = {}) => {
-  if (socket && socket.connected) {
-    logger.log('WebSocket já conectado');
-    return socket;
-  }
-
   if (!token) {
     logger.warn('Token não fornecido para WebSocket');
     return null;
   }
+
+  // Mesmo token e já ligado: reutilizar
+  if (socket && socket.connected && lastTokenUsed === token) {
+    logger.log('WebSocket já conectado');
+    return socket;
+  }
+
+  // Token novo ou reconexão: fechar instância anterior para não ficar com JWT antigo
+  if (socket) {
+    teardownSocket();
+  }
+
+  lastTokenUsed = token;
 
   try {
     socket = io(API_URL, {
@@ -48,18 +75,23 @@ export const connectWebSocket = (token, callbacks = {}) => {
 
     socket.on('connect_error', (error) => {
       reconnectAttempts++;
-      // Não logar erro como crítico se for apenas "Utilizador não encontrado" ou erro de auth
-      // Isso pode acontecer se o token ainda não foi validado completamente
-      const isAuthError = error.message?.includes('Utilizador não encontrado') || 
-                         error.message?.includes('Token') || 
-                         error.message?.includes('autenticação');
-      
+      const msg = error.message || '';
+      const isAuthError =
+        msg.includes('Utilizador não encontrado') ||
+        msg.includes('Token') ||
+        msg.includes('autenticação') ||
+        msg.includes('expirado') ||
+        msg.includes('expired');
+
       if (isAuthError) {
-        logger.warn('Erro de autenticação WebSocket (pode ser temporário):', error.message);
+        logger.warn('Erro de autenticação WebSocket:', msg);
+        if (callbacks.onAuthError) {
+          Promise.resolve(callbacks.onAuthError(error)).catch(() => {});
+        }
       } else {
         logger.error('Erro na conexão WebSocket:', error);
       }
-      
+
       if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
         logger.error('Máximo de tentativas de reconexão atingido');
         if (callbacks.onMaxReconnectAttempts) callbacks.onMaxReconnectAttempts();
@@ -114,11 +146,8 @@ export const connectWebSocket = (token, callbacks = {}) => {
  * Desconecta do servidor WebSocket
  */
 export const disconnectWebSocket = () => {
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-    logger.log('WebSocket desconectado');
-  }
+  teardownSocket();
+  logger.log('WebSocket desconectado');
 };
 
 /**

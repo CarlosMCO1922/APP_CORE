@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
+  getMyPerformancesForWorkoutPlanByPlanId,
   getMyPerformanceHistoryForExercise,
   deletePerformanceLog,
   checkPersonalRecords,
@@ -29,6 +30,7 @@ const { protect, isClientUser, isStaff } = require('../middleware/authMiddleware
 router.post('/log-performance', protect, isClientUser, logExercisePerformance);
 router.patch('/log/:logId', protect, isClientUser, updatePerformanceLog);
 router.delete('/log/:logId', protect, isClientUser, deletePerformanceLog);
+router.get('/my-history/plan/:workoutPlanId', protect, isClientUser, getMyPerformancesForWorkoutPlanByPlanId);
 router.get('/my-history/training/:trainingId/plan/:workoutPlanId', protect, isClientUser, getMyPerformanceForWorkoutPlan);
 router.get('/my-exercise-history/:planExerciseId', protect, isClientUser, getMyPerformanceHistoryForExercise);
 router.post('/check-prs', protect, isClientUser, checkPersonalRecords);

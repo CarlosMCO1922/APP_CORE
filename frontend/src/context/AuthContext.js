@@ -1,11 +1,14 @@
 // src/context/AuthContext.js
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { isValidToken, isTokenExpired, decodeToken } from '../utils/tokenUtils';
+import { isValidToken, isTokenExpired, decodeToken, shouldProactivelyRefreshAccessToken } from '../utils/tokenUtils';
 import { safeGetItem, safeSetItem, validateUserData } from '../utils/storageUtils';
 import { logger } from '../utils/logger';
-import { validateAuthService } from '../services/authService';
+import { validateAuthService, refreshAccessTokenService } from '../services/authService';
+import { ACCESS_TOKEN_UPDATED_EVENT } from '../utils/progressAuthorizedFetch';
 
 const AuthContext = createContext(null);
+
+const REFRESH_TOKEN_KEY = 'refreshToken';
 
 export const AuthProvider = ({ children }) => {
   // SEGURANÇA: Usar JWT como fonte de verdade, não localStorage
@@ -50,16 +53,81 @@ export const AuthProvider = ({ children }) => {
     isValidating: false, // Flag para indicar validação em curso
   });
 
+  /** Renova access + refresh; usado no mount, intervalo, WebSocket e revalidateAuth */
+  const refreshAccessToken = useCallback(async () => {
+    const rt = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!rt) return false;
+    try {
+      const data = await refreshAccessTokenService(rt);
+      localStorage.setItem('userToken', data.token);
+      if (data.refreshToken) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+      }
+      const decoded = decodeToken(data.token);
+      setAuthState((prev) => ({
+        ...prev,
+        token: data.token,
+        isAuthenticated: true,
+        role: decoded?.role ?? prev.role,
+        isAdminFeatureUser: decoded?.isAdmin === true || decoded?.role === 'admin',
+      }));
+      return true;
+    } catch (e) {
+      logger.warn('Renovação de sessão falhou:', e);
+      return false;
+    }
+  }, []);
+
+  /** Sincronizar estado quando progressService (ou outro) renova o access token após 401 */
+  useEffect(() => {
+    const onAccessTokenUpdated = (e) => {
+      const { token } = e.detail || {};
+      if (!token || !isValidToken(token)) return;
+      const decoded = decodeToken(token);
+      setAuthState((prev) => ({
+        ...prev,
+        token,
+        isAuthenticated: true,
+        role: decoded?.role ?? prev.role,
+        isAdminFeatureUser: decoded?.isAdmin === true || decoded?.role === 'admin',
+      }));
+    };
+    window.addEventListener(ACCESS_TOKEN_UPDATED_EVENT, onAccessTokenUpdated);
+    return () => window.removeEventListener(ACCESS_TOKEN_UPDATED_EVENT, onAccessTokenUpdated);
+  }, []);
+
   // Validação com backend ao montar (verifica role real)
   useEffect(() => {
     const validateWithBackend = async () => {
-      const token = localStorage.getItem('userToken');
-      
+      let token = localStorage.getItem('userToken');
+      const refreshTok = localStorage.getItem(REFRESH_TOKEN_KEY);
+
+      // Access expirado mas refresh válido: renovar antes de /auth/validate
+      if (token && !isValidToken(token) && refreshTok) {
+        const ok = await refreshAccessToken();
+        if (!ok) {
+          logger.warn('Refresh no arranque falhou, a limpar sessão');
+          localStorage.removeItem('userToken');
+          localStorage.removeItem(REFRESH_TOKEN_KEY);
+          localStorage.removeItem('userData');
+          setAuthState({
+            token: null,
+            user: null,
+            isAuthenticated: false,
+            role: null,
+            isAdminFeatureUser: false,
+            isValidating: false,
+          });
+          return;
+        }
+        token = localStorage.getItem('userToken');
+      }
+
       if (!token || !isValidToken(token)) {
         if (token) {
-          // Token inválido, limpar
-          logger.warn("Token inválido ou expirado detectado, limpando autenticação");
+          logger.warn('Token inválido ou expirado detectado, limpando autenticação');
           localStorage.removeItem('userToken');
+          localStorage.removeItem(REFRESH_TOKEN_KEY);
           localStorage.removeItem('userData');
           setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false, isValidating: false });
         }
@@ -172,7 +240,21 @@ export const AuthProvider = ({ children }) => {
     };
 
     validateWithBackend();
-  }, []);
+  }, [refreshAccessToken]);
+
+  // Renovar access token antes de expirar (treinos longos + WebSocket)
+  useEffect(() => {
+    const tick = () => {
+      const t = localStorage.getItem('userToken');
+      const rt = localStorage.getItem(REFRESH_TOKEN_KEY);
+      if (!rt || !t) return;
+      if (shouldProactivelyRefreshAccessToken(t)) {
+        refreshAccessToken().catch(() => {});
+      }
+    };
+    const id = setInterval(tick, 3 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [refreshAccessToken]);
 
   const login = async (email, password, isStaffLogin = false) => {
     try {
@@ -195,6 +277,9 @@ export const AuthProvider = ({ children }) => {
         }
         
         localStorage.setItem('userToken', data.token);
+        if (data.refreshToken) {
+          localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+        }
         const userDataToStore = data.user || data.staff;
         safeSetItem('userData', userDataToStore);
         
@@ -243,6 +328,7 @@ export const AuthProvider = ({ children }) => {
 
     } catch (error) {
       localStorage.removeItem('userToken');
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
       localStorage.removeItem('userData');
       setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false });
       throw error;
@@ -251,6 +337,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('userToken');
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem('userData');
     setAuthState({ token: null, user: null, isAuthenticated: false, role: null, isAdminFeatureUser: false, isValidating: false });
   };
@@ -258,7 +345,16 @@ export const AuthProvider = ({ children }) => {
   // Função para revalidar autenticação (útil para ProtectedRoute)
   // Memoizada para evitar loops infinitos em useEffect
   const revalidateAuth = useCallback(async () => {
-    const token = localStorage.getItem('userToken');
+    let token = localStorage.getItem('userToken');
+    const rt = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if ((!token || !isValidToken(token)) && rt) {
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) {
+        logout();
+        return false;
+      }
+      token = localStorage.getItem('userToken');
+    }
     if (!token || !isValidToken(token)) {
       logout();
       return false;
@@ -315,10 +411,10 @@ export const AuthProvider = ({ children }) => {
       logout();
       return false;
     }
-  }, []); // Dependências vazias - logout é estável
+  }, [refreshAccessToken]); // logout é estável o suficiente
 
   return (
-    <AuthContext.Provider value={{ authState, login, logout, revalidateAuth }}>
+    <AuthContext.Provider value={{ authState, login, logout, revalidateAuth, refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

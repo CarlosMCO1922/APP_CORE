@@ -129,6 +129,38 @@ const getMyPerformanceForWorkoutPlan = async (req, res) => {
   }
 };
 
+/** Todas as performances do utilizador para um plano (todas as sessões / treinos), para a página de progresso */
+const getMyPerformancesForWorkoutPlanByPlanId = async (req, res) => {
+  const userId = req.user.id;
+  const { workoutPlanId } = req.params;
+
+  try {
+    const parsedPlanId = parseInt(workoutPlanId, 10);
+    if (isNaN(parsedPlanId) || parsedPlanId <= 0) {
+      return res.status(400).json({ message: 'workoutPlanId inválido.' });
+    }
+
+    const performances = await db.ClientExercisePerformance.findAll({
+      where: {
+        userId,
+        workoutPlanId: parsedPlanId,
+      },
+      include: [
+        {
+          model: db.WorkoutPlanExercise,
+          as: 'planExerciseDetails',
+          include: [{ model: db.Exercise, as: 'exerciseDetails' }],
+        },
+      ],
+      order: [['performedAt', 'DESC'], ['setNumber', 'ASC'], ['createdAt', 'DESC']],
+    });
+    res.status(200).json(performances);
+  } catch (error) {
+    console.error('Erro ao buscar desempenho do plano (por planId):', error);
+    res.status(500).json({ message: 'Erro interno do servidor.', errorDetails: error.message });
+  }
+};
+
 const adminGetUserRecords = async (req, res) => {
     const { userId } = req.params; // ID do cliente que o staff quer consultar
 
@@ -224,10 +256,11 @@ const adminGetUserRecords = async (req, res) => {
 
 const getMyPerformanceHistoryForExercise = async (req, res) => {
   const userId = req.user.id;
-  const { planExerciseId } = req.params; 
-  const limit = Math.min(parseInt(req.query.limit || '3', 10), 20);
-  // Se for para placeholders, buscar as últimas 3 séries ordenadas por setNumber
+  const { planExerciseId } = req.params;
   const forPlaceholders = req.query.forPlaceholders === 'true';
+  const defaultLimit = forPlaceholders ? 3 : 50;
+  const maxCap = forPlaceholders ? 3 : 500;
+  const limit = Math.min(parseInt(req.query.limit || String(defaultLimit), 10), maxCap);
   // Se excludeTrainingId for fornecido, excluir registos desse treino (treino atual em andamento)
   const excludeTrainingId = req.query.excludeTrainingId ? parseInt(req.query.excludeTrainingId) : null;
 
@@ -568,7 +601,7 @@ const getMyPersonalRecords = async (req, res) => {
 const updatePerformanceLog = async (req, res) => {
     const logIdToUpdate = parseInt(req.params.logId, 10);
     const authenticatedUserId = req.user.id;
-    const { performedReps, performedWeight, notes } = req.body;
+    const { performedReps, performedWeight, notes, setNumber } = req.body;
 
     if (isNaN(logIdToUpdate)) {
         return res.status(400).json({ message: 'ID do registo inválido.' });
@@ -596,7 +629,10 @@ const updatePerformanceLog = async (req, res) => {
         if (notes !== undefined) {
             log.notes = notes;
         }
-        
+        if (setNumber !== undefined) {
+            log.setNumber = setNumber === null || setNumber === '' ? null : parseInt(setNumber, 10);
+        }
+
         const updatedLog = await log.save();
 
         res.status(200).json({ message: 'Registo atualizado com sucesso!', performance: updatedLog });
@@ -1049,6 +1085,7 @@ const cleanupExpiredDrafts = async () => {
 module.exports = {
   logExercisePerformance,
   getMyPerformanceForWorkoutPlan,
+  getMyPerformancesForWorkoutPlanByPlanId,
   getMyPerformanceHistoryForExercise,
   deletePerformanceLog, 
   checkPersonalRecords,

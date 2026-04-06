@@ -1,13 +1,10 @@
 // src/components/Workout/SetRow.js
-import React, { useState } from 'react'; // Importar apenas o useState
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../../context/AuthContext';
 import { logger } from '../../utils/logger';
-import { logExercisePerformanceService, updateExercisePerformanceService } from '../../services/progressService';
 import { FaCheck, FaTrashAlt, FaTimes } from 'react-icons/fa';
 import { useSwipeable } from 'react-swipeable';
 import { useWorkout } from '../../context/WorkoutContext';
-import { useTheme } from 'styled-components';
 
 const SWIPE_DISTANCE = -200; // Aumentado para um deslize mais longo
 const SWIPE_THRESHOLD = -100;
@@ -309,15 +306,14 @@ const PrescribedRepsNote = styled.div`
 // ALTERADO: Adicionado 'onDeleteSet' às props recebidas
 const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeight, lastReps, onDeleteSet = () => {}, prescribedReps = null, placeholderWeight = null, placeholderReps = null }) => {
     const { activeWorkout, updateSetData } = useWorkout();
-    const theme = useTheme();
-    
-    // ALTERADO: Adicionado o estado para controlar a posição do swipe
+
     const [transformX, setTransformX] = useState(0);
     const [hasShownConfirm, setHasShownConfirm] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const setData = activeWorkout.setsData[`${planExerciseId}-${setNumber}`] || {};
+    const setData = activeWorkout?.setsData?.[`${planExerciseId}-${setNumber}`] || {};
     // Prioridade: dados já inseridos > placeholder do histórico > último desempenho > vazio
     const weight = setData.performedWeight ?? placeholderWeight ?? lastWeight ?? '';
     const reps = setData.performedReps ?? placeholderReps ?? lastReps ?? '';
@@ -350,23 +346,34 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
         preventDefaultTouchmoveEvent: true,
     });
 
-    const handleComplete = () => {
-      // Permitir 0 como valor válido, mas não permitir string vazia ou undefined
+    const handleComplete = async () => {
       if (weight === '' || weight === null || weight === undefined || reps === '' || reps === null || reps === undefined) {
         alert("Preencha o peso e as repetições.");
         return;
       }
-      const currentSetData = { ...setData, performedWeight: weight, performedReps: reps, planExerciseId, setNumber };
-      // Gravar peso, reps e isCompleted para evitar perder dados se o estado ainda não tiver os onChange
-      updateSetData(planExerciseId, setNumber, 'performedWeight', weight);
-      updateSetData(planExerciseId, setNumber, 'performedReps', reps);
-      updateSetData(planExerciseId, setNumber, 'isCompleted', true);
-      setIsEditing(false);
-
-      if (typeof onSetComplete === 'function') {
-        onSetComplete(currentSetData);
-      } else {
-        logger.warn('SetRow: onSetComplete não é função', onSetComplete);
+      const payload = {
+        ...setData,
+        performedWeight: weight,
+        performedReps: reps,
+        planExerciseId,
+        setNumber,
+        existingPerformanceId: setData.id,
+      };
+      setIsSaving(true);
+      try {
+        if (typeof onSetComplete === 'function') {
+          await Promise.resolve(onSetComplete(payload));
+        } else {
+          logger.warn('SetRow: onSetComplete não é função', onSetComplete);
+        }
+        updateSetData(planExerciseId, setNumber, 'performedWeight', weight);
+        updateSetData(planExerciseId, setNumber, 'performedReps', reps);
+        updateSetData(planExerciseId, setNumber, 'isCompleted', true);
+        setIsEditing(false);
+      } catch (e) {
+        /* erro tratado no contexto / página */
+      } finally {
+        setIsSaving(false);
       }
     };
     
@@ -381,9 +388,14 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
       setHasShownConfirm(false);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
       if (typeof onDeleteSet === 'function') {
-        onDeleteSet();
+        try {
+          await Promise.resolve(onDeleteSet());
+        } catch (e) {
+          setShowDeleteModal(false);
+          return;
+        }
         setShowDeleteModal(false);
         setTransformX(0);
       } else {
@@ -417,22 +429,22 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                         type="number" 
                         placeholder={placeholderWeight !== null && placeholderWeight !== undefined ? String(placeholderWeight) : "-"} 
                         value={weight} 
-                        disabled={isCompleted && !isEditing}
+                        disabled={(isCompleted && !isEditing) || isSaving}
                         onChange={e => updateSetData(planExerciseId, setNumber, 'performedWeight', e.target.value)} 
                     />
                     <Input 
                         type="number" 
                         placeholder={placeholderReps !== null && placeholderReps !== undefined ? String(placeholderReps) : "-"} 
                         value={reps} 
-                        disabled={isCompleted && !isEditing}
+                        disabled={(isCompleted && !isEditing) || isSaving}
                         onChange={e => updateSetData(planExerciseId, setNumber, 'performedReps', e.target.value)} 
                     />
                 <ActionButton 
                   onClick={isCompleted ? handleEdit : handleComplete} 
-                  disabled={(weight === '' || weight === null || weight === undefined) || (reps === '' || reps === null || reps === undefined)} 
+                  disabled={isSaving || (weight === '' || weight === null || weight === undefined) || (reps === '' || reps === null || reps === undefined)} 
                   isCompleted={isCompleted}
                 >
-                    {isCompleted ? <span className="edit-text">EDIT</span> : <FaCheck />}
+                    {isSaving ? '…' : isCompleted ? <span className="edit-text">EDIT</span> : <FaCheck />}
                 </ActionButton>
             </SwipeableContent>
         </SwipeableRowContainer>
@@ -445,7 +457,7 @@ const SetRow = ({ setNumber, planExerciseId, onSetComplete = () => {}, lastWeigh
                         </CloseModalButton>
                         <DeleteModalTitle>Apagar Série</DeleteModalTitle>
                         <DeleteModalText>
-                            Tem a certeza que quer apagar esta série? Esta ação não pode ser desfeita.
+                            Tem a certeza que quer apagar esta série? Se já estava guardada no progresso, será removida da base de dados.
                         </DeleteModalText>
                         <DeleteModalActions>
                             <DeleteModalButton danger onClick={handleConfirmDelete}>

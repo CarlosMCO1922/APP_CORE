@@ -45,3 +45,12 @@ export const isValidToken = (token) => {
   return !isTokenExpired(token);
 };
 
+/** true se o access token expirou ou expira em menos de ~30 min — convém chamar POST /auth/refresh */
+export const shouldProactivelyRefreshAccessToken = (token) => {
+  const decoded = decodeToken(token);
+  if (!decoded?.exp) return true;
+  const msLeft = decoded.exp * 1000 - Date.now();
+  const thirtyMin = 30 * 60 * 1000;
+  return msLeft < thirtyMin;
+};
+

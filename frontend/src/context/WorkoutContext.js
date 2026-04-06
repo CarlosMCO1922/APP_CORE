@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMyLastPerformancesService, checkPersonalRecordsService, logExercisePerformanceService, getMyPerformanceHistoryForExerciseService, saveTrainingSessionDraftService, getTrainingSessionDraftService, deleteTrainingSessionDraftService } from '../services/progressService';
+import { getMyLastPerformancesService, checkPersonalRecordsService, logExercisePerformanceService, getMyPerformanceHistoryForExerciseService, saveTrainingSessionDraftService, getTrainingSessionDraftService, deleteTrainingSessionDraftService, updateExercisePerformanceService, deleteExercisePerformanceLogService } from '../services/progressService';
 import { createTrainingSessionService } from '../services/sessionService';
 import { useAuth } from './AuthContext';
 import { safeGetItem, safeSetItem, validateWorkoutSession, clearInvalidStorage, isWorkoutAbandoned, resolveWorkoutConflict, getWorkoutLastUpdate } from '../utils/storageUtils';
@@ -17,7 +17,7 @@ export const WorkoutProvider = ({ children }) => {
     const [exercisePlaceholders, setExercisePlaceholders] = useState({}); // { planExerciseId: [{ weight, reps }, ...] }
     const [syncStatus, setSyncStatus] = useState({ synced: true, lastSync: null, error: null }); // Estado de sincronização
     const deviceIdRef = useRef(getDeviceId()); // ID do dispositivo atual
-    const { authState } = useAuth();
+    const { authState, refreshAccessToken } = useAuth();
     const navigate = useNavigate();
 
     // Carrega um treino ativo (tenta backend primeiro, depois localStorage, resolve conflitos)
@@ -549,13 +549,159 @@ export const WorkoutProvider = ({ children }) => {
         }
     };
 
+    /**
+     * Treino ao vivo: grava ou atualiza uma série na BD logo ao concluir (ou ao regravar após editar).
+     */
+    const persistCompletedSet = React.useCallback(async (performanceData) => {
+        const { token } = authState;
+        if (!token) throw new Error('Sem token');
+        const planExerciseId = performanceData.planExerciseId;
+        const setNumber = performanceData.setNumber;
+        const key = `${planExerciseId}-${setNumber}`;
+        const workoutSnapshot = safeGetItem('activeWorkoutSession', validateWorkoutSession) || activeWorkout;
+        const existingId =
+            performanceData.existingPerformanceId ?? workoutSnapshot?.setsData?.[key]?.id ?? null;
+
+        const performedAt = performanceData.performedAt || new Date().toISOString();
+        const w = Number(performanceData.performedWeight);
+        const r = Number(performanceData.performedReps);
+
+        try {
+            let saved = {};
+            if (existingId) {
+                const res = await updateExercisePerformanceService(
+                    existingId,
+                    { performedWeight: w, performedReps: r },
+                    token
+                );
+                saved = res?.performance && Object.keys(res.performance).length ? res.performance : {};
+                saved.id = existingId;
+                if (!saved.performedAt) saved.performedAt = performedAt;
+            } else {
+                const logPayload = {
+                    trainingId: performanceData.trainingId ?? workoutSnapshot?.trainingId ?? null,
+                    workoutPlanId: performanceData.workoutPlanId ?? workoutSnapshot?.id,
+                    planExerciseId,
+                    setNumber,
+                    performedAt,
+                    performedWeight: w,
+                    performedReps: r,
+                    performedDurationSeconds: performanceData.performedDurationSeconds ?? null,
+                    notes: performanceData.notes ?? null,
+                };
+                const res = await logExercisePerformanceService(logPayload, token);
+                saved = res?.performance || {};
+            }
+
+            setActiveWorkout((prev) => {
+                if (!prev) return prev;
+                const current = prev.setsData[key] || {};
+                const newSetsData = {
+                    ...prev.setsData,
+                    [key]: {
+                        ...current,
+                        ...performanceData,
+                        performedWeight: performanceData.performedWeight,
+                        performedReps: performanceData.performedReps,
+                        id: saved.id ?? existingId,
+                        performedAt: saved.performedAt ?? performedAt,
+                        isCompleted: true,
+                    },
+                };
+                const updated = { ...prev, setsData: newSetsData };
+                safeSetItem('activeWorkoutSession', updated);
+                return updated;
+            });
+
+            if (performanceData.exerciseId) {
+                setLastPerformances((prev) => ({
+                    ...prev,
+                    [performanceData.exerciseId]: {
+                        id: saved.id ?? existingId,
+                        exerciseId: performanceData.exerciseId,
+                        planExerciseId,
+                        performedAt: saved.performedAt ?? performedAt,
+                        performedWeight: performanceData.performedWeight,
+                        performedReps: performanceData.performedReps,
+                        materialUsed:
+                            performanceData.materialUsed ?? saved.materialUsed ?? null,
+                    },
+                }));
+            }
+            return saved;
+        } catch (err) {
+            logger.error('Erro ao persistir série:', err);
+            alert('Falha ao guardar a série. Verifique a ligação e tente novamente.');
+            throw err;
+        }
+    }, [authState.token, activeWorkout]);
+
+    /**
+     * Remove série persistida na BD (se existir), renumerar séries seguintes no estado e PATCH setNumber nos registos com id.
+     */
+    const deleteWorkoutSet = React.useCallback(
+        async (planExerciseId, deletedSetNumber) => {
+            const token = authState.token;
+            const workout = activeWorkout;
+            if (!workout) return;
+
+            const key = `${planExerciseId}-${deletedSetNumber}`;
+            const entry = workout.setsData[key];
+
+            const buildNewSetsData = (setsData) => {
+                const newSd = {};
+                const toShift = [];
+                for (const [k, v] of Object.entries(setsData)) {
+                    const m = k.match(/^(\d+)-(\d+)$/);
+                    if (!m || parseInt(m[1], 10) !== Number(planExerciseId)) {
+                        newSd[k] = v;
+                        continue;
+                    }
+                    const sn = parseInt(m[2], 10);
+                    if (sn === deletedSetNumber) continue;
+                    if (sn < deletedSetNumber) {
+                        newSd[k] = v;
+                    } else {
+                        toShift.push({ oldSn: sn, val: { ...v } });
+                    }
+                }
+                toShift.sort((a, b) => a.oldSn - b.oldSn);
+                const patchList = [];
+                for (const { oldSn, val } of toShift) {
+                    const newSn = oldSn - 1;
+                    const newKey = `${planExerciseId}-${newSn}`;
+                    newSd[newKey] = { ...val, setNumber: newSn };
+                    if (val.id) {
+                        patchList.push({ id: val.id, newSn });
+                    }
+                }
+                return { newSd, patchList };
+            };
+
+            try {
+                if (entry?.id && token) {
+                    await deleteExercisePerformanceLogService(entry.id, token);
+                }
+                const { newSd, patchList } = buildNewSetsData(workout.setsData);
+                for (const { id, newSn } of patchList) {
+                    if (token && id) {
+                        await updateExercisePerformanceService(id, { setNumber: newSn }, token);
+                    }
+                }
+                const updated = { ...workout, setsData: newSd };
+                setActiveWorkout(updated);
+                safeSetItem('activeWorkoutSession', updated);
+            } catch (err) {
+                logger.error('Erro ao eliminar série:', err);
+                alert('Falha ao eliminar a série. Tente novamente.');
+                throw err;
+            }
+        },
+        [authState.token, activeWorkout]
+    );
+
     const finishWorkout = async () => {
-        console.log('🔵 INÍCIO DO FINISH WORKOUT - VERSÃO ATUALIZADA');
-        console.log('🔵 activeWorkout:', activeWorkout);
-        console.log('🔵 authState.token presente:', !!authState.token);
-        
         if (!activeWorkout) {
-            console.log('🔴 ABORT: activeWorkout é null!');
             return;
         }
 
@@ -704,25 +850,11 @@ export const WorkoutProvider = ({ children }) => {
             } catch (error) { logger.error("Erro ao verificar PRs:", error); }
         }
 
-        // CRIAR SESSÃO PERMANENTE após gravar todos os sets com sucesso
-        console.log('🟢 ANTES DE CRIAR SESSÃO');
-        console.log('🟢 completedSets.length:', completedSets.length);
-        console.log('🟢 completedSets:', completedSets);
-        
         let createdSessionId = null;
         if (completedSets.length > 0 && authState.token) {
             try {
                 const performanceIds = collectedPerformanceIds;
-                
-                console.log(`🟡 [DEBUG] Tentando criar sessão - Total sets: ${completedSets.length}, Sets com ID: ${performanceIds.length}`);
-                console.log(`🟡 [DEBUG] Performance IDs:`, performanceIds);
-                logger.log(`[DEBUG] Tentando criar sessão - Total sets: ${completedSets.length}, Sets com ID: ${performanceIds.length}`);
-                logger.log(`[DEBUG] Performance IDs:`, performanceIds);
-                
                 if (performanceIds.length > 0) {
-                    console.log(`🔵 [DEBUG] A chamar createTrainingSessionService...`);
-                    logger.log(`[DEBUG] A chamar createTrainingSessionService...`);
-                    
                     const sessionResponse = await createTrainingSessionService({
                         trainingId: activeWorkout.trainingId || null,
                         workoutPlanId: activeWorkout.id,
@@ -734,29 +866,14 @@ export const WorkoutProvider = ({ children }) => {
                             personalRecords: personalRecords.length > 0 ? personalRecords : undefined,
                         },
                     }, authState.token);
-                    
                     createdSessionId = sessionResponse.session?.id;
-                    console.log(`✅ Sessão permanente criada com sucesso (ID: ${createdSessionId})`);
-                    console.log(`✅ Resposta completa:`, sessionResponse);
-                    logger.log(`✅ Sessão permanente criada com sucesso (ID: ${createdSessionId})`);
-                    logger.log(`[DEBUG] Resposta completa da sessão:`, sessionResponse);
+                    logger.log('Sessão permanente criada (ID:', createdSessionId, ')');
                 } else {
-                    console.warn('⚠️ Nenhuma performance tem ID - sessão não criada');
-                    console.warn('⚠️ Completed sets sem ID:', completedSets);
-                    logger.warn('⚠️ Nenhuma performance tem ID - sessão não criada');
-                    logger.warn('[DEBUG] Completed sets sem ID:', completedSets);
+                    logger.warn('Nenhuma performance com ID — sessão agregada não criada');
                 }
             } catch (err) {
-                console.error('❌ ERRO ao criar sessão permanente:', err);
-                console.error('❌ Erro completo:', err.message, err.stack);
-                logger.error('❌ ERRO ao criar sessão permanente:', err);
-                logger.error('[DEBUG] Erro completo:', err.message, err.stack);
-                // Não bloquear navegação - sessão pode ser criada manualmente depois se necessário
-                // O utilizador já tem os sets gravados, que é o mais importante
+                logger.error('Erro ao criar sessão permanente:', err);
             }
-        } else {
-            console.warn(`⚠️ [DEBUG] Não tentou criar sessão - completedSets: ${completedSets.length}, token: ${!!authState.token}`);
-            logger.warn(`[DEBUG] Não tentou criar sessão - completedSets: ${completedSets.length}, token: ${!!authState.token}`);
         }
 
         navigate('/treino/resumo', { 
@@ -904,6 +1021,12 @@ export const WorkoutProvider = ({ children }) => {
 
         // Conectar WebSocket
         const socket = connectWebSocket(authState.token, {
+            onAuthError: async () => {
+                const ok = await refreshAccessToken();
+                if (ok) {
+                    disconnectWebSocket();
+                }
+            },
             onConnect: () => {
                 logger.log('WebSocket conectado para sincronização de treino');
                 // Solicitar sincronização inicial
@@ -963,7 +1086,7 @@ export const WorkoutProvider = ({ children }) => {
             // Não desconectar completamente, apenas limpar callbacks
             // A conexão pode ser útil para outras funcionalidades
         };
-    }, [authState.token, authState.isAuthenticated, authState.isValidating, activeWorkout?.id, activeWorkout?.trainingId]);
+    }, [authState.token, authState.isAuthenticated, authState.isValidating, activeWorkout?.id, activeWorkout?.trainingId, refreshAccessToken]);
 
     // Tentar sincronizar novamente quando conexão voltar
     useEffect(() => {
@@ -998,6 +1121,8 @@ export const WorkoutProvider = ({ children }) => {
         updateSetData, 
         setIsMinimized, 
         logSet,
+        persistCompletedSet,
+        deleteWorkoutSet,
         reloadPlaceholdersForActiveWorkout,
         syncWithBackend, // Expor função para sincronização manual
     };

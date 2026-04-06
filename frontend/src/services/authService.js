@@ -160,6 +160,35 @@ export const resetPassword = async (data) => {
  * @param {string} token - Token JWT
  * @returns {Promise<Object>} - Dados de autenticação validados
  */
+/**
+ * Renova access + refresh tokens (sessões longas, WebSocket após expiração).
+ * @param {string} refreshToken - JWT refresh
+ */
+export const refreshAccessTokenService = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new Error('Refresh token não fornecido.');
+  }
+  const response = await fetch(`${API_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  });
+  const responseText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    throw new Error(`Resposta inválida do servidor ao renovar sessão. Status: ${response.status}`);
+  }
+  if (!response.ok) {
+    throw new Error(data.message || 'Não foi possível renovar a sessão.');
+  }
+  if (!data.token) {
+    throw new Error('Resposta sem access token.');
+  }
+  return data;
+};
+
 export const validateAuthService = async (token) => {
   if (!token) {
     throw new Error('Token não fornecido para validação.');

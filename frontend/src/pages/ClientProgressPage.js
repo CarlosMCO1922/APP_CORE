@@ -7,9 +7,9 @@ import { getMyBookings } from '../services/userService';
 import { getWorkoutPlansByTrainingId, getGlobalWorkoutPlanByIdClient } from '../services/workoutPlanService';
 import {
     logExercisePerformanceService,
-    getMyPerformanceForWorkoutPlanService,
+    deleteExercisePerformanceLogService,
+    getMyPerformancesForWorkoutPlanByPlanIdService,
     getMyPerformanceHistoryForExerciseService,
-    deleteExercisePerformanceLogService
 } from '../services/progressService';
 import {
     FaRunning, FaClipboardList, FaSave,
@@ -680,15 +680,19 @@ const ClientProgressPage = () => {
                     setSelectedTrainingName(`Plano Livre: ${planData.name}`);
                     setSelectedTraining(null);
                     
-                    const allExercises = planData.planExercises || [];
-                    const performancePromises = allExercises.map(ex => 
-                        getMyPerformanceHistoryForExerciseService(ex.id, authState.token).catch(() => [])
-                    );
-                    const allPerformances = (await Promise.all(performancePromises)).flat();
+                    const allPerformances = await getMyPerformancesForWorkoutPlanByPlanIdService(
+                        planData.id,
+                        authState.token
+                    ).catch(() => []);
                     const logsByExercise = {};
-                    allPerformances.forEach(p => {
+                    (allPerformances || []).forEach((p) => {
                         if (!logsByExercise[p.planExerciseId]) logsByExercise[p.planExerciseId] = [];
                         logsByExercise[p.planExerciseId].push(p);
+                    });
+                    Object.keys(logsByExercise).forEach((k) => {
+                        logsByExercise[k].sort(
+                            (a, b) => new Date(b.performedAt) - new Date(a.performedAt)
+                        );
                     });
                     setPerformanceLogs(logsByExercise);
                 } catch (err) {
@@ -712,14 +716,21 @@ const ClientProgressPage = () => {
                     const plansData = await getWorkoutPlansByTrainingId(selectedTraining, authState.token);
                     setWorkoutPlans(plansData || []);
                     if (plansData && plansData.length > 0) {
-                        const performancePromises = plansData.map(plan => 
-                            getMyPerformanceForWorkoutPlanService(selectedTraining, plan.id, authState.token).catch(() => [])
+                        const performancePromises = plansData.map((plan) =>
+                            getMyPerformancesForWorkoutPlanByPlanIdService(plan.id, authState.token).catch(
+                                () => []
+                            )
                         );
                         const performancesForAllPlans = (await Promise.all(performancePromises)).flat();
                         const aggregatedLogs = {};
                         performancesForAllPlans.forEach(p => {
                             if (!aggregatedLogs[p.planExerciseId]) aggregatedLogs[p.planExerciseId] = [];
                             aggregatedLogs[p.planExerciseId].push(p);
+                        });
+                        Object.keys(aggregatedLogs).forEach((k) => {
+                            aggregatedLogs[k].sort(
+                                (a, b) => new Date(b.performedAt) - new Date(a.performedAt)
+                            );
                         });
                         setPerformanceLogs(aggregatedLogs);
                     }
@@ -847,7 +858,13 @@ const ClientProgressPage = () => {
         setShowFullHistoryModal(true);
         setLoadingFullHistory(true);
         try {
-            const historyData = await getMyPerformanceHistoryForExerciseService(planExercise.id, authState.token);
+            const historyData = await getMyPerformanceHistoryForExerciseService(
+                planExercise.id,
+                authState.token,
+                false,
+                null,
+                500
+            );
             setFullHistoryLogs(historyData || []);
         } catch (err) {
             setFullHistoryError(err.message || "Falha ao carregar histórico.");

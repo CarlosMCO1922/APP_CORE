@@ -116,7 +116,7 @@ const ActionButton = styled.button`
 
 const LiveWorkoutSessionPage = () => {
   const { authState } = useAuth();
-  const { activeWorkout, finishWorkout, cancelWorkout, logSet, setIsMinimized, lastPerformances, syncStatus, syncWithBackend} = useWorkout();
+  const { activeWorkout, finishWorkout, cancelWorkout, persistCompletedSet, setIsMinimized, lastPerformances, syncStatus, syncWithBackend} = useWorkout();
   
   const [elapsedTime, setElapsedTime] = useState(0);
   const [activeRestTimer, setActiveRestTimer] = useState({ active: false, duration: 90, key: 0 });
@@ -190,19 +190,28 @@ const LiveWorkoutSessionPage = () => {
   }, [activeWorkout]);
   
 
-  const handleSetComplete = (performanceData) => {
-    const {
+  const handleSetComplete = async (performanceData) => {
+    const { planExerciseId, setNumber, performedWeight, performedReps, restSeconds } = performanceData;
+    const exerciseId = planToExerciseId[planExerciseId];
+    if (!exerciseId) {
+      logger.error('Sem exerciseId para planExerciseId', planExerciseId);
+      alert('Não foi possível identificar o exercício. Reinicie o treino ou contacte o suporte.');
+      throw new Error('exerciseId em falta');
+    }
+    const firstSetKey = `${planExerciseId}-1`;
+    const materialUsed = activeWorkout?.setsData?.[firstSetKey]?.materialUsed ?? null;
+    await persistCompletedSet({
+      trainingId: activeWorkout.trainingId || null,
+      workoutPlanId: activeWorkout.id,
       planExerciseId,
+      exerciseId,
       setNumber,
       performedWeight,
       performedReps,
-      restSeconds
-    } = performanceData;
-
-    // NÃO gravar no backend ainda - só guardar localmente
-    // A gravação será feita no finishWorkout
-    
-    // Guardar informação sobre a série completada para processar depois
+      performedAt: new Date().toISOString(),
+      materialUsed: materialUsed && String(materialUsed).trim() ? String(materialUsed).trim() : undefined,
+      existingPerformanceId: performanceData.existingPerformanceId,
+    });
     setLastCompletedSet({ planExerciseId, setNumber, restSeconds });
   };
   

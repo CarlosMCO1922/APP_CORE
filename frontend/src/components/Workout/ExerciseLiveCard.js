@@ -53,7 +53,7 @@ const ExerciseLiveCard = ({
   lastPerformance,
 }) => {
   const [sets, setSets] = useState([]);
-  const { exercisePlaceholders, reloadPlaceholdersForActiveWorkout, activeWorkout, updateSetData } = useWorkout();
+  const { exercisePlaceholders, reloadPlaceholdersForActiveWorkout, activeWorkout, updateSetData, deleteWorkoutSet } = useWorkout();
   const { authState } = useAuth();
 
   const planExerciseId = planExercise?.planExerciseId ?? planExercise?.id;
@@ -86,10 +86,18 @@ const ExerciseLiveCard = ({
 
   const handleAddSet = () => setSets(prev => [...prev, { id: Date.now() }]);
 
-  const handleDeleteSet = (indexToDelete) => {
+  const handleDeleteSet = async (indexToDelete) => {
     if (sets.length <= 1) {
         alert("Não pode remover todas as séries.");
         return;
+    }
+    const setNumber = indexToDelete + 1;
+    if (deleteWorkoutSet && planExerciseId) {
+      try {
+        await deleteWorkoutSet(planExerciseId, setNumber);
+      } catch (e) {
+        return;
+      }
     }
     setSets(prev => prev.filter((_, index) => index !== indexToDelete));
   };

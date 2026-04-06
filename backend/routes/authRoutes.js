@@ -2,15 +2,19 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const authRefreshController = require('../controllers/authRefreshController');
 const { validate } = require('../middleware/validate');
 const { registerUserSchema, loginSchema, staffRegisterSchema } = require('../validation/schemas');
 const { protect } = require('../middleware/authMiddleware');
 
 router.post('/register', validate(registerUserSchema), authController.registerUser); 
-router.post('/login', validate(loginSchema), authController.loginUser);       
+router.post('/login', validate(loginSchema), authController.loginUser);
 
-router.post('/staff/register', validate(staffRegisterSchema), authController.registerStaff); 
-router.post('/staff/login', validate(loginSchema), authController.loginStaff);    
+router.post('/staff/register', validate(staffRegisterSchema), authController.registerStaff);
+router.post('/staff/login', validate(loginSchema), authController.loginStaff);
+
+/** Renova access + refresh tokens (sessões longas, WebSocket). Body: { refreshToken } */
+router.post('/refresh', authRefreshController.refreshAccess);
 
 router.post('/request-password-reset', authController.requestPasswordReset);
 router.post('/verify-reset-code', authController.verifyResetCode);
