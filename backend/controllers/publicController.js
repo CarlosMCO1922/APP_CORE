@@ -12,6 +12,10 @@ const {
   sendGuestAppointmentRescheduleConfirmed,
   sendGuestTrainingRescheduleConfirmed,
 } = require('../utils/emailService');
+const {
+  isSignupClosedWithinOneHour,
+  todayDateStringInAppTimezone,
+} = require('../utils/trainingScheduleTime');
 
 /** Roles que podem ter consultas (inclui employee/Employee para compatibilidade). */
 const ROLES_FOR_APPOINTMENTS = ['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee', 'Employee'];
@@ -178,17 +182,13 @@ const postAppointmentRequest = async (req, res) => {
  *  Usa a MESMA query que getAllTrainings (calendário) - SEM filtro de data no backend.
  *  O frontend filtra para mostrar apenas os próximos 10 dias. */
 const getPublicTrainings = async (req, res) => {
-  const now = Date.now();
-  const oneHourMs = 60 * 60 * 1000;
-
   // Sem filtro de data - mesma lógica que o calendário (getAllTrainings sem params)
   const whereClause = {};
 
   const buildList = (trainings, guestCountByTraining, getParticipantsCount, getInstructor) => {
     return trainings.map((t) => {
       const participantsCount = getParticipantsCount(t) + (guestCountByTraining[t.id] || 0);
-      const start = new Date(`${t.date}T${String(t.time).substring(0, 5)}`);
-      const signupsClosed = !isNaN(start.getTime()) && start.getTime() - now < oneHourMs;
+      const signupsClosed = isSignupClosedWithinOneHour(t.date, t.time);
       const instructor = getInstructor(t);
       return {
         id: t.id,
@@ -272,13 +272,12 @@ const postGuestTrainingSignup = async (req, res) => {
     if (!training) {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = todayDateStringInAppTimezone();
     if (training.date < today) {
       return res.status(400).json({ message: 'Não é possível inscrever-se num treino já realizado.' });
     }
 
-    const trainingStart = new Date(`${training.date}T${String(training.time).substring(0, 5)}`);
-    if (!isNaN(trainingStart.getTime()) && trainingStart.getTime() - Date.now() < 60 * 60 * 1000) {
+    if (isSignupClosedWithinOneHour(training.date, training.time)) {
       return res.status(400).json({
         message: 'As inscrições fecham 1 hora antes do início do treino. Já não é possível inscrever-se neste horário.',
       });

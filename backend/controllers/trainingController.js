@@ -3,6 +3,11 @@ const { Op } = require('sequelize');
 const db = require('../models');
 const { startOfWeek, endOfWeek, format } = require('date-fns');
 const { _internalCreateNotification } = require('./notificationController');
+const {
+  isSignupClosedWithinOneHour,
+  hasTrainingStartedOrPassed,
+  todayDateStringInAppTimezone,
+} = require('../utils/trainingScheduleTime');
 
 
 const createTraining = async (req, res) => {
@@ -85,12 +90,9 @@ const getAllTrainingsPublic = async (req, res) => {
       acc[g.trainingId] = (acc[g.trainingId] || 0) + 1;
       return acc;
     }, {});
-    const now = Date.now();
-    const oneHourMs = 60 * 60 * 1000;
     const list = trainings.map((t) => {
       const participantsCount = (t.participants?.length || 0) + (guestCountByTraining[t.id] || 0);
-      const start = new Date(`${t.date}T${String(t.time).substring(0, 5)}`);
-      const signupsClosed = !isNaN(start.getTime()) && start.getTime() - now < oneHourMs;
+      const signupsClosed = isSignupClosedWithinOneHour(t.date, t.time);
       return {
         id: t.id,
         name: t.name,
@@ -445,9 +447,8 @@ const bookTraining = async (req, res) => {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    // Bloquear inscrições a partir de 1h antes do início do treino
-    const trainingStart = new Date(`${training.date}T${String(training.time).substring(0, 5)}`);
-    if (!isNaN(trainingStart.getTime()) && trainingStart.getTime() - Date.now() < 60 * 60 * 1000) {
+    // Bloquear inscrições a partir de 1h antes do início (hora local Portugal / Europe/Lisbon, não UTC do servidor)
+    if (isSignupClosedWithinOneHour(training.date, training.time)) {
       return res.status(400).json({
         message: 'As inscrições fecham 1 hora antes do início do treino. Já não é possível inscrever-se neste horário.',
       });
@@ -552,13 +553,9 @@ const cancelTrainingBooking = async (req, res) => {
     const isBooked = await training.hasParticipant(user);
     if (!isBooked) { return res.status(400).json({ message: 'Não estás inscrito neste treino.' }); }
 
-    // Bloqueia cancelamentos para treinos já iniciados/terminados
-    try {
-      const start = new Date(`${training.date}T${training.time}`);
-      if (!isNaN(start) && start <= new Date()) {
-        return res.status(400).json({ message: 'Não é possível cancelar um treino já iniciado ou passado.' });
-      }
-    } catch (e) { /* ignore parse errors e permitir comportamento antigo */ }
+    if (hasTrainingStartedOrPassed(training.date, training.time)) {
+      return res.status(400).json({ message: 'Não é possível cancelar um treino já iniciado ou passado.' });
+    }
 
     // Se cancelRecurring for true, cancelar todas as inscrições futuras na mesma série/hora
     if (cancelRecurring === 'true' && training.trainingSeriesId) {
@@ -692,7 +689,7 @@ const getCurrentWeekSignups = async (req, res) => {
 
 const getTodayTrainingsCount = async (req, res) => {
   try {
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = todayDateStringInAppTimezone();
     const count = await db.Training.count({
       where: {
         date: today,
@@ -707,7 +704,7 @@ const getTodayTrainingsCount = async (req, res) => {
 
 const getTodayTrainingsEnrollmentsCount = async (req, res) => {
   try {
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = todayDateStringInAppTimezone();
     const trainings = await db.Training.findAll({
       where: {
         date: today,
@@ -749,8 +746,7 @@ const adminBookClientForTraining = async (req, res) => {
       return res.status(404).json({ message: 'Treino não encontrado.' });
     }
 
-    const trainingStart = new Date(`${training.date}T${String(training.time).substring(0, 5)}`);
-    if (!isNaN(trainingStart.getTime()) && trainingStart.getTime() - Date.now() < 60 * 60 * 1000) {
+    if (isSignupClosedWithinOneHour(training.date, training.time)) {
       return res.status(400).json({
         message: 'As inscrições fecham 1 hora antes do início do treino. Já não é possível inscrever neste horário.',
       });
@@ -1083,7 +1079,7 @@ const proposeGuestSignupReschedule = async (req, res) => {
 
     const newTraining = await db.Training.findByPk(proposedTrainingId);
     if (!newTraining) return res.status(404).json({ message: 'Treino proposto não encontrado.' });
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = todayDateStringInAppTimezone();
     if (newTraining.date < today) return res.status(400).json({ message: 'O treino proposto já passou.' });
 
     const token = crypto.randomBytes(32).toString('hex');
