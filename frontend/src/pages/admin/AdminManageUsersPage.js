@@ -1,6 +1,6 @@
 // src/pages/admin/AdminManageUsersPage.js
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styled, { css, useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -291,6 +291,7 @@ const SearchContainer = styled.div`
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 `;
 
 const SearchInput = styled.input`
@@ -327,6 +328,170 @@ const SearchInputWrapper = styled.div`
   display: flex;
   align-items: center;
 `;
+
+const ToolbarRight = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+`;
+
+const ResultsMeta = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 0.85rem;
+`;
+
+const PageSizeSelect = styled.select`
+  padding: 8px 10px;
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.85rem;
+  cursor: pointer;
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+`;
+
+const UsersGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+`;
+
+const UserCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
+const UserCardHeader = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const UserNameBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const UserName = styled.div`
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: ${({ theme }) => theme.colors.textMain};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const UserSubtitle = styled.div`
+  font-size: 0.82rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Badge = styled.span`
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+
+  ${props => props.variant === 'success' && css`
+    border-color: ${props.theme.colors.success || '#28a745'};
+    background: ${(props.theme.colors.successBg || '#28a745')}22;
+    color: ${props.theme.colors.success || '#28a745'};
+  `}
+
+  ${props => props.variant === 'warning' && css`
+    border-color: ${props.theme.colors.warning || props.theme.colors.primary};
+    background: ${(props.theme.colors.warning || props.theme.colors.primary)}22;
+    color: ${props.theme.colors.warning || props.theme.colors.primary};
+  `}
+`;
+
+const UserCardBody = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FieldRow = styled.div`
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+`;
+
+const FieldLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const FieldValue = styled.span`
+  color: ${({ theme }) => theme.colors.textMain};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const UserCardFooter = styled.div`
+  padding: 12px 14px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+`;
+
+const PaginationBar = styled.div`
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const PaginationControls = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+`;
+
+const PageIndicator = styled.span`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
 const ModalErrorText = styled.p`
   ${MessageBaseStyles}
   color: ${({ theme }) => theme.colors.error};
@@ -342,6 +507,7 @@ const initialUserFormState = {
   firstName: '',
   lastName: '',
   email: '',
+  phone: '',
   password: '',
   confirmPassword: '',
   isAdmin: false,
@@ -368,6 +534,8 @@ const AdminManageUsersPage = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState('all'); // 'all' | 'pending'
   const [approvingUserId, setApprovingUserId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const fetchUsers = useCallback(async () => {
     if (authState.token) {
@@ -404,6 +572,34 @@ const AdminManageUsersPage = () => {
     );
   }, [users, searchTerm]);
 
+  // Reset página quando muda pesquisa/filtro/tamanho de página
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, approvalFilter, pageSize]);
+
+  const safePageSize = useMemo(() => {
+    const n = Number(pageSize);
+    if (!Number.isFinite(n)) return 20;
+    return Math.min(200, Math.max(5, Math.floor(n)));
+  }, [pageSize]);
+
+  const totalResults = filteredUsers.length;
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(totalResults / safePageSize));
+  }, [totalResults, safePageSize]);
+
+  const pageUsers = useMemo(() => {
+    const clampedPage = Math.min(Math.max(currentPage, 1), totalPages);
+    const start = (clampedPage - 1) * safePageSize;
+    return filteredUsers.slice(start, start + safePageSize);
+  }, [filteredUsers, currentPage, totalPages, safePageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -422,6 +618,7 @@ const AdminManageUsersPage = () => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      phone: user.phone || '',
       password: '',
       confirmPassword: '',
       isAdmin: user.isAdmin || false,
@@ -468,6 +665,7 @@ const AdminManageUsersPage = () => {
       firstName: currentUserData.firstName,
       lastName: currentUserData.lastName,
       email: currentUserData.email,
+      phone: currentUserData.phone ? String(currentUserData.phone).trim() : null,
       isAdmin: currentUserData.isAdmin,
     };
     if (currentUserData.password) { 
@@ -557,81 +755,126 @@ const AdminManageUsersPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </SearchInputWrapper>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.9rem', color: theme.colors.textMuted }}>Estado:</span>
-          <ActionButton
-            onClick={() => setApprovalFilter('all')}
-            style={{ background: approvalFilter === 'all' ? theme.colors.primary : theme.colors.buttonSecondaryBg, color: approvalFilter === 'all' ? theme.colors.textDark : theme.colors.textMain }}
-          >
-            Todos
-          </ActionButton>
-          <ActionButton
-            onClick={() => setApprovalFilter('pending')}
-            style={{ background: approvalFilter === 'pending' ? theme.colors.primary : theme.colors.buttonSecondaryBg, color: approvalFilter === 'pending' ? theme.colors.textDark : theme.colors.textMain }}
-          >
-            Pendentes de aprovação
-          </ActionButton>
-        </div>
+        <ToolbarRight>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.9rem', color: theme.colors.textMuted }}>Estado:</span>
+            <ActionButton
+              onClick={() => setApprovalFilter('all')}
+              style={{ background: approvalFilter === 'all' ? theme.colors.primary : theme.colors.buttonSecondaryBg, color: approvalFilter === 'all' ? theme.colors.textDark : theme.colors.textMain }}
+            >
+              Todos
+            </ActionButton>
+            <ActionButton
+              onClick={() => setApprovalFilter('pending')}
+              style={{ background: approvalFilter === 'pending' ? theme.colors.primary : theme.colors.buttonSecondaryBg, color: approvalFilter === 'pending' ? theme.colors.textDark : theme.colors.textMain }}
+            >
+              Pendentes de aprovação
+            </ActionButton>
+          </div>
+
+          <ResultsMeta>
+            <span>{totalResults} resultado{totalResults === 1 ? '' : 's'}</span>
+            <span>•</span>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span>Por página</span>
+              <PageSizeSelect
+                value={safePageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                aria-label="Resultados por página"
+              >
+                {[10, 20, 30, 50, 100].map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </PageSizeSelect>
+            </label>
+          </ResultsMeta>
+        </ToolbarRight>
       </SearchContainer>
 
-      <TableWrapper>
-        <Table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nome</th>
-              <th>Apelido</th>
-              <th>Email</th>
-              <th>Estado</th>
-              <th>Admin?</th>
-              <th className="actions-cell">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.length > 0 ? filteredUsers.map(user => (
-              <tr key={user.id}>
-                <td>{user.id}</td>
-                <td>{user.firstName}</td>
-                <td>{user.lastName}</td>
-                <td>{user.email}</td>
-                <td>{user.approvedAt ? 'Aprovado' : 'Pendente'}</td>
-                <td>{user.isAdmin ? 'Sim' : 'Não'}</td>
-                <td className="actions-cell">
-                  <ActionButtonContainer>
-                    {!user.approvedAt && (
-                      <ActionButton
-                        onClick={() => handleApproveUser(user.id)}
-                        disabled={approvingUserId === user.id}
-                        style={{ background: theme.colors.success || '#28a745', color: 'white' }}
-                      >
-                        <FaCheckCircle /> {approvingUserId === user.id ? 'A aprovar...' : 'Aprovar'}
-                      </ActionButton>
-                    )}
+      {pageUsers.length > 0 ? (
+        <>
+          <UsersGrid>
+            {pageUsers.map(user => (
+              <UserCard key={user.id}>
+                <UserCardHeader>
+                  <UserNameBlock>
+                    <UserName title={`${user.firstName || ''} ${user.lastName || ''}`.trim()}>
+                      {(user.firstName || '').trim()} {(user.lastName || '').trim()}
+                    </UserName>
+                    <UserSubtitle title={user.email || ''}>{user.email}</UserSubtitle>
+                  </UserNameBlock>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <Badge variant={user.approvedAt ? 'success' : 'warning'}>
+                      {user.approvedAt ? 'Aprovado' : 'Pendente'}
+                    </Badge>
+                    {user.isAdmin && <Badge>Admin</Badge>}
+                  </div>
+                </UserCardHeader>
+
+                <UserCardBody>
+                  <FieldRow>
+                    <FieldLabel>ID</FieldLabel>
+                    <FieldValue title={String(user.id)}>{user.id}</FieldValue>
+                  </FieldRow>
+                  <FieldRow>
+                    <FieldLabel>Email</FieldLabel>
+                    <FieldValue title={user.email || ''}>{user.email}</FieldValue>
+                  </FieldRow>
+                </UserCardBody>
+
+                <UserCardFooter>
+                  {!user.approvedAt && (
                     <ActionButton
-                      details
-                      onClick={() => navigate(`/admin/users/${user.id}/details`)}
+                      onClick={() => handleApproveUser(user.id)}
+                      disabled={approvingUserId === user.id}
+                      style={{ background: theme.colors.success || '#28a745', color: 'white' }}
                     >
-                      <FaEye /> Detalhes
+                      <FaCheckCircle /> {approvingUserId === user.id ? 'A aprovar...' : 'Aprovar'}
                     </ActionButton>
-                    <ActionButton onClick={() => handleOpenEditModal(user)}>
-                      <FaEdit /> Editar
-                    </ActionButton>
-                    <ActionButton danger onClick={() => handleDeleteUser(user.id)}>
-                      <FaTrashAlt /> Eliminar
-                    </ActionButton>
-                  </ActionButtonContainer>
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
-                  {searchTerm ? 'Nenhum utilizador encontrado com o termo de pesquisa.' : approvalFilter === 'pending' ? 'Nenhum utilizador pendente de aprovação.' : 'Nenhum utilizador encontrado.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
-      </TableWrapper>
+                  )}
+                  <ActionButton details onClick={() => navigate(`/admin/users/${user.id}/details`)}>
+                    <FaEye /> Detalhes
+                  </ActionButton>
+                  <ActionButton onClick={() => handleOpenEditModal(user)}>
+                    <FaEdit /> Editar
+                  </ActionButton>
+                  <ActionButton danger onClick={() => handleDeleteUser(user.id)}>
+                    <FaTrashAlt /> Eliminar
+                  </ActionButton>
+                </UserCardFooter>
+              </UserCard>
+            ))}
+          </UsersGrid>
+
+          <PaginationBar>
+            <PageIndicator>
+              Página {Math.min(currentPage, totalPages)} de {totalPages}
+            </PageIndicator>
+            <PaginationControls>
+              <ActionButton
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+              >
+                Anterior
+              </ActionButton>
+              <ActionButton
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+              >
+                Seguinte
+              </ActionButton>
+            </PaginationControls>
+          </PaginationBar>
+        </>
+      ) : (
+        <ErrorText style={{ backgroundColor: 'transparent', borderColor: 'transparent', color: theme.colors.textMuted }}>
+          {searchTerm
+            ? 'Nenhum utilizador encontrado com o termo de pesquisa.'
+            : approvalFilter === 'pending'
+              ? 'Nenhum utilizador pendente de aprovação.'
+              : 'Nenhum utilizador encontrado.'}
+        </ErrorText>
+      )}
 
       {showModal && (
         <ModalOverlay onClick={handleCloseModal}>
@@ -648,6 +891,16 @@ const AdminManageUsersPage = () => {
 
               <ModalLabel htmlFor="emailModal">Email*</ModalLabel>
               <ModalInput type="email" name="email" id="emailModal" value={currentUserData.email} onChange={handleFormChange} required />
+
+              <ModalLabel htmlFor="phoneModal">Telemóvel (WhatsApp)</ModalLabel>
+              <ModalInput
+                type="tel"
+                name="phone"
+                id="phoneModal"
+                placeholder="Ex.: +3519XXXXXXXX"
+                value={currentUserData.phone}
+                onChange={handleFormChange}
+              />
 
               <ModalLabel htmlFor="passwordModal">{isEditing ? 'Nova Password (deixar em branco para não alterar)' : 'Password*'}</ModalLabel>
               <ModalInput type="password" name="password" id="passwordModal" value={currentUserData.password} onChange={handleFormChange} required={!isEditing} />
