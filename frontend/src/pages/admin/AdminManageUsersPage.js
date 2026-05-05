@@ -311,7 +311,7 @@ const SearchContainer = styled.div`
 
 const SearchInput = styled.input`
   flex: 1;
-  padding: 10px 14px 10px 40px;
+  padding: 10px 14px 10px 44px;
   background-color: ${({ theme }) => theme.colors.inputBg || theme.colors.buttonSecondaryBg};
   border: 1px solid ${({ theme }) => theme.colors.inputBorder || theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
@@ -330,7 +330,7 @@ const SearchInput = styled.input`
   }
 
   @media (max-width: 480px) {
-    padding: 9px 12px 9px 36px;
+    padding: 9px 12px 9px 42px;
     font-size: 0.92rem;
   }
 `;
@@ -340,9 +340,10 @@ const SearchIcon = styled(FaSearch)`
   left: 14px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 0.9rem;
+  pointer-events: none;
 
   @media (max-width: 480px) {
-    left: 12px;
+    left: 14px;
     font-size: 0.85rem;
   }
 `;
@@ -352,6 +353,32 @@ const SearchInputWrapper = styled.div`
   flex: 1;
   display: flex;
   align-items: center;
+`;
+
+const ApprovalToggle = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+`;
+
+const ApprovalButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    flex: 1;
+    justify-content: flex-start;
+  }
 `;
 
 const ToolbarRight = styled.div`
@@ -833,7 +860,7 @@ const AdminManageUsersPage = () => {
       <HeaderContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title>Clientes (Utilizadores)</Title>
+          <Title>Clientes</Title>
         </div>
         <CreateButton onClick={handleOpenCreateModal}><FaUserPlus /> Novo Cliente</CreateButton>
       </HeaderContainer>
@@ -852,21 +879,29 @@ const AdminManageUsersPage = () => {
           />
         </SearchInputWrapper>
         <ToolbarRight>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.9rem', color: theme.colors.textMuted }}>Estado:</span>
-            <ActionButton
-              onClick={() => setApprovalFilter('all')}
-              style={{ background: approvalFilter === 'all' ? theme.colors.primary : theme.colors.buttonSecondaryBg, color: approvalFilter === 'all' ? theme.colors.textDark : theme.colors.textMain }}
-            >
-              Todos
-            </ActionButton>
-            <ActionButton
-              onClick={() => setApprovalFilter('pending')}
-              style={{ background: approvalFilter === 'pending' ? theme.colors.primary : theme.colors.buttonSecondaryBg, color: approvalFilter === 'pending' ? theme.colors.textDark : theme.colors.textMain }}
-            >
-              Pendentes de aprovação
-            </ActionButton>
-          </div>
+          <ApprovalToggle>
+            <span style={{ fontSize: '0.9rem', color: theme.colors.textMuted, whiteSpace: 'nowrap' }}>Estado:</span>
+            <ApprovalButtons>
+              <ActionButton
+                onClick={() => setApprovalFilter('all')}
+                style={{
+                  background: approvalFilter === 'all' ? theme.colors.primary : theme.colors.buttonSecondaryBg,
+                  color: approvalFilter === 'all' ? theme.colors.textDark : theme.colors.textMain,
+                }}
+              >
+                Todos
+              </ActionButton>
+              <ActionButton
+                onClick={() => setApprovalFilter('pending')}
+                style={{
+                  background: approvalFilter === 'pending' ? theme.colors.primary : theme.colors.buttonSecondaryBg,
+                  color: approvalFilter === 'pending' ? theme.colors.textDark : theme.colors.textMain,
+                }}
+              >
+                Pendentes
+              </ActionButton>
+            </ApprovalButtons>
+          </ApprovalToggle>
 
           <ResultsMeta>
             <span>{totalResults} resultado{totalResults === 1 ? '' : 's'}</span>
