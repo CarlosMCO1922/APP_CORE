@@ -32,12 +32,22 @@ const HeaderContainer = styled.div`
   margin-bottom: 15px;
   flex-wrap: wrap;
   gap: 15px;
+
+  @media (max-width: 480px) {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
 `;
 
 const Title = styled.h1`
   font-size: clamp(1.8rem, 4vw, 2.4rem);
   color: ${({ theme }) => theme.colors.primary};
   margin: 0;
+
+  @media (max-width: 480px) {
+    font-size: 1.8rem;
+    line-height: 1.1;
+  }
 `;
 
 const CreateButton = styled.button`
@@ -62,8 +72,8 @@ const CreateButton = styled.button`
   @media (max-width: 480px) {
     width: 100%;
     justify-content: center;
-    font-size: 1rem;
-    padding: 12px;
+    font-size: 0.95rem;
+    padding: 10px 12px;
   }
 `;
 
@@ -157,6 +167,11 @@ const ActionButton = styled.button`
     background-color: ${({ theme }) => theme.colors.disabledBg};
     color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
+  }
+
+  @media (max-width: 480px) {
+    padding: 7px 10px;
+    font-size: 0.82rem;
   }
 `;
 
@@ -313,6 +328,11 @@ const SearchInput = styled.input`
   &::placeholder {
     color: ${({ theme }) => theme.colors.textMuted};
   }
+
+  @media (max-width: 480px) {
+    padding: 9px 12px 9px 36px;
+    font-size: 0.92rem;
+  }
 `;
 
 const SearchIcon = styled(FaSearch)`
@@ -320,6 +340,11 @@ const SearchIcon = styled(FaSearch)`
   left: 14px;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 0.9rem;
+
+  @media (max-width: 480px) {
+    left: 12px;
+    font-size: 0.85rem;
+  }
 `;
 
 const SearchInputWrapper = styled.div`
@@ -335,6 +360,12 @@ const ToolbarRight = styled.div`
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
 `;
 
 const ResultsMeta = styled.div`
@@ -344,6 +375,13 @@ const ResultsMeta = styled.div`
   flex-wrap: wrap;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 0.85rem;
+
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.8rem;
+  }
 `;
 
 const PageSizeSelect = styled.select`
@@ -359,12 +397,22 @@ const PageSizeSelect = styled.select`
     border-color: ${({ theme }) => theme.colors.primary};
     box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
   }
+
+  @media (max-width: 480px) {
+    padding: 7px 10px;
+    font-size: 0.82rem;
+  }
 `;
 
 const UsersGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 14px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 `;
 
 const UserCard = styled.div`
@@ -388,6 +436,10 @@ const UserCardHeader = styled.div`
   align-items: flex-start;
   justify-content: space-between;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+  }
 `;
 
 const UserNameBlock = styled.div`
@@ -404,6 +456,10 @@ const UserName = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  @media (max-width: 480px) {
+    font-size: 0.95rem;
+  }
 `;
 
 const UserSubtitle = styled.div`
@@ -412,6 +468,10 @@ const UserSubtitle = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  @media (max-width: 480px) {
+    font-size: 0.78rem;
+  }
 `;
 
 const Badge = styled.span`
@@ -434,6 +494,11 @@ const Badge = styled.span`
     background: ${(props.theme.colors.warning || props.theme.colors.primary)}22;
     color: ${props.theme.colors.warning || props.theme.colors.primary};
   `}
+
+  @media (max-width: 480px) {
+    padding: 3px 7px;
+    font-size: 0.72rem;
+  }
 `;
 
 const UserCardBody = styled.div`
@@ -441,6 +506,11 @@ const UserCardBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    gap: 6px;
+  }
 `;
 
 const FieldRow = styled.div`
@@ -449,6 +519,12 @@ const FieldRow = styled.div`
   gap: 10px;
   align-items: center;
   font-size: 0.85rem;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 70px 1fr;
+    gap: 8px;
+    font-size: 0.82rem;
+  }
 `;
 
 const FieldLabel = styled.span`
@@ -469,6 +545,17 @@ const UserCardFooter = styled.div`
   gap: 8px;
   justify-content: flex-end;
   flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    gap: 8px;
+    justify-content: space-between;
+
+    & > button {
+      flex: 1 1 calc(50% - 4px);
+      justify-content: center;
+    }
+  }
 `;
 
 const PaginationBar = styled.div`
@@ -478,6 +565,11 @@ const PaginationBar = styled.div`
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    margin-top: 12px;
+    gap: 10px;
+  }
 `;
 
 const PaginationControls = styled.div`
@@ -491,6 +583,10 @@ const PaginationControls = styled.div`
 const PageIndicator = styled.span`
   font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.textMuted};
+
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+  }
 `;
 const ModalErrorText = styled.p`
   ${MessageBaseStyles}
