@@ -20,7 +20,7 @@ import { getAllTrainings } from '../../services/trainingService';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
     FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaLink, FaUnlink, FaListOl,
-    FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical, FaDumbbell
+    FaTimes, FaSave, FaLayerGroup, FaPlusCircle, FaImage, FaVideo, FaEye, FaGripVertical, FaDumbbell, FaFilter
 } from 'react-icons/fa';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 import SearchableSelect from '../../components/Common/SearchableSelect';
@@ -152,6 +152,190 @@ const Table = styled.table`
   }
   tbody tr:hover {
     background-color: ${({ theme }) => theme.colors.hoverRowBg};
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const FilterToggleButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  padding: 10px 14px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
+  }
+`;
+
+const FiltersContainer = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  padding: 15px 20px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  margin-bottom: 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 240px;
+  min-width: 200px;
+`;
+
+const FilterLabel = styled.label`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-weight: 700;
+`;
+
+const FilterInput = styled.input`
+  padding: 9px 12px;
+  background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.9rem;
+`;
+
+const PlansGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+`;
+
+const PlanCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  overflow: hidden;
+`;
+
+const PlanCardHeader = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const PlanTitleBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const PlanName = styled.div`
+  font-weight: 900;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const PlanMeta = styled.div`
+  font-size: 0.82rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Pill = styled.span`
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  white-space: nowrap;
+`;
+
+const PlanCardBody = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const NotesClamp = styled.div`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+`;
+
+const PlanCardFooter = styled.div`
+  padding: 12px 14px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    justify-content: space-between;
+    & > button {
+      flex: 1 1 calc(25% - 8px);
+      justify-content: center;
+    }
+  }
+`;
+
+const IconActionButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  font-weight: 700;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
+  }
+
+  &.danger {
+    background-color: ${({ theme }) => theme.colors.error};
+    border-color: ${({ theme }) => theme.colors.error};
+    color: white;
   }
 `;
 
@@ -391,6 +575,8 @@ const AdminManageGlobalWorkoutPlansPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [nameQuery, setNameQuery] = useState('');
 
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [currentPlanData, setCurrentPlanData] = useState(initialPlanState);
@@ -825,6 +1011,12 @@ const AdminManageGlobalWorkoutPlansPage = () => {
     }
   };
 
+  const filteredPlans = useMemo(() => {
+    if (!nameQuery.trim()) return plans;
+    const term = nameQuery.toLowerCase().trim();
+    return (plans || []).filter(p => (p.name || '').toLowerCase().includes(term));
+  }, [plans, nameQuery]);
+
   if (loading && plans.length === 0) return <PageContainer><p>A carregar planos de treino...</p></PageContainer>;
 
 return (
@@ -832,46 +1024,75 @@ return (
       <HeaderContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title><FaClipboardList /> Planos de Treino Modelo</Title>
+          <Title><FaClipboardList /> Planos de Treino</Title>
         </div>
-        <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Criar Novo Plano</CreateButton>
+        <HeaderActions>
+          <FilterToggleButton type="button" onClick={() => setShowFilters(v => !v)}>
+            <FaFilter /> {showFilters ? 'Fechar Filtros' : 'Filtros'}
+          </FilterToggleButton>
+          <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Criar Novo Plano</CreateButton>
+        </HeaderActions>
       </HeaderContainer>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}
 
-      {plans.length > 0 ? (
-        <TableWrapper>
-          <Table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Nº Exercícios</th>
-                <th>Visível?</th>
-                <th>Notas</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {plans.map(plan => (
-                <tr key={plan.id}>
-                  <td>{plan.name}</td>
-                  <td>{plan.planExercises?.length || 0}</td>
-                  <td>{plan.isVisible ? <FaEye color={theme.colors.success} /> : <FaEye color={theme.colors.disabledColor} />}</td>
-                  <td>{plan.notes?.substring(0, 50) || '-'}{plan.notes && plan.notes.length > 50 ? '...' : ''}</td>
-                  <td>
-                    <ActionButton title="Visualizar plano" onClick={() => handleOpenPreviewModal(plan)}><FaEye /></ActionButton>
-                    <ActionButton title="Editar Plano e Exercícios" onClick={() => handleOpenEditModal(plan)}><FaEdit /></ActionButton>
-                    <ActionButton title="Associar a Treino" onClick={() => handleOpenAssignModal(plan)}><FaLink /></ActionButton>
-                    <ActionButton title="Eliminar Plano" className="delete" onClick={() => handleDeletePlan(plan.id)}><FaTrashAlt /></ActionButton>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </TableWrapper>
+      {showFilters && (
+        <FiltersContainer>
+          <FilterGroup>
+            <FilterLabel htmlFor="planNameQuery">Pesquisar</FilterLabel>
+            <FilterInput
+              id="planNameQuery"
+              type="text"
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+              placeholder="Nome do plano..."
+            />
+          </FilterGroup>
+        </FiltersContainer>
+      )}
+
+      {filteredPlans.length > 0 ? (
+        <PlansGrid>
+          {filteredPlans.map(plan => (
+            <PlanCard key={plan.id}>
+              <PlanCardHeader>
+                <PlanTitleBlock>
+                  <PlanName title={plan.name || ''}>{plan.name}</PlanName>
+                  <PlanMeta title={`Exercícios: ${plan.planExercises?.length || 0}`}>
+                    Exercícios: {plan.planExercises?.length || 0}
+                  </PlanMeta>
+                </PlanTitleBlock>
+                <Pill title={plan.isVisible ? 'Visível' : 'Oculto'}>
+                  {plan.isVisible ? 'Visível' : 'Oculto'}
+                </Pill>
+              </PlanCardHeader>
+
+              <PlanCardBody>
+                <NotesClamp title={plan.notes || ''}>
+                  {plan.notes || 'Sem notas.'}
+                </NotesClamp>
+              </PlanCardBody>
+
+              <PlanCardFooter>
+                <IconActionButton type="button" onClick={() => handleOpenPreviewModal(plan)} title="Ver" aria-label="Ver">
+                  <FaEye />
+                </IconActionButton>
+                <IconActionButton type="button" onClick={() => handleOpenEditModal(plan)} title="Editar" aria-label="Editar">
+                  <FaEdit />
+                </IconActionButton>
+                <IconActionButton type="button" onClick={() => handleOpenAssignModal(plan)} title="Associar" aria-label="Associar">
+                  <FaLink />
+                </IconActionButton>
+                <IconActionButton type="button" className="danger" onClick={() => handleDeletePlan(plan.id)} title="Eliminar" aria-label="Eliminar">
+                  <FaTrashAlt />
+                </IconActionButton>
+              </PlanCardFooter>
+            </PlanCard>
+          ))}
+        </PlansGrid>
       ) : (
-        !loading && <p>Nenhum plano de treino modelo encontrado. Crie um novo!</p>
+        !loading && <p>Nenhum plano de treino encontrado. Crie um novo!</p>
       )}
 
       {/* Modal para Criar/Editar Plano de Treino e seus Exercícios */}

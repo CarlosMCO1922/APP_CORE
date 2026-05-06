@@ -1,5 +1,5 @@
 // src/pages/admin/AdminManageAppointmentsPage.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
@@ -11,7 +11,7 @@ import {
 } from '../../services/appointmentService';
 import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
-import { FaCalendarCheck, FaPlus, FaEdit, FaTrashAlt, FaTimes } from 'react-icons/fa';
+import { FaCalendarCheck, FaPlus, FaEdit, FaTrashAlt, FaTimes, FaFilter } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
@@ -67,54 +67,212 @@ const CreateButton = styled.button`
 `;
 
 
-const TableWrapper = styled.div`
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch; 
-  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  @media (max-width: 480px) { width: 100%; }
+`;
+
+const FilterToggleButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  padding: 10px 14px;
   border-radius: ${({ theme }) => theme.borderRadius};
-  box-shadow: ${({ theme }) => theme.boxShadow};
-  
-  &::-webkit-scrollbar {
-    height: 8px;
-    background-color: ${({ theme }) => theme.colors.scrollbarTrackBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
   }
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.scrollbarThumbBg};
-    border-radius: 4px;
+
+  @media (max-width: 480px) {
+    flex: 1;
+    justify-content: center;
+    padding: 12px;
   }
 `;
 
-const Table = styled.table`
-  width: 100%;
-  min-width: 1000px; /* Ajustar conforme necessidade para scroll */
-  border-collapse: collapse;
+const FiltersContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  
-  th, td {
-    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 0.85rem; 
-    white-space: nowrap;
-  }
-  th {
-    background-color: ${({ theme }) => theme.colors.tableHeaderBg};
-    color: ${({ theme }) => theme.colors.primary};
-    font-weight: 600;
-    position: sticky; 
-    top: 0; 
-    z-index: 1;
-  }
-  tr:last-child td { border-bottom: none; }
-  tr:hover { background-color: ${({ theme }) => theme.colors.hoverRowBg}; }
+  padding: 15px 20px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  margin-bottom: 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+`;
 
-  td.actions-cell { 
-    white-space: nowrap; 
-    text-align: right;
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 180px;
+  min-width: 160px;
+`;
+
+const FilterLabel = styled.label`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-weight: 600;
+`;
+
+const FilterInput = styled.input`
+  padding: 9px 12px;
+  background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.9rem;
+`;
+
+const FilterSelect = styled.select`
+  padding: 9px 12px;
+  background-color: ${({ theme }) => theme.colors.inputBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.9rem;
+`;
+
+const FilterActions = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const FilterButton = styled.button`
+  background-color: ${({ theme, primary }) => primary ? theme.colors.primary : theme.colors.buttonSecondaryBg};
+  color: ${({ theme, primary }) => primary ? theme.colors.textDark : theme.colors.textMain};
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 9px 18px;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+
+  &:hover { opacity: 0.92; transform: translateY(-1px); }
+`;
+
+const AppointmentsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
-  @media (max-width: 768px) {
-    th, td { padding: 8px 10px; font-size: 0.8rem; }
+`;
+
+const AppointmentCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  overflow: hidden;
+`;
+
+const CardHeader = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const CardTitleBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const CardTitle = styled.div`
+  font-weight: 800;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const CardSubtitle = styled.div`
+  font-size: 0.82rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Pill = styled.span`
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  white-space: nowrap;
+`;
+
+const CardBody = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const InfoRow = styled.div`
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+`;
+
+const InfoLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const InfoValue = styled.span`
+  color: ${({ theme }) => theme.colors.textMain};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const CardFooter = styled.div`
+  padding: 12px 14px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    justify-content: space-between;
+    & > button {
+      flex: 1 1 calc(50% - 5px);
+      justify-content: center;
+    }
   }
 `;
 
@@ -295,6 +453,8 @@ const AdminManageAppointmentsPage = () => {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({ date: '', staffId: '', userId: '', status: '' });
 
   const fetchPageData = useCallback(async () => {
     if (authState.token) {
@@ -305,9 +465,25 @@ const AdminManageAppointmentsPage = () => {
           adminGetAllStaff(authState.token),
           adminGetAllUsers(authState.token)
         ]);
-        setAppointments(appointmentsData);
+        // Ordenar por mais recente (data+hora desc)
+        const sortedAppointments = [...(appointmentsData || [])].sort((a, b) => {
+          const aKey = `${a.date || ''} ${a.time || '00:00:00'}`;
+          const bKey = `${b.date || ''} ${b.time || '00:00:00'}`;
+          return bKey.localeCompare(aKey);
+        });
+        setAppointments(sortedAppointments);
         setStaffList(staffData.filter(s => ['physiotherapist', 'trainer', 'admin'].includes(s.role)));
         setUserList(usersData);
+
+        // Default: dia mais recente com dados (<= hoje)
+        const todayIso = new Date().toISOString().split('T')[0];
+        const latestDateWithData = sortedAppointments
+          .map(a => a.date)
+          .filter(Boolean)
+          .find(d => d <= todayIso);
+        if (latestDateWithData) {
+          setFilters(prev => ({ ...prev, date: prev.date || latestDateWithData }));
+        }
       } catch (err) {
         setError(err.message || 'Não foi possível carregar os dados da página.');
       } finally {
@@ -317,6 +493,26 @@ const AdminManageAppointmentsPage = () => {
   }, [authState.token]);
 
   useEffect(() => { fetchPageData(); }, [fetchPageData]);
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ date: '', staffId: '', userId: '', status: '' });
+  };
+
+  const filteredAppointments = useMemo(() => {
+    if (!Array.isArray(appointments)) return [];
+    return appointments.filter(a => {
+      if (filters.date && a.date !== filters.date) return false;
+      if (filters.staffId && String(a.staffId || a.professional?.id || '') !== String(filters.staffId)) return false;
+      if (filters.userId && String(a.userId || a.client?.id || '') !== String(filters.userId)) return false;
+      if (filters.status && String(a.status || '') !== String(filters.status)) return false;
+      return true;
+    });
+  }, [appointments, filters.date, filters.staffId, filters.userId, filters.status]);
 
   const handleOpenCreateModal = () => {
     setIsEditing(false); setCurrentAppointmentData(initialAppointmentFormState);
@@ -428,57 +624,125 @@ const AdminManageAppointmentsPage = () => {
           <BackArrow to="/admin/dashboard" />
           <Title>Consultas</Title>
         </div>
-        <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Nova Consulta</CreateButton>
+        <HeaderActions>
+          <FilterToggleButton type="button" onClick={() => setShowFilters(v => !v)}>
+            <FaFilter /> {showFilters ? 'Fechar Filtros' : 'Filtros'}
+          </FilterToggleButton>
+          <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Nova Consulta</CreateButton>
+        </HeaderActions>
       </HeaderContainer>
 
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}
 
-      <TableWrapper>
-        <Table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Data</th>
-              <th>Hora</th>
-              <th>Duração</th>
-              <th>Profissional</th>
-              <th>Cliente</th>
-              <th>Custo</th>
-              <th>Sinal?</th>
-              <th>Status</th>
-              <th className="actions-cell">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {appointments.length > 0 ? appointments.map(appt => (
-              <tr key={appt.id}>
-                <td>{appt.id}</td>
-                <td>{new Date(appt.date).toLocaleDateString('pt-PT')}</td>
-                <td>{appt.time ? appt.time.substring(0,5) : 'N/A'}</td>
-                <td>{appt.durationMinutes} min</td>
-                <td>{appt.professional ? `${appt.professional.firstName} ${appt.professional.lastName}` : 'N/A'}</td>
-                <td>{appt.client ? `${appt.client.firstName} ${appt.client.lastName}` : '(Vago)'}</td>
-                <td>{appt.totalCost ? `${Number(appt.totalCost).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}` : 'N/A'}</td>
-                <td>{appt.userId ? (appt.signalPaid ? 'Sim' : 'Não') : 'N/A'}</td>
-                <td>{appt.status ? appt.status.replace(/_/g, ' ') : 'N/A'}</td>
-                <td className="actions-cell">
-                  <ActionButtonContainer>
-                    <ActionButton secondary onClick={() => handleOpenEditModal(appt)}>
-                      <FaEdit /> Editar
-                    </ActionButton>
-                    <ActionButton danger onClick={() => handleDeleteAppointment(appt.id)}>
-                      <FaTrashAlt /> Eliminar
-                    </ActionButton>
-                  </ActionButtonContainer>
-                </td>
-              </tr>
-            )) : (
-              <tr><td colSpan="10" style={{ textAlign: 'center', padding: '20px' }}>Nenhuma consulta encontrada.</td></tr>
-            )}
-          </tbody>
-        </Table>
-      </TableWrapper>
+      {showFilters && (
+        <FiltersContainer>
+          <FilterGroup>
+            <FilterLabel htmlFor="apptDateFilter">Data</FilterLabel>
+            <FilterInput type="date" id="apptDateFilter" name="date" value={filters.date} onChange={handleFilterChange} />
+          </FilterGroup>
+          <FilterGroup>
+            <FilterLabel htmlFor="apptStaffFilter">Profissional</FilterLabel>
+            <FilterSelect id="apptStaffFilter" name="staffId" value={filters.staffId} onChange={handleFilterChange}>
+              <option value="">Todos</option>
+              {staffList.map(s => (
+                <option key={s.id} value={s.id}>{s.firstName} {s.lastName}</option>
+              ))}
+            </FilterSelect>
+          </FilterGroup>
+          <FilterGroup>
+            <FilterLabel htmlFor="apptUserFilter">Cliente</FilterLabel>
+            <FilterSelect id="apptUserFilter" name="userId" value={filters.userId} onChange={handleFilterChange}>
+              <option value="">Todos</option>
+              {userList.map(u => (
+                <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+              ))}
+            </FilterSelect>
+          </FilterGroup>
+          <FilterGroup>
+            <FilterLabel htmlFor="apptStatusFilter">Status</FilterLabel>
+            <FilterSelect id="apptStatusFilter" name="status" value={filters.status} onChange={handleFilterChange}>
+              <option value="">Todos</option>
+              {appointmentStatuses.map(st => (
+                <option key={st} value={st}>{st.replace(/_/g, ' ')}</option>
+              ))}
+            </FilterSelect>
+          </FilterGroup>
+          <FilterActions>
+            <FilterButton type="button" primary onClick={() => setShowFilters(false)}>
+              <FaFilter /> Aplicar
+            </FilterButton>
+            <FilterButton type="button" onClick={clearFilters}>
+              <FaTimes /> Limpar
+            </FilterButton>
+          </FilterActions>
+        </FiltersContainer>
+      )}
+
+      {filteredAppointments.length > 0 ? (
+        <AppointmentsGrid>
+          {filteredAppointments.map(appt => {
+            const dateText = appt.date ? new Date(appt.date).toLocaleDateString('pt-PT') : 'N/A';
+            const timeText = appt.time ? appt.time.substring(0, 5) : 'N/A';
+            const professionalText = appt.professional ? `${appt.professional.firstName} ${appt.professional.lastName}` : 'N/A';
+            const clientText = appt.client ? `${appt.client.firstName} ${appt.client.lastName}` : '(Vago)';
+            const costText = appt.totalCost ? Number(appt.totalCost).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : 'N/A';
+            const statusText = appt.status ? appt.status.replace(/_/g, ' ') : 'N/A';
+
+            return (
+              <AppointmentCard key={appt.id}>
+                <CardHeader>
+                  <CardTitleBlock>
+                    <CardTitle title={`${dateText} • ${timeText}`}>{dateText} • {timeText}</CardTitle>
+                    <CardSubtitle title={professionalText}>{professionalText}</CardSubtitle>
+                  </CardTitleBlock>
+                  <Pill title={statusText}>{statusText}</Pill>
+                </CardHeader>
+
+                <CardBody>
+                  <InfoRow>
+                    <InfoLabel>ID</InfoLabel>
+                    <InfoValue title={String(appt.id)}>{appt.id}</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Cliente</InfoLabel>
+                    <InfoValue title={clientText}>{clientText}</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Duração</InfoLabel>
+                    <InfoValue title={`${appt.durationMinutes} min`}>{appt.durationMinutes} min</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Custo</InfoLabel>
+                    <InfoValue title={costText}>{costText}</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Sinal</InfoLabel>
+                    <InfoValue title={appt.userId ? (appt.signalPaid ? 'Sim' : 'Não') : 'N/A'}>
+                      {appt.userId ? (appt.signalPaid ? 'Sim' : 'Não') : 'N/A'}
+                    </InfoValue>
+                  </InfoRow>
+                </CardBody>
+
+                <CardFooter>
+                  <ActionButton secondary onClick={() => handleOpenEditModal(appt)} title="Editar" aria-label="Editar">
+                    <FaEdit />
+                    <span style={{ marginLeft: 6 }}>Editar</span>
+                  </ActionButton>
+                  <ActionButton danger onClick={() => handleDeleteAppointment(appt.id)} title="Eliminar" aria-label="Eliminar">
+                    <FaTrashAlt />
+                    <span style={{ marginLeft: 6 }}>Eliminar</span>
+                  </ActionButton>
+                </CardFooter>
+              </AppointmentCard>
+            );
+          })}
+        </AppointmentsGrid>
+      ) : (
+        <ErrorText style={{ backgroundColor: 'transparent', borderColor: 'transparent' }}>
+          Nenhuma consulta encontrada.
+        </ErrorText>
+      )}
 
       {showModal && (
         <ModalOverlay onClick={handleCloseModal}>

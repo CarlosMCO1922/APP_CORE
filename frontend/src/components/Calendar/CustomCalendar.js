@@ -229,6 +229,12 @@ const DatePickerButton = styled.button`
     min-width: 40px;
     font-size: 1.05rem;
   }
+
+  svg {
+    width: 70%;
+    height: 70%;
+    display: block;
+  }
 `;
 
 const HiddenDateInput = styled.input`

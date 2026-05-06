@@ -1,5 +1,5 @@
 // src/pages/admin/AdminManagePaymentsPage.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
@@ -119,6 +119,139 @@ const FiltersContainer = styled.div`
     flex-grow: 1;
     @media (min-width: 768px) {
         flex-grow: 0;
+    }
+  }
+`;
+
+const FilterToggleRow = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+`;
+
+const FilterToggleButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  padding: 10px 14px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
+  }
+`;
+
+const PaymentsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+`;
+
+const PaymentCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  overflow: hidden;
+`;
+
+const CardHeader = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const CardTitleBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const CardTitle = styled.div`
+  font-weight: 800;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const CardSubtitle = styled.div`
+  font-size: 0.82rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Pill = styled.span`
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  white-space: nowrap;
+`;
+
+const CardBody = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const InfoRow = styled.div`
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+`;
+
+const InfoLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const InfoValue = styled.span`
+  color: ${({ theme }) => theme.colors.textMain};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const CardFooter = styled.div`
+  padding: 12px 14px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    justify-content: space-between;
+    & > button {
+      flex: 1 1 calc(50% - 5px);
+      justify-content: center;
     }
   }
 `;
@@ -349,7 +482,14 @@ const AdminManagePaymentsPage = () => {
   const [pageError, setPageError] = useState('');
   const [pageSuccessMessage, setPageSuccessMessage] = useState('');
 
-  const [filters, setFilters] = useState({ userId: '', status: '', category: '', year: '', month: '' });
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const autoMonthFallbackRef = useRef(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState(() => {
+    const [year, month] = currentMonthStr.split('-');
+    return { userId: '', status: '', category: '', year, month };
+  });
 
   const [showModal, setShowModal] = useState(false);
   const [currentPaymentData, setCurrentPaymentData] = useState(initialPaymentFormState);
@@ -380,7 +520,33 @@ const AdminManagePaymentsPage = () => {
           adminGetAllUsers(authState.token),
           adminGetTotalPaid(authState.token)
         ]);
-        setPayments(paymentsData); setUserList(usersData); setTotalPaid(totalPaidData.totalPaid);
+        const sortedPayments = [...(paymentsData || [])].sort((a, b) => {
+          const aKey = `${a.paymentDate || ''} ${String(a.id || 0).padStart(10, '0')}`;
+          const bKey = `${b.paymentDate || ''} ${String(b.id || 0).padStart(10, '0')}`;
+          return bKey.localeCompare(aKey);
+        });
+        setPayments(sortedPayments);
+        setUserList(usersData);
+        setTotalPaid(totalPaidData.totalPaid);
+
+        // Default: mês atual; se não houver dados, recuar mês a mês até encontrar (sem filtros extra)
+        const refMonth = currentFilters.year && currentFilters.month
+          ? `${currentFilters.year}-${String(currentFilters.month).padStart(2, '0')}`
+          : currentMonthStr;
+        const isPureMonthFilter = !currentFilters.userId && !currentFilters.status && !currentFilters.category;
+        if (isPureMonthFilter && refMonth === currentMonthStr && sortedPayments.length === 0 && !autoMonthFallbackRef.current) {
+          autoMonthFallbackRef.current = true;
+          const [y, m] = currentMonthStr.split('-').map(Number);
+          // tentar até 12 meses para trás
+          for (let i = 1; i <= 12; i += 1) {
+            const d = new Date(y, (m - 1) - i, 1);
+            const prevStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const [py, pm] = prevStr.split('-');
+            // isto dispara novo fetch via useEffect
+            setFilters(prev => ({ ...prev, year: py, month: pm }));
+            break;
+          }
+        }
       } catch (err) {
         setPageError(err.message || 'Não foi possível carregar os dados da página de pagamentos.');
       } finally {
@@ -406,8 +572,17 @@ const AdminManagePaymentsPage = () => {
     }
   };
 
-  const applyFilters = () => { fetchPageData(filters); };
-  const clearFilters = () => { setFilters({ userId: '', status: '', category: '', year: '', month: '' }); };
+  const applyFilters = () => {
+    autoMonthFallbackRef.current = false;
+    fetchPageData(filters);
+    setShowFilters(false);
+  };
+  const clearFilters = () => {
+    autoMonthFallbackRef.current = false;
+    const [year, month] = currentMonthStr.split('-');
+    setFilters({ userId: '', status: '', category: '', year, month });
+    setShowFilters(false);
+  };
 
 
   const handleOpenCreateModal = () => { setCurrentPaymentData(initialPaymentFormState); setModalError(''); setShowModal(true); };
@@ -629,82 +804,109 @@ const AdminManagePaymentsPage = () => {
         Total Recebido (Status "Pago"): <span>{Number(totalPaid).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</span>
       </TotalPaidContainer>
 
-      <FiltersContainer>
-        <FilterGroup>
-          <ModalLabel htmlFor="filterUserIdPay">Cliente:</ModalLabel>
-          <ModalSelect name="userId" id="filterUserIdPay" value={filters.userId} onChange={handleFilterChange}>
-              <option value="">Todos</option>
-              {userList.map(user => <option key={user.id} value={user.id}>{user.firstName} {user.lastName}</option>)}
-          </ModalSelect>
-        </FilterGroup>
-        <FilterGroup>
-          <ModalLabel htmlFor="filterStatusPay">Status:</ModalLabel>
-          <ModalSelect name="status" id="filterStatusPay" value={filters.status} onChange={handleFilterChange}>
-              {paymentStatusesForFilter.map(s => <option key={s} value={s}>{s ? (s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')) : 'Todos'}</option>)}
-          </ModalSelect>
-        </FilterGroup>
-        <FilterGroup>
-          <ModalLabel htmlFor="filterCategoryPay">Categoria:</ModalLabel>
-          <ModalSelect name="category" id="filterCategoryPay" value={filters.category} onChange={handleFilterChange}>
-              <option value="">Todas</option>
-              {paymentCategories.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1).replace(/_/g, ' ')}</option>)}
-          </ModalSelect>
-        </FilterGroup>
-        <FilterGroup>
-          <ModalLabel htmlFor="referenceMonthInputPay">Mês/Ano Ref.:</ModalLabel>
-          <ModalInput type="month" name="referenceMonthInput" id="referenceMonthInputPay" value={filters.year && filters.month ? `${filters.year}-${filters.month.padStart(2, '0')}` : ''} onChange={handleMonthYearFilterChange} />
-        </FilterGroup>
-        <FilterButton onClick={applyFilters}><FaFilter /> Filtrar</FilterButton>
-        <FilterButton onClick={clearFilters} clear><FaSyncAlt /> Limpar</FilterButton>
-      </FiltersContainer>
+      <FilterToggleRow>
+        <FilterToggleButton type="button" onClick={() => setShowFilters(v => !v)}>
+          <FaFilter /> {showFilters ? 'Fechar Filtros' : 'Filtros'}
+        </FilterToggleButton>
+      </FilterToggleRow>
 
-      <TableWrapper>
-        <Table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Cliente</th>
-              <th>Valor</th>
-              <th>Data Pag.</th>
-              <th>Mês Ref.</th>
-              <th>Categoria</th>
-              <th style={{minWidth: '150px'}}>Status</th>
-              <th>Registado Por</th>
-              <th className="actions-cell">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.length > 0 ? payments.map(p => (
-              <tr key={p.id}>
-                <td>{p.id}</td>
-                <td>{p.client ? `${p.client.firstName} ${p.client.lastName}` : 'N/A'}</td>
-                <td>{Number(p.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</td>
-                <td>{new Date(p.paymentDate).toLocaleDateString('pt-PT')}</td>
-                <td>{p.referenceMonth}</td>
-                <td>{p.category.replace(/_/g, ' ')}</td>
-                <td className="status-cell">
-                  <ModalSelect 
-                      value={p.status} 
+      {showFilters && (
+        <FiltersContainer>
+          <FilterGroup>
+            <ModalLabel htmlFor="filterUserIdPay">Cliente:</ModalLabel>
+            <ModalSelect name="userId" id="filterUserIdPay" value={filters.userId} onChange={handleFilterChange}>
+                <option value="">Todos</option>
+                {userList.map(user => <option key={user.id} value={user.id}>{user.firstName} {user.lastName}</option>)}
+            </ModalSelect>
+          </FilterGroup>
+          <FilterGroup>
+            <ModalLabel htmlFor="filterStatusPay">Status:</ModalLabel>
+            <ModalSelect name="status" id="filterStatusPay" value={filters.status} onChange={handleFilterChange}>
+                {paymentStatusesForFilter.map(s => <option key={s} value={s}>{s ? (s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')) : 'Todos'}</option>)}
+            </ModalSelect>
+          </FilterGroup>
+          <FilterGroup>
+            <ModalLabel htmlFor="filterCategoryPay">Categoria:</ModalLabel>
+            <ModalSelect name="category" id="filterCategoryPay" value={filters.category} onChange={handleFilterChange}>
+                <option value="">Todas</option>
+                {paymentCategories.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1).replace(/_/g, ' ')}</option>)}
+            </ModalSelect>
+          </FilterGroup>
+          <FilterGroup>
+            <ModalLabel htmlFor="referenceMonthInputPay">Mês/Ano Ref.:</ModalLabel>
+            <ModalInput type="month" name="referenceMonthInput" id="referenceMonthInputPay" value={filters.year && filters.month ? `${filters.year}-${filters.month.padStart(2, '0')}` : ''} onChange={handleMonthYearFilterChange} />
+          </FilterGroup>
+          <FilterButton onClick={applyFilters}><FaFilter /> Filtrar</FilterButton>
+          <FilterButton onClick={clearFilters} clear><FaSyncAlt /> Limpar</FilterButton>
+        </FiltersContainer>
+      )}
+
+      {payments.length > 0 ? (
+        <PaymentsGrid>
+          {payments.map(p => {
+            const clientName = p.client ? `${p.client.firstName} ${p.client.lastName}` : 'N/A';
+            const amountText = Number(p.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
+            const payDateText = p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('pt-PT') : 'N/A';
+            const refMonthText = p.referenceMonth || 'N/A';
+            const categoryText = (p.category || '').replace(/_/g, ' ') || 'N/A';
+            const statusText = (p.status || '').replace(/_/g, ' ') || 'N/A';
+            const registeredBy = p.registeredBy ? p.registeredBy.firstName : 'N/A';
+
+            return (
+              <PaymentCard key={p.id}>
+                <CardHeader>
+                  <CardTitleBlock>
+                    <CardTitle title={clientName}>{clientName}</CardTitle>
+                    <CardSubtitle title={`${refMonthText} • ${payDateText}`}>{refMonthText} • {payDateText}</CardSubtitle>
+                  </CardTitleBlock>
+                  <Pill title={amountText}>{amountText}</Pill>
+                </CardHeader>
+
+                <CardBody>
+                  <InfoRow>
+                    <InfoLabel>ID</InfoLabel>
+                    <InfoValue title={String(p.id)}>{p.id}</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Categoria</InfoLabel>
+                    <InfoValue title={categoryText}>{categoryText}</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Status</InfoLabel>
+                    <InfoValue title={statusText}>{statusText}</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Registado</InfoLabel>
+                    <InfoValue title={registeredBy}>{registeredBy}</InfoValue>
+                  </InfoRow>
+                  <div>
+                    <ModalLabel style={{ marginBottom: 6 }}>Atualizar Status</ModalLabel>
+                    <ModalSelect
+                      value={p.status}
                       onChange={(e) => handleChangePaymentStatus(p.id, e.target.value)}
-                  >
-                      {paymentStatusesForAdminSet.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')}</option>)}
-                  </ModalSelect>
-                </td>
-                <td>{p.registeredBy ? p.registeredBy.firstName : 'N/A'}</td>
-                <td className="actions-cell">
-                  <ActionButtonContainer>
-                    <ActionButton danger onClick={() => handleDeletePayment(p.id)}>
-                        <FaTrashAlt /> Eliminar
-                    </ActionButton>
-                  </ActionButtonContainer>
-                </td>
-              </tr>
-            )) : (
-              <tr><td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>Nenhum pagamento encontrado com os filtros atuais.</td></tr>
-            )}
-          </tbody>
-        </Table>
-      </TableWrapper>
+                      style={{ width: '100%' }}
+                    >
+                      {paymentStatusesForAdminSet.map(s => (
+                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')}</option>
+                      ))}
+                    </ModalSelect>
+                  </div>
+                </CardBody>
+
+                <CardFooter>
+                  <ActionButton danger onClick={() => handleDeletePayment(p.id)} title="Eliminar" aria-label="Eliminar">
+                    <FaTrashAlt />
+                  </ActionButton>
+                </CardFooter>
+              </PaymentCard>
+            );
+          })}
+        </PaymentsGrid>
+      ) : (
+        <ErrorText style={{ textAlign: 'center' }}>
+          Nenhum pagamento encontrado com os filtros atuais.
+        </ErrorText>
+      )}
 
       {showModal && (
         <ModalOverlay onClick={handleCloseModal}>
