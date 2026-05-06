@@ -309,6 +309,15 @@ const ActionButton = styled.button`
     color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    justify-content: center;
+
+    span {
+      display: none;
+    }
+  }
 `;
 
 const MessageBaseStyles = css` 

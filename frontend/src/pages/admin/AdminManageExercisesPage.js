@@ -12,12 +12,166 @@ import {
     deleteExercise
 } from '../../services/exerciseService';
 
-const PageContainer = styled.div` background-color: ${({ theme }) => theme.colors.background}; color: ${({ theme }) => theme.colors.textMain}; min-height: 100vh; padding: 20px 40px; font-family: ${({ theme }) => theme.fonts.main}; `;
-const Title = styled.h1` font-size: 2.2rem; color: ${({ theme }) => theme.colors.primary}; margin-bottom: 25px; `;
-const Table = styled.table` width: 100%; border-collapse: collapse; margin-top: 20px; background-color: ${({ theme }) => theme.colors.cardBackground}; border-radius: 8px; overflow: hidden; box-shadow: ${({ theme }) => theme.boxShadow}; th, td { border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder}; padding: 10px 12px; text-align: left; font-size: 0.9rem; } th { background-color: ${({ theme }) => theme.colors.tableHeaderBg}; color: ${({ theme }) => theme.colors.primary}; font-weight: 600; } tr:last-child td { border-bottom: none; } tr:hover { background-color: ${({ theme }) => theme.colors.hoverRowBg}; } img { max-width: 60px; max-height: 60px; object-fit: cover; border-radius: 4px; } `;
-const ActionButton = styled.button` margin-right: 8px; padding: 6px 10px; font-size: 0.85rem; border-radius: 5px; cursor: pointer; border: none; transition: background-color 0.2s ease; background-color: ${props => props.danger ? props.theme.colors.error : (props.secondary ? props.theme.colors.buttonSecondaryBg : props.theme.colors.primary)}; color: ${props => props.danger ? 'white' : (props.secondary ? props.theme.colors.textMain : props.theme.colors.textDark)}; &:hover{ opacity: 0.9; } &:disabled{ background-color: ${({ theme }) => theme.colors.disabledBg}; color: ${({ theme }) => theme.colors.disabledText}; cursor: not-allowed; }`;
-const TopActionsContainer = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; `;
-const CreateButtonStyled = styled.button` background-color: #D4AF37; color: #1A1A1A; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; transition: background-color 0.2s ease; &:hover { background-color: #e6c358; } `;
+const PageContainer = styled.div`
+  background-color: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.textMain};
+  min-height: 100vh;
+  padding: 20px clamp(15px, 4vw, 40px);
+  font-family: ${({ theme }) => theme.fonts.main};
+`;
+
+const Title = styled.h1`
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  color: ${({ theme }) => theme.colors.primary};
+  margin: 0;
+`;
+
+const TopActionsContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+`;
+
+const CreateButtonStyled = styled.button`
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.textDark};
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+
+  &:hover { background-color: ${({ theme }) => theme.colors.primaryHover}; transform: translateY(-1px); }
+  @media (max-width: 480px) { width: 100%; padding: 12px; }
+`;
+
+const ExercisesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+`;
+
+const ExerciseCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border-radius: 10px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  overflow: hidden;
+`;
+
+const CardHeader = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const CardTitleBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const CardTitle = styled.div`
+  font-weight: 900;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const CardSubtitle = styled.div`
+  font-size: 0.82rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Thumb = styled.div`
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  background: ${({ theme }) => theme.colors.cardBackgroundDarker || theme.colors.cardBackground};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+`;
+
+const CardBody = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const InfoRow = styled.div`
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+`;
+
+const InfoLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const InfoValue = styled.span`
+  color: ${({ theme }) => theme.colors.textMain};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const CardFooter = styled.div`
+  padding: 12px 14px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    justify-content: space-between;
+    & > button { flex: 1 1 calc(50% - 5px); justify-content: center; }
+  }
+`;
+
+const IconActionButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  font-weight: 800;
+
+  &:hover { background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg}; border-color: ${({ theme }) => theme.colors.primary}; transform: translateY(-1px); }
+  &.danger { background-color: ${({ theme }) => theme.colors.error}; border-color: ${({ theme }) => theme.colors.error}; color: white; }
+`;
 const LoadingText = styled.p` font-size: 1.1rem; text-align: center; padding: 20px; color: #D4AF37;`;
 const ErrorText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #FF6B6B; background-color: rgba(255,107,107,0.15); border: 1px solid #FF6B6B; border-radius: 8px; margin: 15px 0;`;
 const MessageText = styled.p` font-size: 1rem; text-align: center; padding: 12px; color: #66BB6A; background-color: rgba(102,187,106,0.15); border: 1px solid #66BB6A; border-radius: 8px; margin: 15px 0;`;
@@ -197,7 +351,7 @@ function AdminManageExercisesPage() {
       <TopActionsContainer>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackArrow to="/admin/dashboard" />
-          <Title>Exercícios Base</Title>
+          <Title>Exercícios</Title>
         </div>
         <CreateButtonStyled onClick={handleOpenCreateModal}>Criar Novo Exercício</CreateButtonStyled>
       </TopActionsContainer>
@@ -205,39 +359,45 @@ function AdminManageExercisesPage() {
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}
 
-      <Table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Grupo Muscular</th>
-            <th>Imagem</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {exercises.length > 0 ? exercises.map(ex => (
-            <tr key={ex.id}>
-              <td>{ex.id}</td>
-              <td>{ex.name}</td>
-              <td>{ex.muscleGroup || 'N/A'}</td>
-              <td>{ex.imageUrl ? <img src={ex.imageUrl} alt={ex.name} /> : 'Sem imagem'}</td>
-              <td>
-                <ActionButton secondary onClick={() => handleOpenEditModal(ex)}>
+      {exercises.length > 0 ? (
+        <ExercisesGrid>
+          {exercises.map(ex => (
+            <ExerciseCard key={ex.id}>
+              <CardHeader>
+                <CardTitleBlock>
+                  <CardTitle title={ex.name || ''}>{ex.name}</CardTitle>
+                  <CardSubtitle title={ex.muscleGroup || ''}>{ex.muscleGroup || 'Sem grupo muscular'}</CardSubtitle>
+                </CardTitleBlock>
+                <Thumb title={ex.imageUrl ? 'Imagem' : 'Sem imagem'}>
+                  {ex.imageUrl ? <img src={ex.imageUrl} alt={ex.name} /> : null}
+                </Thumb>
+              </CardHeader>
+
+              <CardBody>
+                <InfoRow>
+                  <InfoLabel>ID</InfoLabel>
+                  <InfoValue title={String(ex.id)}>{ex.id}</InfoValue>
+                </InfoRow>
+                <InfoRow>
+                  <InfoLabel>Vídeo</InfoLabel>
+                  <InfoValue title={ex.videoUrl ? 'Com vídeo' : 'Sem vídeo'}>{ex.videoUrl ? 'Com vídeo' : 'Sem vídeo'}</InfoValue>
+                </InfoRow>
+              </CardBody>
+
+              <CardFooter>
+                <IconActionButton type="button" onClick={() => handleOpenEditModal(ex)} title="Editar" aria-label="Editar">
                   Editar
-                </ActionButton>
-                <ActionButton danger onClick={() => handleDeleteClick(ex.id, ex.name)}>
+                </IconActionButton>
+                <IconActionButton type="button" className="danger" onClick={() => handleDeleteClick(ex.id, ex.name)} title="Eliminar" aria-label="Eliminar">
                   Eliminar
-                </ActionButton>
-              </td>
-            </tr>
-          )) : (
-            <tr>
-              <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>Nenhum exercício base encontrado.</td>
-            </tr>
-          )}
-        </tbody>
-      </Table>
+                </IconActionButton>
+              </CardFooter>
+            </ExerciseCard>
+          ))}
+        </ExercisesGrid>
+      ) : (
+        <ErrorText>Nenhum exercício encontrado.</ErrorText>
+      )}
 
       {showModal && (
         <ModalOverlay onClick={handleCloseModal}>

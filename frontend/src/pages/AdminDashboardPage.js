@@ -314,7 +314,7 @@ const AdminDashboardPage = () => {
         <StatCard 
           color="#FFC107" 
           $clickable={true}
-          onClick={() => navigate('/admin/calendario-geral?view=agenda')}
+          onClick={() => navigate('/admin/manage-trainings')}
         >
           <StatIcon color="#FFC107"><FaCalendarDay /></StatIcon>
           {loadingStats && totalTodayEvents === null && <LoadingText>A carregar...</LoadingText>}

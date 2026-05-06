@@ -1,11 +1,11 @@
 // src/pages/admin/StaffManageRequestsPage.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import BackArrow from '../../components/BackArrow';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import { getAllAppointments, staffRespondToRequest, proposeAppointmentReschedule } from '../../services/appointmentService';
-import { FaUserCircle, FaClock, FaCalendarDay, FaStickyNote, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaCalendarAlt } from 'react-icons/fa';
+import { FaUserCircle, FaClock, FaCalendarDay, FaStickyNote, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaCalendarAlt, FaFilter, FaTimes } from 'react-icons/fa';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
 // --- Styled Components ---
@@ -33,10 +33,93 @@ const Title = styled.h1`
   font-weight: 700;
 `;
 
-const Subtitle = styled.p`
-  font-size: 1.1rem;
-  color: ${props => props.theme.colors.textMuted};
-  margin-bottom: 20px;
+const FiltersToggleRow = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+`;
+
+const FilterToggleButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  padding: 10px 14px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
+  }
+`;
+
+const FiltersContainer = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  padding: 16px;
+  margin: 0 auto 22px auto;
+  max-width: 900px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 220px;
+  min-width: 200px;
+`;
+
+const FilterLabel = styled.label`
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-weight: 700;
+`;
+
+const FilterInput = styled.input`
+  padding: 9px 12px;
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.9rem;
+`;
+
+const FilterActions = styled.div`
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+`;
+
+const FilterButton = styled.button`
+  background-color: ${({ theme, primary }) => primary ? theme.colors.primary : theme.colors.buttonSecondaryBg};
+  color: ${({ theme, primary }) => primary ? theme.colors.textDark : theme.colors.textMain};
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 9px 18px;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+
+  &:hover { opacity: 0.92; transform: translateY(-1px); }
 `;
 
 
@@ -266,6 +349,8 @@ const StaffManageRequestsPage = () => {
   });
   const [rescheduleModalError, setRescheduleModalError] = useState('');
   const [rescheduleFormLoading, setRescheduleFormLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({ date: '' });
 
   const fetchPendingRequests = useCallback(async () => {
     if (authState.token && authState.user) {
@@ -280,7 +365,22 @@ const StaffManageRequestsPage = () => {
         }
 
         const data = await getAllAppointments(authState.token, filters);
-        setPendingRequests(data);
+        const sorted = [...(data || [])].sort((a, b) => {
+          const aKey = `${a.date || ''} ${a.time || '00:00:00'} ${String(a.id || 0).padStart(10, '0')}`;
+          const bKey = `${b.date || ''} ${b.time || '00:00:00'} ${String(b.id || 0).padStart(10, '0')}`;
+          return bKey.localeCompare(aKey);
+        });
+        setPendingRequests(sorted);
+
+        // Default: hoje; se não houver hoje, recuar para o dia anterior até encontrar (com limite)
+        const todayIso = new Date().toISOString().split('T')[0];
+        const latestDateWithData = sorted
+          .map(r => r.date)
+          .filter(Boolean)
+          .find(d => d <= todayIso);
+        if (latestDateWithData) {
+          setFilters(prev => ({ ...prev, date: prev.date || latestDateWithData }));
+        }
       } catch (err) {
         setPageError(err.message || 'Não foi possível carregar os pedidos pendentes.');
       } finally {
@@ -292,6 +392,14 @@ const StaffManageRequestsPage = () => {
   useEffect(() => {
     fetchPendingRequests();
   }, [fetchPendingRequests]);
+
+  const filteredRequests = useMemo(() => {
+    if (!Array.isArray(pendingRequests)) return [];
+    return pendingRequests.filter(r => {
+      if (filters.date && r.date !== filters.date) return false;
+      return true;
+    });
+  }, [pendingRequests, filters.date]);
 
   const handleOpenCostModal = (appointmentId) => {
     setCostModalData({ appointmentId, totalCost: '' });
@@ -406,7 +514,6 @@ const StaffManageRequestsPage = () => {
           <BackArrow to="/admin/dashboard" />
           <div>
             <Title style={{ margin: 0 }}>Pedidos de Consulta</Title>
-            <Subtitle style={{ marginTop: 6 }}>Analise e responda aos pedidos pendentes dos clientes.</Subtitle>
           </div>
         </div>
       </HeaderSection>
@@ -414,9 +521,40 @@ const StaffManageRequestsPage = () => {
       {pageError && <ErrorText>{pageError}</ErrorText>}
       {pageSuccessMessage && <MessageText>{pageSuccessMessage}</MessageText>}
 
-      {pendingRequests.length > 0 ? (
+      <FiltersToggleRow>
+        <FilterToggleButton type="button" onClick={() => setShowFilters(v => !v)}>
+          <FaFilter /> {showFilters ? 'Fechar Filtros' : 'Filtros'}
+        </FilterToggleButton>
+      </FiltersToggleRow>
+
+      {showFilters && (
+        <FiltersContainer>
+          <FilterGroup>
+            <FilterLabel htmlFor="reqDateFilter">Data</FilterLabel>
+            <FilterInput
+              id="reqDateFilter"
+              type="date"
+              value={filters.date}
+              onChange={(e) => setFilters(prev => ({ ...prev, date: e.target.value }))}
+            />
+          </FilterGroup>
+          <FilterActions>
+            <FilterButton type="button" primary onClick={() => setShowFilters(false)}>
+              <FaFilter /> Aplicar
+            </FilterButton>
+            <FilterButton
+              type="button"
+              onClick={() => setFilters({ date: '' })}
+            >
+              <FaTimes /> Limpar
+            </FilterButton>
+          </FilterActions>
+        </FiltersContainer>
+      )}
+
+      {filteredRequests.length > 0 ? (
         <RequestGrid>
-          {pendingRequests.map(request => (
+          {filteredRequests.map(request => (
             <RequestCard key={request.id}>
               <CardHeader>
                 <FaUserCircle />

@@ -144,12 +144,12 @@ const FilterButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 5px 6px;
+    padding: 6px 6px;
     font-size: 0.65rem;
     flex: 1;
     justify-content: center;
     min-width: 0;
-    min-height: 30px;
+    min-height: 40px;
     gap: 3px;
     
     span {
@@ -157,7 +157,7 @@ const FilterButton = styled.button`
     }
     
     svg {
-      font-size: 0.75rem;
+      font-size: 1.05rem;
       flex-shrink: 0;
     }
   }
@@ -223,10 +223,11 @@ const DatePickerButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    width: 44px;
+    width: auto;
     height: 40px;
     min-height: 40px;
-    min-width: 40px;
+    min-width: 0;
+    flex: 1;
     font-size: 1.05rem;
   }
 
