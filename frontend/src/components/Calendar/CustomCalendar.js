@@ -65,6 +65,8 @@ const CalendarHeader = styled.div`
 const CalendarBody = styled.div`
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 `;
 
