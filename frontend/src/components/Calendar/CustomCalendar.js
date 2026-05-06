@@ -41,6 +41,7 @@ const CalendarContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   border-radius: 0;
   overflow: hidden;
@@ -49,6 +50,7 @@ const CalendarContainer = styled.div`
 const CalendarHeader = styled.div`
   display: flex;
   flex-direction: column;
+  flex: 0 0 auto;
   padding: 12px 15px;
   border-bottom: 2px solid ${({ theme }) => theme.colors.cardBorder};
   background-color: ${({ theme }) => theme.colors.cardBackground};
@@ -58,6 +60,12 @@ const CalendarHeader = styled.div`
     padding: 8px 10px;
     gap: 6px;
   }
+`;
+
+const CalendarBody = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 `;
 
 const HeaderTop = styled.div`
@@ -438,6 +446,7 @@ const MonthGrid = styled.div`
   grid-template-columns: repeat(7, 1fr);
   grid-auto-rows: minmax(100px, 1fr);
   overflow-y: auto;
+  overscroll-behavior: contain;
   gap: 1px;
   background-color: ${({ theme }) => theme.colors.cardBorder};
   
@@ -642,6 +651,7 @@ const WeekGrid = styled.div`
   display: grid;
   grid-template-columns: 80px repeat(7, 1fr);
   overflow-y: auto;
+  overscroll-behavior: contain;
   position: relative;
   
   @media (max-width: 768px) {
@@ -747,6 +757,7 @@ const DayGrid = styled.div`
   display: grid;
   grid-template-columns: 80px 1fr;
   overflow-y: auto;
+  overscroll-behavior: contain;
   
   @media (max-width: 768px) {
     grid-template-columns: 60px 1fr;
@@ -762,6 +773,7 @@ const AgendaView = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  overscroll-behavior: contain;
   
   @media (max-width: 768px) {
     padding: 0;
@@ -1611,11 +1623,13 @@ const CustomCalendar = ({
           )}
         </FilterContainer>
       </CalendarHeader>
-      
-      {currentView === Views.MONTH && renderMonthView()}
-      {currentView === Views.WEEK && renderWeekView()}
-      {currentView === Views.DAY && renderDayView()}
-      {currentView === Views.AGENDA && renderAgendaView()}
+
+      <CalendarBody>
+        {currentView === Views.MONTH && renderMonthView()}
+        {currentView === Views.WEEK && renderWeekView()}
+        {currentView === Views.DAY && renderDayView()}
+        {currentView === Views.AGENDA && renderAgendaView()}
+      </CalendarBody>
     </CalendarContainer>
   );
 };
