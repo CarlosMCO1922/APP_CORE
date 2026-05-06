@@ -77,6 +77,44 @@ const CreateButton = styled.button`
   }
 `;
 
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    width: 100%;
+  }
+`;
+
+const FilterToggleButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  padding: 10px 14px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 480px) {
+    flex: 1;
+    justify-content: center;
+    padding: 12px;
+  }
+`;
+
 
 const TableWrapper = styled.div`
   width: 100%;
@@ -502,10 +540,11 @@ const AdminManageTrainingsPage = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
 
-  const [filters, setFilters] = useState({
-    instructorId: '', dateFrom: '', dateTo: '', nameSearch: '',
-  });
-  const [activeFilters, setActiveFilters] = useState({});
+  const todayIso = moment().format('YYYY-MM-DD');
+  const defaultDayFilters = { instructorId: '', dateFrom: todayIso, dateTo: todayIso, nameSearch: '' };
+  const [filters, setFilters] = useState(defaultDayFilters);
+  const [activeFilters, setActiveFilters] = useState(defaultDayFilters);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [showSignupsModal, setShowSignupsModal] = useState(false);
   const [selectedTrainingForSignups, setSelectedTrainingForSignups] = useState(null);
@@ -585,12 +624,14 @@ const AdminManageTrainingsPage = () => {
     }
     setPageError('');
     setActiveFilters(filters);
+    setShowFilters(false);
   };
 
   const handleClearFilters = () => {
-    setFilters({ instructorId: '', dateFrom: '', dateTo: '', nameSearch: '' });
-    setActiveFilters({});
+    setFilters(defaultDayFilters);
+    setActiveFilters(defaultDayFilters);
     setPageError('');
+    setShowFilters(false);
   };
 
   const handleOpenCreateModal = () => {
@@ -1009,36 +1050,43 @@ const AdminManageTrainingsPage = () => {
           <BackArrow to="/admin/dashboard" />
           <Title>Treinos</Title>
         </div>
-        <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Novo Treino</CreateButton>
+        <HeaderActions>
+          <FilterToggleButton type="button" onClick={() => setShowFilters(v => !v)}>
+            <FaFilter /> {showFilters ? 'Fechar Filtros' : 'Filtros'}
+          </FilterToggleButton>
+          <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Novo Treino</CreateButton>
+        </HeaderActions>
       </HeaderContainer>
 
-      <FiltersContainer>
-        <FilterGroup>
-          <FilterLabel htmlFor="nameSearchFilter">Pesquisar Nome</FilterLabel>
-          <FilterInput type="text" id="nameSearchFilter" name="nameSearch" value={filters.nameSearch} onChange={handleFilterChange} placeholder="Nome do treino..." />
-        </FilterGroup>
-        <FilterGroup>
-          <FilterLabel htmlFor="instructorIdFilter">Instrutor</FilterLabel>
-          <FilterSelect id="instructorIdFilter" name="instructorId" value={filters.instructorId} onChange={handleFilterChange}>
-            <option value="">Todos Instrutores</option>
-            {instructors.map(instr => (
-              <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName}</option>
-            ))}
-          </FilterSelect>
-        </FilterGroup>
-        <FilterGroup>
-          <FilterLabel htmlFor="dateFromFilter">Data De</FilterLabel>
-          <FilterInput type="date" id="dateFromFilter" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} />
-        </FilterGroup>
-        <FilterGroup>
-          <FilterLabel htmlFor="dateToFilter">Data Até</FilterLabel>
-          <FilterInput type="date" id="dateToFilter" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} />
-        </FilterGroup>
-        <FilterActions>
-          <FilterButton onClick={handleApplyFilters} primary><FaSearch /> Aplicar</FilterButton>
-          <FilterButton onClick={handleClearFilters}><FaTimes /> Limpar</FilterButton>
-        </FilterActions>
-      </FiltersContainer>
+      {showFilters && (
+        <FiltersContainer>
+          <FilterGroup>
+            <FilterLabel htmlFor="nameSearchFilter">Pesquisar Nome</FilterLabel>
+            <FilterInput type="text" id="nameSearchFilter" name="nameSearch" value={filters.nameSearch} onChange={handleFilterChange} placeholder="Nome do treino..." />
+          </FilterGroup>
+          <FilterGroup>
+            <FilterLabel htmlFor="instructorIdFilter">Instrutor</FilterLabel>
+            <FilterSelect id="instructorIdFilter" name="instructorId" value={filters.instructorId} onChange={handleFilterChange}>
+              <option value="">Todos Instrutores</option>
+              {instructors.map(instr => (
+                <option key={instr.id} value={instr.id}>{instr.firstName} {instr.lastName}</option>
+              ))}
+            </FilterSelect>
+          </FilterGroup>
+          <FilterGroup>
+            <FilterLabel htmlFor="dateFromFilter">Data De</FilterLabel>
+            <FilterInput type="date" id="dateFromFilter" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} />
+          </FilterGroup>
+          <FilterGroup>
+            <FilterLabel htmlFor="dateToFilter">Data Até</FilterLabel>
+            <FilterInput type="date" id="dateToFilter" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} />
+          </FilterGroup>
+          <FilterActions>
+            <FilterButton onClick={handleApplyFilters} primary><FaSearch /> Aplicar</FilterButton>
+            <FilterButton onClick={handleClearFilters}><FaTimes /> Limpar</FilterButton>
+          </FilterActions>
+        </FiltersContainer>
+      )}
 
       {pageError && <ErrorText>{pageError}</ErrorText>}
       {successMessage && !showModal && !showSignupsModal && <MessageText>{successMessage}</MessageText>}

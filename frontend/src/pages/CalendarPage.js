@@ -472,6 +472,22 @@ const CalendarPage = () => {
   const isAdminOrStaff = authState.role && authState.role !== 'user';
   const isClient = authState.role === 'user';
 
+  // UX: nesta página queremos scroll apenas dentro do calendário (não no body)
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+    };
+  }, []);
+
   const fetchPageData = useCallback(async () => {
     if (!authState.token) {
       setLoading(false); setPageError("Autenticação necessária para ver o calendário."); return;

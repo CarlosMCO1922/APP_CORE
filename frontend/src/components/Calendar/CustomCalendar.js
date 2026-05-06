@@ -199,16 +199,17 @@ const DatePickerButton = styled.button`
   background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   color: ${({ theme }) => theme.colors.textMain};
-  width: 40px;
-  height: 36px;
+  width: 46px;
+  height: 42px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
-  min-width: 36px;
+  min-height: 42px;
+  min-width: 42px;
+  font-size: 1.05rem;
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.primary};
@@ -222,10 +223,11 @@ const DatePickerButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    width: 34px;
-    height: 30px;
-    min-height: 30px;
-    min-width: 30px;
+    width: 44px;
+    height: 40px;
+    min-height: 40px;
+    min-width: 40px;
+    font-size: 1.05rem;
   }
 `;
 

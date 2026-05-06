@@ -1,6 +1,5 @@
 // src/pages/admin/AdminManageStaffPage.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components'; 
 import { useAuth } from '../../context/AuthContext';
 import { adminGetAllStaff, adminDeleteStaff, adminCreateStaff, adminUpdateStaff } from '../../services/staffService';
@@ -60,55 +59,109 @@ const CreateButton = styled.button`
 `;
 
 
-const TableWrapper = styled.div`
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch; 
+const StaffGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+`;
+
+const StaffCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   box-shadow: ${({ theme }) => theme.boxShadow};
-  
-  &::-webkit-scrollbar {
-    height: 8px;
-    background-color: ${({ theme }) => theme.colors.scrollbarTrackBg};
-  }
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.scrollbarThumbBg};
-    border-radius: 4px;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  
-  th, td {
-    border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 0.9rem;
-    white-space: nowrap;
-  }
-  th {
-    background-color: ${({ theme }) => theme.colors.tableHeaderBg};
-    color: ${({ theme }) => theme.colors.primary};
-    font-weight: 600;
-    position: sticky; 
-    left: 0; 
-    z-index: 1;
-  }
-  tr:last-child td { border-bottom: none; }
-  tr:hover { background-color: ${({ theme }) => theme.colors.hoverRowBg}; }
+const StaffCardHeader = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
 
-  td:last-child { 
-    white-space: normal; 
-    text-align: right;
-  }
-   @media (max-width: 768px) {
-    th, td {
-      padding: 8px 10px;
-      font-size: 0.85rem;
+const StaffNameBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const StaffName = styled.div`
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: ${({ theme }) => theme.colors.textMain};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const StaffSubtitle = styled.div`
+  font-size: 0.82rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const RoleBadge = styled.span`
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  white-space: nowrap;
+`;
+
+const StaffCardBody = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FieldRow = styled.div`
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+`;
+
+const FieldLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const FieldValue = styled.span`
+  color: ${({ theme }) => theme.colors.textMain};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const StaffCardFooter = styled.div`
+  padding: 12px 14px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    justify-content: space-between;
+    & > button {
+      flex: 1 1 calc(50% - 4px);
+      justify-content: center;
     }
   }
 `;
@@ -398,43 +451,51 @@ const AdminManageStaffPage = () => {
       {error && <ErrorText>{error}</ErrorText>}
       {successMessage && <MessageText>{successMessage}</MessageText>}
 
-      <TableWrapper>
-        <Table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nome</th>
-              <th>Apelido</th>
-              <th>Email</th>
-              <th>Papel</th>
-              <th style={{textAlign: 'right'}}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staffList.length > 0 ? staffList.map(staff => (
-              <tr key={staff.id}>
-                <td>{staff.id}</td>
-                <td>{staff.firstName}</td>
-                <td>{staff.lastName}</td>
-                <td>{staff.email}</td>
-                <td>{staff.role}</td>
-                <td>
-                  <ActionButtonContainer>
-                    <ActionButton secondary onClick={() => handleOpenEditModal(staff)}>
-                      <FaEdit /> Editar
-                    </ActionButton>
-                    <ActionButton danger onClick={() => handleDeleteStaff(staff.id, staff.email)} disabled={authState.user?.id === staff.id}>
-                      <FaTrashAlt /> Eliminar
-                    </ActionButton>
-                  </ActionButtonContainer>
-                </td>
-              </tr>
-            )) : (
-              <tr><td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>Nenhum membro da equipa encontrado.</td></tr>
-            )}
-          </tbody>
-        </Table>
-      </TableWrapper>
+      {staffList.length > 0 ? (
+        <StaffGrid>
+          {staffList.map(staff => (
+            <StaffCard key={staff.id}>
+              <StaffCardHeader>
+                <StaffNameBlock>
+                  <StaffName title={`${staff.firstName || ''} ${staff.lastName || ''}`.trim()}>
+                    {(staff.firstName || '').trim()} {(staff.lastName || '').trim()}
+                  </StaffName>
+                  <StaffSubtitle title={staff.email || ''}>{staff.email}</StaffSubtitle>
+                </StaffNameBlock>
+                <RoleBadge title={staff.role}>{staff.role}</RoleBadge>
+              </StaffCardHeader>
+
+              <StaffCardBody>
+                <FieldRow>
+                  <FieldLabel>ID</FieldLabel>
+                  <FieldValue title={String(staff.id)}>{staff.id}</FieldValue>
+                </FieldRow>
+                <FieldRow>
+                  <FieldLabel>Email</FieldLabel>
+                  <FieldValue title={staff.email || ''}>{staff.email}</FieldValue>
+                </FieldRow>
+              </StaffCardBody>
+
+              <StaffCardFooter>
+                <ActionButton secondary onClick={() => handleOpenEditModal(staff)}>
+                  <FaEdit /> Editar
+                </ActionButton>
+                <ActionButton
+                  danger
+                  onClick={() => handleDeleteStaff(staff.id, staff.email)}
+                  disabled={authState.user?.id === staff.id}
+                >
+                  <FaTrashAlt /> Eliminar
+                </ActionButton>
+              </StaffCardFooter>
+            </StaffCard>
+          ))}
+        </StaffGrid>
+      ) : (
+        <ErrorText style={{ backgroundColor: 'transparent', borderColor: 'transparent' }}>
+          Nenhum membro da equipa encontrado.
+        </ErrorText>
+      )}
 
       {showModal && (
         <ModalOverlay onClick={handleCloseModal}> 
@@ -472,6 +533,23 @@ const AdminManageStaffPage = () => {
           </ModalContent>
         </ModalOverlay>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => {
+          if (!deleteLoading) {
+            setShowDeleteConfirmModal(false);
+            setStaffToDelete(null);
+          }
+        }}
+        onConfirm={handleDeleteStaffConfirm}
+        title="Eliminar Membro da Equipa"
+        message={staffToDelete?.email ? `Tens a certeza que queres eliminar "${staffToDelete.email}"? Esta ação não pode ser desfeita.` : ''}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        danger={true}
+        loading={deleteLoading}
+      />
     </PageContainer>
   );
 };
