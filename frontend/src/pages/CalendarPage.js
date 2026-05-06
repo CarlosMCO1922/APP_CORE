@@ -48,9 +48,12 @@ const appointmentStatuses = [ 'disponível', 'agendada', 'confirmada', 'concluí
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
-  min-height: 100vh;
+  height: 100vh;
   padding: 10px clamp(8px, 2vw, 20px);
   font-family: ${({ theme }) => theme.fonts.main};
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   
   @media (max-width: 768px) {
     padding: 8px 5px;
@@ -77,7 +80,8 @@ const CalendarWrapper = styled.div`
   border-radius: 8px;
   box-shadow: ${({ theme }) => theme.boxShadow};
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  height: 80vh;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   
   @media (max-width: 768px) {

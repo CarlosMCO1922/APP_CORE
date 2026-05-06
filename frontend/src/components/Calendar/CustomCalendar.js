@@ -1,5 +1,5 @@
 // src/components/Calendar/CustomCalendar.js
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import styled from 'styled-components';
 import { 
   format, 
@@ -193,6 +193,48 @@ const DateFilterInput = styled.input`
     flex: 1;
     min-width: 0;
   }
+`;
+
+const DatePickerButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  width: 40px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  min-width: 36px;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryFocusRing || 'rgba(212, 175, 55, 0.2)'};
+  }
+
+  @media (max-width: 768px) {
+    width: 34px;
+    height: 30px;
+    min-height: 30px;
+    min-width: 30px;
+  }
+`;
+
+const HiddenDateInput = styled.input`
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
 `;
 
 const HeaderLeft = styled.div`
@@ -710,15 +752,15 @@ const DayColumn = styled.div`
 const AgendaView = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 10px;
+  padding: 0;
   
   @media (max-width: 768px) {
-    padding: 8px;
+    padding: 0;
   }
 `;
 
 const AgendaDateGroup = styled.div`
-  margin-bottom: 30px;
+  margin-bottom: 16px;
 `;
 
 const AgendaDateHeader = styled.div`
@@ -726,13 +768,13 @@ const AgendaDateHeader = styled.div`
   font-weight: 700;
   color: ${({ theme }) => theme.colors.primary};
   margin-bottom: 15px;
-  padding-bottom: 10px;
+  padding: 10px;
   border-bottom: 2px solid ${({ theme }) => theme.colors.cardBorder};
   position: sticky;
   top: 0;
   z-index: 2;
   background: ${({ theme }) => theme.colors.cardBackground};
-  padding-top: 10px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.18);
   
   @media (max-width: 768px) {
     font-size: 1.1rem;
@@ -844,6 +886,7 @@ const CustomCalendar = ({
   const getToday = () => startOfDay(new Date());
   const getDefaultEndDate = () => addDays(getToday(), 7);
   const [agendaDateFilter, setAgendaDateFilter] = useState(() => format(getDefaultEndDate(), 'yyyy-MM-dd'));
+  const agendaDateInputRef = useRef(null);
 
   const weekStartsOn = 1; // Monday
 
@@ -1108,6 +1151,22 @@ const CustomCalendar = ({
   const handleEventClick = (event, e) => {
     e.stopPropagation();
     if (onSelectEvent) onSelectEvent(event);
+  };
+
+  const openAgendaDatePicker = () => {
+    const input = agendaDateInputRef.current;
+    if (!input) return;
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker();
+      } else {
+        input.focus();
+        input.click();
+      }
+    } catch (_) {
+      input.focus();
+      input.click();
+    }
   };
 
   const handleDayClick = (day) => {
@@ -1522,12 +1581,24 @@ const CustomCalendar = ({
             <span>Consultas</span>
           </FilterButton>
           {currentView === Views.AGENDA && (
-            <DateFilterInput
-              type="date"
-              value={agendaDateFilter}
-              onChange={(e) => setAgendaDateFilter(e.target.value)}
-              title="Mostrar treinos até esta data"
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <DatePickerButton
+                type="button"
+                onClick={openAgendaDatePicker}
+                title="Selecionar data (Agenda)"
+                aria-label="Selecionar data (Agenda)"
+              >
+                <FaCalendarDay />
+              </DatePickerButton>
+              <HiddenDateInput
+                ref={agendaDateInputRef}
+                type="date"
+                value={agendaDateFilter}
+                onChange={(e) => setAgendaDateFilter(e.target.value)}
+                aria-hidden="true"
+                tabIndex={-1}
+              />
+            </div>
           )}
         </FilterContainer>
       </CalendarHeader>
