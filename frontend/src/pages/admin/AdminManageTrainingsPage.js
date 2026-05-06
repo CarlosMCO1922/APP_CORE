@@ -172,6 +172,133 @@ const Table = styled.table`
   }
 `;
 
+const TrainingsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+`;
+
+const TrainingCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
+const TrainingCardHeader = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+  }
+`;
+
+const TrainingTitleBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const TrainingName = styled.div`
+  font-weight: 800;
+  font-size: 0.98rem;
+  color: ${({ theme }) => theme.colors.textMain};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const TrainingSubtitle = styled.div`
+  font-size: 0.82rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Pill = styled.span`
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  color: ${({ theme }) => theme.colors.textMain};
+  background: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  white-space: nowrap;
+`;
+
+const TrainingCardBody = styled.div`
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+`;
+
+const InfoRow = styled.div`
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 74px 1fr;
+    font-size: 0.82rem;
+  }
+`;
+
+const InfoLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textMuted};
+`;
+
+const InfoValue = styled.span`
+  color: ${({ theme }) => theme.colors.textMain};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const TrainingCardFooter = styled.div`
+  padding: 12px 14px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    justify-content: space-between;
+    & > button {
+      flex: 1 1 calc(50% - 4px);
+      justify-content: center;
+    }
+  }
+`;
+
 const ActionButtonContainer = styled.div`
   display: flex;
   gap: 8px;
@@ -1092,55 +1219,71 @@ const AdminManageTrainingsPage = () => {
       {successMessage && !showModal && !showSignupsModal && <MessageText>{successMessage}</MessageText>}
       {loading && <LoadingText>A carregar treinos...</LoadingText>}
 
-      <TableWrapper>
-        <Table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nome</th>
-              <th>Data</th>
-              <th>Hora</th>
-              <th>Duração</th>
-              <th>Capacidade</th>
-              <th>Inscritos</th>
-              <th>Instrutor</th>
-              <th className="actions-cell">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!loading && trainings.length > 0 ? trainings.map(training => (
-              <tr key={training.id}>
-                <td>{training.id}</td>
-                <td>{training.name}</td>
-                <td>{new Date(training.date).toLocaleDateString('pt-PT')}</td>
-                <td>{training.time ? training.time.substring(0,5) : 'N/A'}</td>
-                <td>{training.durationMinutes} min</td>
-                <td>{training.capacity}</td>
-                <td>{training.participantsCount ?? (training.participants?.length || 0)}</td>
-                <td>{training.instructor ? `${training.instructor.firstName} ${training.instructor.lastName}` : 'N/A'}</td>
-                <td className="actions-cell">
-                  <ActionButtonContainer>
-                    <ActionButton signups onClick={() => handleOpenSignupsModal(training)}>
-                        <FaUsers /> Inscritos ({training.participantsCount ?? (training.participants?.length || 0)})
-                    </ActionButton>
-                    <ActionButton plans onClick={() => navigate(`/admin/trainings/${training.id}/manage-plans`)}>
-                      <FaListAlt /> Planos
-                    </ActionButton>
-                    <ActionButton secondary onClick={() => handleOpenEditModal(training)}>
-                      <FaEdit /> Editar
-                    </ActionButton>
-                    <ActionButton danger onClick={() => handleDeleteTraining(training.id)}>
-                      <FaTrashAlt /> Eliminar
-                    </ActionButton>
-                  </ActionButtonContainer>
-                </td>
-              </tr>
-            )) : (
-              !loading && <tr><td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>Nenhum treino encontrado com os filtros atuais.</td></tr>
-            )}
-          </tbody>
-        </Table>
-      </TableWrapper>
+      {!loading && trainings.length > 0 ? (
+        <TrainingsGrid>
+          {trainings.map(training => {
+            const timeText = training.time ? training.time.substring(0, 5) : 'N/A';
+            const dateText = training.date ? new Date(training.date).toLocaleDateString('pt-PT') : 'N/A';
+            const participantsCount = training.participantsCount ?? (training.participants?.length || 0);
+            const capacity = training.capacity ?? 0;
+            const spotsLeft = Math.max(0, capacity - participantsCount);
+            const instructorName = training.instructor ? `${training.instructor.firstName} ${training.instructor.lastName}` : 'N/A';
+            const subtitle = `${dateText} • ${timeText} • ${training.durationMinutes || 45} min`;
+
+            return (
+              <TrainingCard key={training.id}>
+                <TrainingCardHeader>
+                  <TrainingTitleBlock>
+                    <TrainingName title={training.name || ''}>{training.name}</TrainingName>
+                    <TrainingSubtitle title={subtitle}>{subtitle}</TrainingSubtitle>
+                  </TrainingTitleBlock>
+                  <Pill title={`Vagas: ${spotsLeft}/${capacity}`}>
+                    {spotsLeft}/{capacity}
+                  </Pill>
+                </TrainingCardHeader>
+
+                <TrainingCardBody>
+                  <InfoRow>
+                    <InfoLabel>ID</InfoLabel>
+                    <InfoValue title={String(training.id)}>{training.id}</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Instrutor</InfoLabel>
+                    <InfoValue title={instructorName}>{instructorName}</InfoValue>
+                  </InfoRow>
+                  <InfoRow>
+                    <InfoLabel>Inscritos</InfoLabel>
+                    <InfoValue title={`${participantsCount}`}>
+                      {participantsCount}
+                    </InfoValue>
+                  </InfoRow>
+                </TrainingCardBody>
+
+                <TrainingCardFooter>
+                  <ActionButton signups onClick={() => handleOpenSignupsModal(training)}>
+                    <FaUsers /> Inscritos ({participantsCount})
+                  </ActionButton>
+                  <ActionButton plans onClick={() => navigate(`/admin/trainings/${training.id}/manage-plans`)}>
+                    <FaListAlt /> Planos
+                  </ActionButton>
+                  <ActionButton secondary onClick={() => handleOpenEditModal(training)}>
+                    <FaEdit /> Editar
+                  </ActionButton>
+                  <ActionButton danger onClick={() => handleDeleteTraining(training.id)}>
+                    <FaTrashAlt /> Eliminar
+                  </ActionButton>
+                </TrainingCardFooter>
+              </TrainingCard>
+            );
+          })}
+        </TrainingsGrid>
+      ) : (
+        !loading && (
+          <ErrorText style={{ backgroundColor: 'transparent', borderColor: 'transparent' }}>
+            Nenhum treino encontrado com os filtros atuais.
+          </ErrorText>
+        )
+      )}
 
       {showModal && (
         <ModalOverlay onClick={handleCloseModal}>
