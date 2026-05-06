@@ -441,7 +441,14 @@ const CalendarPage = () => {
 
   const [actionLoading, setActionLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState(viewParam === 'agenda' ? Views.AGENDA : Views.WEEK);
+  const [currentView, setCurrentView] = useState(() => {
+    const isMobile = typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(max-width: 768px)').matches
+      : (typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+
+    if (viewParam === 'agenda') return Views.AGENDA;
+    return isMobile ? Views.AGENDA : Views.WEEK;
+  });
   const [agendaVisibleCount, setAgendaVisibleCount] = useState(25);
   const [showCancelRecurringModal, setShowCancelRecurringModal] = useState(false);
   const [cancelRecurringInfo, setCancelRecurringInfo] = useState(null);

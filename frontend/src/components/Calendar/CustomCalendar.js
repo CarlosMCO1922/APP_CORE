@@ -728,6 +728,11 @@ const AgendaDateHeader = styled.div`
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 2px solid ${({ theme }) => theme.colors.cardBorder};
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: ${({ theme }) => theme.colors.cardBackground};
+  padding-top: 10px;
   
   @media (max-width: 768px) {
     font-size: 1.1rem;
@@ -752,6 +757,10 @@ const AgendaEventCard = styled.div`
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     border-left-width: 6px;
   }
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
 `;
 
 const AgendaEventTime = styled.div`
@@ -762,6 +771,10 @@ const AgendaEventTime = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+
+  @media (max-width: 768px) {
+    font-size: 0.85rem;
+  }
 `;
 
 const AgendaEventTitle = styled.div`
@@ -778,6 +791,11 @@ const AgendaEventTitle = styled.div`
       $eventType === 'training' 
         ? theme.colors.primary 
         : theme.colors.success};
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    gap: 8px;
   }
 `;
 
@@ -819,7 +837,8 @@ const CustomCalendar = ({
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [currentView, setCurrentView] = useState(initialView);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [eventFilter, setEventFilter] = useState('all'); // 'all', 'training', 'appointment'
+  const [showTrainings, setShowTrainings] = useState(true);
+  const [showAppointments, setShowAppointments] = useState(true);
   
   // Estado para filtro de data na agenda (próximos 7 dias por default)
   const getToday = () => startOfDay(new Date());
@@ -908,14 +927,15 @@ const CustomCalendar = ({
 
   // Filtrar eventos baseado no filtro selecionado
   const filteredEvents = useMemo(() => {
-    if (eventFilter === 'all') return safeEvents;
+    if (showTrainings && showAppointments) return safeEvents;
+    if (!showTrainings && !showAppointments) return [];
     return safeEvents.filter(event => {
       const eventType = event.resource?.type;
-      if (eventFilter === 'training') return eventType === 'training';
-      if (eventFilter === 'appointment') return eventType === 'appointment';
-      return true;
+      if (eventType === 'training') return showTrainings;
+      if (eventType === 'appointment') return showAppointments;
+      return false;
     });
-  }, [safeEvents, eventFilter]);
+  }, [safeEvents, showTrainings, showAppointments]);
 
   const getEventsForWeekDay = (day, hour) => {
     if (!filteredEvents || !Array.isArray(filteredEvents)) return [];
@@ -1488,23 +1508,15 @@ const CustomCalendar = ({
         <FilterContainer>
           <FilterLabel>Filtrar:</FilterLabel>
           <FilterButton
-            $isActive={eventFilter === 'all'}
-            onClick={() => setEventFilter('all')}
-          >
-            <FaUsers style={{ fontSize: '0.85rem' }} />
-            <FaUserMd style={{ fontSize: '0.85rem' }} />
-            <span>Todos</span>
-          </FilterButton>
-          <FilterButton
-            $isActive={eventFilter === 'training'}
-            onClick={() => setEventFilter('training')}
+            $isActive={showTrainings}
+            onClick={() => setShowTrainings(v => !v)}
           >
             <FaUsers style={{ fontSize: '0.85rem' }} />
             <span>Treinos</span>
           </FilterButton>
           <FilterButton
-            $isActive={eventFilter === 'appointment'}
-            onClick={() => setEventFilter('appointment')}
+            $isActive={showAppointments}
+            onClick={() => setShowAppointments(v => !v)}
           >
             <FaUserMd style={{ fontSize: '0.85rem' }} />
             <span>Consultas</span>
