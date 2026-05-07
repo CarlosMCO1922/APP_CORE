@@ -51,10 +51,10 @@ const MonthRow = styled.div`
 `;
 
 const CalendarIconButton = styled.button`
-  width: 46px;
-  height: 42px;
-  min-width: 46px;
-  min-height: 42px;
+  width: 52px;
+  height: 46px;
+  min-width: 52px;
+  min-height: 46px;
   padding: 0;
   background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -78,8 +78,8 @@ const CalendarIconButton = styled.button`
   }
 
   svg {
-    width: 70%;
-    height: 70%;
+    width: 82%;
+    height: 82%;
     display: block;
     opacity: 0.95;
   }
@@ -468,7 +468,7 @@ const ModalSelect = styled.select`
 `;
 const ModalActions = styled.div`
   display: flex; flex-direction: column; gap: 10px;
-  margin-top: 25px; padding-top: 15px;
+  margin-top: 12px; padding-top: 10px;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
   @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
 `;
