@@ -52,7 +52,19 @@ module.exports = (sequelize) => {
     relatedResourceType: { 
       type: DataTypes.STRING,
       allowNull: true,
-    }
+    },
+    /** Evita spam: marca quando foi enviado WhatsApp de pagamento pendente. */
+    pendingWhatsAppSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'pending_whatsapp_sent_at',
+    },
+    /** Evita spam: marca quando foi enviado WhatsApp de pagamento confirmado. */
+    paidWhatsAppSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'paid_whatsapp_sent_at',
+    },
     
   }, {
     tableName: 'payments',

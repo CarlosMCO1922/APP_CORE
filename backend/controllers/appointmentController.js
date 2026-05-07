@@ -4,6 +4,7 @@ const { Op, Sequelize } = require('sequelize');
 const { format } = require('date-fns');
 const moment = require('moment');
 const { _internalCreateNotification } = require('./notificationController');
+const { sendWhatsAppText } = require('../services/whatsappService');
 let sendGuestAppointmentAccepted;
 let sendGuestAppointmentRejected;
 let sendGuestAppointmentTimeChanged;
@@ -125,6 +126,30 @@ const internalCreateSignalPayment = async (appointmentInstance, staffIdRequestin
       relatedResourceType: 'appointment',
     });
     console.log(`Pagamento de sinal criado para consulta.`);
+
+    // WhatsApp: aviso "aguarda pagamento" (idempotente por coluna pendingWhatsAppSentAt no Payment)
+    try {
+      const freshPayment = await db.Payment.findByPk(signalPayment.id);
+      if (freshPayment && !freshPayment.pendingWhatsAppSentAt) {
+        const client = await db.User.findByPk(appointmentInstance.userId, { attributes: ['id', 'firstName', 'phone'] });
+        if (client?.phone) {
+          const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+          const paymentUrl = `${frontendUrl}/meus-pagamentos?pay=${freshPayment.id}`;
+          const timeStr = String(appointmentInstance.time).substring(0, 5);
+          const body =
+            `Olá ${client.firstName || 'Cliente'}! A tua consulta em ${format(new Date(appointmentInstance.date), 'dd/MM/yyyy')} às ${timeStr} aguarda pagamento do sinal.\n` +
+            `Pagar aqui: ${paymentUrl}`;
+          const sent = await sendWhatsAppText({ to: client.phone, body });
+          if (sent.ok) {
+            freshPayment.pendingWhatsAppSentAt = new Date();
+            await freshPayment.save();
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Falha ao enviar WhatsApp de pagamento pendente:', e);
+    }
+
     return signalPayment;
   } catch (error) {
     console.error(`Erro ao criar pagamento de sinal para consulta ${appointmentInstance.id}:`, error);

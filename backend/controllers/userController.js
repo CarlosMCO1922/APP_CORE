@@ -17,7 +17,7 @@ const updateMe = async (req, res) => {
     return res.status(404).json({ message: 'Utilizador não encontrado ou não autenticado corretamente.' });
   }
 
-  const { firstName, lastName, email, password } = req.body;
+  const { firstName, lastName, email, password, phone } = req.body;
   const userId = req.user.id;
 
   try {
@@ -28,6 +28,7 @@ const updateMe = async (req, res) => {
 
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    if (phone !== undefined) user.phone = phone ? String(phone).trim() : null;
 
     if (email && email !== user.email) {
       const existingUserWithEmail = await db.User.findOne({
@@ -160,7 +161,7 @@ const getUserByIdAsAdmin = async (req, res) => {
 
 
 const createUserAsAdmin = async (req, res) => {
-  const { firstName, lastName, email, password, isAdmin } = req.body;
+  const { firstName, lastName, email, password, isAdmin, phone } = req.body;
 
   if (!firstName || !lastName || !email || !password) {
     return res.status(400).json({ message: 'Por favor, forneça nome, apelido, email e password.' });
@@ -181,6 +182,7 @@ const createUserAsAdmin = async (req, res) => {
       firstName,
       lastName,
       email,
+      phone: phone ? String(phone).trim() : null,
       password: hashedPassword,
       isAdmin: isAdmin || false,
       approvedAt: new Date(), // Utilizadores criados por admin ficam já aprovados
@@ -201,7 +203,7 @@ const createUserAsAdmin = async (req, res) => {
 
 const updateUserAsAdmin = async (req, res) => {
   const { id } = req.params;
-  const { firstName, lastName, email, password, isAdmin } = req.body;
+  const { firstName, lastName, email, password, isAdmin, phone } = req.body;
 
   try {
     const user = await db.User.findByPk(id);
@@ -211,6 +213,7 @@ const updateUserAsAdmin = async (req, res) => {
 
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    if (phone !== undefined) user.phone = phone ? String(phone).trim() : null;
     if (typeof isAdmin === 'boolean') user.isAdmin = isAdmin;
 
     if (email && email !== user.email) {

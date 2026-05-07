@@ -61,6 +61,12 @@ module.exports = (sequelize) => {
       defaultValue: false,
       allowNull: false,
     },
+    /** Data/hora em que foi enviado lembrete 24h (idempotência). */
+    reminder24hSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'reminder_24h_sent_at',
+    },
     /** Visitante sem conta: nome, email e telemóvel (obrigatórios quando userId é null no pedido público). */
     guestName: { type: DataTypes.STRING, allowNull: true, field: 'guest_name' },
     guestEmail: { type: DataTypes.STRING, allowNull: true, field: 'guest_email' },

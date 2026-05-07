@@ -6,11 +6,29 @@ const { hashPassword } = require('../utils/passwordUtils');
 
 require('dotenv').config(); 
 
-// Inicializa o Stripe 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Stripe (lazy-init para não crashar em ambientes sem chave)
+let stripe = null;
+const getStripe = () => {
+  if (stripe) return stripe;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error('STRIPE_SECRET_KEY não está configurada.');
+  }
+  // eslint-disable-next-line global-require
+  stripe = require('stripe')(key);
+  return stripe;
+};
 const { _internalCreateNotification } = require('./notificationController');
 const { startOfMonth, endOfMonth, format } = require('date-fns');
-const { sendWhatsAppText } = require('../services/whatsappService');
+
+// WhatsApp é opcional (não deve crashar o servidor se faltar)
+let sendWhatsAppText = async () => ({ ok: false, skipped: true });
+try {
+  // eslint-disable-next-line global-require
+  ({ sendWhatsAppText } = require('../services/whatsappService'));
+} catch (e) {
+  console.warn('[paymentController] whatsappService indisponível; a continuar sem WhatsApp.');
+}
 
 // --- Funções do Administrador ---
 const adminCreatePayment = async (req, res) => {
@@ -317,6 +335,7 @@ const createStripePaymentIntent = async (req, res) => {
   const userId = req.user.id;
 
   try {
+    const stripeClient = getStripe();
     const payment = await db.Payment.findByPk(paymentId);
 
     if (!payment) {
@@ -335,7 +354,7 @@ const createStripePaymentIntent = async (req, res) => {
     const amountInCents = Math.round(parseFloat(payment.amount) * 100);
 
     // ***** INÍCIO DA ALTERAÇÃO PARA MULTIBANCO *****
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await stripeClient.paymentIntents.create({
       amount: amountInCents,
       currency: 'eur',
       payment_method_types: ['card', 'multibanco'], 
@@ -411,7 +430,8 @@ const stripeWebhookHandler = async (req, res) => {
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    const stripeClient = getStripe();
+    event = stripeClient.webhooks.constructEvent(req.body, sig, webhookSecret);
     console.log('[WEBHOOK CTRL] Evento Stripe construído com SUCESSO. Tipo:', event.type, 'ID:', event.id);
   } catch (err) {
     console.error(`[WEBHOOK CTRL] ⚠️ FALHA na verificação da assinatura do webhook: ${err.message}`);

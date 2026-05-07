@@ -73,6 +73,7 @@ app.use('/sessions', express.json(), sessionRoutes);
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 const { cleanupExpiredDrafts } = require('./controllers/progressController');
 const { cleanupOldLogs } = require('./controllers/logController');
+const { runAppointment24hReminders } = require('./jobs/appointmentRemindersJob');
 
 app.use(notFound);
 app.use(errorHandler);
@@ -115,6 +116,9 @@ const CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hora
 const LOGS_CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 horas
 const LOGS_DAYS_TO_KEEP = parseInt(process.env.LOGS_RETENTION_DAYS || '90', 10); // 90 dias por padrão
 
+// Lembretes WhatsApp de consultas (24h antes)
+const APPOINTMENT_REMINDERS_INTERVAL = 15 * 60 * 1000; // 15 min
+
 const startCleanupJob = () => {
   // Executar limpeza de drafts imediatamente ao iniciar
   cleanupExpiredDrafts().catch(err => {
@@ -138,6 +142,13 @@ const startCleanupJob = () => {
   }, LOGS_CLEANUP_INTERVAL);
 
   logger.info(`Limpeza automática de logs configurada (intervalo: ${LOGS_CLEANUP_INTERVAL / 1000 / 60 / 60} horas, mantém últimos ${LOGS_DAYS_TO_KEEP} dias)`);
+
+  // Lembretes 24h antes (idempotente por reminder24hSentAt)
+  runAppointment24hReminders().catch(err => logger.error('Erro no envio inicial de lembretes 24h:', err));
+  setInterval(() => {
+    runAppointment24hReminders().catch(err => logger.error('Erro no envio periódico de lembretes 24h:', err));
+  }, APPOINTMENT_REMINDERS_INTERVAL);
+  logger.info(`Lembretes 24h de consultas configurados (intervalo: ${APPOINTMENT_REMINDERS_INTERVAL / 1000 / 60} minutos)`);
 };
 
 // Inicializar WebSocket server
