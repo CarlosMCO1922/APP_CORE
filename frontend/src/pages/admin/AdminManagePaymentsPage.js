@@ -44,18 +44,26 @@ const Title = styled.h1`
 
 // Subtitle removido (header mais compacto)
 
-const DatePickerButton = styled.button`
-  width: 100%;
-  padding: 10px 14px;
+const MonthRow = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+`;
+
+const CalendarIconButton = styled.button`
+  width: 46px;
+  height: 42px;
+  min-width: 46px;
+  min-height: 42px;
+  padding: 0;
   background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain};
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: center;
   transition: border-color 0.2s, transform 0.15s, background-color 0.2s;
 
   &:hover {
@@ -70,10 +78,10 @@ const DatePickerButton = styled.button`
   }
 
   svg {
-    flex-shrink: 0;
-    width: 22px;
-    height: 22px;
-    opacity: 0.9;
+    width: 70%;
+    height: 70%;
+    display: block;
+    opacity: 0.95;
   }
 `;
 
@@ -1045,25 +1053,31 @@ const AdminManagePaymentsPage = () => {
               <ModalLabel htmlFor="modalAmountPayForm">Valor (EUR)*</ModalLabel>
               <ModalInput type="number" name="amount" id="modalAmountPayForm" value={currentPaymentData.amount} onChange={handleFormChange} required step="0.01" min="0.01" />
               
-              <ModalLabel>Data do Pagamento*</ModalLabel>
-              <div style={{ position: 'relative' }}>
-                <DatePickerButton type="button" onClick={openPaymentDatePicker}>
-                  <span>{currentPaymentData.paymentDate ? new Date(currentPaymentData.paymentDate).toLocaleDateString('pt-PT') : 'Selecionar data'}</span>
-                  <FaCalendarAlt />
-                </DatePickerButton>
-                <HiddenDateInput
-                  ref={paymentDateInputRef}
-                  type="date"
-                  name="paymentDate"
-                  id="modalPaymentDatePayForm"
-                  value={currentPaymentData.paymentDate}
+              <ModalLabel htmlFor="modalReferenceMonthPayForm">Mês de Referência*</ModalLabel>
+              <MonthRow>
+                <ModalInput
+                  type="month"
+                  name="referenceMonth"
+                  id="modalReferenceMonthPayForm"
+                  value={currentPaymentData.referenceMonth}
                   onChange={handleFormChange}
                   required
+                  style={{ flex: 1 }}
                 />
-              </div>
+                <CalendarIconButton type="button" onClick={openPaymentDatePicker} aria-label="Escolher data do pagamento">
+                  <FaCalendarAlt />
+                </CalendarIconButton>
+              </MonthRow>
 
-              <ModalLabel htmlFor="modalReferenceMonthPayForm">Mês de Referência*</ModalLabel>
-              <ModalInput type="month" name="referenceMonth" id="modalReferenceMonthPayForm" value={currentPaymentData.referenceMonth} onChange={handleFormChange} required />
+              <HiddenDateInput
+                ref={paymentDateInputRef}
+                type="date"
+                name="paymentDate"
+                id="modalPaymentDatePayForm"
+                value={currentPaymentData.paymentDate}
+                onChange={handleFormChange}
+                required
+              />
 
               <ModalLabel htmlFor="modalCategoryPayForm">Categoria*</ModalLabel>
               <ModalSelect name="category" id="modalCategoryPayForm" value={currentPaymentData.category} onChange={handleFormChange} required>
