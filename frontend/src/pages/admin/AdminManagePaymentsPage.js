@@ -11,7 +11,7 @@ import {
     adminGetTotalPaid
 } from '../../services/paymentService';
 import { adminGetAllUsers } from '../../services/userService';
-import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaTimes, FaCalendarAlt } from 'react-icons/fa';
+import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaTimes, FaCalendarAlt, FaListUl, FaCheck } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 import SearchableSelect from '../../components/Common/SearchableSelect';
@@ -50,11 +50,18 @@ const MonthRow = styled.div`
   align-items: center;
 `;
 
+const MonthInput = styled(ModalInput)`
+  &::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    display: none;
+  }
+`;
+
 const CalendarIconButton = styled.button`
-  width: 52px;
-  height: 46px;
-  min-width: 52px;
-  min-height: 46px;
+  width: 66px;
+  height: 58px;
+  min-width: 66px;
+  min-height: 58px;
   padding: 0;
   background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -78,10 +85,44 @@ const CalendarIconButton = styled.button`
   }
 
   svg {
-    width: 82%;
-    height: 82%;
+    width: 96%;
+    height: 96%;
     display: block;
     opacity: 0.95;
+  }
+`;
+
+const ClientRow = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+`;
+
+const ClientModeButton = styled.button`
+  width: 56px;
+  height: 48px;
+  min-width: 56px;
+  min-height: 48px;
+  padding: 0;
+  background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
+  color: ${({ theme }) => theme.colors.textMain};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, transform 0.15s, border-color 0.2s;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.buttonSecondaryHoverBg};
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
   }
 `;
 
@@ -429,7 +470,7 @@ const ModalContent = styled.div`
   background-color: #2A2A2A; padding: clamp(25px, 4vw, 35px);
   border-radius: 10px; width: 100%; max-width: 550px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.6); position: relative;
-  max-height: 90vh; overflow-y: auto;
+  max-height: 94vh; overflow-y: auto;
 `;
 const ModalTitle = styled.h2`
   color: ${({ theme }) => theme.colors.primary}; margin-top: 0; margin-bottom: 20px;
@@ -467,10 +508,10 @@ const ModalSelect = styled.select`
   &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
 `;
 const ModalActions = styled.div`
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex; flex-direction: row; gap: 10px;
   margin-top: 12px; padding-top: 10px;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  @media (min-width: 480px) { flex-direction: row; justify-content: flex-end; }
+  justify-content: space-between;
 `;
 
 const ModalButton = styled(ActionButton)`
@@ -480,7 +521,7 @@ const ModalButton = styled(ActionButton)`
   padding: 10px 18px;
   gap: 6px;
   width: 100%;
-  @media (min-width: 480px) { width: auto; }
+  flex: 1 1 0;
 
   &:hover:not(:disabled) {
     background-color: ${props => props.primary ? '#e6c358' : props.theme.colors.buttonSecondaryHoverBg};
@@ -1001,61 +1042,67 @@ const AdminManagePaymentsPage = () => {
         <ModalOverlay onClick={handleCloseModal}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <CloseButton onClick={handleCloseModal}><FaTimes /></CloseButton>
-            <ModalTitle>Registar Novo Pagamento</ModalTitle>
+            <ModalTitle>Novo Pagamento</ModalTitle>
             {modalError && <ModalErrorText>{modalError}</ModalErrorText>}
             <ModalForm onSubmit={handleFormSubmit}>
               <ModalLabel>Cliente*</ModalLabel>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <FilterToggleButton
+              <ClientRow>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {clientMode === 'existing' ? (
+                    <SearchableSelect
+                      id="modalUserIdPayForm"
+                      name="userId"
+                      value={currentPaymentData.userId || ''}
+                      onChange={handleFormChange}
+                      options={userList}
+                      getOptionLabel={(user) => {
+                        const base = `${user.firstName} ${user.lastName}`;
+                        const tag = user.isExternalClient ? ' (cliente externo)' : '';
+                        return `${base}${tag} (${user.email})`;
+                      }}
+                      getOptionValue={(user) => user.id}
+                      placeholder="Selecionar cliente..."
+                      searchPlaceholder="Pesquisar..."
+                      searchable={true}
+                      required={false}
+                    />
+                  ) : (
+                    <ModalInput
+                      type="text"
+                      value={newClientName}
+                      onChange={(e) => setNewClientName(e.target.value)}
+                      placeholder="Nome do cliente..."
+                      required={false}
+                    />
+                  )}
+                </div>
+
+                <ClientModeButton
                   type="button"
                   onClick={() => setClientMode('existing')}
-                  style={{ opacity: clientMode === 'existing' ? 1 : 0.75 }}
+                  aria-label="Cliente existente"
+                  title="Cliente existente"
+                  style={{ opacity: clientMode === 'existing' ? 1 : 0.65 }}
                 >
-                  Cliente existente
-                </FilterToggleButton>
-                <FilterToggleButton
+                  <FaListUl />
+                </ClientModeButton>
+                <ClientModeButton
                   type="button"
                   onClick={() => setClientMode('new')}
-                  style={{ opacity: clientMode === 'new' ? 1 : 0.75 }}
+                  aria-label="Novo cliente"
+                  title="Novo cliente"
+                  style={{ opacity: clientMode === 'new' ? 1 : 0.65 }}
                 >
-                  Novo cliente
-                </FilterToggleButton>
-              </div>
-
-              {clientMode === 'existing' ? (
-                <SearchableSelect
-                  id="modalUserIdPayForm"
-                  name="userId"
-                  value={currentPaymentData.userId || ''}
-                  onChange={handleFormChange}
-                  options={userList}
-                  getOptionLabel={(user) => {
-                    const base = `${user.firstName} ${user.lastName}`;
-                    const tag = user.isExternalClient ? ' (cliente externo)' : '';
-                    return `${base}${tag} (${user.email})`;
-                  }}
-                  getOptionValue={(user) => user.id}
-                  placeholder="Selecione um cliente..."
-                  searchPlaceholder="Pesquisar cliente..."
-                  searchable={true}
-                  required={false}
-                />
-              ) : (
-                <ModalInput
-                  type="text"
-                  value={newClientName}
-                  onChange={(e) => setNewClientName(e.target.value)}
-                  placeholder="Escreva o nome do cliente (ex.: João Silva)"
-                  required={false}
-                />
-              )}
+                  <FaPlus />
+                </ClientModeButton>
+              </ClientRow>
 
               <ModalLabel htmlFor="modalAmountPayForm">Valor (EUR)*</ModalLabel>
               <ModalInput type="number" name="amount" id="modalAmountPayForm" value={currentPaymentData.amount} onChange={handleFormChange} required step="0.01" min="0.01" />
               
               <ModalLabel htmlFor="modalReferenceMonthPayForm">Mês de Referência*</ModalLabel>
               <MonthRow>
-                <ModalInput
+                <MonthInput
                   type="month"
                   name="referenceMonth"
                   id="modalReferenceMonthPayForm"
@@ -1096,9 +1143,11 @@ const AdminManagePaymentsPage = () => {
               {/* Descrição removida para manter o modal compacto */}
 
               <ModalActions>
-                <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
-                <ModalButton type="submit" primary disabled={formLoading}>
-                  <FaMoneyBillWave style={{marginRight: '8px'}} /> {formLoading ? 'A Registar...' : 'Registar Pagamento'}
+                <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading} aria-label="Cancelar" title="Cancelar">
+                  <FaTimes />
+                </ModalButton>
+                <ModalButton type="submit" primary disabled={formLoading} aria-label="Confirmar" title="Confirmar">
+                  <FaCheck />
                 </ModalButton>
               </ModalActions>
             </ModalForm>
