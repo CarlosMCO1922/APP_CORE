@@ -73,7 +73,7 @@ const getExercisesForWorkoutPlan = async (req, res) => {
     }
 
     const exercises = await db.WorkoutPlanExercise.findAll({
-      where: { workoutPlanId: planId },
+      where: { workoutPlanId: planId, isArchived: false },
       order: [['order', 'ASC'], ['internalOrder', 'ASC']],
       include: [{ model: db.Exercise, as: 'exerciseDetails' }]
     });
@@ -127,7 +127,12 @@ const removeExerciseFromWorkoutPlan = async (req, res) => {
       return res.status(404).json({ message: 'Exercício do plano não encontrado.' });
     }
 
-    await planExercise.destroy();
+    if (planExercise.isArchived) {
+      return res.status(200).json({ message: 'Exercício já estava removido do plano.' });
+    }
+
+    planExercise.isArchived = true;
+    await planExercise.save();
     res.status(200).json({ message: 'Exercício removido do plano com sucesso.' });
   } catch (error) {
     console.error('Erro (admin) ao remover exercício do plano:', error);

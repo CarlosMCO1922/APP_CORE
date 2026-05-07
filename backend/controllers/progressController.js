@@ -44,12 +44,24 @@ const logExercisePerformance = async (req, res) => {
       return res.status(400).json({ message: 'performedAt deve ser uma data válida.' });
     }
 
+    // Resolver exerciseId (exercício base) a partir do planExerciseId
+    let resolvedExerciseId = null;
+    try {
+      const planExercise = await db.WorkoutPlanExercise.findByPk(parsedPlanExerciseId, {
+        attributes: ['id', 'exerciseId'],
+      });
+      resolvedExerciseId = planExercise?.exerciseId ?? null;
+    } catch (e) {
+      resolvedExerciseId = null;
+    }
+
     // Preparar dados para inserção (SEM materialUsed por agora - coluna pode não existir)
     const performanceData = {
       userId, 
       trainingId: trainingId ? parseInt(trainingId) : null,
       workoutPlanId: parsedWorkoutPlanId,
       planExerciseId: parsedPlanExerciseId,
+      exerciseId: resolvedExerciseId,
       performedAt: performedAtDate,
       setNumber: setNumber ? parseInt(setNumber) : null,
       performedReps: performedReps ? parseInt(performedReps) : null,
@@ -64,7 +76,7 @@ const logExercisePerformance = async (req, res) => {
 
     // Criar o registo - o Sequelize vai validar as foreign keys automaticamente
     const newPerformance = await db.ClientExercisePerformance.create(performanceData, {
-      fields: ['userId', 'trainingId', 'workoutPlanId', 'planExerciseId', 'performedAt', 'setNumber', 'performedReps', 'performedWeight', 'performedDurationSeconds', 'notes']
+      fields: ['userId', 'trainingId', 'workoutPlanId', 'planExerciseId', 'exerciseId', 'performedAt', 'setNumber', 'performedReps', 'performedWeight', 'performedDurationSeconds', 'notes']
     });
 
     res.status(201).json({ message: 'Desempenho registado com sucesso!', performance: newPerformance });
@@ -165,10 +177,10 @@ const adminGetUserRecords = async (req, res) => {
     const { userId } = req.params; // ID do cliente que o staff quer consultar
 
     try {
-        // 1. Encontrar todos os exercícios únicos que o utilizador já realizou
+        // 1. Encontrar todos os exercícios únicos (por exerciseId) que o utilizador já realizou
         const allPerformances = await db.ClientExercisePerformance.findAll({
             where: { userId: parseInt(userId) },
-            attributes: ['planExerciseId'],
+            attributes: ['exerciseId', 'planExerciseId'],
             include: [{
                 model: db.WorkoutPlanExercise,
                 as: 'planExerciseDetails',
@@ -183,18 +195,19 @@ const adminGetUserRecords = async (req, res) => {
             }],
         });
 
-        // 2. Criar uma lista de exercícios únicos em JavaScript
+        // 2. Criar uma lista de exercícios únicos em JavaScript (chave = exerciseId)
         const uniqueExercisesMap = new Map();
         allPerformances.forEach(p => {
-            if (p.planExerciseId && !uniqueExercisesMap.has(p.planExerciseId)) {
-                uniqueExercisesMap.set(p.planExerciseId, {
-                    exerciseName: p.planExerciseDetails?.exerciseDetails?.name || 'Exercício Desconhecido'
-                });
+            const exerciseId = p.exerciseId || p.planExerciseDetails?.exerciseDetails?.id || p.planExerciseDetails?.exerciseId || null;
+            if (exerciseId && !uniqueExercisesMap.has(exerciseId)) {
+              uniqueExercisesMap.set(exerciseId, {
+                exerciseName: p.planExerciseDetails?.exerciseDetails?.name || 'Exercício Desconhecido',
+              });
             }
         });
         
-        const uniqueExercises = Array.from(uniqueExercisesMap.entries()).map(([planExerciseId, details]) => ({
-            planExerciseId,
+        const uniqueExercises = Array.from(uniqueExercisesMap.entries()).map(([exerciseId, details]) => ({
+            exerciseId,
             exerciseName: details.exerciseName
         }));
 
@@ -204,15 +217,15 @@ const adminGetUserRecords = async (req, res) => {
 
         const recordsByExercise = [];
 
-        // 3. Para cada exercício único, encontrar os diferentes tipos de PRs
+        // 3. Para cada exercício base, encontrar os diferentes tipos de PRs
         for (const exercise of uniqueExercises) {
-            const { planExerciseId, exerciseName } = exercise;
+            const { exerciseId, exerciseName } = exercise;
             
             const records = [];
 
             // PR de Peso Máximo (agrupado por nº de repetições)
             const maxWeights = await db.ClientExercisePerformance.findAll({
-                where: { userId: parseInt(userId), planExerciseId },
+                where: { userId: parseInt(userId), exerciseId },
                 attributes: [
                     'performedReps',
                     [db.Sequelize.fn('MAX', db.Sequelize.col('performedWeight')), 'maxWeight']
@@ -227,7 +240,7 @@ const adminGetUserRecords = async (req, res) => {
 
             // PR de Volume Máximo (peso * reps) numa única série
             const maxVolumeResult = await db.ClientExercisePerformance.findOne({
-                where: { userId: parseInt(userId), planExerciseId },
+                where: { userId: parseInt(userId), exerciseId },
                 attributes: [[db.Sequelize.literal('"performedWeight" * "performedReps"'), 'volume']],
                 order: [[db.Sequelize.literal('volume'), 'DESC NULLS LAST']],
                 limit: 1,
@@ -239,7 +252,7 @@ const adminGetUserRecords = async (req, res) => {
 
             if (records.length > 0) {
                 recordsByExercise.push({
-                    planExerciseId,
+                    exerciseId,
                     exerciseName,
                     records
                 });
@@ -509,7 +522,7 @@ const getMyPersonalRecords = async (req, res) => {
     // Abordagem corrigida: Primeiro obtemos todos os logs e depois filtramos para únicos em JS
     const allPerformances = await db.ClientExercisePerformance.findAll({
         where: { userId },
-        attributes: ['planExerciseId'],
+        attributes: ['exerciseId', 'planExerciseId'],
         include: [{
             model: db.WorkoutPlanExercise,
             as: 'planExerciseDetails',
@@ -518,7 +531,7 @@ const getMyPersonalRecords = async (req, res) => {
             include: [{
                 model: db.Exercise,
                 as: 'exerciseDetails',
-                attributes: ['name'],
+                attributes: ['id', 'name'],
                 required: true,
             }]
         }],
@@ -528,16 +541,16 @@ const getMyPersonalRecords = async (req, res) => {
     // Criar uma lista de exercícios únicos a partir de todos os desempenhos
     const uniqueExercisesMap = new Map();
     allPerformances.forEach(p => {
-      // Usamos o ID do exercício do plano como chave para garantir a unicidade
-      if (p.planExerciseId && !uniqueExercisesMap.has(p.planExerciseId)) {
-        uniqueExercisesMap.set(p.planExerciseId, {
-          exerciseName: p.planExerciseDetails?.exerciseDetails?.name || 'Exercício Desconhecido'
+      const exerciseId = p.exerciseId || p.planExerciseDetails?.exerciseDetails?.id || p.planExerciseDetails?.exerciseId || null;
+      if (exerciseId && !uniqueExercisesMap.has(exerciseId)) {
+        uniqueExercisesMap.set(exerciseId, {
+          exerciseName: p.planExerciseDetails?.exerciseDetails?.name || 'Exercício Desconhecido',
         });
       }
     });
     
-    const uniqueExercises = Array.from(uniqueExercisesMap.entries()).map(([planExerciseId, details]) => ({
-        planExerciseId,
+    const uniqueExercises = Array.from(uniqueExercisesMap.entries()).map(([exerciseId, details]) => ({
+        exerciseId,
         exerciseName: details.exerciseName
     }));
 
@@ -550,13 +563,13 @@ const getMyPersonalRecords = async (req, res) => {
 
     // 2. Para cada exercício único, encontrar os diferentes tipos de PRs
     for (const exercise of uniqueExercises) {
-      const { planExerciseId, exerciseName } = exercise;
+      const { exerciseId, exerciseName } = exercise;
       
       const records = [];
 
       // PR de Peso Máximo (Agrupado por nº de repetições)
       const maxWeights = await db.ClientExercisePerformance.findAll({
-        where: { userId, planExerciseId },
+        where: { userId, exerciseId },
         attributes: [
           'performedReps',
           [db.Sequelize.fn('MAX', db.Sequelize.col('performedWeight')), 'maxWeight']
@@ -571,7 +584,7 @@ const getMyPersonalRecords = async (req, res) => {
 
       // PR de Volume Máximo (peso * reps) numa única série
       const maxVolumeResult = await db.ClientExercisePerformance.findOne({
-        where: { userId, planExerciseId },
+        where: { userId, exerciseId },
         attributes: [[db.Sequelize.literal('"performedWeight" * "performedReps"'), 'volume']],
         order: [[db.Sequelize.literal('volume'), 'DESC NULLS LAST']],
         limit: 1,
@@ -583,7 +596,7 @@ const getMyPersonalRecords = async (req, res) => {
 
       if (records.length > 0) {
         recordsByExercise.push({
-          planExerciseId,
+          exerciseId,
           exerciseName,
           records
         });
@@ -660,13 +673,37 @@ const adminGetFullExerciseHistoryForUser = async (req, res) => {
     }
 };
 
+const adminGetFullExerciseHistoryForUserByExerciseId = async (req, res) => {
+  const { exerciseId, userId } = req.params;
+  try {
+    const parsedUserId = parseInt(userId, 10);
+    const parsedExerciseId = parseInt(exerciseId, 10);
+    if (isNaN(parsedUserId) || isNaN(parsedExerciseId)) {
+      return res.status(400).json({ message: 'Parâmetros inválidos.' });
+    }
+
+    const performances = await db.ClientExercisePerformance.findAll({
+      where: {
+        userId: parsedUserId,
+        exerciseId: parsedExerciseId,
+      },
+      order: [['performedAt', 'ASC'], ['createdAt', 'ASC']],
+    });
+
+    return res.status(200).json(performances);
+  } catch (error) {
+    console.error('Erro ao buscar histórico completo (por exerciseId) para admin:', error);
+    return res.status(500).json({ message: 'Erro interno ao buscar histórico completo do exercício.' });
+  }
+};
+
 const getExerciseHistoryForClient = async (req, res) => {
   try {
     // Obtém o ID do exercício a partir do URL (ex: /api/progress/history/exercise/15)
     const { exerciseId } = req.params;
     // Obtém o ID do utilizador que está autenticado (através do middleware 'protect')
     const userId = req.user.id;
-    const limit = Math.min(parseInt(req.query.limit || '3', 10), 20);
+    const limit = Math.min(parseInt(req.query.limit || '50', 10), 500);
     // Obtém o trainingId a excluir (treino atual em andamento)
     const excludeTrainingId = req.query.excludeTrainingId ? parseInt(req.query.excludeTrainingId) : null;
 
@@ -674,20 +711,23 @@ const getExerciseHistoryForClient = async (req, res) => {
       return res.status(403).json({ message: "Utilizador não autenticado." });
     }
 
-    // Constrói o objeto where com condições base
+    const parsedExerciseId = parseInt(exerciseId, 10);
+    if (isNaN(parsedExerciseId) || parsedExerciseId <= 0) {
+      return res.status(400).json({ message: 'exerciseId inválido.' });
+    }
+
+    // Preferir a coluna denormalizada exerciseId (mais robusta).
     let whereConditions = {
       userId: userId,
-      '$planExerciseDetails.exerciseId$': parseInt(exerciseId)
+      exerciseId: parsedExerciseId,
     };
 
     // Se excludeTrainingId for fornecido, exclui registos desse treino (treino atual em andamento)
     if (excludeTrainingId) {
-      // Usa Op.and para combinar todas as condições
-      // Inclui registos sem trainingId (null) ou com trainingId diferente do atual
       whereConditions = {
         [Op.and]: [
           { userId: userId },
-          { '$planExerciseDetails.exerciseId$': parseInt(exerciseId) },
+          { exerciseId: parsedExerciseId },
           {
             [Op.or]: [
               { trainingId: null }, // Inclui registos sem trainingId (treinos antigos ou sem treino associado)
@@ -698,22 +738,13 @@ const getExerciseHistoryForClient = async (req, res) => {
       };
     }
 
-    // Procura na tabela de performance (ClientExercisePerformance)
-    // A consulta é complexa porque precisamos de encontrar o exerciseId que está noutra tabela
     const history = await db.ClientExercisePerformance.findAll({
       where: whereConditions,
-      // Inclui a tabela de "exercício do plano" para podermos filtrar pelo ID do exercício base
-      include: [{
-        model: db.WorkoutPlanExercise,
-        as: 'planExerciseDetails',
-        attributes: [] // Não precisamos dos atributos desta tabela, só de a usar para o filtro
-      }],
       order: [
         ['performedAt', 'DESC'],
         ['createdAt', 'DESC'],
       ], // Ordena pelos registos mais recentes com desempate por criação
-      limit, // Limita aos últimos 3 registos
-      subQuery: false,
+      limit,
     });
 
     res.status(200).json(history);
@@ -738,6 +769,7 @@ const getMyLastPerformances = async (req, res) => {
       attributes: [
         'id',
         'planExerciseId',
+        'exerciseId',
         'performedAt',
         'performedWeight',
         'performedReps',
@@ -761,7 +793,7 @@ const getMyLastPerformances = async (req, res) => {
       const key = planExerciseId;
       if (!seen.has(key)) {
         seen.add(key);
-        const exerciseId = plain.planExerciseDetails?.exerciseId ?? null;
+        const exerciseId = plain.exerciseId ?? plain.planExerciseDetails?.exerciseId ?? null;
         out.push({
           id: plain.id,
           planExerciseId: plain.planExerciseId,
@@ -1093,6 +1125,7 @@ module.exports = {
   updatePerformanceLog,
   adminGetUserRecords,
   adminGetFullExerciseHistoryForUser,
+  adminGetFullExerciseHistoryForUserByExerciseId,
   getExerciseHistoryForClient,
   getMyLastPerformances,
   // Training Session Draft endpoints

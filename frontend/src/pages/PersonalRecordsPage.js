@@ -224,7 +224,7 @@ const PersonalRecordsPage = () => {
       {filteredRecords.length > 0 ? (
         <RecordsGrid>
           {filteredRecords.map(item => (
-            <ExerciseRecordCard key={item.planExerciseId}>
+            <ExerciseRecordCard key={item.exerciseId}>
               <h2><FaDumbbell /> {item.exerciseName}</h2>
               <RecordList>
                 {item.records.map((record, index) => (

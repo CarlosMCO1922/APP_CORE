@@ -274,6 +274,24 @@ export const adminGetFullExerciseHistoryForUserService = async (userId, planExer
   }
 };
 
+export const adminGetFullExerciseHistoryForUserServiceByExerciseId = async (userId, exerciseId, token) => {
+  if (!token || !userId || !exerciseId) throw new Error('Token, UserID e ExerciseID são obrigatórios.');
+
+  try {
+    const response = await progressAuthorizedFetch(
+      `${API_URL}/progress/admin/exercise-history-by-exercise/${userId}/${exerciseId}`,
+      {},
+      token
+    );
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar histórico de exercício para o cliente.');
+    return data;
+  } catch (error) {
+    logger.error("Erro em adminGetFullExerciseHistoryForUserServiceByExerciseId:", error);
+    throw error;
+  }
+};
+
 export const updateExercisePerformanceService = async (performanceId, performanceData, token) => {
   try {
     const url = `${API_URL}/progress/log/${performanceId}`;
@@ -311,7 +329,7 @@ export const getExerciseHistoryService = async (exerciseId, token, excludeTraini
   if (!exerciseId) throw new Error('ID do Exercício é obrigatório.');
 
   try {
-    let url = `${API_URL}/progress/history/exercise/${exerciseId}?limit=3`;
+    let url = `${API_URL}/progress/history/exercise/${exerciseId}?limit=50`;
     // Se excludeTrainingId for fornecido, adiciona à query string para excluir registos do treino atual
     if (excludeTrainingId) {
       url += `&excludeTrainingId=${excludeTrainingId}`;
@@ -329,6 +347,30 @@ export const getExerciseHistoryService = async (exerciseId, token, excludeTraini
 
   } catch (error) {
     logger.error("Erro em getExerciseHistoryService:", error);
+    throw error;
+  }
+};
+
+export const getExerciseHistoryServiceWithLimit = async (exerciseId, token, excludeTrainingId = null, limit = 200) => {
+  if (!token) throw new Error('Token não fornecido para getExerciseHistoryServiceWithLimit.');
+  if (!exerciseId) throw new Error('ID do Exercício é obrigatório.');
+
+  const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 200, 1), 500);
+
+  try {
+    let url = `${API_URL}/progress/history/exercise/${exerciseId}?limit=${safeLimit}`;
+    if (excludeTrainingId) {
+      url += `&excludeTrainingId=${excludeTrainingId}`;
+    }
+
+    const response = await progressAuthorizedFetch(url, { method: 'GET' }, token);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao buscar o histórico do exercício.');
+    }
+    return data;
+  } catch (error) {
+    logger.error("Erro em getExerciseHistoryServiceWithLimit:", error);
     throw error;
   }
 };

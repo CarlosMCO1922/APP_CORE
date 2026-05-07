@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { adminGetRecordsForUserService, adminGetFullExerciseHistoryForUserService } from '../../services/progressService';
+import { adminGetRecordsForUserService, adminGetFullExerciseHistoryForUserServiceByExerciseId } from '../../services/progressService';
 import { adminGetUserById } from '../../services/userService';
 import { FaTrophy, FaDumbbell, FaUserCircle, FaChartLine, FaTimes } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
@@ -173,12 +173,12 @@ const AdminClientProgressDetailPage = () => {
 
     useEffect(() => { fetchData(); }, [fetchData]);
     
-    const handleOpenChartModal = async (planExerciseId, exerciseName) => {
+    const handleOpenChartModal = async (exerciseId, exerciseName) => {
         setShowChartModal(true);
         setLoadingChart(true);
         setChartData({ exerciseName, history: [] });
         try {
-            const historyData = await adminGetFullExerciseHistoryForUserService(userId, planExerciseId, authState.token);
+            const historyData = await adminGetFullExerciseHistoryForUserServiceByExerciseId(userId, exerciseId, authState.token);
             setChartData({ exerciseName, history: historyData });
         } catch(err) {
             console.error("Erro ao carregar histórico para o gráfico:", err);
@@ -209,10 +209,10 @@ const AdminClientProgressDetailPage = () => {
                 {records.length > 0 ? (
                     <RecordsGrid>
                         {records.map(item => (
-                            <ExerciseRecordCard key={item.planExerciseId}>
+                            <ExerciseRecordCard key={item.exerciseId}>
                                 <h2>
                                     <span><FaDumbbell /> {item.exerciseName}</span>
-                                    <ViewChartButton onClick={() => handleOpenChartModal(item.planExerciseId, item.exerciseName)}>
+                                    <ViewChartButton onClick={() => handleOpenChartModal(item.exerciseId, item.exerciseName)}>
                                         <FaChartLine /> Ver Gráfico
                                     </ViewChartButton>
                                 </h2>

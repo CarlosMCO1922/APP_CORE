@@ -26,20 +26,31 @@ module.exports = (sequelize, DataTypes) => {
     },
     workoutPlanId: { 
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'workout_plans', 
         key: 'id',
       },
-      onDelete: 'CASCADE',
+      onDelete: 'SET NULL',
     },
     planExerciseId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'workout_plan_exercises', 
       },
-      onDelete: 'CASCADE',
+      onDelete: 'SET NULL',
+    },
+    exerciseId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'exercise_id',
+      references: {
+        model: 'exercises',
+        key: 'id',
+      },
+      onDelete: 'SET NULL',
+      comment: 'Exercício base (independente do plano), para preservar histórico.',
     },
     performedAt: { 
       type: DataTypes.DATE,
@@ -105,6 +116,10 @@ module.exports = (sequelize, DataTypes) => {
     ClientExercisePerformance.belongsTo(models.WorkoutPlanExercise, {
       foreignKey: 'planExerciseId',
       as: 'planExerciseDetails', 
+    });
+    ClientExercisePerformance.belongsTo(models.Exercise, {
+      foreignKey: 'exerciseId',
+      as: 'exercise',
     });
     ClientExercisePerformance.belongsTo(models.TrainingSession, {
       foreignKey: 'sessionId',

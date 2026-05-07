@@ -8,6 +8,12 @@ module.exports = (sequelize) => {
       primaryKey: true,
       autoIncrement: true,
     },
+    isArchived: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'Soft-delete: mantém histórico (logs) sem aparecer no plano ativo.',
+    },
     sets: {
       type: DataTypes.INTEGER,
       allowNull: true,

@@ -12,6 +12,7 @@ const {
   updatePerformanceLog,
   adminGetUserRecords,
   adminGetFullExerciseHistoryForUser,
+  adminGetFullExerciseHistoryForUserByExerciseId,
   getExerciseHistoryForClient,
   getMyLastPerformances,
   saveTrainingSessionDraft,
@@ -41,6 +42,7 @@ router.get('/my-last-performances', protect, isClientUser, getMyLastPerformances
 // --- ROTA DE STAFF/ADMIN ---
 router.get('/admin/user-records/:userId', protect, isStaff, adminGetUserRecords);
 router.get('/admin/exercise-history/:userId/:planExerciseId', protect, isStaff, adminGetFullExerciseHistoryForUser);
+router.get('/admin/exercise-history-by-exercise/:userId/:exerciseId', protect, isStaff, adminGetFullExerciseHistoryForUserByExerciseId);
 
 // --- ROTAS DE TRAINING SESSION DRAFT ---
 router.post('/training-session/draft', protect, isClientUser, saveTrainingSessionDraft);

@@ -63,7 +63,9 @@ const createGlobalWorkoutPlan = async (req, res) => {
     const result = await db.WorkoutPlan.findByPk(newWorkoutPlan.id, {
         include: [{ 
             model: db.WorkoutPlanExercise, 
-            as: 'planExercises', 
+            as: 'planExercises',
+            where: { isArchived: false },
+            required: false,
             order: [['order', 'ASC'], ['internalOrder', 'ASC']],
             include: [{model: db.Exercise, as: 'exerciseDetails'}] 
         }]
@@ -85,6 +87,7 @@ const getAllGlobalWorkoutPlans = async (req, res) => {
       include: [{
         model: db.WorkoutPlanExercise,
         as: 'planExercises',
+        where: { isArchived: false },
         required: false, // LEFT JOIN para não excluir planos sem exercícios
         order: [['order', 'ASC'], ['internalOrder', 'ASC']], // GARANTIR ORDENAÇÃO
         include: [{ 
@@ -129,6 +132,8 @@ const getGlobalWorkoutPlanById = async (req, res) => {
             include: [{
                 model: db.WorkoutPlanExercise,
                 as: 'planExercises',
+                where: { isArchived: false },
+                required: false,
                 order: [['order', 'ASC'], ['internalOrder', 'ASC']],
                 include: [{ model: db.Exercise, as: 'exerciseDetails' }]
             }]
@@ -159,7 +164,11 @@ const updateGlobalWorkoutPlan = async (req, res) => {
     await workoutPlan.update({ name, notes, isVisible }, { transaction });
 
     if (exercises && Array.isArray(exercises)) {
-      await db.WorkoutPlanExercise.destroy({ where: { workoutPlanId: parseInt(planId) }, transaction });
+      // Não destruir: manter histórico (ClientExercisePerformance tem FK para workout_plan_exercises)
+      await db.WorkoutPlanExercise.update(
+        { isArchived: true },
+        { where: { workoutPlanId: parseInt(planId), isArchived: false }, transaction }
+      );
 
       const validExercises = exercises.filter(ex => ex.exerciseId && String(ex.exerciseId).trim() !== '');
 
@@ -200,6 +209,7 @@ const updateGlobalWorkoutPlan = async (req, res) => {
             order: blockOrder,
             internalOrder: internalOrder,
             supersetGroup: finalSupersetGroup,
+            isArchived: false,
           });
         }
         
@@ -212,6 +222,8 @@ const updateGlobalWorkoutPlan = async (req, res) => {
         include: [{ 
             model: db.WorkoutPlanExercise, 
             as: 'planExercises',
+            where: { isArchived: false },
+            required: false,
             order: [['order', 'ASC'], ['internalOrder', 'ASC']],
             include: [{model: db.Exercise, as: 'exerciseDetails'}] 
         }]
@@ -234,10 +246,15 @@ const deleteGlobalWorkoutPlan = async (req, res) => {
       await transaction.rollback();
       return res.status(404).json({ message: 'Plano de treino global não encontrado.' });
     }
+    // Soft-delete: nunca destruir para não apagar histórico de performances (FK com CASCADE)
     await db.TrainingWorkoutPlan.destroy({ where: { workoutPlanId: planId }, transaction });
-    await workoutPlan.destroy({ transaction });
+    await db.WorkoutPlanExercise.update(
+      { isArchived: true },
+      { where: { workoutPlanId: parseInt(planId), isArchived: false }, transaction }
+    );
+    await workoutPlan.update({ isVisible: false }, { transaction });
     await transaction.commit();
-    res.status(200).json({ message: 'Plano de treino global e suas associações eliminados com sucesso.' });
+    res.status(200).json({ message: 'Plano de treino global arquivado com sucesso.' });
   } catch (error) {
     await transaction.rollback();
     console.error('Erro (admin) ao eliminar plano de treino global:', error);
@@ -307,6 +324,7 @@ const getWorkoutPlansForTraining = async (req, res) => {
       include: [{
         model: db.WorkoutPlanExercise,
         as: 'planExercises',
+        where: { isArchived: false },
         required: false, // LEFT JOIN para não excluir planos sem exercícios
         include: [{ 
           model: db.Exercise, 
@@ -365,7 +383,11 @@ const getVisibleWorkoutPlans = async (req, res) => {
     const workoutPlans = await db.WorkoutPlan.findAll({
       where: whereClause, order: [['name', 'ASC']],
       include: [{
-        model: db.WorkoutPlanExercise, as: 'planExercises', order: [['order', 'ASC'], ['internalOrder', 'ASC']],
+        model: db.WorkoutPlanExercise,
+        as: 'planExercises',
+        where: { isArchived: false },
+        required: false,
+        order: [['order', 'ASC'], ['internalOrder', 'ASC']],
         include: [{ model: db.Exercise, as: 'exerciseDetails', attributes: ['id', 'name', 'muscleGroup', 'imageUrl', 'videoUrl'] }]
       }]
     });
@@ -404,7 +426,7 @@ const getExercisesForGlobalWorkoutPlan = async (req, res) => {
         const workoutPlan = await db.WorkoutPlan.findByPk(parseInt(planId));
         if (!workoutPlan) return res.status(404).json({ message: 'Plano de treino global não encontrado.' });
         const exercises = await db.WorkoutPlanExercise.findAll({
-            where: { workoutPlanId: parseInt(planId) }, order: [['order', 'ASC'], ['internalOrder', 'ASC']],
+            where: { workoutPlanId: parseInt(planId), isArchived: false }, order: [['order', 'ASC'], ['internalOrder', 'ASC']],
             include: [{ model: db.Exercise, as: 'exerciseDetails' }]
         });
         res.status(200).json(exercises);
@@ -448,7 +470,11 @@ const removeExerciseFromGlobalWorkoutPlan = async (req, res) => {
   try {
     const planExercise = await db.WorkoutPlanExercise.findByPk(parseInt(planExerciseId));
     if (!planExercise) return res.status(404).json({ message: 'Exercício do plano não encontrado.' });
-    await planExercise.destroy();
+    if (planExercise.isArchived) {
+      return res.status(200).json({ message: 'Exercício já estava removido do plano.' });
+    }
+    planExercise.isArchived = true;
+    await planExercise.save();
     res.status(200).json({ message: 'Exercício removido do plano com sucesso.' });
   } catch (error) {
     console.error('Erro (admin) ao remover exercício do plano global:', error);
@@ -465,6 +491,8 @@ const getVisibleGlobalWorkoutPlanByIdForClient = async (req, res) => {
             include: [{
                 model: db.WorkoutPlanExercise,
                 as: 'planExercises',
+                where: { isArchived: false },
+                required: false,
                 order: [['order', 'ASC'], ['internalOrder', 'ASC']], 
                 include: [{ model: db.Exercise, as: 'exerciseDetails' }]
             }]
