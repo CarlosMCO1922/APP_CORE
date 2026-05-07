@@ -61,8 +61,7 @@ const PageContainer = styled.div`
 `;
 
 const HeaderSection = styled.div`
-  text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 18px;
 `;
 
 const Title = styled.h1`
@@ -71,6 +70,29 @@ const Title = styled.h1`
   margin-bottom: 10px;
   font-weight: 700;
   letter-spacing: -0.5px;
+`;
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: flex-start;
+`;
+
+const BackButtonBox = styled.div`
+  display: inline-flex;
+
+  & > a,
+  & > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    background-color: ${({ theme }) => theme.colors.cardBackground};
+    box-shadow: ${({ theme }) => theme.boxShadow};
+  }
 `;
 
 
@@ -1061,10 +1083,14 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
 
   return (
     <PageContainer>
-      <HeaderSection> <Title>Calendário e Marcações</Title> </HeaderSection>
-      <div style={{ marginBottom: '10px' }}>
-        <BackArrow to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"} />
-      </div>
+      <HeaderSection>
+        <HeaderRow>
+          <BackButtonBox>
+            <BackArrow to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"} />
+          </BackButtonBox>
+          <Title style={{ margin: 0 }}>Calendário e Marcações</Title>
+        </HeaderRow>
+      </HeaderSection>
 
       {pageError && <PageErrorText>{pageError}</PageErrorText>}
       {pageSuccessMessage && !showRequestModal && !showEventModal && !showAdminCreateOptionsModal && !showAdminCreateTrainingModal && !showAdminCreateAppointmentModal && <PageSuccessMessage>{pageSuccessMessage}</PageSuccessMessage>}
