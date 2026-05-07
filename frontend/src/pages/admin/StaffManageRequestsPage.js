@@ -26,6 +26,15 @@ const HeaderSection = styled.div`
   margin-bottom: 30px;
 `;
 
+const HeaderBar = styled.div`
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 12px;
+  max-width: 900px;
+  margin: 0 auto;
+`;
+
 const Title = styled.h1`
   font-size: 2.5rem;
   color: ${props => props.theme.colors.primary};
@@ -510,12 +519,11 @@ const StaffManageRequestsPage = () => {
   return (
     <PageContainer>
       <HeaderSection>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+        <HeaderBar>
           <BackArrow to="/admin/dashboard" />
-          <div>
-            <Title style={{ margin: 0 }}>Pedidos de Consulta</Title>
-          </div>
-        </div>
+          <Title style={{ margin: 0, justifySelf: 'center' }}>Pedidos de Consulta</Title>
+          <div />
+        </HeaderBar>
       </HeaderSection>
 
       {pageError && <ErrorText>{pageError}</ErrorText>}

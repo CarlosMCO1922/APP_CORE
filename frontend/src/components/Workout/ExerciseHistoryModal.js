@@ -19,28 +19,31 @@ const ModalOverlay = styled.div`
 
 const ModalContent = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: 25px;
-  border-radius: ${({ theme }) => theme.borderRadius};
+  padding: 16px 18px 14px;
+  border-radius: 14px;
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
-  border-top: 4px solid ${({ theme }) => theme.colors.primary};
+  border-top: 6px solid ${({ theme }) => theme.colors.primary};
 `;
 
 const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
 
   h2 {
     margin: 0;
     color: ${({ theme }) => theme.colors.primary};
-    font-size: 1.4rem;
+    font-size: 1.55rem;
+    font-weight: 900;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
   }
 `;
 
@@ -48,10 +51,12 @@ const CloseButton = styled.button`
   background: none;
   border: none;
   color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   cursor: pointer;
+  padding: 6px;
+  line-height: 1;
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.textMain};
   }
 `;
 
@@ -64,7 +69,7 @@ const HistoryList = styled.ul`
 const HistoryItem = styled.li`
   display: flex;
   justify-content: space-between;
-  padding: 12px 5px;
+  padding: 14px 2px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   font-size: 1rem;
 
@@ -75,12 +80,15 @@ const HistoryItem = styled.li`
 
 const DateColumn = styled.span`
   color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 600;
 `;
 
 const PerformanceColumn = styled.span`
-  font-weight: 600;
+  font-weight: 800;
   color: ${({ theme }) => theme.colors.textMain};
+  text-align: right;
+  letter-spacing: 0.01em;
 `;
 
 const LoadingText = styled.p`
@@ -108,6 +116,18 @@ const ExerciseHistoryModal = ({ isOpen, onClose, data, isLoading, exerciseName }
     return date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
+  const formatWeight = (value) => {
+    const n = typeof value === 'string' ? parseFloat(value) : value;
+    if (typeof n !== 'number' || Number.isNaN(n)) return null;
+    return n.toFixed(2);
+  };
+
+  const formatReps = (value) => {
+    const n = typeof value === 'string' ? parseInt(value, 10) : value;
+    if (typeof n !== 'number' || Number.isNaN(n)) return null;
+    return String(n);
+  };
+
   return (
     <ModalOverlay onClick={onClose}>
       <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -122,14 +142,18 @@ const ExerciseHistoryModal = ({ isOpen, onClose, data, isLoading, exerciseName }
           <NoDataText>Nenhum registo encontrado para este exercício.</NoDataText>
         ) : (
           <HistoryList>
-            {data.map(log => (
+            {data.map((log) => {
+              const weight = formatWeight(log.performedWeight ?? log.weightKg);
+              const reps = formatReps(log.performedReps ?? log.reps);
+              return (
               <HistoryItem key={log.id}>
                 <DateColumn>{formatDate(log.performedAt)}</DateColumn>
                 <PerformanceColumn>
-                  {(log.performedWeight ?? log.weightKg)} kg x {(log.performedReps ?? log.reps)} reps
+                  {weight ?? '—'} kg × {reps ?? '—'} reps
                 </PerformanceColumn>
               </HistoryItem>
-            ))}
+              );
+            })}
           </HistoryList>
         )}
       </ModalContent>

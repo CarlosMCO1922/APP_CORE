@@ -4,7 +4,13 @@ const { Op, Sequelize } = require('sequelize');
 const { format } = require('date-fns');
 const moment = require('moment');
 const { _internalCreateNotification } = require('./notificationController');
-const { sendWhatsAppText } = require('../services/whatsappService');
+let sendWhatsAppText;
+try {
+  // Opcional: não rebentar o servidor se o serviço não estiver disponível no deploy
+  ({ sendWhatsAppText } = require('../services/whatsappService'));
+} catch (e) {
+  sendWhatsAppText = async () => ({ ok: false, skipped: true });
+}
 let sendGuestAppointmentAccepted;
 let sendGuestAppointmentRejected;
 let sendGuestAppointmentTimeChanged;
@@ -727,7 +733,7 @@ const staffRespondToAppointmentRequest = async (req, res) => {
 
   try {
     const appointment = await db.Appointment.findByPk(appointmentId, {
-        include: [{model: db.Staff, as: 'professional'}] 
+        include: [{ model: db.Staff, as: 'professional' }, { model: db.User, as: 'client' }]
     });
 
     if (!appointment) { return res.status(404).json({ message: 'Pedido de consulta não encontrado.' }); }

@@ -19,10 +19,21 @@ const PageContainer = styled.div`
   font-family: ${({ theme }) => theme.fonts.main};
 `;
 const Header = styled.div`
-  display: flex; align-items: center; gap: 15px; margin-bottom: 0;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  margin-bottom: 0;
+  padding: 4px 0 10px;
 `;
 const Title = styled.h1`
-  font-size: clamp(1.8rem, 4vw, 2.2rem); color: ${({ theme }) => theme.colors.textMain}; margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.2rem);
+  color: ${({ theme }) => theme.colors.textMain};
+  margin: 0;
+  text-align: center;
+  justify-self: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 const BookingLayout = styled.div`
   display: grid; grid-template-columns: 1fr; gap: 40px;
@@ -43,6 +54,37 @@ const CalendarContainer = styled.div`
   display: flex; justify-content: center; align-items: flex-start;
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 20px; border-radius: 12px; border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+
+  /* Garantir tema escuro consistente (react-calendar) */
+  .react-calendar {
+    background: transparent;
+    border: none;
+    color: ${({ theme }) => theme.colors.textMain};
+  }
+  .react-calendar__navigation button {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+  .react-calendar__navigation button:enabled:hover,
+  .react-calendar__navigation button:enabled:focus {
+    background-color: ${({ theme }) => theme.colors.background};
+  }
+  .react-calendar__month-view__weekdays {
+    color: ${({ theme }) => theme.colors.primary};
+  }
+  .react-calendar__tile {
+    color: ${({ theme }) => theme.colors.textMain};
+  }
+  .react-calendar__month-view__days__day--neighboringMonth {
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+  .react-calendar__tile:enabled:hover,
+  .react-calendar__tile:enabled:focus {
+    background-color: ${({ theme }) => theme.colors.background};
+  }
+  .react-calendar__tile--now {
+    background: ${({ theme }) => `${theme.colors.primary}33`};
+    border: 2px solid ${({ theme }) => theme.colors.primary};
+  }
 `;
 const TimeSlotsContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
@@ -213,6 +255,7 @@ addToast('Falha ao carregar horários.', { type: 'error', category: 'calendar' }
       <Header>
         <BackArrow to="/calendario" />
         <Title>{pageTitle}</Title>
+        <div />
       </Header>
       
       {error && <ErrorText>{error}</ErrorText>}
