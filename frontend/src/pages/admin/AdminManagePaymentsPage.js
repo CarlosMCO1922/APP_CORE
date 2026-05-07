@@ -50,7 +50,22 @@ const MonthRow = styled.div`
   align-items: center;
 `;
 
-const MonthInput = styled(ModalInput)`
+const MonthInput = styled.input`
+  padding: 10px 14px;
+  background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+
   &::-webkit-calendar-picker-indicator {
     opacity: 0;
     display: none;

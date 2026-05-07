@@ -29,6 +29,11 @@ export const WorkoutProvider = ({ children }) => {
             return;
         }
 
+        // Apenas clientes (role=user) usam drafts e histórico de treino em /progress/training-session/*
+        if (authState.role && authState.role !== 'user') {
+            return;
+        }
+
         const loadWorkout = async () => {
             // Limpa dados inválidos/antigos
             clearInvalidStorage();
