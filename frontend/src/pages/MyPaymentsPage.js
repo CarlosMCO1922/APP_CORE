@@ -344,14 +344,6 @@ const CloseButton = styled.button`
   &:hover { color: ${({ theme }) => theme.colors.textMain}; }
 `;
 
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 30px;
-  justify-content: space-between;
-`;
-
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY);
 
 const MyPaymentsPage = () => {
