@@ -39,6 +39,7 @@ const logRoutes = require('./routes/logRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 const { rateLimit } = require('express-rate-limit');
+const paymentController = require('./controllers/paymentController');
 
 // Rate limiting apenas nas rotas públicas (proteção contra abuso sem afetar utilizadores autenticados)
 const publicRateLimiter = rateLimit({
@@ -52,6 +53,14 @@ const publicRateLimiter = rateLimit({
 app.get('/', (req, res) => {
   res.send('Servidor CORE a funcionar!');
 });
+
+// Stripe webhook tem de receber o body RAW (antes de qualquer express.json()).
+// Se express.json() correr primeiro, a verificação de assinatura falha e o pagamento nunca muda para "pago".
+app.post(
+  '/payments/stripe-webhook',
+  express.raw({ type: 'application/json' }),
+  paymentController.stripeWebhookHandler
+);
 
 app.use('/auth', express.json(), authRoutes);
 app.use('/users', express.json(), userRoutes);

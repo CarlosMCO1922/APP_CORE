@@ -26,6 +26,14 @@ const PageContainer = styled.div`
   }
 `;
 
+const Header = styled.div`
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+`;
+
 const Title = styled.h1`
   font-size: 2.2rem;
   color: ${props => props.theme.colors.textMain};
@@ -194,6 +202,81 @@ const HeaderActions = styled.div`
   margin-bottom: 20px;
 `;
 
+const PaymentsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const PaymentCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const CardTopRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const CardTitle = styled.div`
+  font-weight: 900;
+  color: ${({ theme }) => theme.colors.textMain};
+  line-height: 1.2;
+  word-break: break-word;
+`;
+
+const CardMeta = styled.div`
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+`;
+
+const MetaPill = styled.span`
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.hoverRowBg};
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  font-weight: 800;
+  font-size: 0.8rem;
+`;
+
+const CardValueRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
+`;
+
+const Amount = styled.div`
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
+const CardActions = styled.div`
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+`;
+
 const ErrorText = styled.p`
   font-size: 1rem;
   text-align: center;
@@ -269,7 +352,7 @@ const Header = styled.div`
   justify-content: space-between;
 `;
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY);
 
 const MyPaymentsPage = () => {
   const { authState } = useAuth();
@@ -430,32 +513,16 @@ addToast('Referência gerada. Siga as instruções no formulário.', { type: 'in
 if (loading && !showStripeModal) {
     return (
       <PageContainer>
-        <TableWrapper>
-          <Table>
-            <thead>
-              <tr>
-                <th>Data Registo</th>
-                <th>Mês Ref.</th>
-                <th>Descrição</th>
-                <th>Categoria</th>
-                <th>Valor</th>
-                <th>Status</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <tr key={i}>
-                  {Array.from({ length: 7 }).map((__, j) => (
-                    <td key={j}>
-                      <div style={{height: 12, background: '#444', borderRadius: 6, opacity: 0.25, animation: 'pulse 1.2s ease-in-out infinite'}} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </TableWrapper>
+        <PaymentsGrid>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <PaymentCard key={i}>
+              <div style={{height: 14, background: '#444', borderRadius: 6, opacity: 0.25, animation: 'pulse 1.2s ease-in-out infinite'}} />
+              <div style={{height: 12, background: '#444', borderRadius: 6, opacity: 0.2, animation: 'pulse 1.2s ease-in-out infinite'}} />
+              <div style={{height: 12, background: '#444', borderRadius: 6, opacity: 0.2, animation: 'pulse 1.2s ease-in-out infinite'}} />
+              <div style={{height: 36, background: '#444', borderRadius: 10, opacity: 0.18, animation: 'pulse 1.2s ease-in-out infinite'}} />
+            </PaymentCard>
+          ))}
+        </PaymentsGrid>
         <style>{`@keyframes pulse { 0%{opacity:.2} 50%{opacity:.5} 100%{opacity:.2} }`}</style>
       </PageContainer>
     );
@@ -464,15 +531,11 @@ if (loading && !showStripeModal) {
   return (
     <PageContainer>
       <Header>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-          <BackArrow to="/dashboard" />
-          <Title style={{ margin: 0, textAlign: 'left', flex: 1 }}>Pagamentos</Title>
-        </div>
-        <HeaderActions>
-          <RefreshButton onClick={handleRefreshPayments} disabled={loading} title="Atualizar Lista" aria-label="Atualizar Lista">
-            <FaSync style={{ fontSize: '1.2rem', animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-          </RefreshButton>
-        </HeaderActions>
+        <BackArrow to="/dashboard" />
+        <Title style={{ margin: 0 }}>Pagamentos</Title>
+        <RefreshButton onClick={handleRefreshPayments} disabled={loading} title="Atualizar Lista" aria-label="Atualizar Lista">
+          <FaSync style={{ fontSize: '1.2rem', animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+        </RefreshButton>
       </Header>
 
       {pageError && !showStripeModal && <ErrorText>{pageError}</ErrorText>}
@@ -481,57 +544,48 @@ if (loading && !showStripeModal) {
 
       {payments.length > 0 ? (
         <>
-        <TableWrapper>
-          <Table>
-            <thead>
-              <tr>
-                <th>Data Registo</th>
-                <th>Mês Ref.</th>
-                <th>Descrição</th>
-                <th>Categoria</th>
-                <th>Valor</th>
-                <th>Status</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-{payments.slice(0, visibleCount).map(payment => (
-                <tr key={payment.id}>
-                  <td>{new Date(payment.paymentDate).toLocaleDateString('pt-PT')}</td>
-                  <td>{payment.referenceMonth || 'N/A'}</td>
-                  <td>{payment.description || 'N/A'}</td>
-                  <td>{payment.category ? payment.category.replace(/_/g, ' ') : 'N/A'}</td>
-                  <td>{Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</td>
-                  <td>
-                    <StatusBadge className={payment.status ? payment.status.toLowerCase() : ''}>
-                      {payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}
-                    </StatusBadge>
-                  </td>
-                  <td>
+          <PaymentsGrid>
+            {payments.slice(0, visibleCount).map((payment) => (
+              <PaymentCard key={payment.id}>
+                <CardTopRow>
+                  <div style={{ minWidth: 0 }}>
+                    <CardTitle>{payment.description || 'Pagamento'}</CardTitle>
+                    <CardMeta>
+                      <MetaPill>{new Date(payment.paymentDate).toLocaleDateString('pt-PT')}</MetaPill>
+                      <MetaPill>{payment.referenceMonth || 'N/A'}</MetaPill>
+                      <MetaPill>{payment.category ? payment.category.replace(/_/g, ' ') : 'N/A'}</MetaPill>
+                    </CardMeta>
+                  </div>
+                  <StatusBadge className={payment.status ? payment.status.toLowerCase() : ''}>
+                    {payment.status ? payment.status.replace(/_/g, ' ') : 'N/A'}
+                  </StatusBadge>
+                </CardTopRow>
+
+                <CardValueRow>
+                  <Amount>{Number(payment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</Amount>
+                  <CardActions>
                     {payment.status === 'pendente' &&
-                     (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia') && (
-                      <ActionButton
+                      (payment.category === 'sinal_consulta' || payment.category === 'consulta_fisioterapia') && (
+                        <ActionButton
                           onClick={() => handleInitiateStripePayment(payment)}
                           disabled={actionLoading === payment.id}
-                      >
-                        {actionLoading === payment.id ? 'Aguarde...' : `Pagar Online`}
-                      </ActionButton>
-                    )}
-                    {payment.status === 'pendente' &&
-                     (payment.category === 'mensalidade_treino') && (
+                        >
+                          {actionLoading === payment.id ? 'Aguarde...' : 'Pagar Online'}
+                        </ActionButton>
+                      )}
+                    {payment.status === 'pendente' && payment.category === 'mensalidade_treino' && (
                       <ConfirmButton
-                          onClick={() => handleConfirmPayment(payment)}
-                          disabled={actionLoading === payment.id}
+                        onClick={() => handleConfirmPayment(payment)}
+                        disabled={actionLoading === payment.id}
                       >
-                        {actionLoading === payment.id ? 'Aguarde...' : `Confirmar Pagamento`}
+                        {actionLoading === payment.id ? 'Aguarde...' : 'Confirmar'}
                       </ConfirmButton>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </TableWrapper>
+                  </CardActions>
+                </CardValueRow>
+              </PaymentCard>
+            ))}
+          </PaymentsGrid>
         {payments.length > visibleCount && (
           <div style={{ textAlign: 'center', marginTop: 12 }}>
             <RefreshButton onClick={() => setVisibleCount(c => c + 20)}>Mostrar mais</RefreshButton>

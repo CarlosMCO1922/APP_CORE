@@ -10,37 +10,58 @@ const ModalOverlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1300; // Z-index muito alto para ficar por cima de tudo
+
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  animation: overlayIn 140ms ease-out;
 `;
 
 const ModalContent = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: 16px 18px 14px;
-  border-radius: 14px;
+  padding: 18px 18px 12px;
+  border-radius: 16px;
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
   border-top: 6px solid ${({ theme }) => theme.colors.primary};
+  box-shadow: 0 18px 55px rgba(0,0,0,0.55);
+
+  @keyframes modalIn {
+    from { transform: translateY(8px) scale(0.99); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  animation: modalIn 160ms ease-out;
+
+  /* scroll mais elegante */
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; }
+  &::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 `;
 
 const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
 
   h2 {
     margin: 0;
     color: ${({ theme }) => theme.colors.primary};
-    font-size: 1.55rem;
+    font-size: 1.6rem;
     font-weight: 900;
     letter-spacing: 0.01em;
     line-height: 1.15;
@@ -69,9 +90,14 @@ const HistoryList = styled.ul`
 const HistoryItem = styled.li`
   display: flex;
   justify-content: space-between;
-  padding: 14px 2px;
+  padding: 14px 10px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   font-size: 1rem;
+  border-radius: 12px;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.hoverRowBg};
+  }
 
   &:last-child {
     border-bottom: none;

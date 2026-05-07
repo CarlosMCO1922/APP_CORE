@@ -403,6 +403,11 @@ const clientAcceptNonStripePayment = async (req, res) => {
         appointment.signalPaid = true;
         if (appointment.status === 'agendada') appointment.status = 'confirmada';
         await appointment.save();
+        try {
+          await ensureRemainingAppointmentPayment(appointment, appointment.staffId);
+        } catch (e) {
+          console.error('Falha ao criar pagamento do restante (manual):', e);
+        }
       }
     }
     res.status(200).json({ message: 'Pagamento aceite com sucesso!', payment });
@@ -410,6 +415,48 @@ const clientAcceptNonStripePayment = async (req, res) => {
     console.error('Erro (cliente) ao aceitar pagamento não-Stripe:', error);
     res.status(500).json({ message: 'Erro interno do servidor.', error: error.message });
   }
+};
+
+/**
+ * Após o sinal (25%) estar pago, cria (se não existir) um pagamento pendente para o restante da consulta.
+ * Idempotente por (relatedResourceType, relatedResourceId, category=consulta_fisioterapia).
+ */
+const ensureRemainingAppointmentPayment = async (appointment, staffId = null) => {
+  if (!appointment || !appointment.id || !appointment.userId) return null;
+  const total = appointment.totalCost != null ? parseFloat(appointment.totalCost) : 0;
+  if (!total || total <= 0) return null;
+
+  const signal = parseFloat((total * 0.25).toFixed(2));
+  const remaining = parseFloat((total - signal).toFixed(2));
+  if (!remaining || remaining <= 0) return null;
+
+  const existing = await db.Payment.findOne({
+    where: {
+      relatedResourceType: 'appointment',
+      relatedResourceId: appointment.id,
+      category: 'consulta_fisioterapia',
+      userId: appointment.userId,
+      status: { [Op.in]: ['pendente', 'pago'] },
+    },
+  });
+  if (existing) return existing;
+
+  const referenceMonth = format(new Date(appointment.date), 'yyyy-MM');
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const timeStr = String(appointment.time || '').substring(0, 5);
+
+  return db.Payment.create({
+    userId: appointment.userId,
+    amount: remaining,
+    paymentDate: today,
+    referenceMonth,
+    category: 'consulta_fisioterapia',
+    description: `Restante da consulta (75%) em ${format(new Date(appointment.date), 'dd/MM/yyyy')} às ${timeStr}`,
+    status: 'pendente',
+    staffId: staffId || appointment.staffId || null,
+    relatedResourceId: appointment.id,
+    relatedResourceType: 'appointment',
+  });
 };
 
 
@@ -472,6 +519,16 @@ const stripeWebhookHandler = async (req, res) => {
                   }
                   await appointment.save();
                   console.log(`[WEBHOOK CTRL] Consulta ID ${appointment.id} ATUALIZADA na BD: signalPaid = true, status = ${appointment.status}.`);
+
+                  // Criar pagamento do restante (75%) após sinal pago (idempotente)
+                  try {
+                    const remainingPayment = await ensureRemainingAppointmentPayment(appointment, appointment.staffId);
+                    if (remainingPayment) {
+                      console.log(`[WEBHOOK CTRL] Pagamento do restante criado/encontrado. ID=${remainingPayment.id}, amount=${remainingPayment.amount}`);
+                    }
+                  } catch (e) {
+                    console.error('[WEBHOOK CTRL] Falha ao criar pagamento do restante da consulta:', e);
+                  }
 
                   // Notificar o cliente da confirmação da consulta
                   if (appointment.userId) {

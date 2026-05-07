@@ -28,7 +28,7 @@ const HeaderSection = styled.div`
 
 const HeaderBar = styled.div`
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: 44px 1fr auto;
   align-items: center;
   gap: 12px;
   max-width: 900px;
@@ -522,18 +522,16 @@ const StaffManageRequestsPage = () => {
         <HeaderBar>
           <BackArrow to="/admin/dashboard" />
           <Title style={{ margin: 0, justifySelf: 'center' }}>Pedidos de Consulta</Title>
-          <div />
+          <FilterToggleButton type="button" onClick={() => setShowFilters(v => !v)} title="Filtros" aria-label="Filtros">
+            <FaFilter /> Filtros
+          </FilterToggleButton>
         </HeaderBar>
       </HeaderSection>
 
       {pageError && <ErrorText>{pageError}</ErrorText>}
       {pageSuccessMessage && <MessageText>{pageSuccessMessage}</MessageText>}
 
-      <FiltersToggleRow>
-        <FilterToggleButton type="button" onClick={() => setShowFilters(v => !v)}>
-          <FaFilter /> {showFilters ? 'Fechar Filtros' : 'Filtros'}
-        </FilterToggleButton>
-      </FiltersToggleRow>
+      {/* Botão de filtros está no header (canto superior direito) */}
 
       {showFilters && (
         <FiltersContainer>
