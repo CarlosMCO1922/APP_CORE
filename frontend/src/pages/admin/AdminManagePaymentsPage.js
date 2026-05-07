@@ -51,7 +51,7 @@ const MonthRow = styled.div`
 `;
 
 const MonthInput = styled.input`
-  padding: 10px 14px;
+  padding: 9px 12px;
   background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
@@ -73,10 +73,10 @@ const MonthInput = styled.input`
 `;
 
 const CalendarIconButton = styled.button`
-  width: 66px;
-  height: 58px;
-  min-width: 66px;
-  min-height: 58px;
+  width: 56px;
+  height: 50px;
+  min-width: 56px;
+  min-height: 50px;
   padding: 0;
   background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
@@ -100,8 +100,8 @@ const CalendarIconButton = styled.button`
   }
 
   svg {
-    width: 96%;
-    height: 96%;
+    width: 92%;
+    height: 92%;
     display: block;
     opacity: 0.95;
   }
@@ -114,10 +114,10 @@ const ClientRow = styled.div`
 `;
 
 const ClientModeButton = styled.button`
-  width: 56px;
-  height: 48px;
-  min-width: 56px;
-  min-height: 48px;
+  width: 50px;
+  height: 44px;
+  min-width: 50px;
+  min-height: 44px;
   padding: 0;
   background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   color: ${({ theme }) => theme.colors.textMain};
@@ -136,8 +136,8 @@ const ClientModeButton = styled.button`
   }
 
   svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
 `;
 
@@ -482,23 +482,25 @@ const ModalOverlay = styled.div`
   z-index: 1050; padding: 20px;
 `;
 const ModalContent = styled.div`
-  background-color: #2A2A2A; padding: clamp(25px, 4vw, 35px);
+  background-color: #2A2A2A;
+  padding: clamp(18px, 3.5vw, 28px);
   border-radius: 10px; width: 100%; max-width: 550px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.6); position: relative;
-  max-height: 94vh; overflow-y: auto;
+  max-height: 88vh;
+  overflow-y: auto;
 `;
 const ModalTitle = styled.h2`
   color: ${({ theme }) => theme.colors.primary}; margin-top: 0; margin-bottom: 20px;
   font-size: clamp(1.4rem, 3.5vw, 1.7rem); font-weight: 600; text-align: center;
   padding-bottom: 15px; border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
 `;
-const ModalForm = styled.form` display: flex; flex-direction: column; gap: 15px; `;
+const ModalForm = styled.form` display: flex; flex-direction: column; gap: 12px; `;
 const ModalLabel = styled.label`
   font-size: 0.85rem; color: ${({ theme }) => theme.colors.textMuted};
   margin-bottom: 4px; display: block; font-weight: 500;
 `;
 const ModalInput = styled.input`
-  padding: 10px 14px; background-color: #333;
+  padding: 9px 12px; background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%;
@@ -515,7 +517,7 @@ const ModalTextarea = styled.textarea`
   &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
 `;
 const ModalSelect = styled.select`
-  padding: 10px 14px; background-color: #333;
+  padding: 9px 12px; background-color: #333;
   border: 1px solid ${({ theme }) => theme.colors.cardBorder};
   border-radius: ${({ theme }) => theme.borderRadius};
   color: ${({ theme }) => theme.colors.textMain}; font-size: 0.95rem; width: 100%;
@@ -524,7 +526,7 @@ const ModalSelect = styled.select`
 `;
 const ModalActions = styled.div`
   display: flex; flex-direction: row; gap: 10px;
-  margin-top: 12px; padding-top: 10px;
+  margin-top: 10px; padding-top: 8px;
   border-top: 1px solid ${({ theme }) => theme.colors.cardBorder};
   justify-content: space-between;
 `;
