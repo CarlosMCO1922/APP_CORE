@@ -39,6 +39,19 @@ export const logExercisePerformanceService = async (performanceData, token) => {
     }
     return data;
   } catch (error) {
+    // Se for erro de rede/timeout, não bloquear o utilizador: o draft já garante persistência local/back-end.
+    const msg = String(error?.message || error);
+    const isNetworkish =
+      msg.includes('Failed to fetch') ||
+      msg.toLowerCase().includes('network') ||
+      msg.toLowerCase().includes('timeout') ||
+      msg.toLowerCase().includes('load failed');
+
+    if (isNetworkish) {
+      logger.warn('[logExercisePerformanceService] Falha de rede, a continuar (sync posterior via draft).', msg);
+      return { queued: true, performance: null };
+    }
+
     logger.error("Erro em logExercisePerformanceService:", error);
     throw error;
   }

@@ -544,6 +544,19 @@ export const WorkoutProvider = ({ children }) => {
             return saved;
         } catch (err) {
             logger.error('Erro ao registar série:', err);
+            const msg = String(err?.message || err);
+            const isNetworkish =
+              msg.includes('Failed to fetch') ||
+              msg.toLowerCase().includes('network') ||
+              msg.toLowerCase().includes('timeout') ||
+              msg.toLowerCase().includes('load failed');
+
+            if (isNetworkish) {
+                // Silencioso: os dados ficam no draft/localStorage e sincronizam quando voltar a ligação
+                setSyncStatus({ synced: false, lastSync: null, error: 'Sem conexão' });
+                return null;
+            }
+
             alert('Falha ao registar a série. Verifique a ligação e tente novamente.');
             throw err;
         }

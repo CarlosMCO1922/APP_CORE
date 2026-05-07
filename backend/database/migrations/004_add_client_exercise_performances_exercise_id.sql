@@ -1,8 +1,13 @@
 -- 004_add_client_exercise_performances_exercise_id.sql
 -- Guardar exercise_id diretamente nos logs para que o histórico não dependa de workout_plan_exercises.
 
+-- Nota: este projeto tem tabelas tanto em camelCase (Sequelize) como snake_case (SQL).
+-- Vamos criar as DUAS colunas possíveis para garantir compatibilidade.
 ALTER TABLE client_exercise_performances
   ADD COLUMN IF NOT EXISTS exercise_id INTEGER REFERENCES exercises(id) ON DELETE SET NULL;
+
+ALTER TABLE client_exercise_performances
+  ADD COLUMN IF NOT EXISTS "exerciseId" INTEGER REFERENCES exercises(id) ON DELETE SET NULL;
 
 DO $$
 DECLARE
@@ -48,19 +53,40 @@ BEGIN
     wpe_ex_col := 'exerciseId';
   END IF;
 
-  -- Índice (usa os nomes corretos detectados)
-  EXECUTE format(
-    'CREATE INDEX IF NOT EXISTS idx_performance_user_exercise_date ON client_exercise_performances (%I, exercise_id, %I DESC)',
-    user_col,
-    performed_col
-  );
+  -- Índice (usa a coluna que existir: preferir exerciseId se existir)
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'client_exercise_performances' AND column_name = 'exerciseId'
+  ) THEN
+    EXECUTE format(
+      'CREATE INDEX IF NOT EXISTS idx_performance_user_exercise_date ON client_exercise_performances (%I, "exerciseId", %I DESC)',
+      user_col,
+      performed_col
+    );
+  ELSE
+    EXECUTE format(
+      'CREATE INDEX IF NOT EXISTS idx_performance_user_exercise_date ON client_exercise_performances (%I, exercise_id, %I DESC)',
+      user_col,
+      performed_col
+    );
+  END IF;
 
-  -- Backfill (melhor esforço) para preencher exercise_id
+  -- Backfill (melhor esforço) para preencher exercise_id/exerciseId
   EXECUTE format(
     'UPDATE client_exercise_performances cep
-     SET exercise_id = wpe.%I
+     SET exercise_id = COALESCE(cep.exercise_id, wpe.%I)
      FROM workout_plan_exercises wpe
      WHERE cep.exercise_id IS NULL
+       AND cep.%I = wpe.id',
+    wpe_ex_col,
+    plan_ex_col
+  );
+
+  EXECUTE format(
+    'UPDATE client_exercise_performances cep
+     SET "exerciseId" = COALESCE(cep."exerciseId", wpe.%I)
+     FROM workout_plan_exercises wpe
+     WHERE cep."exerciseId" IS NULL
        AND cep.%I = wpe.id',
     wpe_ex_col,
     plan_ex_col

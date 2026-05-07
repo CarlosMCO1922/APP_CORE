@@ -44,7 +44,6 @@ module.exports = (sequelize, DataTypes) => {
     exerciseId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'exercise_id',
       references: {
         model: 'exercises',
         key: 'id',
