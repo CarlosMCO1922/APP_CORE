@@ -75,7 +75,7 @@ const internalCreateSignalPayment = async (appointmentInstance, staffIdRequestin
     console.warn(`Consulta ID ${appointmentInstance?.id}: dados insuficientes para criar pagamento de sinal (userId: ${appointmentInstance?.userId}, totalCost: ${appointmentInstance?.totalCost}).`);
     return null;
   }
-  const signalAmount = parseFloat((appointmentInstance.totalCost * 0.20).toFixed(2));
+  const signalAmount = parseFloat((appointmentInstance.totalCost * 0.25).toFixed(2));
   if (signalAmount <= 0.00) {
     console.log(`Sinal para consulta ${appointmentInstance.id} é zero ou negativo (${signalAmount}), não será criado pagamento.`);
     return null;
@@ -119,7 +119,7 @@ const internalCreateSignalPayment = async (appointmentInstance, staffIdRequestin
       paymentDate: format(today, 'yyyy-MM-dd'),
       referenceMonth: referenceMonth,
       category: 'sinal_consulta',
-      description: `Sinal (20%) para consulta com ${professionalForDesc?.firstName || 'N/A'} em ${format(appointmentDate, 'dd/MM/yyyy')}`,
+      description: `Sinal (25%) para consulta com ${professionalForDesc?.firstName || 'N/A'} em ${format(appointmentDate, 'dd/MM/yyyy')}`,
       status: 'pendente',
       staffId: staffIdRequesting || appointmentInstance.staffId,
       relatedResourceId: appointmentInstance.id,
@@ -801,7 +801,7 @@ const staffRespondToAppointmentRequest = async (req, res) => {
         ? `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`
         : (appointment.userId ? `${frontendUrl}/meus-pagamentos` : undefined);
       const totalCost = appointment.totalCost != null ? parseFloat(appointment.totalCost) : null;
-      const signalAmount = totalCost != null ? parseFloat((totalCost * 0.20).toFixed(2)) : null;
+      const signalAmount = totalCost != null ? parseFloat((totalCost * 0.25).toFixed(2)) : null;
 
       setImmediate(() => {
         if (decision === 'accept') {

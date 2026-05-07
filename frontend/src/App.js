@@ -56,6 +56,7 @@ const AdminClientProgressDetailPage = lazyWithRetry(() => import('./pages/admin/
 const AdminClientSelectionPage = lazyWithRetry(() => import('./pages/admin/AdminClientSelectionPage'));
 const AdminLogsPage = lazyWithRetry(() => import('./pages/admin/AdminLogsPage'));
 const SessionHistoryPage = lazyWithRetry(() => import('./pages/SessionHistoryPage'));
+const SessionHistoryDetailPage = lazyWithRetry(() => import('./pages/SessionHistoryDetailPage'));
 
 // Componente de Layout
 
@@ -395,6 +396,7 @@ function App() {
             <Route path="/agendar-treino-grupo" element={<GroupTrainingCalendarPage />} />
             <Route path="/treino/resumo" element={<WorkoutSummaryPage />} />
             <Route path="/treino/historico" element={<SessionHistoryPage />} />
+            <Route path="/treino/historico/:sessionId" element={<SessionHistoryDetailPage />} />
             <Route path="/meu-progresso-detalhado" element={<ClientProgressOverviewPage />} />
             <Route path="/pedir-pt-individual" element={<IndividualPTRequestPage />} />
             <Route path="/plano/:globalPlanId/resumo" element={<WorkoutPlanSummaryPage />} />

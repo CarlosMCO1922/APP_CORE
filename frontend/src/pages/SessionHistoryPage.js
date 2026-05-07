@@ -1,10 +1,10 @@
 // frontend/src/pages/SessionHistoryPage.js
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getSessionsHistoryService, getSessionDetailsService } from '../services/sessionService';
-import { FaChevronLeft, FaClock, FaDumbbell, FaCalendarAlt, FaTimes, FaChartLine } from 'react-icons/fa';
+import { getSessionsHistoryService } from '../services/sessionService';
+import { FaChevronLeft, FaCalendarAlt, FaChartLine } from 'react-icons/fa';
 
 // Styled Components
 const PageContainer = styled.div`
@@ -50,6 +50,26 @@ const Content = styled.div`
   padding: 20px;
   max-width: 800px;
   margin: 0 auto;
+`;
+
+const MonthBlock = styled.div`
+  margin-bottom: 18px;
+`;
+
+const MonthTitle = styled.div`
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: ${({ theme }) => theme.colors.textMain};
+  margin: 12px 0 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+`;
+
+const MonthMeta = styled.div`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-weight: 700;
 `;
 
 const SessionCard = styled.div`
@@ -116,95 +136,7 @@ const StatValue = styled.div`
   color: ${({ theme }) => theme.colors.primary};
 `;
 
-const Modal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-`;
-
-const ModalContent = styled.div`
-  background: ${({ theme }) => theme.colors.cardBackground};
-  border-radius: ${({ theme }) => theme.borderRadius};
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-`;
-
-const ModalHeader = styled.div`
-  padding: 20px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  background: ${({ theme }) => theme.colors.cardBackground};
-  z-index: 1;
-`;
-
-const ModalTitle = styled.h2`
-  font-size: 1.3rem;
-  color: ${({ theme }) => theme.colors.textMain};
-  margin: 0;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 8px;
-`;
-
-const ModalBody = styled.div`
-  padding: 20px;
-`;
-
-const ExerciseGroup = styled.div`
-  margin-bottom: 24px;
-`;
-
-const ExerciseName = styled.h4`
-  font-size: 1rem;
-  color: ${({ theme }) => theme.colors.textMain};
-  margin: 0 0 12px 0;
-`;
-
-const SetsList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const SetRow = styled.div`
-  display: grid;
-  grid-template-columns: 60px 1fr 1fr;
-  gap: 12px;
-  padding: 8px;
-  background: ${({ theme }) => theme.colors.pageBackground};
-  border-radius: 6px;
-  font-size: 0.9rem;
-`;
-
-const SetNumber = styled.div`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-weight: 600;
-`;
-
-const SetValue = styled.div`
-  color: ${({ theme }) => theme.colors.textMain};
-`;
+// Modal antigo removido: agora existe página dedicada de detalhe (/treino/historico/:sessionId)
 
 const LoadingMessage = styled.div`
   text-align: center;
@@ -238,8 +170,6 @@ const SessionHistoryPage = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedSession, setSelectedSession] = useState(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
 
   useEffect(() => {
     loadSessions();
@@ -262,17 +192,9 @@ const SessionHistoryPage = () => {
     }
   };
 
-  const handleSessionClick = async (sessionId) => {
-    try {
-      setLoadingDetails(true);
-      const details = await getSessionDetailsService(sessionId, authState.token);
-      setSelectedSession(details);
-    } catch (err) {
-      console.error('Erro ao carregar detalhes:', err);
-      alert('Erro ao carregar detalhes da sessão.');
-    } finally {
-      setLoadingDetails(false);
-    }
+  const handleSessionClick = (sessionId) => {
+    if (!sessionId) return;
+    navigate(`/treino/historico/${sessionId}`);
   };
 
   const formatDate = (dateString) => {
@@ -284,14 +206,25 @@ const SessionHistoryPage = () => {
     });
   };
 
-  const formatDuration = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+  const monthGroups = useMemo(() => {
+    const items = (sessions || []).slice().sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+    const groups = new Map();
+    for (const s of items) {
+      const d = new Date(s.completedAt);
+      if (Number.isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(s);
     }
-    return `${minutes}m`;
-  };
+    return Array.from(groups.entries())
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([key, list]) => {
+        const [year, month] = key.split('-').map((x) => parseInt(x, 10));
+        const dt = new Date(year, month - 1, 1);
+        const label = dt.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' });
+        return { key, label, sessions: list };
+      });
+  }, [sessions]);
 
   return (
     <PageContainer>
@@ -300,7 +233,7 @@ const SessionHistoryPage = () => {
           <BackButton onClick={() => navigate(-1)}>
             <FaChevronLeft />
           </BackButton>
-          <Title>Histórico de Treinos</Title>
+          <Title>Histórico</Title>
         </HeaderTop>
       </Header>
 
@@ -317,106 +250,48 @@ const SessionHistoryPage = () => {
           </EmptyState>
         )}
         
-        {!loading && !error && sessions.length > 0 && sessions.map((session) => (
-          <SessionCard key={session.id} onClick={() => handleSessionClick(session.id)}>
-            <SessionHeader>
-              <div>
-                <SessionName>{session.workoutPlanName}</SessionName>
-                <SessionDate>
-                  <FaCalendarAlt /> {formatDate(session.completedAt)}
-                </SessionDate>
-              </div>
-            </SessionHeader>
-            
-            <SessionStats>
-              <StatItem>
-                <StatLabel>Duração</StatLabel>
-                <StatValue>
-                  {session.totalDurationSeconds 
-                    ? formatDuration(session.totalDurationSeconds)
-                    : '-'}
-                </StatValue>
-              </StatItem>
-              
-              <StatItem>
-                <StatLabel>Séries</StatLabel>
-                <StatValue>{session.totalSets || 0}</StatValue>
-              </StatItem>
-              
-              <StatItem>
-                <StatLabel>Volume</StatLabel>
-                <StatValue>
-                  {session.totalVolume 
-                    ? `${Math.round(session.totalVolume)}kg`
-                    : '-'}
-                </StatValue>
-              </StatItem>
-            </SessionStats>
-          </SessionCard>
+        {!loading && !error && sessions.length > 0 && monthGroups.map((group) => (
+          <MonthBlock key={group.key}>
+            <MonthTitle>
+              <span style={{ textTransform: 'capitalize' }}>{group.label}</span>
+              <MonthMeta>{group.sessions.length} {group.sessions.length === 1 ? 'treino' : 'treinos'}</MonthMeta>
+            </MonthTitle>
+            {group.sessions.map((session) => (
+              <SessionCard key={session.id} onClick={() => handleSessionClick(session.id)}>
+                <SessionHeader>
+                  <div>
+                    <SessionName>{session.workoutPlanName}</SessionName>
+                    <SessionDate>
+                      <FaCalendarAlt /> {formatDate(session.completedAt)}
+                    </SessionDate>
+                  </div>
+                </SessionHeader>
+                
+                <SessionStats>
+                  <StatItem>
+                    <StatLabel>Séries</StatLabel>
+                    <StatValue>{session.totalSets || 0}</StatValue>
+                  </StatItem>
+                  
+                  <StatItem>
+                    <StatLabel>Volume</StatLabel>
+                    <StatValue>
+                      {session.totalVolume 
+                        ? `${Math.round(session.totalVolume)}kg`
+                        : '-'}
+                    </StatValue>
+                  </StatItem>
+
+                  <StatItem>
+                    <StatLabel>Estado</StatLabel>
+                    <StatValue style={{ fontSize: '0.95rem' }}>Concluído</StatValue>
+                  </StatItem>
+                </SessionStats>
+              </SessionCard>
+            ))}
+          </MonthBlock>
         ))}
       </Content>
-
-      {/* Modal de Detalhes */}
-      {selectedSession && (
-        <Modal onClick={() => setSelectedSession(null)}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <ModalHeader>
-              <ModalTitle>{selectedSession.workoutPlanName}</ModalTitle>
-              <CloseButton onClick={() => setSelectedSession(null)}>
-                <FaTimes />
-              </CloseButton>
-            </ModalHeader>
-            
-            <ModalBody>
-              <SessionDate style={{ marginBottom: '20px' }}>
-                <FaCalendarAlt /> {formatDate(selectedSession.completedAt)}
-              </SessionDate>
-              
-              <SessionStats style={{ marginBottom: '24px' }}>
-                <StatItem>
-                  <StatLabel><FaClock /></StatLabel>
-                  <StatValue>
-                    {selectedSession.totalDurationSeconds 
-                      ? formatDuration(selectedSession.totalDurationSeconds)
-                      : '-'}
-                  </StatValue>
-                </StatItem>
-                
-                <StatItem>
-                  <StatLabel>Séries</StatLabel>
-                  <StatValue>{selectedSession.totalSets || 0}</StatValue>
-                </StatItem>
-                
-                <StatItem>
-                  <StatLabel><FaDumbbell /></StatLabel>
-                  <StatValue>
-                    {selectedSession.totalVolume 
-                      ? `${Math.round(selectedSession.totalVolume)}kg`
-                      : '-'}
-                  </StatValue>
-                </StatItem>
-              </SessionStats>
-              
-              {loadingDetails && <LoadingMessage>A carregar detalhes...</LoadingMessage>}
-              
-              {!loadingDetails && selectedSession.exercises && selectedSession.exercises.map((exercise) => (
-                <ExerciseGroup key={exercise.planExerciseId}>
-                  <ExerciseName>{exercise.exerciseName}</ExerciseName>
-                  <SetsList>
-                    {exercise.sets.map((set, idx) => (
-                      <SetRow key={idx}>
-                        <SetNumber>Série {set.setNumber}</SetNumber>
-                        <SetValue>{set.performedWeight}kg</SetValue>
-                        <SetValue>{set.performedReps} reps</SetValue>
-                      </SetRow>
-                    ))}
-                  </SetsList>
-                </ExerciseGroup>
-              ))}
-            </ModalBody>
-          </ModalContent>
-        </Modal>
-      )}
     </PageContainer>
   );
 };

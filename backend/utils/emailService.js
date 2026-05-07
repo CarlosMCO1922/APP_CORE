@@ -205,7 +205,7 @@ async function sendGuestAppointmentRequestReceived({ to, guestName, professional
 
 /**
  * Email: consulta aceite pelo profissional.
- * Se totalCost, signalAmount e paymentUrl forem passados, inclui bloco de pagamento do sinal (20%) com botão.
+ * Se totalCost, signalAmount e paymentUrl forem passados, inclui bloco de pagamento do sinal (25%) com botão.
  */
 async function sendGuestAppointmentAccepted({ to, guestName, professionalName, date, time, totalCost, signalAmount, paymentUrl }) {
   const transport = getTransporter();
@@ -217,9 +217,9 @@ async function sendGuestAppointmentAccepted({ to, guestName, professionalName, d
 
   const paymentBlock = hasPayment ? `
         <div style="margin:24px 0;padding:20px;background:#f8fff9;border:1px solid #c3e6cb;border-radius:8px;">
-          <p style="margin:0 0 12px 0;font-weight:600;color:#155724;">Pagamento do sinal (20%)</p>
+          <p style="margin:0 0 12px 0;font-weight:600;color:#155724;">Pagamento do sinal (25%)</p>
           <p style="margin:0 0 8px 0;font-size:0.95rem;">Valor total da consulta: <strong>${totalFormatted}</strong></p>
-          <p style="margin:0 0 16px 0;font-size:0.95rem;">Sinal a pagar agora (20%): <strong>${signalFormatted}</strong></p>
+          <p style="margin:0 0 16px 0;font-size:0.95rem;">Sinal a pagar agora (25%): <strong>${signalFormatted}</strong></p>
           <p style="margin:0 0 12px 0;font-size:0.9rem;color:#555;">Para confirmar a sua marcação, efetue o pagamento do sinal através do botão abaixo. Após o pagamento, a consulta ficará confirmada.</p>
           <a href="${paymentUrl}" style="${_emailStyles.button}">Pagar sinal (${signalFormatted})</a>
         </div>` : '';
