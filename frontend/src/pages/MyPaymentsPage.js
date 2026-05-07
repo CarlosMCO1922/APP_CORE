@@ -344,7 +344,11 @@ const CloseButton = styled.button`
   &:hover { color: ${({ theme }) => theme.colors.textMain}; }
 `;
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY);
+const stripeKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+const stripePromise =
+  stripeKey && typeof stripeKey === 'string' && stripeKey.startsWith('pk_')
+    ? loadStripe(stripeKey)
+    : null;
 
 const MyPaymentsPage = () => {
   const { authState } = useAuth();
@@ -422,6 +426,11 @@ addToast('Falha ao carregar pagamentos.', { type: 'error', category: 'payment' }
     if (payment.status !== 'pendente' || !pagableOnlineCategories.includes(payment.category)) {
         setPageError("Este tipo de pagamento não está configurado para pagamento online ou já não está pendente.");
         return;
+    }
+    if (!stripePromise) {
+      setPageError('Stripe não está configurado nesta app (chave publicável em falta).');
+      addToast('Stripe não configurado (pk_ em falta).', { type: 'error', category: 'payment' });
+      return;
     }
     setActionLoading(payment.id);
     setPageError(''); setPageSuccessMessage(''); setPageInfoMessage('');
