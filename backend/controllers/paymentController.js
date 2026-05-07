@@ -335,6 +335,12 @@ const createStripePaymentIntent = async (req, res) => {
   const userId = req.user.id;
 
   try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(500).json({
+        message: 'Stripe não configurado no servidor.',
+        error: 'STRIPE_SECRET_KEY em falta no ambiente.',
+      });
+    }
     const stripeClient = getStripe();
     const payment = await db.Payment.findByPk(paymentId);
 
@@ -353,11 +359,17 @@ const createStripePaymentIntent = async (req, res) => {
 
     const amountInCents = Math.round(parseFloat(payment.amount) * 100);
 
-    // ***** INÍCIO DA ALTERAÇÃO PARA MULTIBANCO *****
+    // Em produção, multibanco pode não estar ativo na conta (ou não ser desejado no checkout).
+    // Card é o default seguro; multibanco é opcional via env.
+    const enableMultibanco =
+      String(process.env.STRIPE_ENABLE_MULTIBANCO || '').toLowerCase() === 'true';
+    const paymentMethodTypes = enableMultibanco ? ['card', 'multibanco'] : ['card'];
+
     const paymentIntent = await stripeClient.paymentIntents.create({
       amount: amountInCents,
       currency: 'eur',
-      payment_method_types: ['card', 'multibanco'], 
+      payment_method_types: paymentMethodTypes,
+      description: payment.description || undefined,
       metadata: {
         internalPaymentId: payment.id,
         userId: userId,
@@ -366,7 +378,6 @@ const createStripePaymentIntent = async (req, res) => {
         category: payment.category,
       },
     });
-    // ***** FIM DA ALTERAÇÃO PARA MULTIBANCO *****
 
 console.log(`[CREATE INTENT] PaymentIntent criado para Pag.ID ${payment.id}: PI_ID=${paymentIntent.id}, Métodos: ${paymentIntent.payment_method_types.join(', ')}`);
 
@@ -377,8 +388,27 @@ console.log(`[CREATE INTENT] PaymentIntent criado para Pag.ID ${payment.id}: PI_
     });
 
   } catch (error) {
-    console.error('Erro ao criar Stripe Payment Intent:', error);
-    res.status(500).json({ message: 'Erro ao iniciar processo de pagamento.', error: error.message });
+    const stripeDetails = {
+      type: error?.type,
+      code: error?.code,
+      decline_code: error?.decline_code,
+      param: error?.param,
+      statusCode: error?.statusCode,
+      message: error?.message,
+    };
+    console.error('Erro ao criar Stripe Payment Intent:', stripeDetails);
+
+    // Devolver mensagem mais útil ao frontend (sem expor dados sensíveis)
+    const safeMessage =
+      error?.type === 'StripeInvalidRequestError'
+        ? 'Stripe rejeitou o pedido (configuração ou métodos de pagamento).'
+        : 'Erro ao iniciar processo de pagamento.';
+
+    res.status(500).json({
+      message: safeMessage,
+      error: error?.message || 'Erro desconhecido',
+      stripe: stripeDetails,
+    });
   }
 };
 
