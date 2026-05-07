@@ -78,6 +78,12 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Credenciais inválidas (email não encontrado).' });
     }
 
+    if (user.isExternalClient) {
+      return res.status(403).json({
+        message: 'Este cliente não tem conta de utilizador para login. Contacte o suporte se precisar de acesso.',
+      });
+    }
+
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Credenciais inválidas (password incorreta).' });

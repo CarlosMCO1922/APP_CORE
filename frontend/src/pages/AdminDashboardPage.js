@@ -292,7 +292,19 @@ const AdminDashboardPage = () => {
 
       <StatsOverviewContainer>
         {isFullAdmin && (
-          <StatCard color={theme.colors.success || '#4CAF50'}>
+          <StatCard
+            color={theme.colors.success || '#4CAF50'}
+            $clickable
+            onClick={() => navigate('/admin/manage-payments', { state: { openCreatePayment: true } })}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigate('/admin/manage-payments', { state: { openCreatePayment: true } });
+              }
+            }}
+          >
             <StatIcon color={theme.colors.success || '#4CAF50'}><FaDollarSign /></StatIcon>
             {loadingStats && totalPaidThisMonth === null && <LoadingText>A carregar...</LoadingText>}
             {!loadingStats && statsError && totalPaidThisMonth === null && <ErrorText>Erro</ErrorText>}

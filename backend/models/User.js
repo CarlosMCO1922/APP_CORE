@@ -24,6 +24,11 @@ module.exports = (sequelize) => {
         isEmail: true,
       },
     },
+    /** Telemóvel do cliente (E.164 recomendado, ex.: +3519XXXXXXXX). */
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     password: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -55,6 +60,13 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true,
       field: 'approved_at',
+    },
+    /** Cliente criado manualmente (ex.: via pagamento). Não é conta de login. */
+    isExternalClient: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'isExternalClient',
     },
     // ---------------------------------
   }, {

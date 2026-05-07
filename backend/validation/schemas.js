@@ -31,9 +31,10 @@ const paymentStatusSchema = z.object({
 const referenceMonthRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 const adminCreatePaymentSchema = z.object({
-  userId: z.coerce.number().int().positive().refine((val) => !isNaN(val) && isFinite(val), {
+  userId: z.coerce.number().int().positive().optional().nullable().refine((val) => val === null || val === undefined || (!isNaN(val) && isFinite(val)), {
     message: 'userId must be a valid number'
   }),
+  clientName: z.string().min(2).max(120).optional().nullable(),
   amount: z.coerce.number().positive().refine((val) => !isNaN(val) && isFinite(val), {
     message: 'amount must be a valid number'
   }),
@@ -47,6 +48,16 @@ const adminCreatePaymentSchema = z.object({
     { message: 'relatedResourceId must be a valid number or null' }
   ),
   relatedResourceType: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+  const hasUserId = data.userId !== null && data.userId !== undefined;
+  const hasClientName = typeof data.clientName === 'string' && data.clientName.trim().length >= 2;
+  if (!hasUserId && !hasClientName) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['userId'],
+      message: 'É obrigatório fornecer userId ou clientName.',
+    });
+  }
 });
 
 const paymentIdParams = z.object({

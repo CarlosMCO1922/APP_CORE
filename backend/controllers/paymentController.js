@@ -1,6 +1,8 @@
 // backend/controllers/paymentController.js
 const db = require('../models');
 const { Op } = require('sequelize');
+const crypto = require('crypto');
+const { hashPassword } = require('../utils/passwordUtils');
 
 require('dotenv').config(); 
 
@@ -8,27 +10,70 @@ require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { _internalCreateNotification } = require('./notificationController');
 const { startOfMonth, endOfMonth, format } = require('date-fns');
+const { sendWhatsAppText } = require('../services/whatsappService');
 
 // --- Funções do Administrador ---
 const adminCreatePayment = async (req, res) => {
-  const { userId, amount, paymentDate, referenceMonth, category, description, status, relatedResourceId, relatedResourceType } = req.body;
+  const { userId, clientName, amount, paymentDate, referenceMonth, category, description, status, relatedResourceId, relatedResourceType } = req.body;
   const staffId = req.staff.id;
 
-  if (!userId || !amount || !paymentDate || !referenceMonth || !category) {
-    return res.status(400).json({ message: 'Campos obrigatórios em falta: userId, amount, paymentDate, referenceMonth, category.' });
+  const hasUserId = userId !== null && userId !== undefined && String(userId).trim() !== '';
+  const hasClientName = typeof clientName === 'string' && clientName.trim().length >= 2;
+
+  if ((!hasUserId && !hasClientName) || !amount || !paymentDate || !referenceMonth || !category) {
+    return res.status(400).json({ message: 'Campos obrigatórios em falta: (userId ou clientName), amount, paymentDate, referenceMonth, category.' });
   }
   if (parseFloat(amount) <= 0) {
     return res.status(400).json({ message: 'O valor do pagamento deve ser positivo.' });
   }
 
   try {
-    const clientUser = await db.User.findByPk(userId);
-    if (!clientUser) {
-      return res.status(404).json({ message: 'Utilizador (cliente) não encontrado.' });
+    let resolvedUserId = null;
+    let clientUser = null;
+
+    if (hasUserId) {
+      resolvedUserId = parseInt(userId);
+      clientUser = await db.User.findByPk(resolvedUserId);
+      if (!clientUser) {
+        return res.status(404).json({ message: 'Utilizador (cliente) não encontrado.' });
+      }
+    } else {
+      const raw = String(clientName || '').trim().replace(/\s+/g, ' ');
+      const parts = raw.split(' ');
+      const firstName = parts.slice(0, -1).join(' ') || parts[0] || 'Cliente';
+      const lastName = parts.length > 1 ? parts[parts.length - 1] : 'Externo';
+
+      // Evitar duplicados óbvios (nome completo igual) em clientes externos
+      clientUser = await db.User.findOne({
+        where: {
+          firstName,
+          lastName,
+          isExternalClient: true,
+        },
+      });
+
+      if (!clientUser) {
+        const token = crypto.randomBytes(10).toString('hex');
+        const syntheticEmail = `external+${Date.now()}-${token}@example.invalid`;
+        const randomPassword = crypto.randomBytes(24).toString('hex');
+        const hashedPassword = await hashPassword(randomPassword);
+
+        clientUser = await db.User.create({
+          firstName,
+          lastName,
+          email: syntheticEmail,
+          password: hashedPassword,
+          approvedAt: new Date(), // não é pendente nem deve aparecer como "pendente"
+          gdprConsent: true,
+          isExternalClient: true,
+        });
+      }
+
+      resolvedUserId = clientUser.id;
     }
 
     const newPayment = await db.Payment.create({
-      userId: parseInt(userId),
+      userId: parseInt(resolvedUserId),
       amount: parseFloat(amount),
       paymentDate,
       referenceMonth,
@@ -41,7 +86,7 @@ const adminCreatePayment = async (req, res) => {
     });
 
     
-    if (newPayment.status === 'pendente' && newPayment.userId) {
+    if (newPayment.status === 'pendente' && newPayment.userId && clientUser && !clientUser.isExternalClient) {
       _internalCreateNotification({
         recipientUserId: newPayment.userId,
         message: `Um novo pagamento de ${Number(newPayment.amount).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })} (${newPayment.description || newPayment.category}) foi registado e aguarda a sua ação.`,
@@ -430,6 +475,26 @@ const stripeWebhookHandler = async (req, res) => {
                         relatedResourceType: 'appointment',
                         link: `/admin/calendario-geral`
                     });
+                  }
+
+                  // WhatsApp: confirmação (idempotente por Payment.paidWhatsAppSentAt)
+                  try {
+                    const freshPayment = await db.Payment.findByPk(payment.id);
+                    if (freshPayment && !freshPayment.paidWhatsAppSentAt && appointment.userId) {
+                      const client = await db.User.findByPk(appointment.userId, { attributes: ['id', 'firstName', 'phone'] });
+                      if (client?.phone) {
+                        const timeStr = String(appointment.time).substring(0, 5);
+                        const body =
+                          `Pagamento confirmado! A tua consulta em ${format(new Date(appointment.date), 'dd/MM/yyyy')} às ${timeStr} está CONFIRMADA.`;
+                        const sent = await sendWhatsAppText({ to: client.phone, body });
+                        if (sent.ok) {
+                          freshPayment.paidWhatsAppSentAt = new Date();
+                          await freshPayment.save();
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    console.error('Falha ao enviar WhatsApp de confirmação:', e);
                   }
 
                 } else {

@@ -1,6 +1,6 @@
 // src/pages/admin/AdminManagePaymentsPage.js
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -475,6 +475,7 @@ const paymentStatusesForCreate = ['pendente', 'pago'];
 
 const AdminManagePaymentsPage = () => {
   const { authState } = useAuth();
+  const location = useLocation();
   const [payments, setPayments] = useState([]);
   const [userList, setUserList] = useState([]);
   const [totalPaid, setTotalPaid] = useState(0);
@@ -493,6 +494,8 @@ const AdminManagePaymentsPage = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [currentPaymentData, setCurrentPaymentData] = useState(initialPaymentFormState);
+  const [clientMode, setClientMode] = useState('existing'); // existing | new
+  const [newClientName, setNewClientName] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
   const [showStatusChangeConfirmModal, setShowStatusChangeConfirmModal] = useState(false);
@@ -585,8 +588,29 @@ const AdminManagePaymentsPage = () => {
   };
 
 
-  const handleOpenCreateModal = () => { setCurrentPaymentData(initialPaymentFormState); setModalError(''); setShowModal(true); };
+  const handleOpenCreateModal = (prefill = null) => {
+    const base = { ...initialPaymentFormState };
+    const next = { ...base, ...(prefill || {}) };
+    setCurrentPaymentData(next);
+    setClientMode('existing');
+    setNewClientName('');
+    setModalError('');
+    setShowModal(true);
+  };
   const handleCloseModal = () => { setShowModal(false); setModalError(''); };
+
+  // Abrir modal ao navegar a partir do Dashboard
+  useEffect(() => {
+    if (location?.state?.openCreatePayment) {
+      const today = new Date().toISOString().split('T')[0];
+      const now2 = new Date();
+      const ref = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}`;
+      handleOpenCreateModal({ paymentDate: today, referenceMonth: ref });
+      // limpar state para evitar reabrir ao voltar
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location?.state?.openCreatePayment]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -617,20 +641,30 @@ const AdminManagePaymentsPage = () => {
     // Debug: verificar valores atuais
     console.log('Form data antes de processar:', currentPaymentData);
     
-    // Validar e converter userId - garantir que é um número válido
+    // Cliente: existente vs novo (externo)
     let userId = null;
-    if (currentPaymentData.userId) {
-      const userIdStr = String(currentPaymentData.userId).trim();
-      userId = parseInt(userIdStr, 10);
-      if (isNaN(userId) || userId <= 0) {
-        setModalError("Por favor, selecione um cliente válido.");
+    const clientName = String(newClientName || '').trim().replace(/\s+/g, ' ');
+
+    if (clientMode === 'existing') {
+      if (currentPaymentData.userId) {
+        const userIdStr = String(currentPaymentData.userId).trim();
+        userId = parseInt(userIdStr, 10);
+        if (isNaN(userId) || userId <= 0) {
+          setModalError("Por favor, selecione um cliente válido.");
+          setFormLoading(false);
+          return;
+        }
+      } else {
+        setModalError("Por favor, selecione um cliente.");
         setFormLoading(false);
         return;
       }
     } else {
-      setModalError("Por favor, selecione um cliente.");
-      setFormLoading(false);
-      return;
+      if (!clientName || clientName.length < 2) {
+        setModalError("Por favor, escreva o nome do cliente.");
+        setFormLoading(false);
+        return;
+      }
     }
     
     // Converter amount: substituir vírgula por ponto e converter para número
@@ -694,7 +728,7 @@ const AdminManagePaymentsPage = () => {
     
     // Preparar dados para envio - garantir tipos corretos
     const dataToSend = {
-      userId: userId, // número inteiro
+      ...(clientMode === 'existing' ? { userId: userId } : { clientName }),
       amount: parsedAmount, // número decimal
       paymentDate: paymentDate, // string YYYY-MM-DD
       referenceMonth: referenceMonth, // string YYYY-MM
@@ -915,20 +949,51 @@ const AdminManagePaymentsPage = () => {
             <ModalTitle>Registar Novo Pagamento</ModalTitle>
             {modalError && <ModalErrorText>{modalError}</ModalErrorText>}
             <ModalForm onSubmit={handleFormSubmit}>
-              <ModalLabel htmlFor="modalUserIdPayForm">Cliente*</ModalLabel>
-              <SearchableSelect
-                id="modalUserIdPayForm"
-                name="userId"
-                value={currentPaymentData.userId || ''}
-                onChange={handleFormChange}
-                options={userList}
-                getOptionLabel={(user) => `${user.firstName} ${user.lastName} (${user.email})`}
-                getOptionValue={(user) => user.id}
-                placeholder="Selecione um cliente..."
-                searchPlaceholder="Pesquisar cliente..."
-                searchable={true}
-                required={true}
-              />
+              <ModalLabel>Cliente*</ModalLabel>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <FilterToggleButton
+                  type="button"
+                  onClick={() => setClientMode('existing')}
+                  style={{ opacity: clientMode === 'existing' ? 1 : 0.75 }}
+                >
+                  Cliente existente
+                </FilterToggleButton>
+                <FilterToggleButton
+                  type="button"
+                  onClick={() => setClientMode('new')}
+                  style={{ opacity: clientMode === 'new' ? 1 : 0.75 }}
+                >
+                  Novo cliente
+                </FilterToggleButton>
+              </div>
+
+              {clientMode === 'existing' ? (
+                <SearchableSelect
+                  id="modalUserIdPayForm"
+                  name="userId"
+                  value={currentPaymentData.userId || ''}
+                  onChange={handleFormChange}
+                  options={userList}
+                  getOptionLabel={(user) => {
+                    const base = `${user.firstName} ${user.lastName}`;
+                    const tag = user.isExternalClient ? ' (cliente externo)' : '';
+                    return `${base}${tag} (${user.email})`;
+                  }}
+                  getOptionValue={(user) => user.id}
+                  placeholder="Selecione um cliente..."
+                  searchPlaceholder="Pesquisar cliente..."
+                  searchable={true}
+                  required={false}
+                />
+              ) : (
+                <ModalInput
+                  type="text"
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  placeholder="Escreva o nome do cliente (ex.: João Silva)"
+                  required={false}
+                />
+              )}
 
               <ModalLabel htmlFor="modalAmountPayForm">Valor (EUR)*</ModalLabel>
               <ModalInput type="number" name="amount" id="modalAmountPayForm" value={currentPaymentData.amount} onChange={handleFormChange} required step="0.01" min="0.01" />
