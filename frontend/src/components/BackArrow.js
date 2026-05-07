@@ -4,42 +4,59 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaArrowLeft } from 'react-icons/fa';
 
-const BackIconLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  transition: color 0.2s;
+const BackBase = styled.div`
   display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-  cursor: pointer;
-  &:hover { color: ${({ theme }) => theme.colors.primary}; }
+
+  & > a,
+  & > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+    background-color: ${({ theme }) => theme.colors.cardBackground};
+    box-shadow: ${({ theme }) => theme.boxShadow};
+    color: ${({ theme }) => theme.colors.textMuted};
+    font-size: 1.35rem;
+    transition: color 0.2s, border-color 0.2s, transform 0.15s, background-color 0.2s;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  & > a:hover,
+  & > button:hover {
+    color: ${({ theme }) => theme.colors.primary};
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
+  }
+
+  & > button {
+    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  }
 `;
 
+const BackIconLink = styled(Link)``;
 const BackIconButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1.5rem;
-  transition: color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 0;
-  &:hover { color: ${({ theme }) => theme.colors.primary}; }
+  background: transparent;
 `;
 
 export default function BackArrow({ to, onClick }) {
   if (onClick) {
     return (
-      <BackIconButton onClick={onClick} aria-label="Voltar">
-        <FaArrowLeft />
-      </BackIconButton>
+      <BackBase>
+        <BackIconButton onClick={onClick} aria-label="Voltar" type="button">
+          <FaArrowLeft />
+        </BackIconButton>
+      </BackBase>
     );
   }
   
   return (
-    <BackIconLink to={to || '#'} aria-label="Voltar">
-      <FaArrowLeft />
-    </BackIconLink>
+    <BackBase>
+      <BackIconLink to={to || '#'} aria-label="Voltar">
+        <FaArrowLeft />
+      </BackIconLink>
+    </BackBase>
   );
 }

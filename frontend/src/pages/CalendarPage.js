@@ -79,23 +79,6 @@ const HeaderRow = styled.div`
   justify-content: flex-start;
 `;
 
-const BackButtonBox = styled.div`
-  display: inline-flex;
-
-  & > a,
-  & > button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid ${({ theme }) => theme.colors.cardBorder};
-    background-color: ${({ theme }) => theme.colors.cardBackground};
-    box-shadow: ${({ theme }) => theme.boxShadow};
-  }
-`;
-
-
 const CalendarWrapper = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   padding: 0;
@@ -1085,9 +1068,7 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
     <PageContainer>
       <HeaderSection>
         <HeaderRow>
-          <BackButtonBox>
-            <BackArrow to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"} />
-          </BackButtonBox>
+          <BackArrow to={isAdminOrStaff ? "/admin/dashboard" : "/dashboard"} />
           <Title style={{ margin: 0 }}>Calendário e Marcações</Title>
         </HeaderRow>
       </HeaderSection>

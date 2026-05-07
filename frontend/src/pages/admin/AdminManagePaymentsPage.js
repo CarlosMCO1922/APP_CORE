@@ -11,7 +11,7 @@ import {
     adminGetTotalPaid
 } from '../../services/paymentService';
 import { adminGetAllUsers } from '../../services/userService';
-import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaTimes } from 'react-icons/fa';
+import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaTimes, FaCalendarAlt } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 import SearchableSelect from '../../components/Common/SearchableSelect';
@@ -42,11 +42,47 @@ const Title = styled.h1`
   margin: 0 0 5px 0;
 `;
 
-const Subtitle = styled.p`
-  font-size: clamp(0.9rem, 2vw, 1rem);
-  color: ${({ theme }) => theme.colors.textMuted};
-  margin: 0;
-  font-weight: 300;
+// Subtitle removido (header mais compacto)
+
+const DatePickerButton = styled.button`
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #333;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.textMain};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: border-color 0.2s, transform 0.15s, background-color 0.2s;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-1px);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    opacity: 0.9;
+  }
+`;
+
+const HiddenDateInput = styled.input`
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
 `;
 
 const CreateButton = styled.button`
@@ -496,6 +532,7 @@ const AdminManagePaymentsPage = () => {
   const [currentPaymentData, setCurrentPaymentData] = useState(initialPaymentFormState);
   const [clientMode, setClientMode] = useState('existing'); // existing | new
   const [newClientName, setNewClientName] = useState('');
+  const paymentDateInputRef = useRef(null);
   const [formLoading, setFormLoading] = useState(false);
   const [modalError, setModalError] = useState('');
   const [showStatusChangeConfirmModal, setShowStatusChangeConfirmModal] = useState(false);
@@ -629,6 +666,17 @@ const AdminManagePaymentsPage = () => {
     else {
       setCurrentPaymentData(prev => ({ ...prev, [name]: value || '' }));
     }
+  };
+
+  const openPaymentDatePicker = () => {
+    const input = paymentDateInputRef.current;
+    if (!input) return;
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+    input.focus();
+    input.click();
   };
 
   const handleFormSubmit = async (e) => {
@@ -825,7 +873,6 @@ const AdminManagePaymentsPage = () => {
           <BackArrow to="/admin/dashboard" />
           <TitleContainer>
             <Title>Pagamentos</Title>
-            <Subtitle>Registar e acompanhar pagamentos dos clientes.</Subtitle>
           </TitleContainer>
         </div>
         <CreateButton onClick={handleOpenCreateModal}><FaPlus /> Registar Pagamento</CreateButton>
@@ -998,8 +1045,22 @@ const AdminManagePaymentsPage = () => {
               <ModalLabel htmlFor="modalAmountPayForm">Valor (EUR)*</ModalLabel>
               <ModalInput type="number" name="amount" id="modalAmountPayForm" value={currentPaymentData.amount} onChange={handleFormChange} required step="0.01" min="0.01" />
               
-              <ModalLabel htmlFor="modalPaymentDatePayForm">Data do Pagamento*</ModalLabel>
-              <ModalInput type="date" name="paymentDate" id="modalPaymentDatePayForm" value={currentPaymentData.paymentDate} onChange={handleFormChange} required />
+              <ModalLabel>Data do Pagamento*</ModalLabel>
+              <div style={{ position: 'relative' }}>
+                <DatePickerButton type="button" onClick={openPaymentDatePicker}>
+                  <span>{currentPaymentData.paymentDate ? new Date(currentPaymentData.paymentDate).toLocaleDateString('pt-PT') : 'Selecionar data'}</span>
+                  <FaCalendarAlt />
+                </DatePickerButton>
+                <HiddenDateInput
+                  ref={paymentDateInputRef}
+                  type="date"
+                  name="paymentDate"
+                  id="modalPaymentDatePayForm"
+                  value={currentPaymentData.paymentDate}
+                  onChange={handleFormChange}
+                  required
+                />
+              </div>
 
               <ModalLabel htmlFor="modalReferenceMonthPayForm">Mês de Referência*</ModalLabel>
               <ModalInput type="month" name="referenceMonth" id="modalReferenceMonthPayForm" value={currentPaymentData.referenceMonth} onChange={handleFormChange} required />
@@ -1018,8 +1079,7 @@ const AdminManagePaymentsPage = () => {
                 ))}
               </ModalSelect>
 
-              <ModalLabel htmlFor="modalDescriptionPayForm">Descrição (Opcional)</ModalLabel>
-              <ModalTextarea name="description" id="modalDescriptionPayForm" value={currentPaymentData.description} onChange={handleFormChange} />
+              {/* Descrição removida para manter o modal compacto */}
 
               <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
