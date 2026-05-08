@@ -57,6 +57,7 @@ const AdminClientSelectionPage = lazyWithRetry(() => import('./pages/admin/Admin
 const AdminLogsPage = lazyWithRetry(() => import('./pages/admin/AdminLogsPage'));
 const SessionHistoryPage = lazyWithRetry(() => import('./pages/SessionHistoryPage'));
 const SessionHistoryDetailPage = lazyWithRetry(() => import('./pages/SessionHistoryDetailPage'));
+const PublicPaymentPage = lazyWithRetry(() => import('./pages/PublicPaymentPage'));
 
 // Componente de Layout
 
@@ -378,6 +379,7 @@ function App() {
           <Route path='/login-staff' element={ !authState.isAuthenticated ? <StaffLoginPage/> : <Navigate to="/admin/dashboard" replace/>}/>
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/" element={!authState.isAuthenticated ? <EntryPage /> : (authState.role === 'user' ? <Navigate to="/dashboard" replace /> : <Navigate to="/admin/dashboard" replace />)} />
+          <Route path="/pagar" element={<PublicPaymentPage />} />
           <Route path="/marcar" element={<PublicBookingPage />} />
           <Route path="/confirmar-reagendamento-consulta" element={<ConfirmReschedulePage type="consulta" />} />
           <Route path="/confirmar-reagendamento-treino" element={<ConfirmReschedulePage type="treino" />} />

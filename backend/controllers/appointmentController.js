@@ -4,6 +4,9 @@ const { Op, Sequelize } = require('sequelize');
 const { format } = require('date-fns');
 const moment = require('moment');
 const { _internalCreateNotification } = require('./notificationController');
+const crypto = require('crypto');
+const { hashPassword } = require('../utils/passwordUtils');
+const { createPublicPaymentToken } = require('../utils/publicPaymentToken');
 let sendWhatsAppText;
 try {
   // Opcional: não rebentar o servidor se o serviço não estiver disponível no deploy
@@ -46,6 +49,49 @@ const getStaffIdsSharingOffice = (staffId) => {
   if (SHARED_OFFICE_STAFF_IDS.length === 0) return [sid];
   if (SHARED_OFFICE_STAFF_IDS.includes(sid)) return [...SHARED_OFFICE_STAFF_IDS];
   return [sid];
+};
+
+const createOrGetExternalClientForGuest = async ({ guestName, guestEmail, guestPhone }) => {
+  const raw = String(guestName || '').trim().replace(/\s+/g, ' ');
+  if (!raw) throw new Error('guestName em falta');
+  const trimmedEmail = guestEmail != null ? String(guestEmail).trim().toLowerCase() : '';
+  const trimmedPhone = guestPhone != null ? String(guestPhone).trim() : '';
+  if (!trimmedEmail && !trimmedPhone) throw new Error('guestEmail/guestPhone em falta');
+
+  if (trimmedEmail) {
+    const existingByEmail = await db.User.findOne({ where: { email: trimmedEmail } });
+    if (existingByEmail) return existingByEmail;
+  }
+
+  const parts = raw.split(' ');
+  const firstName = parts.slice(0, -1).join(' ') || parts[0] || 'Cliente';
+  const lastName = parts.length > 1 ? parts[parts.length - 1] : 'Externo';
+
+  const existingExternal = await db.User.findOne({
+    where: {
+      firstName,
+      lastName,
+      isExternalClient: true,
+      ...(trimmedPhone ? { phone: trimmedPhone } : {}),
+    },
+  });
+  if (existingExternal) return existingExternal;
+
+  const token = crypto.randomBytes(10).toString('hex');
+  const syntheticEmail = trimmedEmail || `external+${Date.now()}-${token}@example.invalid`;
+  const randomPassword = crypto.randomBytes(24).toString('hex');
+  const hashedPassword = await hashPassword(randomPassword);
+
+  return db.User.create({
+    firstName,
+    lastName,
+    email: syntheticEmail,
+    phone: trimmedPhone || null,
+    password: hashedPassword,
+    approvedAt: new Date(),
+    gdprConsent: true,
+    isExternalClient: true,
+  });
 };
 
 // --- Função Auxiliar para Verificar Conflitos de Consulta (inclui gabinete partilhado) ---
@@ -166,7 +212,7 @@ const internalCreateSignalPayment = async (appointmentInstance, staffIdRequestin
 
 // --- Funções do Controlador ---
 const adminCreateAppointment = async (req, res) => {
-  const { date, time, staffId, userId, notes, status, durationMinutes, totalCost, guestName, guestEmail, guestPhone } = req.body;
+  const { date, time, staffId, userId, status, durationMinutes, totalCost, guestName, guestEmail, guestPhone } = req.body;
 
   if (!date || !time || !staffId || durationMinutes === undefined) {
     return res.status(400).json({ message: 'Data, hora, ID do profissional e duração são obrigatórios.' });
@@ -179,8 +225,8 @@ const adminCreateAppointment = async (req, res) => {
     return res.status(400).json({ message: 'Se atribuir um cliente, o custo total da consulta (positivo) é obrigatório para gerar o sinal.' });
   }
   const isGuestBooking = !userId && (guestName != null || guestEmail != null || guestPhone != null);
-  if (isGuestBooking && (!guestName || !guestEmail || !guestPhone)) {
-    return res.status(400).json({ message: 'Para marcar para visitante (sem conta), nome, email e telemóvel são obrigatórios.' });
+  if (isGuestBooking && (!guestName || (!guestEmail && !guestPhone))) {
+    return res.status(400).json({ message: 'Para marcar para visitante (sem conta), nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.' });
   }
 
   try {
@@ -189,9 +235,13 @@ const adminCreateAppointment = async (req, res) => {
     if (!['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee'].includes(professional.role)) { return res.status(400).json({ message: 'O ID do profissional fornecido não tem permissão para consultas.' }); }
 
     let clientUser = null;
+    let resolvedUserId = userId ? parseInt(userId) : null;
     if (userId) {
       clientUser = await db.User.findByPk(parseInt(userId));
       if (!clientUser) { return res.status(404).json({ message: 'Cliente (user) não encontrado.' }); }
+    } else if (isGuestBooking) {
+      clientUser = await createOrGetExternalClientForGuest({ guestName, guestEmail, guestPhone });
+      resolvedUserId = clientUser.id;
     }
 
     const conflict = await checkForStaffAppointmentConflict(parseInt(staffId), date, time, parsedDuration);
@@ -203,16 +253,15 @@ const adminCreateAppointment = async (req, res) => {
       date,
       time,
       staffId: parseInt(staffId),
-      userId: userId ? parseInt(userId) : null,
-      notes,
+      userId: resolvedUserId,
       status: userId ? (status || 'agendada') : (isGuestBooking ? (status || 'agendada') : (status || 'disponível')),
       durationMinutes: parsedDuration,
       totalCost: (userId || isGuestBooking) && totalCost ? parseFloat(totalCost) : null,
       signalPaid: false,
       ...(isGuestBooking && {
         guestName: String(guestName).trim(),
-        guestEmail: String(guestEmail).trim().toLowerCase(),
-        guestPhone: String(guestPhone).trim(),
+        guestEmail: guestEmail ? String(guestEmail).trim().toLowerCase() : null,
+        guestPhone: guestPhone ? String(guestPhone).trim() : null,
       }),
     });
 
@@ -760,6 +809,17 @@ const staffRespondToAppointmentRequest = async (req, res) => {
       appointment.signalPaid = false;
       await appointment.save();
 
+      // Se for visitante (sem conta), criar/associar um "cliente externo" para permitir pagamentos
+      if (!appointment.userId && (appointment.guestName || appointment.guestEmail || appointment.guestPhone)) {
+        const externalClient = await createOrGetExternalClientForGuest({
+          guestName: appointment.guestName,
+          guestEmail: appointment.guestEmail,
+          guestPhone: appointment.guestPhone,
+        });
+        appointment.userId = externalClient.id;
+        await appointment.save();
+      }
+
       // Criar pagamento de sinal (guardar referência para o link do email / botão Stripe)
       if (appointment.userId && appointment.totalCost > 0) {
         signalPaymentCreated = await internalCreateSignalPayment(appointment, staffMemberId);
@@ -796,7 +856,7 @@ const staffRespondToAppointmentRequest = async (req, res) => {
       });
     }
 
-    // Email ao cliente ou visitante quando staff aceita ou rejeita (link com pay=ID abre direto o Stripe)
+    // Email ao cliente ou visitante quando staff aceita ou rejeita (inclui link para pagamento)
     const recipientEmail = appointment.guestEmail || (appointment.client && appointment.client.email);
     if (recipientEmail && (sendGuestAppointmentAccepted || sendGuestAppointmentRejected)) {
       const professionalName = appointment.professional ? `${appointment.professional.firstName} ${appointment.professional.lastName}` : 'o profissional';
@@ -804,8 +864,15 @@ const staffRespondToAppointmentRequest = async (req, res) => {
       const guestName = appointment.guestName || (appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : null) || 'Visitante';
       const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
       const paymentUrl = signalPaymentCreated
-        ? `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`
-        : (appointment.userId ? `${frontendUrl}/meus-pagamentos` : undefined);
+        ? (() => {
+            // Visitante: checkout público via token; Cliente com conta: /meus-pagamentos?pay=
+            if (appointment.guestEmail || appointment.guestPhone) {
+              const token = createPublicPaymentToken({ paymentId: signalPaymentCreated.id, email: recipientEmail });
+              return `${frontendUrl}/pagar?token=${token}`;
+            }
+            return `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
+          })()
+        : undefined;
       const totalCost = appointment.totalCost != null ? parseFloat(appointment.totalCost) : null;
       const signalAmount = totalCost != null ? parseFloat((totalCost * 0.25).toFixed(2)) : null;
 
@@ -818,9 +885,9 @@ const staffRespondToAppointmentRequest = async (req, res) => {
               professionalName,
               date: appointment.date,
               time: timeStr,
-              totalCost: appointment.userId ? totalCost : undefined,
-              signalAmount: appointment.userId ? signalAmount : undefined,
-              paymentUrl: appointment.userId ? paymentUrl : undefined,
+              totalCost: totalCost || undefined,
+              signalAmount: signalAmount || undefined,
+              paymentUrl: paymentUrl || undefined,
             }).catch(err => console.error('Erro ao enviar email de consulta aceite:', err));
           }
         } else {

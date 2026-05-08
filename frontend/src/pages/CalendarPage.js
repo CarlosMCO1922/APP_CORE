@@ -41,7 +41,7 @@ import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
 const initialAdminTrainingFormState = { name: '', description: '', date: '', time: '', capacity: 10, instructorId: '', durationMinutes: 45, isRecurring: false, recurrenceType: 'weekly', seriesStartDate: '', seriesEndDate: '', dayOfWeek: '1'};
-const initialAdminAppointmentFormState = { date: '', time: '', staffId: '', userId: '', notes: '', status: 'disponível', durationMinutes: 60, totalCost: ''};
+const initialAdminAppointmentFormState = { date: '', time: '', staffId: '', clientMode: 'existing', userId: '', guestName: '', guestEmail: '', guestPhone: '', status: 'disponível', durationMinutes: 60, totalCost: ''};
 const appointmentStatuses = [ 'disponível', 'agendada', 'confirmada', 'concluída', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'não_compareceu', 'pendente_aprovacao_staff', 'rejeitada_pelo_staff' ];
 
 // --- Styled Components ---
@@ -913,7 +913,24 @@ addToast('Falha ao criar treino.', { type: 'error', category: 'calendar' });
       setAdminAppointmentFormData(initialAdminAppointmentFormState);
   };
   const handleAdminAppointmentFormChange = (e) => {
-      setAdminAppointmentFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+      const { name, value } = e.target;
+      setAdminAppointmentFormData((prev) => {
+        if (name === 'clientMode') {
+          const next = { ...prev, clientMode: value };
+          if (value === 'guest') {
+            next.userId = '';
+          } else {
+            next.guestName = '';
+            next.guestEmail = '';
+            next.guestPhone = '';
+          }
+          return next;
+        }
+        if (name === 'userId' && prev.clientMode === 'guest') {
+          return prev;
+        }
+        return { ...prev, [name]: value };
+      });
   };
   const handleAdminCreateAppointmentSubmit = async (e) => {
       e.preventDefault();
@@ -921,14 +938,37 @@ addToast('Falha ao criar treino.', { type: 'error', category: 'calendar' });
       setAdminAppointmentModalError('');
       setPageSuccessMessage('');
       
+      const isGuest = adminAppointmentFormData.clientMode === 'guest';
+      const guestName = String(adminAppointmentFormData.guestName || '').trim();
+      const guestEmail = String(adminAppointmentFormData.guestEmail || '').trim();
+      const guestPhone = String(adminAppointmentFormData.guestPhone || '').trim();
+
+      if (isGuest) {
+        const hasName = guestName.length >= 2;
+        const hasContact = !!guestEmail || !!guestPhone;
+        if (!hasName || !hasContact) {
+          setAdminAppointmentModalError('Para visitante: nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.');
+          setAdminAppointmentFormLoading(false);
+          return;
+        }
+      }
+
+      const hasUserId = !isGuest && !!adminAppointmentFormData.userId;
+      const totalCostParsed =
+        adminAppointmentFormData.totalCost !== '' && !isNaN(parseFloat(adminAppointmentFormData.totalCost))
+          ? parseFloat(adminAppointmentFormData.totalCost)
+          : null;
+
       const dataToSend = {
-          ...adminAppointmentFormData,
-          staffId: adminAppointmentFormData.staffId ? parseInt(adminAppointmentFormData.staffId, 10) : null,
-          userId: adminAppointmentFormData.userId ? parseInt(adminAppointmentFormData.userId, 10) : null,
-          durationMinutes: parseInt(adminAppointmentFormData.durationMinutes, 10),
-          time: adminAppointmentFormData.time.length === 5 ? `${adminAppointmentFormData.time}:00` : adminAppointmentFormData.time,
-          totalCost: (adminAppointmentFormData.userId && adminAppointmentFormData.totalCost !== '' && !isNaN(parseFloat(adminAppointmentFormData.totalCost))) ? parseFloat(adminAppointmentFormData.totalCost) : null,
-          category: 'FISIOTERAPIA' // Categoria fixa para este modal
+        date: adminAppointmentFormData.date,
+        time: adminAppointmentFormData.time.length === 5 ? `${adminAppointmentFormData.time}:00` : adminAppointmentFormData.time,
+        durationMinutes: parseInt(adminAppointmentFormData.durationMinutes, 10),
+        staffId: adminAppointmentFormData.staffId ? parseInt(adminAppointmentFormData.staffId, 10) : null,
+        userId: hasUserId ? parseInt(adminAppointmentFormData.userId, 10) : null,
+        status: adminAppointmentFormData.status,
+        totalCost: ((hasUserId || isGuest) && totalCostParsed != null) ? totalCostParsed : null,
+        category: 'FISIOTERAPIA',
+        ...(isGuest ? { guestName, guestEmail: guestEmail || null, guestPhone: guestPhone || null } : {}),
       };
       try {
           await adminCreateAppointment(dataToSend, authState.token);
@@ -1338,14 +1378,50 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
                           </AdminModalSelect>
 
                           <AdminModalLabel htmlFor="adminApptUser">Cliente (Opcional)</AdminModalLabel>
-                          <AdminModalSelect name="userId" id="adminApptUser" value={adminAppointmentFormData.userId} onChange={handleAdminAppointmentFormChange}>
-                              <option value="">Nenhum (Horário Vago)</option>
-                              {adminUserListForAppointment.map(user => (
-                                  <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
-                              ))}
-                          </AdminModalSelect>
+                          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+                            <AdminModalSelect
+                              name="clientMode"
+                              value={adminAppointmentFormData.clientMode}
+                              onChange={handleAdminAppointmentFormChange}
+                              style={{ flex: '0 0 190px' }}
+                            >
+                              <option value="existing">Cliente existente</option>
+                              <option value="guest">Visitante (sem conta)</option>
+                            </AdminModalSelect>
+                            <div style={{ fontSize: '0.85rem', color: theme.colors.textMuted }}>
+                              {adminAppointmentFormData.clientMode === 'guest'
+                                ? 'Nome + (email ou telemóvel)'
+                                : 'Seleciona um cliente ou deixa vazio'}
+                            </div>
+                          </div>
 
-                          {adminAppointmentFormData.userId && (
+                          {adminAppointmentFormData.clientMode === 'existing' ? (
+                            <AdminModalSelect name="userId" id="adminApptUser" value={adminAppointmentFormData.userId} onChange={handleAdminAppointmentFormChange}>
+                                <option value="">Nenhum (Horário Vago)</option>
+                                {adminUserListForAppointment.map(user => (
+                                    <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
+                                ))}
+                            </AdminModalSelect>
+                          ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                              <div>
+                                <AdminModalLabel>Nome*</AdminModalLabel>
+                                <AdminModalInput name="guestName" value={adminAppointmentFormData.guestName} onChange={handleAdminAppointmentFormChange} placeholder="Ex: Maria Silva" />
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <div>
+                                  <AdminModalLabel>Email</AdminModalLabel>
+                                  <AdminModalInput name="guestEmail" value={adminAppointmentFormData.guestEmail} onChange={handleAdminAppointmentFormChange} placeholder="email@exemplo.com" />
+                                </div>
+                                <div>
+                                  <AdminModalLabel>Telemóvel</AdminModalLabel>
+                                  <AdminModalInput name="guestPhone" value={adminAppointmentFormData.guestPhone} onChange={handleAdminAppointmentFormChange} placeholder="912345678" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {(adminAppointmentFormData.userId || adminAppointmentFormData.clientMode === 'guest') && (
                               <>
                                   <AdminModalLabel htmlFor="adminApptCost">Custo Total (EUR){adminAppointmentFormData.userId ? '*' : ''}</AdminModalLabel>
                                   <AdminModalInput type="number" name="totalCost" id="adminApptCost" value={adminAppointmentFormData.totalCost} onChange={handleAdminAppointmentFormChange} placeholder="Ex: 50.00" step="0.01" min={adminAppointmentFormData.userId ? "0.01" : "0"} />
@@ -1359,8 +1435,7 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
                               ))}
                           </AdminModalSelect>
 
-                          <AdminModalLabel htmlFor="adminApptNotes">Notas Adicionais</AdminModalLabel>
-                          <AdminModalTextarea name="notes" id="adminApptNotes" value={adminAppointmentFormData.notes} onChange={handleAdminAppointmentFormChange} />
+                          {/* Notas removidas por pedido (não necessárias neste fluxo) */}
 
                           <ModalActions>
                               <AdminModalButton type="button" secondary onClick={handleCloseAdminCreateAppointmentModal} disabled={adminAppointmentFormLoading}>Cancelar</AdminModalButton>

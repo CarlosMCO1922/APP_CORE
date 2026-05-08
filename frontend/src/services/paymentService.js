@@ -180,3 +180,33 @@ export const createStripePaymentIntentForSignal = async (internalPaymentId, toke
     throw error;
   }
 };
+
+// --- Checkout público (visitantes sem conta) ---
+export const publicGetPaymentByToken = async (token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/public/payments/${token}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao buscar pagamento público.');
+    return data;
+  } catch (error) {
+    logger.error('Erro em publicGetPaymentByToken:', error);
+    throw error;
+  }
+};
+
+export const publicCreateStripeIntentByToken = async (token) => {
+  if (!token) throw new Error('Token não fornecido.');
+  try {
+    const response = await fetch(`${API_URL}/public/payments/${token}/create-stripe-intent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao criar intenção Stripe (público).');
+    return data;
+  } catch (error) {
+    logger.error('Erro em publicCreateStripeIntentByToken:', error);
+    throw error;
+  }
+};

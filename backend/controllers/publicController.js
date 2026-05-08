@@ -12,6 +12,8 @@ const {
   sendGuestAppointmentRescheduleConfirmed,
   sendGuestTrainingRescheduleConfirmed,
 } = require('../utils/emailService');
+const { verifyPublicPaymentToken } = require('../utils/publicPaymentToken');
+const stripeFactory = require('stripe');
 const {
   isSignupClosedWithinOneHour,
   todayDateStringInAppTimezone,
@@ -94,19 +96,17 @@ const getAvailableSlots = async (req, res) => {
 const postAppointmentRequest = async (req, res) => {
   const { staffId, date, time, durationMinutes = 60, notes, guestName, guestEmail, guestPhone } = req.body;
 
-  if (!guestName || !guestEmail || !guestPhone) {
-    return res.status(400).json({ message: 'Nome, email e telemóvel são obrigatórios.' });
+  if (!guestName || (!guestEmail && !guestPhone)) {
+    return res.status(400).json({ message: 'Nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.' });
   }
   const trimmedName = String(guestName).trim();
-  const trimmedEmail = String(guestEmail).trim().toLowerCase();
-  const trimmedPhone = String(guestPhone).trim();
-  if (!trimmedName || !trimmedEmail || !trimmedPhone) {
-    return res.status(400).json({ message: 'Nome, email e telemóvel não podem estar vazios.' });
+  const trimmedEmail = guestEmail != null ? String(guestEmail).trim().toLowerCase() : '';
+  const trimmedPhone = guestPhone != null ? String(guestPhone).trim() : '';
+  if (!trimmedName || (!trimmedEmail && !trimmedPhone)) {
+    return res.status(400).json({ message: 'Nome e contacto não podem estar vazios.' });
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(trimmedEmail)) {
-    return res.status(400).json({ message: 'Email inválido.' });
-  }
+  if (trimmedEmail && !emailRegex.test(trimmedEmail)) return res.status(400).json({ message: 'Email inválido.' });
 
   if (!staffId || !date || !time) {
     return res.status(400).json({ message: 'Profissional, data e hora são obrigatórios.' });
@@ -140,8 +140,8 @@ const postAppointmentRequest = async (req, res) => {
       notes: notes || null,
       status: 'pendente_aprovacao_staff',
       guestName: trimmedName,
-      guestEmail: trimmedEmail,
-      guestPhone: trimmedPhone,
+      guestEmail: trimmedEmail || null,
+      guestPhone: trimmedPhone || null,
     });
 
     const professionalName = `${professional.firstName} ${professional.lastName}`;
@@ -156,13 +156,15 @@ const postAppointmentRequest = async (req, res) => {
     });
 
     setImmediate(() => {
-      sendGuestAppointmentRequestReceived({
-        to: trimmedEmail,
-        guestName: trimmedName,
-        professionalName,
-        date,
-        time: String(time).substring(0, 5),
-      }).catch((err) => console.error('Erro ao enviar email de pedido recebido:', err));
+      if (trimmedEmail) {
+        sendGuestAppointmentRequestReceived({
+          to: trimmedEmail,
+          guestName: trimmedName,
+          professionalName,
+          date,
+          time: String(time).substring(0, 5),
+        }).catch((err) => console.error('Erro ao enviar email de pedido recebido:', err));
+      }
     });
 
     res.status(201).json({
@@ -175,6 +177,64 @@ const postAppointmentRequest = async (req, res) => {
       return res.status(400).json({ message: 'Erro de validação.', errors: error.errors.map((e) => e.message) });
     }
     res.status(500).json({ message: 'Erro ao enviar pedido.', error: error.message });
+  }
+};
+
+/** GET /public/payments/:token - detalhes básicos para checkout público (visitante). */
+const getPublicPaymentByToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const payload = verifyPublicPaymentToken(token);
+    const payment = await db.Payment.findByPk(payload.paymentId);
+    if (!payment) return res.status(404).json({ message: 'Pagamento não encontrado.' });
+    if (payment.status !== 'pendente') return res.status(400).json({ message: 'Pagamento já não está pendente.' });
+    return res.status(200).json({
+      id: payment.id,
+      amount: payment.amount,
+      description: payment.description,
+      category: payment.category,
+      status: payment.status,
+    });
+  } catch (e) {
+    return res.status(400).json({ message: 'Token inválido.', error: e.message });
+  }
+};
+
+/** POST /public/payments/:token/create-stripe-intent - cria PaymentIntent sem autenticação (visitante). */
+const createStripeIntentPublicByToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const payload = verifyPublicPaymentToken(token);
+    const payment = await db.Payment.findByPk(payload.paymentId);
+    if (!payment) return res.status(404).json({ message: 'Pagamento não encontrado.' });
+    if (payment.status !== 'pendente') return res.status(400).json({ message: 'Pagamento já não está pendente.' });
+
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) return res.status(500).json({ message: 'Stripe não configurado no servidor.' });
+    const stripe = stripeFactory(key);
+    const amountInCents = Math.round(parseFloat(payment.amount) * 100);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency: 'eur',
+      payment_method_types: ['card'],
+      description: payment.description || undefined,
+      metadata: {
+        internalPaymentId: payment.id,
+        relatedResourceId: payment.relatedResourceId,
+        relatedResourceType: payment.relatedResourceType,
+        category: payment.category,
+        public: 'true',
+      },
+    });
+
+    return res.status(200).json({
+      clientSecret: paymentIntent.client_secret,
+      paymentId: payment.id,
+      amount: payment.amount,
+    });
+  } catch (e) {
+    return res.status(500).json({ message: 'Erro ao iniciar processo de pagamento.', error: e.message });
   }
 };
 
@@ -456,6 +516,8 @@ module.exports = {
   getStaffForAppointments,
   getAvailableSlots,
   postAppointmentRequest,
+  getPublicPaymentByToken,
+  createStripeIntentPublicByToken,
   getPublicTrainings,
   postGuestTrainingSignup,
   confirmAppointmentReschedule,
