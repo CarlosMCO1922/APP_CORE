@@ -11,7 +11,7 @@ import {
 } from '../../services/appointmentService';
 import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
-import { FaCalendarCheck, FaPlus, FaEdit, FaTrashAlt, FaTimes, FaFilter } from 'react-icons/fa';
+import { FaCalendarCheck, FaPlus, FaEdit, FaTrashAlt, FaTimes, FaFilter, FaListUl } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
 
@@ -434,9 +434,44 @@ const ModalErrorText = styled.p`
   padding: 8px 12px;     
 `;
 
+const ClientRow = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+`;
+
+const ClientModeButton = styled.button`
+  height: 44px;
+  width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.cardBorder};
+  background: ${({ $active, theme }) => ($active ? `${theme.colors.primary}22` : theme.colors.buttonSecondaryBg)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.textMain)};
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.2s ease, border-color 0.2s ease;
+  flex: 0 0 44px;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
 const initialAppointmentFormState = {
-  date: '', time: '', staffId: '', userId: '', 
-  notes: '', status: 'disponível', durationMinutes: 60, totalCost: '',
+  date: '',
+  time: '',
+  staffId: '',
+  clientMode: 'existing', // existing | guest
+  userId: '',
+  guestName: '',
+  guestEmail: '',
+  guestPhone: '',
+  status: 'disponível',
+  durationMinutes: 60,
+  totalCost: '',
 };
 const appointmentStatuses = [
     'disponível', 'agendada', 'confirmada', 'concluída',
@@ -534,8 +569,11 @@ const AdminManageAppointmentsPage = () => {
       date: appointment.date,
       time: appointment.time ? appointment.time.substring(0,5) : '',
       staffId: appointment.staffId || (appointment.professional?.id || ''),
+      clientMode: (appointment.guestName || appointment.guestEmail || appointment.guestPhone) ? 'guest' : 'existing',
       userId: appointment.userId || (appointment.client?.id || ''),
-      notes: appointment.notes || '',
+      guestName: appointment.guestName || '',
+      guestEmail: appointment.guestEmail || '',
+      guestPhone: appointment.guestPhone || '',
       status: appointment.status || 'disponível',
       durationMinutes: appointment.durationMinutes || 60,
       totalCost: appointment.totalCost === null || appointment.totalCost === undefined ? '' : String(appointment.totalCost),
@@ -550,30 +588,63 @@ const AdminManageAppointmentsPage = () => {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setCurrentAppointmentData(prev => {
-        const newState = { ...prev, [name]: value };
-        if (name === 'userId' && value === '') { newState.totalCost = ''; }
-        return newState;
+    setCurrentAppointmentData((prev) => {
+      if (name === 'clientMode') {
+        const next = { ...prev, clientMode: value };
+        if (value === 'guest') {
+          next.userId = '';
+        } else {
+          next.guestName = '';
+          next.guestEmail = '';
+          next.guestPhone = '';
+        }
+        return next;
+      }
+      if (name === 'userId' && value === '') {
+        return { ...prev, userId: '', totalCost: '' };
+      }
+      return { ...prev, [name]: value };
     });
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true); setModalError(''); setError(''); setSuccessMessage('');
+    const isGuest = currentAppointmentData.clientMode === 'guest';
+    const guestName = String(currentAppointmentData.guestName || '').trim();
+    const guestEmail = String(currentAppointmentData.guestEmail || '').trim();
+    const guestPhone = String(currentAppointmentData.guestPhone || '').trim();
+    const totalCostParsed = currentAppointmentData.totalCost !== '' && !isNaN(parseFloat(currentAppointmentData.totalCost))
+      ? parseFloat(currentAppointmentData.totalCost)
+      : null;
+
+    if (isGuest) {
+      const hasName = guestName.length >= 2;
+      const hasContact = !!guestEmail || !!guestPhone;
+      if (!hasName || !hasContact) {
+        setModalError('Para visitante: nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.');
+        setFormLoading(false);
+        return;
+      }
+    }
+
     const dataToSend = {
-      ...currentAppointmentData,
-      staffId: currentAppointmentData.staffId ? parseInt(currentAppointmentData.staffId, 10) : null,
-      userId: currentAppointmentData.userId ? parseInt(currentAppointmentData.userId, 10) : null,
-      durationMinutes: parseInt(currentAppointmentData.durationMinutes, 10),
+      date: currentAppointmentData.date,
       time: currentAppointmentData.time.length === 5 ? `${currentAppointmentData.time}:00` : currentAppointmentData.time,
-      totalCost: (currentAppointmentData.userId && currentAppointmentData.totalCost !== '' && !isNaN(parseFloat(currentAppointmentData.totalCost))) ? parseFloat(currentAppointmentData.totalCost) : null,
+      staffId: currentAppointmentData.staffId ? parseInt(currentAppointmentData.staffId, 10) : null,
+      userId: (!isGuest && currentAppointmentData.userId) ? parseInt(currentAppointmentData.userId, 10) : null,
+      durationMinutes: parseInt(currentAppointmentData.durationMinutes, 10),
+      totalCost: ((currentAppointmentData.userId || isGuest) && totalCostParsed != null) ? totalCostParsed : null,
+      status: currentAppointmentData.status,
+      category: 'FISIOTERAPIA',
+      ...(isGuest ? { guestName, guestEmail: guestEmail || null, guestPhone: guestPhone || null } : {}),
     };
 
     if (!dataToSend.staffId) {
         setModalError("Por favor, selecione um profissional.");
         setFormLoading(false); return;
     }
-    if (dataToSend.userId && (dataToSend.totalCost === null || dataToSend.totalCost <= 0)) {
+    if ((dataToSend.userId || isGuest) && (dataToSend.totalCost === null || dataToSend.totalCost <= 0)) {
         setModalError("Custo total (positivo) é obrigatório ao atribuir um cliente.");
         setFormLoading(false); return;
     }
@@ -778,14 +849,57 @@ const AdminManageAppointmentsPage = () => {
               </ModalSelect>
 
               <ModalLabel htmlFor="userIdAppt">Cliente (Opcional)</ModalLabel>
-              <ModalSelect name="userId" id="userIdAppt" value={currentAppointmentData.userId} onChange={handleFormChange}>
-                <option value="">Nenhum (Horário Vago)</option>
-                {userList.map(user => (
-                  <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
-                ))}
-              </ModalSelect>
+              <ClientRow>
+                {currentAppointmentData.clientMode === 'existing' ? (
+                  <ModalSelect name="userId" id="userIdAppt" value={currentAppointmentData.userId} onChange={handleFormChange} style={{ flex: 1 }}>
+                    <option value="">Nenhum (Horário Vago)</option>
+                    {userList.map(user => (
+                      <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
+                    ))}
+                  </ModalSelect>
+                ) : (
+                  <ModalInput
+                    name="guestName"
+                    value={currentAppointmentData.guestName}
+                    onChange={handleFormChange}
+                    placeholder="Nome do visitante"
+                    style={{ flex: 1 }}
+                  />
+                )}
+                <ClientModeButton
+                  type="button"
+                  title="Cliente existente"
+                  aria-label="Cliente existente"
+                  $active={currentAppointmentData.clientMode === 'existing'}
+                  onClick={() => handleFormChange({ target: { name: 'clientMode', value: 'existing' } })}
+                >
+                  <FaListUl />
+                </ClientModeButton>
+                <ClientModeButton
+                  type="button"
+                  title="Visitante (sem conta)"
+                  aria-label="Visitante (sem conta)"
+                  $active={currentAppointmentData.clientMode === 'guest'}
+                  onClick={() => handleFormChange({ target: { name: 'clientMode', value: 'guest' } })}
+                >
+                  <FaPlus />
+                </ClientModeButton>
+              </ClientRow>
+
+              {currentAppointmentData.clientMode === 'guest' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 10 }}>
+                  <div>
+                    <ModalLabel>Email</ModalLabel>
+                    <ModalInput name="guestEmail" value={currentAppointmentData.guestEmail} onChange={handleFormChange} placeholder="email@exemplo.com" />
+                  </div>
+                  <div>
+                    <ModalLabel>Telemóvel</ModalLabel>
+                    <ModalInput name="guestPhone" value={currentAppointmentData.guestPhone} onChange={handleFormChange} placeholder="912345678" />
+                  </div>
+                </div>
+              )}
               
-              {currentAppointmentData.userId && currentAppointmentData.userId !== '' && (
+              {(currentAppointmentData.userId || currentAppointmentData.clientMode === 'guest') && (
                 <>
                   <ModalLabel htmlFor="totalCostAppt">Custo Total (EUR)*</ModalLabel>
                   <ModalInput
@@ -803,8 +917,7 @@ const AdminManageAppointmentsPage = () => {
                 ))}
               </ModalSelect>
 
-              <ModalLabel htmlFor="notesAppt">Notas Adicionais</ModalLabel>
-              <ModalTextarea name="notes" id="notesAppt" value={currentAppointmentData.notes} onChange={handleFormChange} />
+              {/* Notas removidas para alinhar com o calendário geral */}
 
               <ModalActions>
                 <ModalButton type="button" secondary onClick={handleCloseModal} disabled={formLoading}>Cancelar</ModalButton>
