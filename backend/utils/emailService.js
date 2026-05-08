@@ -261,6 +261,52 @@ async function sendGuestAppointmentAccepted({ to, guestName, professionalName, d
   });
 }
 
+/**
+ * Email: pagamento do sinal confirmado e consulta confirmada.
+ */
+async function sendAppointmentSignalPaidConfirmed({ to, clientName, professionalName, date, time, signalAmount }) {
+  const transport = getTransporter();
+  if (!transport || !SMTP_USER) return;
+  const dateFormatted = _formatDatePt(date, time);
+  const signalFormatted = signalAmount != null ? `€ ${Number(signalAmount).toFixed(2).replace('.', ',')}` : '';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;">
+  <div style="${_emailStyles.wrapper}">
+    <div style="${_emailStyles.card}">
+      <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#d4af37;padding:28px 24px;text-align:center;">
+        <h1 style="${_emailStyles.headerTitle}">Pagamento confirmado</h1>
+        <p style="margin:8px 0 0 0;font-size:0.95rem;opacity:0.95;">A sua consulta ficou confirmada</p>
+      </div>
+      <div style="${_emailStyles.body}">
+        <p>Olá <strong>${clientName || 'Cliente'}</strong>,</p>
+        <p>Recebemos o seu pagamento do sinal <strong>${signalFormatted}</strong>. A sua consulta está agora <strong>CONFIRMADA</strong>.</p>
+        <div style="${_emailStyles.highlight}">
+          <p style="margin:0 0 6px 0;font-size:0.9rem;color:#666;">Detalhes</p>
+          <p style="margin:0;font-size:1.1rem;"><strong>${professionalName || 'Profissional'}</strong></p>
+          <p style="margin:4px 0 0 0;font-size:1.05rem;color:#1a1a2e;">📅 ${dateFormatted}</p>
+        </div>
+        <p>Obrigado!<br/>Equipa CORE</p>
+      </div>
+      <div style="${_emailStyles.footer}">
+        Obrigado,<br/><strong>Equipa CORE</strong>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  await transport.sendMail({
+    to,
+    from: FROM_EMAIL || SMTP_USER,
+    subject: 'Pagamento confirmado – Consulta confirmada | CORE',
+    html,
+  });
+}
+
 async function sendGuestAppointmentRejected({ to, guestName, professionalName, date, time }) {
   const transport = getTransporter();
   if (!transport || !SMTP_USER) return;
@@ -525,6 +571,7 @@ module.exports = {
   sendAppointmentRequestPending,
   sendGuestAppointmentRequestReceived,
   sendGuestAppointmentAccepted,
+  sendAppointmentSignalPaidConfirmed,
   sendGuestAppointmentRejected,
   sendGuestAppointmentTimeChanged,
   sendAppointmentCreatedByAdmin,

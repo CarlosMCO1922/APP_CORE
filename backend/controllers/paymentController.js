@@ -30,6 +30,15 @@ try {
   console.warn('[paymentController] whatsappService indisponível; a continuar sem WhatsApp.');
 }
 
+// Email é opcional (não deve crashar o servidor se faltar config SMTP)
+let sendAppointmentSignalPaidConfirmed = async () => {};
+try {
+  // eslint-disable-next-line global-require
+  ({ sendAppointmentSignalPaidConfirmed } = require('../utils/emailService'));
+} catch (e) {
+  console.warn('[paymentController] emailService indisponível; a continuar sem emails.');
+}
+
 // --- Funções do Administrador ---
 const adminCreatePayment = async (req, res) => {
   const { userId, clientName, amount, paymentDate, referenceMonth, category, description, status, relatedResourceId, relatedResourceType } = req.body;
@@ -558,6 +567,38 @@ const stripeWebhookHandler = async (req, res) => {
                     }
                   } catch (e) {
                     console.error('[WEBHOOK CTRL] Falha ao criar pagamento do restante da consulta:', e);
+                  }
+
+                  // Email ao cliente: pagamento recebido + consulta confirmada (não bloquear webhook)
+                  try {
+                    const apptWithDetails = await db.Appointment.findByPk(appointment.id, {
+                      include: [{ model: db.User, as: 'client' }, { model: db.Staff, as: 'professional' }],
+                    });
+                    const recipientEmail = apptWithDetails?.client?.email;
+                    if (recipientEmail) {
+                      const professionalName = apptWithDetails?.professional
+                        ? `${apptWithDetails.professional.firstName} ${apptWithDetails.professional.lastName}`.trim()
+                        : 'Profissional';
+                      const clientName = apptWithDetails?.client
+                        ? `${apptWithDetails.client.firstName || ''} ${apptWithDetails.client.lastName || ''}`.trim()
+                        : 'Cliente';
+                      const timeStr = String(apptWithDetails.time || '').substring(0, 5);
+                      const signalAmount = apptWithDetails.totalCost != null
+                        ? parseFloat((parseFloat(apptWithDetails.totalCost) * 0.25).toFixed(2))
+                        : null;
+                      setImmediate(() => {
+                        sendAppointmentSignalPaidConfirmed({
+                          to: recipientEmail,
+                          clientName,
+                          professionalName,
+                          date: apptWithDetails.date,
+                          time: timeStr,
+                          signalAmount,
+                        }).catch((err) => console.error('Erro ao enviar email de pagamento confirmado:', err));
+                      });
+                    }
+                  } catch (e) {
+                    console.error('[WEBHOOK CTRL] Falha ao preparar email de confirmação:', e);
                   }
 
                   // Notificar o cliente da confirmação da consulta
