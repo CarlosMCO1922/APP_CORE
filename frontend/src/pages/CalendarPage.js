@@ -41,7 +41,7 @@ import ConfirmationModal from '../components/Common/ConfirmationModal';
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
 const initialAdminTrainingFormState = { name: '', description: '', date: '', time: '', capacity: 10, instructorId: '', durationMinutes: 45, isRecurring: false, recurrenceType: 'weekly', seriesStartDate: '', seriesEndDate: '', dayOfWeek: '1'};
-const initialAdminAppointmentFormState = { date: '', time: '', staffId: '', clientMode: 'existing', userId: '', guestName: '', guestEmail: '', guestPhone: '', status: 'disponível', durationMinutes: 60, totalCost: ''};
+const initialAdminAppointmentFormState = { date: '', time: '', staffId: '', clientMode: 'existing', userId: '', guestName: '', guestEmail: '', guestPhone: '', durationMinutes: 60, totalCost: ''};
 const appointmentStatuses = [ 'disponível', 'agendada', 'confirmada', 'concluída', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'não_compareceu', 'pendente_aprovacao_staff', 'rejeitada_pelo_staff' ];
 
 // --- Styled Components ---
@@ -965,7 +965,7 @@ addToast('Falha ao criar treino.', { type: 'error', category: 'calendar' });
         durationMinutes: parseInt(adminAppointmentFormData.durationMinutes, 10),
         staffId: adminAppointmentFormData.staffId ? parseInt(adminAppointmentFormData.staffId, 10) : null,
         userId: hasUserId ? parseInt(adminAppointmentFormData.userId, 10) : null,
-        status: adminAppointmentFormData.status,
+        // status é definido no backend (staff cria => agendada; horário vago => disponível)
         totalCost: ((hasUserId || isGuest) && totalCostParsed != null) ? totalCostParsed : null,
         category: 'FISIOTERAPIA',
         ...(isGuest ? { guestName, guestEmail: guestEmail || null, guestPhone: guestPhone || null } : {}),
@@ -1428,12 +1428,7 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
                               </>
                           )}
 
-                          <AdminModalLabel htmlFor="adminApptStatus">Status*</AdminModalLabel>
-                          <AdminModalSelect name="status" id="adminApptStatus" value={adminAppointmentFormData.status} onChange={handleAdminAppointmentFormChange} required>
-                              {appointmentStatuses.map(statusValue => (
-                                  <option key={statusValue} value={statusValue}>{statusValue.charAt(0).toUpperCase() + statusValue.slice(1).replace(/_/g, ' ')}</option>
-                              ))}
-                          </AdminModalSelect>
+                          {/* Status removido: consulta criada por staff assume-se agendada e emite sinal */}
 
                           {/* Notas removidas por pedido (não necessárias neste fluxo) */}
 

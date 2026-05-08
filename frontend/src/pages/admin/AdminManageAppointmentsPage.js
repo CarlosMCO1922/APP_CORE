@@ -469,7 +469,7 @@ const initialAppointmentFormState = {
   guestName: '',
   guestEmail: '',
   guestPhone: '',
-  status: 'disponível',
+  // status é definido no backend (staff cria => agendada; horário vago => disponível)
   durationMinutes: 60,
   totalCost: '',
 };
@@ -635,7 +635,7 @@ const AdminManageAppointmentsPage = () => {
       userId: (!isGuest && currentAppointmentData.userId) ? parseInt(currentAppointmentData.userId, 10) : null,
       durationMinutes: parseInt(currentAppointmentData.durationMinutes, 10),
       totalCost: ((currentAppointmentData.userId || isGuest) && totalCostParsed != null) ? totalCostParsed : null,
-      status: currentAppointmentData.status,
+      // status é definido no backend
       category: 'FISIOTERAPIA',
       ...(isGuest ? { guestName, guestEmail: guestEmail || null, guestPhone: guestPhone || null } : {}),
     };
@@ -910,12 +910,7 @@ const AdminManageAppointmentsPage = () => {
                 </>
               )}
               
-              <ModalLabel htmlFor="statusAppt">Status*</ModalLabel>
-              <ModalSelect name="status" id="statusAppt" value={currentAppointmentData.status} onChange={handleFormChange} required>
-                {appointmentStatuses.map(statusValue => (
-                  <option key={statusValue} value={statusValue}>{statusValue.charAt(0).toUpperCase() + statusValue.slice(1).replace(/_/g, ' ')}</option>
-                ))}
-              </ModalSelect>
+              {/* Status removido: consulta criada por staff assume-se agendada e emite sinal */}
 
               {/* Notas removidas para alinhar com o calendário geral */}
 

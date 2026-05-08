@@ -221,12 +221,16 @@ const adminCreateAppointment = async (req, res) => {
   if (isNaN(parsedDuration) || parsedDuration <= 0) {
     return res.status(400).json({ message: 'Duração deve ser um número positivo.' });
   }
+  // Se a consulta for criada por staff com cliente/visitante, o custo total é obrigatório (vai gerar sinal 25%).
   if (userId && (totalCost === undefined || parseFloat(totalCost) <= 0)) {
-    return res.status(400).json({ message: 'Se atribuir um cliente, o custo total da consulta (positivo) é obrigatório para gerar o sinal.' });
+    return res.status(400).json({ message: 'Custo total da consulta (positivo) é obrigatório ao atribuir um cliente.' });
   }
   const isGuestBooking = !userId && (guestName != null || guestEmail != null || guestPhone != null);
   if (isGuestBooking && (!guestName || (!guestEmail && !guestPhone))) {
     return res.status(400).json({ message: 'Para marcar para visitante (sem conta), nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.' });
+  }
+  if (isGuestBooking && (totalCost === undefined || parseFloat(totalCost) <= 0)) {
+    return res.status(400).json({ message: 'Custo total da consulta (positivo) é obrigatório ao criar para visitante.' });
   }
 
   try {
@@ -254,7 +258,9 @@ const adminCreateAppointment = async (req, res) => {
       time,
       staffId: parseInt(staffId),
       userId: resolvedUserId,
-      status: userId ? (status || 'agendada') : (isGuestBooking ? (status || 'agendada') : (status || 'disponível')),
+      // Regra: se tem cliente/visitante (logo, é assumida pelo staff), fica sempre AGENDADA.
+      // Só fica "disponível" se for horário vago (sem user).
+      status: resolvedUserId ? 'agendada' : (status || 'disponível'),
       durationMinutes: parsedDuration,
       totalCost: (userId || isGuestBooking) && totalCost ? parseFloat(totalCost) : null,
       signalPaid: false,
