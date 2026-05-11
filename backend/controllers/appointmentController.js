@@ -569,18 +569,31 @@ const adminUpdateAppointment = async (req, res) => {
         }
 
         const wantsExistingClient = userId !== undefined && userId !== null && userId !== '';
-        const parsedUserId = wantsExistingClient ? parseInt(userId, 10) : null;
+        const parsedUserId = wantsExistingClient ? parseInt(userId, 10) : NaN;
+        const hasValidUserId = wantsExistingClient && !Number.isNaN(parsedUserId);
 
         const gn = guestName != null ? String(guestName).trim() : '';
         const ge = guestEmail != null ? String(guestEmail).trim().toLowerCase() : '';
         const gp = guestPhone != null ? String(guestPhone).trim() : '';
-        const hasGuestPayload = !!(gn || ge || gp);
-        const isGuestBooking = !wantsExistingClient && hasGuestPayload;
+        /** Visitante: nome (≥2) + contacto no corpo; prioridade sobre userId vazio/null. */
+        const wantsGuestFromBody = !!(gn.length >= 2 && (ge || gp));
 
-        if (isGuestBooking) {
-            if (!gn || (!ge && !gp)) {
-                return res.status(400).json({ message: 'Para visitante (sem conta), nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.' });
+        if (hasValidUserId) {
+            const clientUser = await db.User.findByPk(parsedUserId);
+            if (!clientUser) return res.status(404).json({ message: 'Cliente não encontrado.' });
+            appointment.userId = parsedUserId;
+            appointment.guestName = null;
+            appointment.guestEmail = null;
+            appointment.guestPhone = null;
+            if (appointment.status === 'disponível') appointment.status = 'agendada';
+            if (totalCost !== undefined && parseFloat(totalCost) > 0) {
+                appointment.totalCost = parseFloat(totalCost);
+            } else if (
+                (parsedUserId !== originalUserId || appointment.totalCost === null || appointment.totalCost <= 0)
+            ) {
+                return res.status(400).json({ message: 'Custo total (positivo) é obrigatório ao atribuir ou alterar o cliente na consulta.' });
             }
+        } else if (wantsGuestFromBody) {
             if (totalCost === undefined || parseFloat(totalCost) <= 0) {
                 return res.status(400).json({ message: 'Custo total da consulta (positivo) é obrigatório ao atribuir visitante.' });
             }
@@ -596,21 +609,6 @@ const adminUpdateAppointment = async (req, res) => {
             appointment.totalCost = parseFloat(totalCost);
             appointment.signalPaid = false;
             if (appointment.status === 'disponível') appointment.status = 'agendada';
-        } else if (wantsExistingClient) {
-            const clientUser = await db.User.findByPk(parsedUserId);
-            if (!clientUser) return res.status(404).json({ message: 'Cliente não encontrado.' });
-            appointment.userId = parsedUserId;
-            appointment.guestName = null;
-            appointment.guestEmail = null;
-            appointment.guestPhone = null;
-            if (appointment.status === 'disponível') appointment.status = 'agendada';
-            if (totalCost !== undefined && parseFloat(totalCost) > 0) {
-                appointment.totalCost = parseFloat(totalCost);
-            } else if (
-                (parsedUserId !== originalUserId || appointment.totalCost === null || appointment.totalCost <= 0)
-            ) {
-                return res.status(400).json({ message: 'Custo total (positivo) é obrigatório ao atribuir ou alterar o cliente na consulta.' });
-            }
         } else {
             appointment.userId = null;
             appointment.guestName = null;

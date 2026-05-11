@@ -565,11 +565,15 @@ const AdminManageAppointmentsPage = () => {
 
   const handleOpenEditModal = (appointment) => {
     setIsEditing(true);
+    const hasUser = !!(appointment.userId || appointment.client?.id);
+    const hasStoredGuest = !!(appointment.guestName || appointment.guestEmail || appointment.guestPhone);
+    // Horário vago: começar em modo visitante (evita gravar sem guest* no body e o backend tratar como "limpar").
+    const clientMode = hasStoredGuest ? 'guest' : hasUser ? 'existing' : 'guest';
     setCurrentAppointmentData({
       date: appointment.date,
       time: appointment.time ? appointment.time.substring(0,5) : '',
       staffId: appointment.staffId || (appointment.professional?.id || ''),
-      clientMode: (appointment.guestName || appointment.guestEmail || appointment.guestPhone) ? 'guest' : 'existing',
+      clientMode,
       userId: appointment.userId || (appointment.client?.id || ''),
       guestName: appointment.guestName || '',
       guestEmail: appointment.guestEmail || '',
@@ -610,22 +614,23 @@ const AdminManageAppointmentsPage = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true); setModalError(''); setError(''); setSuccessMessage('');
-    const isGuest = currentAppointmentData.clientMode === 'guest';
     const guestName = String(currentAppointmentData.guestName || '').trim();
     const guestEmail = String(currentAppointmentData.guestEmail || '').trim();
     const guestPhone = String(currentAppointmentData.guestPhone || '').trim();
+    const hasValidGuestPayload =
+      guestName.length >= 2 && (!!guestEmail || !!guestPhone);
+    const hasSelectedUser = !!String(currentAppointmentData.userId || '').trim();
+    const isGuest =
+      currentAppointmentData.clientMode === 'guest' ||
+      (hasValidGuestPayload && !hasSelectedUser);
     const totalCostParsed = currentAppointmentData.totalCost !== '' && !isNaN(parseFloat(currentAppointmentData.totalCost))
       ? parseFloat(currentAppointmentData.totalCost)
       : null;
 
-    if (isGuest) {
-      const hasName = guestName.length >= 2;
-      const hasContact = !!guestEmail || !!guestPhone;
-      if (!hasName || !hasContact) {
-        setModalError('Para visitante: nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.');
-        setFormLoading(false);
-        return;
-      }
+    if (isGuest && !hasValidGuestPayload) {
+      setModalError('Para visitante: nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.');
+      setFormLoading(false);
+      return;
     }
 
     const dataToSend = {
@@ -765,7 +770,9 @@ const AdminManageAppointmentsPage = () => {
             const dateText = appt.date ? new Date(appt.date).toLocaleDateString('pt-PT') : 'N/A';
             const timeText = appt.time ? appt.time.substring(0, 5) : 'N/A';
             const professionalText = appt.professional ? `${appt.professional.firstName} ${appt.professional.lastName}` : 'N/A';
-            const clientText = appt.client ? `${appt.client.firstName} ${appt.client.lastName}` : '(Vago)';
+            const clientText = appt.client
+              ? `${appt.client.firstName} ${appt.client.lastName}`.trim()
+              : (appt.guestName ? `${String(appt.guestName).trim()} (visitante)` : '(Vago)');
             const costText = appt.totalCost ? Number(appt.totalCost).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' }) : 'N/A';
             const statusText = appt.status ? appt.status.replace(/_/g, ' ') : 'N/A';
 
