@@ -7,6 +7,7 @@ const { _internalCreateNotification } = require('./notificationController');
 const crypto = require('crypto');
 const { hashPassword } = require('../utils/passwordUtils');
 const { createPublicPaymentToken } = require('../utils/publicPaymentToken');
+const { _availability } = require('./availabilityController');
 let sendWhatsAppText;
 try {
   // Opcional: não rebentar o servidor se o serviço não estiver disponível no deploy
@@ -99,14 +100,19 @@ const checkForStaffAppointmentConflict = async (staffId, date, time, durationMin
   const requestedStartTime = new Date(`${date}T${time}Z`);
   const requestedEndTime = new Date(requestedStartTime.getTime() + durationMinutes * 60000);
 
-  const staffIdsToCheck = getStaffIdsSharingOffice(staffId);
+  // Regra de negócio: não pode haver 2 consultas ao mesmo tempo (mesmo com profissionais diferentes).
+  // Pode ser desligado em casos excepcionais via env var.
+  const blockAcrossAllStaff = process.env.BLOCK_APPOINTMENTS_ACROSS_STAFF !== 'false';
+  const staffIdsToCheck = blockAcrossAllStaff ? null : getStaffIdsSharingOffice(staffId);
 
   const whereClauseForConflict = {
-    staffId: { [Op.in]: staffIdsToCheck },
     date: date,
     status: { [Op.in]: ['agendada', 'confirmada', 'concluída', 'não_compareceu', 'pendente_aprovacao_staff'] },
     ...(excludeAppointmentId && { id: { [Op.ne]: excludeAppointmentId } })
   };
+  if (staffIdsToCheck) {
+    whereClauseForConflict.staffId = { [Op.in]: staffIdsToCheck };
+  }
 
   const existingAppointments = await db.Appointment.findAll({ where: whereClauseForConflict });
 
@@ -119,6 +125,71 @@ const checkForStaffAppointmentConflict = async (staffId, date, time, durationMin
     }
   }
   return null;
+};
+
+// --- Disponibilidade (blocos de 30min) + conflitos (consultas existentes) ---
+const AVAIL_BLOCK_MINUTES = 30;
+
+const getAvailabilityBlocksForStaffDate = async ({ staffId, date }) => {
+  const rows = await db.StaffAvailabilitySlot.findAll({
+    where: { staffId, date },
+    attributes: ['time'],
+  });
+  if (!rows || rows.length === 0) {
+    return new Set(_availability.buildDefaultBlocks());
+  }
+  return new Set(rows.map((r) => String(r.time).substring(0, 5)));
+};
+
+const computeAvailableSlotsForStaffDate = async ({ staffId, date, durationMinutes }) => {
+  const slotDuration = parseInt(durationMinutes, 10);
+  if (!date || !staffId || isNaN(slotDuration) || slotDuration <= 0) return [];
+
+  const blocks = await getAvailabilityBlocksForStaffDate({ staffId, date });
+  const dayBlocks = _availability.buildAllDayBlocks(); // 08:00..19:30 (blocos)
+
+  const requiredBlocksCount = Math.max(1, Math.ceil(slotDuration / AVAIL_BLOCK_MINUTES));
+
+  const potentialStarts = [];
+  for (const start of dayBlocks) {
+    const startMins = _availability.toMinutes(start);
+    const endMins = startMins + requiredBlocksCount * AVAIL_BLOCK_MINUTES;
+    if (endMins > _availability.toMinutes(_availability.DAY_END)) continue;
+
+    let ok = true;
+    for (let i = 0; i < requiredBlocksCount; i++) {
+      const t = _availability.minutesToHHMM(startMins + i * AVAIL_BLOCK_MINUTES);
+      if (!blocks.has(t)) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) potentialStarts.push(start);
+  }
+
+  const blockAcrossAllStaff = process.env.BLOCK_APPOINTMENTS_ACROSS_STAFF !== 'false';
+  const staffIdsInOffice = blockAcrossAllStaff ? null : getStaffIdsSharingOffice(staffId);
+  const whereExistingAppointments = {
+    date,
+    status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] },
+  };
+  if (staffIdsInOffice) {
+    whereExistingAppointments.staffId = { [Op.in]: staffIdsInOffice };
+  }
+  const existingAppointments = await db.Appointment.findAll({
+    where: whereExistingAppointments,
+    attributes: ['time', 'durationMinutes'],
+  });
+
+  return potentialStarts.filter((slot) => {
+    const slotStart = moment.utc(`${date}T${slot}`);
+    const slotEnd = slotStart.clone().add(slotDuration, 'minutes');
+    return !existingAppointments.some((existing) => {
+      const existingStart = moment.utc(`${date}T${existing.time}`);
+      const existingEnd = existingStart.clone().add(existing.durationMinutes, 'minutes');
+      return slotStart.isBefore(existingEnd) && slotEnd.isAfter(existingStart);
+    });
+  });
 };
 
 // --- Função Auxiliar Interna para Criar Pagamento de Sinal ---
@@ -1052,44 +1123,11 @@ const getAvailableSlotsForProfessional = async (req, res) => {
   const slotDuration = parseInt(durationMinutes);
 
   try {
-    const workingHours = [
-      { start: '10:00', end: '13:00' },
-      { start: '15:00', end: '18:00' },
-    ];
-
-    const potentialSlots = [];
-    workingHours.forEach(period => {
-      let currentTime = moment.utc(`${date}T${period.start}`);
-      const endTime = moment.utc(`${date}T${period.end}`);
-
-      while (currentTime.clone().add(slotDuration, 'minutes').isSameOrBefore(endTime)) {
-        potentialSlots.push(currentTime.format('HH:mm'));
-        // CORREÇÃO LÓGICA: O incremento deve ser igual à duração do slot para não saltar horários.
-        currentTime.add(slotDuration, 'minutes');
-      }
+    const availableSlots = await computeAvailableSlotsForStaffDate({
+      staffId: professionalId,
+      date,
+      durationMinutes: slotDuration,
     });
-    
-    const staffIdsInOffice = getStaffIdsSharingOffice(professionalId);
-    const existingAppointments = await db.Appointment.findAll({
-      where: {
-        staffId: { [Op.in]: staffIdsInOffice },
-        date: date,
-        status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] }
-      },
-      attributes: ['time', 'durationMinutes']
-    });
-
-    const availableSlots = potentialSlots.filter(slot => {
-      const slotStart = moment.utc(`${date}T${slot}`);
-      const slotEnd = slotStart.clone().add(slotDuration, 'minutes');
-      
-      return !existingAppointments.some(existing => {
-        const existingStart = moment.utc(`${date}T${existing.time}`);
-        const existingEnd = existingStart.clone().add(existing.durationMinutes, 'minutes');
-        return slotStart.isBefore(existingEnd) && slotEnd.isAfter(existingStart);
-      });
-    });
-
     res.status(200).json(availableSlots);
 
   } catch (error) {
@@ -1099,6 +1137,7 @@ const getAvailableSlotsForProfessional = async (req, res) => {
 };
 
 module.exports = {
+  computeAvailableSlotsForStaffDate,
   checkForStaffAppointmentConflict,
   getStaffIdsSharingOffice,
   internalCreateSignalPayment,

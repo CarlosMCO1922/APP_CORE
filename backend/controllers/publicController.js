@@ -4,7 +4,7 @@ const db = require('../models');
 const { Op } = require('sequelize');
 const moment = require('moment');
 const { format } = require('date-fns');
-const { checkForStaffAppointmentConflict, getStaffIdsSharingOffice } = require('./appointmentController');
+const { checkForStaffAppointmentConflict, computeAvailableSlotsForStaffDate } = require('./appointmentController');
 const { _internalCreateNotification } = require('./notificationController');
 const {
   sendGuestAppointmentRequestReceived,
@@ -54,36 +54,10 @@ const getAvailableSlots = async (req, res) => {
     if (!professional || !['physiotherapist', 'trainer', 'admin', 'osteopata', 'employee'].includes(professional.role)) {
       return res.status(404).json({ message: 'Profissional não encontrado.' });
     }
-    const workingHours = [
-      { start: '10:00', end: '13:00' },
-      { start: '15:00', end: '18:00' },
-    ];
-    const potentialSlots = [];
-    workingHours.forEach((period) => {
-      let currentTime = moment.utc(`${date}T${period.start}`);
-      const endTime = moment.utc(`${date}T${period.end}`);
-      while (currentTime.clone().add(slotDuration, 'minutes').isSameOrBefore(endTime)) {
-        potentialSlots.push(currentTime.format('HH:mm'));
-        currentTime.add(slotDuration, 'minutes');
-      }
-    });
-    const staffIdsInOffice = getStaffIdsSharingOffice(professionalId);
-    const existingAppointments = await db.Appointment.findAll({
-      where: {
-        staffId: { [Op.in]: staffIdsInOffice },
-        date,
-        status: { [Op.notIn]: ['disponível', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'rejeitada_pelo_staff'] },
-      },
-      attributes: ['time', 'durationMinutes'],
-    });
-    const availableSlots = potentialSlots.filter((slot) => {
-      const slotStart = moment.utc(`${date}T${slot}`);
-      const slotEnd = slotStart.clone().add(slotDuration, 'minutes');
-      return !existingAppointments.some((existing) => {
-        const existingStart = moment.utc(`${date}T${existing.time}`);
-        const existingEnd = existingStart.clone().add(existing.durationMinutes, 'minutes');
-        return slotStart.isBefore(existingEnd) && slotEnd.isAfter(existingStart);
-      });
+    const availableSlots = await computeAvailableSlotsForStaffDate({
+      staffId: professionalId,
+      date,
+      durationMinutes: slotDuration,
     });
     res.status(200).json(availableSlots);
   } catch (error) {

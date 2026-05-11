@@ -231,7 +231,8 @@ const SearchableSelect = ({
   // Encontrar a opção selecionada
   const selectedOption = React.useMemo(() => {
     if (!value) return null;
-    return options.find(option => getOptionValue(option) === value) || null;
+    const normalizedValue = String(value);
+    return options.find(option => String(getOptionValue(option)) === normalizedValue) || null;
   }, [options, value, getOptionValue]);
 
   // Resetar highlightedIndex quando as opções mudam
@@ -384,7 +385,7 @@ const SearchableSelect = ({
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option, index) => {
                 const optionValue = getOptionValue(option);
-                const isSelected = value === optionValue;
+                const isSelected = String(value) === String(optionValue);
                 const isHighlighted = index === highlightedIndex;
 
                 return (
