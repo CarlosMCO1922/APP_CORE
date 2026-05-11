@@ -273,8 +273,9 @@ const adminCreateAppointment = async (req, res) => {
 
     newAppointment.professional = professional; 
 
+    let signalPaymentCreated = null;
     if (newAppointment.userId && newAppointment.status === 'agendada' && newAppointment.totalCost && newAppointment.totalCost > 0) {
-      await internalCreateSignalPayment(newAppointment, req.staff.id);
+      signalPaymentCreated = await internalCreateSignalPayment(newAppointment, req.staff.id);
     }
 
     const createdApptWithDetails = await db.Appointment.findByPk(newAppointment.id, {
@@ -302,13 +303,34 @@ const adminCreateAppointment = async (req, res) => {
         relatedResourceType: 'appointment',
         link: `/calendario`
       });
+      const to = clientUser.email;
+      const clientName = `${(clientUser.firstName || '').trim()} ${(clientUser.lastName || '').trim()}`.trim() || 'Cliente';
+      const professionalName = `${(professional.firstName || '').trim()} ${(professional.lastName || '').trim()}`.trim() || 'Profissional';
+      const timeStr = String(newAppointment.time).substring(0, 5);
+      const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+      const totalCostValue = newAppointment.totalCost != null ? parseFloat(newAppointment.totalCost) : null;
+      const signalAmount = totalCostValue != null ? parseFloat((totalCostValue * 0.25).toFixed(2)) : null;
+      const paymentUrl = signalPaymentCreated
+        ? (() => {
+            // Se existir guestEmail/guestPhone, usar checkout público; caso contrário, fluxo normal autenticado
+            if (newAppointment.guestEmail || newAppointment.guestPhone) {
+              const token = createPublicPaymentToken({ paymentId: signalPaymentCreated.id, email: to });
+              return `${frontendUrl}/pagar?token=${token}`;
+            }
+            return `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
+          })()
+        : undefined;
+
       sendAppointmentCreatedByAdmin({
-        to: clientUser.email,
-        clientName: `${(clientUser.firstName || '').trim()} ${(clientUser.lastName || '').trim()}`.trim() || 'Cliente',
-        professionalName: `${(professional.firstName || '').trim()} ${(professional.lastName || '').trim()}`.trim() || 'Profissional',
+        to,
+        clientName,
+        professionalName,
         date: newAppointment.date,
-        time: newAppointment.time,
-      }).catch(err => console.error('Email consulta criada por admin:', err));
+        time: timeStr,
+        totalCost: totalCostValue || undefined,
+        signalAmount: signalAmount || undefined,
+        paymentUrl: paymentUrl || undefined,
+      }).catch(err => console.error('Email consulta criada por staff/admin:', err));
     }
 
     res.status(201).json(createdApptWithDetails);

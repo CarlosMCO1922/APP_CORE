@@ -351,10 +351,22 @@ async function sendGuestAppointmentTimeChanged({ to, guestName, professionalName
 /**
  * Email quando um admin cria uma consulta e atribui ao cliente.
  */
-async function sendAppointmentCreatedByAdmin({ to, clientName, professionalName, date, time }) {
+async function sendAppointmentCreatedByAdmin({ to, clientName, professionalName, date, time, totalCost, signalAmount, paymentUrl }) {
   const transport = getTransporter();
   if (!transport || !SMTP_USER) return;
   const dateFormatted = _formatDatePt(date, time);
+  const hasPayment = paymentUrl && totalCost != null && signalAmount != null && Number(signalAmount) > 0;
+  const totalFormatted = totalCost != null ? `€ ${Number(totalCost).toFixed(2).replace('.', ',')}` : '';
+  const signalFormatted = signalAmount != null ? `€ ${Number(signalAmount).toFixed(2).replace('.', ',')}` : '';
+
+  const paymentBlock = hasPayment ? `
+        <div style="margin:24px 0;padding:20px;background:#f8fff9;border:1px solid #c3e6cb;border-radius:8px;">
+          <p style="margin:0 0 12px 0;font-weight:600;color:#155724;">Pagamento do sinal (25%)</p>
+          <p style="margin:0 0 8px 0;font-size:0.95rem;">Valor total da consulta: <strong>${totalFormatted}</strong></p>
+          <p style="margin:0 0 16px 0;font-size:0.95rem;">Sinal a pagar agora (25%): <strong>${signalFormatted}</strong></p>
+          <p style="margin:0 0 12px 0;font-size:0.9rem;color:#555;">Para confirmar a sua marcação, efetue o pagamento do sinal através do botão abaixo. Após o pagamento, a consulta ficará confirmada.</p>
+          <a href="${paymentUrl}" style="${_emailStyles.button}">Pagar sinal (${signalFormatted})</a>
+        </div>` : '';
   const html = `
 <!DOCTYPE html>
 <html>
@@ -374,6 +386,7 @@ async function sendAppointmentCreatedByAdmin({ to, clientName, professionalName,
           <p style="margin:0;font-size:1.1rem;"><strong>${professionalName || 'Profissional'}</strong></p>
           <p style="margin:4px 0 0 0;font-size:1.05rem;color:#1a1a2e;">📅 ${dateFormatted}</p>
         </div>
+        ${paymentBlock}
         <p>Se tiver dúvidas ou precisar de alterar o horário, contacte-nos.</p>
       </div>
       <div style="${_emailStyles.footer}">Obrigado,<br/><strong>Equipa CORE</strong></div>
