@@ -25,6 +25,7 @@ import {
 import moment from 'moment';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
+import ClientTypeaheadSelect from '../../components/Common/ClientTypeaheadSelect';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -520,11 +521,6 @@ const ParticipantItem = styled.li`
   &:nth-child(even) {
     background-color: ${({ theme }) => theme.colors.buttonSecondaryBg};
   }
-  .email {
-    color: ${({ theme }) => theme.colors.textMuted};
-    font-size: 0.8rem;
-    margin-left: 10px;
-  }
 `;
 
 const FiltersContainer = styled.div`
@@ -631,11 +627,6 @@ const AddSignupForm = styled.form`
   gap: 10px;
   align-items: flex-end;
   flex-wrap: wrap;
-`;
-
-const AddSignupSelect = styled(ModalSelect)`
-  flex-grow: 1;
-  min-width: 200px;
 `;
 
 const AddSignupButton = styled(ModalButton)`
@@ -1402,20 +1393,16 @@ const AdminManageTrainingsPage = () => {
             <AddSignupFormContainer>
               <h4>Adicionar Cliente ao Treino</h4>
               <AddSignupForm onSubmit={handleAdminBookClient}>
-                <ModalLabel htmlFor="userToBookSelectModalForm" style={{display: 'none'}}>Selecionar Cliente</ModalLabel>
-                <AddSignupSelect
+                <ClientTypeaheadSelect
                   id="userToBookSelectModalForm"
+                  users={availableUsersToBook}
                   value={userToBook}
                   onChange={(e) => setUserToBook(e.target.value)}
+                  placeholder="Escreve 3+ letras para encontrar o cliente"
                   required
-                >
-                  <option value="">Selecione um cliente para inscrever...</option>
-                  {availableUsersToBook.map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.firstName} {user.lastName} ({user.email})
-                    </option>
-                  ))}
-                </AddSignupSelect>
+                  style={{ flexGrow: 1, minWidth: 200 }}
+                  aria-label="Cliente a inscrever no treino"
+                />
                 <AddSignupButton type="submit" primary disabled={bookingLoading || !userToBook || (selectedTrainingForSignups.participants?.length || 0) >= selectedTrainingForSignups.capacity}>
                   {bookingLoading ? 'A inscrever...' : <><FaUserPlus /> Inscrever</>}
                 </AddSignupButton>
@@ -1424,14 +1411,13 @@ const AdminManageTrainingsPage = () => {
               {availableUsersToBook.length === 0 && !((selectedTrainingForSignups.participants?.length || 0) >= selectedTrainingForSignups.capacity) && <p style={{fontSize: '0.8rem', color: theme.colors.textMuted, marginTop: '5px'}}>Todos os clientes já estão inscritos, na lista de espera, ou não há clientes disponíveis.</p>}
             </AddSignupFormContainer>
 
-            <h4 style={{marginTop: '25px', color: theme.colors.primary}}>Lista de Inscritos ({selectedTrainingForSignups.participants?.length || 0} / {selectedTrainingForSignups.capacity})</h4>
+            <h4 style={{marginTop: '25px', color: theme.colors.primary}}>Lista de Inscritos</h4>
             {selectedTrainingForSignups.participants && selectedTrainingForSignups.participants.length > 0 ? (
                 <ParticipantList>
                     {selectedTrainingForSignups.participants.map(participant => (
                         <ParticipantItem key={participant.id}>
                             <div>
                                 <span>{participant.firstName} {participant.lastName}</span>
-                                <span className="email">{participant.email}</span>
                             </div>
                             <ActionButton
                                 type="button"
@@ -1452,7 +1438,7 @@ const AdminManageTrainingsPage = () => {
             )}
 
             <WaitlistSectionTitle>
-              <FaUsers style={{ marginRight: '8px' }} /> Lista de Espera ({selectedTrainingWaitlist.length})
+              <FaUsers style={{ marginRight: '8px' }} /> Lista de Espera
             </WaitlistSectionTitle>
             {waitlistLoading && <LoadingText>A carregar lista de espera...</LoadingText>}
             {!waitlistLoading && selectedTrainingWaitlist.length > 0 ? (
@@ -1461,7 +1447,6 @@ const AdminManageTrainingsPage = () => {
                   <ParticipantItem key={entry.id}>
                     <div>
                       <span>{entry.user?.firstName} {entry.user?.lastName}</span>
-                      <span className="email">{entry.user?.email} (Adicionado em: {new Date(entry.createdAt).toLocaleDateString('pt-PT')})</span>
                     </div>
                     <ActionButton
                       style={{backgroundColor: theme.colors.success, color: 'white'}}

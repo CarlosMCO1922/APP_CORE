@@ -14,7 +14,7 @@ import { adminGetAllUsers } from '../../services/userService';
 import { FaMoneyBillWave, FaPlus, FaTrashAlt, FaFilter, FaSyncAlt, FaTimes, FaCalendarAlt, FaListUl, FaCheck } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
-import SearchableSelect from '../../components/Common/SearchableSelect';
+import ClientTypeaheadSelect from '../../components/Common/ClientTypeaheadSelect';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -961,10 +961,17 @@ const AdminManagePaymentsPage = () => {
         <FiltersContainer>
           <FilterGroup>
             <ModalLabel htmlFor="filterUserIdPay">Cliente:</ModalLabel>
-            <ModalSelect name="userId" id="filterUserIdPay" value={filters.userId} onChange={handleFilterChange}>
-                <option value="">Todos</option>
-                {userList.map(user => <option key={user.id} value={user.id}>{user.firstName} {user.lastName}</option>)}
-            </ModalSelect>
+            <div style={{ minWidth: 0 }}>
+              <ClientTypeaheadSelect
+                key={`pay-filter-user-${filters.userId || 'none'}`}
+                id="filterUserIdPay"
+                name="userId"
+                users={userList}
+                value={filters.userId}
+                onChange={handleFilterChange}
+                placeholder="Todos — 3+ letras para filtrar"
+              />
+            </div>
           </FilterGroup>
           <FilterGroup>
             <ModalLabel htmlFor="filterStatusPay">Status:</ModalLabel>
@@ -1066,22 +1073,22 @@ const AdminManagePaymentsPage = () => {
               <ClientRow>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {clientMode === 'existing' ? (
-                    <SearchableSelect
+                    <ClientTypeaheadSelect
                       id="modalUserIdPayForm"
                       name="userId"
+                      users={userList}
                       value={currentPaymentData.userId || ''}
                       onChange={handleFormChange}
-                      options={userList}
-                      getOptionLabel={(user) => {
-                        const base = `${user.firstName} ${user.lastName}`;
-                        const tag = user.isExternalClient ? ' (cliente externo)' : '';
-                        return `${base}${tag} (${user.email})`;
+                      placeholder="Pesquisar cliente (3+ letras)…"
+                      getInputLabel={(u) => {
+                        const base = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+                        return u.isExternalClient ? `${base} (externo)` : base;
                       }}
-                      getOptionValue={(user) => user.id}
-                      placeholder="Selecionar cliente..."
-                      searchPlaceholder="Pesquisar..."
-                      searchable={true}
-                      required={false}
+                      getResultPrimary={(u) => {
+                        const base = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+                        return `${base}${u.isExternalClient ? ' · externo' : ''}`;
+                      }}
+                      getResultSecondary={(u) => (u.email ? String(u.email) : '')}
                     />
                   ) : (
                     <ModalInput

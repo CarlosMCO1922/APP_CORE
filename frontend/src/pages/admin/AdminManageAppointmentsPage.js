@@ -14,6 +14,7 @@ import { adminGetAllUsers } from '../../services/userService';
 import { FaCalendarCheck, FaPlus, FaEdit, FaTrashAlt, FaTimes, FaFilter, FaListUl } from 'react-icons/fa';
 import BackArrow from '../../components/BackArrow';
 import ConfirmationModal from '../../components/Common/ConfirmationModal';
+import ClientTypeaheadSelect from '../../components/Common/ClientTypeaheadSelect';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -738,12 +739,17 @@ const AdminManageAppointmentsPage = () => {
           </FilterGroup>
           <FilterGroup>
             <FilterLabel htmlFor="apptUserFilter">Cliente</FilterLabel>
-            <FilterSelect id="apptUserFilter" name="userId" value={filters.userId} onChange={handleFilterChange}>
-              <option value="">Todos</option>
-              {userList.map(u => (
-                <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-              ))}
-            </FilterSelect>
+            <div style={{ minWidth: 0 }}>
+              <ClientTypeaheadSelect
+                key={`appt-filter-user-${filters.userId || 'none'}`}
+                id="apptUserFilter"
+                name="userId"
+                users={userList}
+                value={filters.userId}
+                onChange={handleFilterChange}
+                placeholder="Todos — escreve 3+ letras para filtrar"
+              />
+            </div>
           </FilterGroup>
           <FilterGroup>
             <FilterLabel htmlFor="apptStatusFilter">Status</FilterLabel>
@@ -859,12 +865,15 @@ const AdminManageAppointmentsPage = () => {
               <ModalLabel htmlFor="userIdAppt">Cliente (Opcional)</ModalLabel>
               <ClientRow>
                 {currentAppointmentData.clientMode === 'existing' ? (
-                  <ModalSelect name="userId" id="userIdAppt" value={currentAppointmentData.userId} onChange={handleFormChange} style={{ flex: 1 }}>
-                    <option value="">Nenhum (Horário Vago)</option>
-                    {userList.map(user => (
-                      <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
-                    ))}
-                  </ModalSelect>
+                  <ClientTypeaheadSelect
+                    name="userId"
+                    id="userIdAppt"
+                    users={userList}
+                    value={currentAppointmentData.userId}
+                    onChange={handleFormChange}
+                    placeholder="Horário vago ou pesquisa cliente (3+ letras)"
+                    style={{ flex: 1, minWidth: 0 }}
+                  />
                 ) : (
                   <ModalInput
                     name="guestName"

@@ -38,6 +38,7 @@ import {
 } from 'react-icons/fa';
 import BackArrow from '../components/BackArrow';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
+import ClientTypeaheadSelect from '../components/Common/ClientTypeaheadSelect';
 
 const initialRequestFormState = { staffId: '', date: '', time: '', notes: '' };
 const initialAdminTrainingFormState = { name: '', description: '', date: '', time: '', capacity: 10, instructorId: '', durationMinutes: 45, isRecurring: false, recurrenceType: 'weekly', seriesStartDate: '', seriesEndDate: '', dayOfWeek: '1'};
@@ -1396,12 +1397,14 @@ addToast('Falha ao subscrever a série.', { type: 'error', category: 'calendar' 
                           </div>
 
                           {adminAppointmentFormData.clientMode === 'existing' ? (
-                            <AdminModalSelect name="userId" id="adminApptUser" value={adminAppointmentFormData.userId} onChange={handleAdminAppointmentFormChange}>
-                                <option value="">Nenhum (Horário Vago)</option>
-                                {adminUserListForAppointment.map(user => (
-                                    <option key={user.id} value={user.id}>{user.firstName} {user.lastName} ({user.email})</option>
-                                ))}
-                            </AdminModalSelect>
+                            <ClientTypeaheadSelect
+                              name="userId"
+                              id="adminApptUser"
+                              users={adminUserListForAppointment}
+                              value={adminAppointmentFormData.userId}
+                              onChange={handleAdminAppointmentFormChange}
+                              placeholder="Opcional: pesquisa cliente (3+ letras)"
+                            />
                           ) : (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                               <div>

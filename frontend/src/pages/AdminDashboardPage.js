@@ -396,7 +396,7 @@ const AdminDashboardPage = () => {
           <h2><FaCalendarCheckIcon />Gerir Consultas</h2>
         </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/availability-slots">
-          <h2><FaClock />Disponibilidade (marcações)</h2>
+          <h2><FaClock />Disponibilidade</h2>
         </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/manage-payments">
           <h2><FaCreditCard />Gerir Pagamentos</h2>
