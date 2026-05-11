@@ -44,8 +44,22 @@ function verifyPublicPaymentToken(token) {
   return payload;
 }
 
+/**
+ * Igual a createPublicPaymentToken, mas não rebenta o pedido HTTP se o segredo
+ * não estiver configurado (ex.: deploy antigo). Regista aviso e devolve null.
+ */
+function tryCreatePublicPaymentToken(opts) {
+  try {
+    return createPublicPaymentToken(opts);
+  } catch (e) {
+    console.warn('[publicPaymentToken]', e.message || e);
+    return null;
+  }
+}
+
 module.exports = {
   createPublicPaymentToken,
+  tryCreatePublicPaymentToken,
   verifyPublicPaymentToken,
 };
 

@@ -100,12 +100,11 @@ const AdminNavLinkCard = styled(Link)`
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 150px;
+  min-height: 110px;
 
   h2 {
     color: ${({ theme }) => theme.colors.primary};
-    margin-top: 0;
-    margin-bottom: 10px;
+    margin: 0;
     font-size: 1.5rem;
     display: flex;
     align-items: center;
@@ -116,15 +115,6 @@ const AdminNavLinkCard = styled(Link)`
     }
     @media (max-width: 480px) {
         font-size: 1.3rem;
-    }
-  }
-
-  p {
-    font-size: 0.9rem;
-    color: #a0a0a0;
-    line-height: 1.4;
-    @media (max-width: 480px) {
-        font-size: 0.85rem;
     }
   }
 
@@ -348,51 +338,41 @@ const AdminDashboardPage = () => {
       <AdminNavGrid>
         <AdminNavLinkCard to="/admin/calendario-geral">
           <h2><FaCalendarAlt />Calendário Geral</h2>
-          <p>{isFullAdmin ? 'Visualizar todos os treinos e consultas.' : 'Visualizar os teus eventos (consultas).'}</p>
         </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/manage-users">
           <h2><FaUsers />Gerir Clientes</h2>
-          <p>Ver, criar, editar e eliminar contas de clientes.</p>
         </AdminNavLinkCard>
         {isFullAdmin && (
           <AdminNavLinkCard to="/admin/manage-staff">
             <h2><FaUserMd />Gerir Equipa</h2>
-            <p>Adicionar e gerir contas de instrutores e staff.</p>
           </AdminNavLinkCard>
         )}
         {isFullAdmin && (
           <AdminNavLinkCard to="/admin/manage-trainings">
             <h2><FaDumbbell />Gerir Treinos</h2>
-            <p>Criar, visualizar, editar e eliminar sessões de treino.</p>
           </AdminNavLinkCard>
         )}
         <AdminNavLinkCard to="/admin/manage-appointments">
           <h2><FaCalendarCheckIcon />Gerir Consultas</h2>
-          <p>{isFullAdmin ? 'Criar, visualizar, editar e eliminar horários de consulta.' : 'Criar, visualizar, editar e eliminar as tuas consultas.'}</p>
         </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/availability-slots">
           <h2><FaClock />Disponibilidade (marcações)</h2>
-          <p>Definir, por dia, os blocos de 30 minutos em que aceitas pedidos de consulta no agendamento público.</p>
         </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/manage-payments">
           <h2><FaCreditCard />Gerir Pagamentos</h2>
-          <p>{isFullAdmin ? 'Registar e acompanhar pagamentos dos clientes.' : 'Registar e acompanhar pagamentos das tuas consultas.'}</p>
         </AdminNavLinkCard>
         {isFullAdmin && (
           <AdminNavLinkCard to="/admin/manage-global-plans">
             <h2><FaCreditCard />Gerir Planos de treino</h2>
-            <p>Criar, visualizar, editar e eliminar planos de treino.</p>
           </AdminNavLinkCard>
         )}
         {isFullAdmin && (
           <AdminNavLinkCard to="/admin/manage-exercises">
             <h2><FaRunning />Gerir Exercícios Base</h2>
-            <p>Criar e editar os exercícios disponíveis para os planos.</p>
           </AdminNavLinkCard>
         )}
         <AdminNavLinkCard to="/admin/appointment-requests">
           <h2><FaRegCalendarCheck />Pedidos de Consulta</h2>
-          <p>{isFullAdmin ? 'Ver e responder a pedidos de consulta pendentes.' : 'Ver e responder aos pedidos de consulta destinados a ti.'}</p>
         </AdminNavLinkCard>
       </AdminNavGrid>
     </PageContainer>

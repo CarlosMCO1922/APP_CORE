@@ -6,7 +6,7 @@ const moment = require('moment');
 const { _internalCreateNotification } = require('./notificationController');
 const crypto = require('crypto');
 const { hashPassword } = require('../utils/passwordUtils');
-const { createPublicPaymentToken } = require('../utils/publicPaymentToken');
+const { tryCreatePublicPaymentToken } = require('../utils/publicPaymentToken');
 const { _availability } = require('./availabilityController');
 let sendWhatsAppText;
 try {
@@ -381,16 +381,15 @@ const adminCreateAppointment = async (req, res) => {
       const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
       const totalCostValue = newAppointment.totalCost != null ? parseFloat(newAppointment.totalCost) : null;
       const signalAmount = totalCostValue != null ? parseFloat((totalCostValue * 0.25).toFixed(2)) : null;
-      const paymentUrl = signalPaymentCreated
-        ? (() => {
-            // Se existir guestEmail/guestPhone, usar checkout público; caso contrário, fluxo normal autenticado
-            if (newAppointment.guestEmail || newAppointment.guestPhone) {
-              const token = createPublicPaymentToken({ paymentId: signalPaymentCreated.id, email: to });
-              return `${frontendUrl}/pagar?token=${token}`;
-            }
-            return `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
-          })()
-        : undefined;
+      let paymentUrl;
+      if (signalPaymentCreated) {
+        if (newAppointment.guestEmail || newAppointment.guestPhone) {
+          const token = tryCreatePublicPaymentToken({ paymentId: signalPaymentCreated.id, email: to });
+          paymentUrl = token ? `${frontendUrl}/pagar?token=${token}` : undefined;
+        } else {
+          paymentUrl = `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
+        }
+      }
 
       sendAppointmentCreatedByAdmin({
         to,
@@ -554,8 +553,11 @@ const adminUpdateAppointment = async (req, res) => {
         if (durationMinutes !== undefined) appointment.durationMinutes = parseInt(durationMinutes, 10);
         if (notes !== undefined) appointment.notes = notes;
         if (status) {
-            const allowedStatuses = db.Appointment.getAttributes().status.values;
-            if (!allowedStatuses.includes(status)) { return res.status(400).json({ message: `Status inválido.` });}
+            const statusAttr = db.Appointment.rawAttributes?.status;
+            const allowedStatuses = statusAttr?.values || [];
+            if (!allowedStatuses.length || !allowedStatuses.includes(status)) {
+                return res.status(400).json({ message: 'Status inválido.' });
+            }
             appointment.status = status;
         }
 
@@ -668,15 +670,15 @@ const adminUpdateAppointment = async (req, res) => {
                 const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
                 const totalCostValue = appointment.totalCost != null ? parseFloat(appointment.totalCost) : null;
                 const signalAmount = totalCostValue != null ? parseFloat((totalCostValue * 0.25).toFixed(2)) : null;
-                const paymentUrl = signalPaymentCreated
-                    ? (() => {
-                        if (appointment.guestEmail || appointment.guestPhone) {
-                            const token = createPublicPaymentToken({ paymentId: signalPaymentCreated.id, email: to });
-                            return `${frontendUrl}/pagar?token=${token}`;
-                        }
-                        return `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
-                    })()
-                    : undefined;
+                let paymentUrl;
+                if (signalPaymentCreated) {
+                    if (appointment.guestEmail || appointment.guestPhone) {
+                        const token = tryCreatePublicPaymentToken({ paymentId: signalPaymentCreated.id, email: to });
+                        paymentUrl = token ? `${frontendUrl}/pagar?token=${token}` : undefined;
+                    } else {
+                        paymentUrl = `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
+                    }
+                }
                 setImmediate(() => {
                     sendAppointmentCreatedByAdmin({
                         to,
@@ -1055,16 +1057,15 @@ const staffRespondToAppointmentRequest = async (req, res) => {
       const timeStr = String(appointment.time).substring(0, 5);
       const guestName = appointment.guestName || (appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : null) || 'Visitante';
       const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-      const paymentUrl = signalPaymentCreated
-        ? (() => {
-            // Visitante: checkout público via token; Cliente com conta: /meus-pagamentos?pay=
-            if (appointment.guestEmail || appointment.guestPhone) {
-              const token = createPublicPaymentToken({ paymentId: signalPaymentCreated.id, email: recipientEmail });
-              return `${frontendUrl}/pagar?token=${token}`;
-            }
-            return `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
-          })()
-        : undefined;
+      let paymentUrl;
+      if (signalPaymentCreated) {
+        if (appointment.guestEmail || appointment.guestPhone) {
+          const token = tryCreatePublicPaymentToken({ paymentId: signalPaymentCreated.id, email: recipientEmail });
+          paymentUrl = token ? `${frontendUrl}/pagar?token=${token}` : undefined;
+        } else {
+          paymentUrl = `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
+        }
+      }
       const totalCost = appointment.totalCost != null ? parseFloat(appointment.totalCost) : null;
       const signalAmount = totalCost != null ? parseFloat((totalCost * 0.25).toFixed(2)) : null;
 

@@ -110,7 +110,10 @@ export const adminUpdateAppointment = async (appointmentId, appointmentData, tok
       body: JSON.stringify(appointmentData),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao atualizar consulta.');
+    if (!response.ok) {
+      const detail = data.error ? ` ${data.error}` : '';
+      throw new Error((data.message || 'Erro ao atualizar consulta.') + detail);
+    }
     return data;
   } catch (error) { logger.error("Erro em adminUpdateAppointment:", error); throw error; }
 };
