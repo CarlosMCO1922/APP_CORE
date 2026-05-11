@@ -10,6 +10,7 @@ import {
   FaDumbbell, 
   FaCalendarPlus, 
   FaCalendarCheck, 
+  FaClock,
   FaMoneyBillWave, 
   FaRunning, 
   FaClipboardList,
@@ -181,6 +182,7 @@ function ManagementModal({ isOpen, onClose }) {
     { path: '/admin/manage-trainings', icon: FaDumbbell, label: 'Treinos' },
     { path: '/admin/training-series', icon: FaCalendarPlus, label: 'Séries' },
     { path: '/admin/manage-appointments', icon: FaCalendarCheck, label: 'Consultas' },
+    { path: '/admin/availability-slots', icon: FaClock, label: 'Disponibilidade' },
     { path: '/admin/manage-payments', icon: FaMoneyBillWave, label: 'Pagamentos' },
     { path: '/admin/manage-exercises', icon: FaRunning, label: 'Exercícios' },
     { path: '/admin/manage-global-plans', icon: FaClipboardList, label: 'Planos Modelo' }

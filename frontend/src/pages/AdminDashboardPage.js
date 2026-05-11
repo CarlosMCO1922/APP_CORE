@@ -9,7 +9,8 @@ import { adminGetTodayAppointmentsCount } from '../services/appointmentService';
 import {
     FaDollarSign, FaUsers, FaCalendarDay,
     FaCalendarAlt, FaUserMd, FaDumbbell, FaCreditCard,
-    FaRunning, FaRegCalendarCheck, FaUserPlus, FaCalendarCheck as FaCalendarCheckIcon
+    FaRunning, FaRegCalendarCheck, FaUserPlus, FaCalendarCheck as FaCalendarCheckIcon,
+    FaClock,
 } from 'react-icons/fa';
 import ThemeToggler from '../components/Theme/ThemeToggler';
 
@@ -368,6 +369,10 @@ const AdminDashboardPage = () => {
         <AdminNavLinkCard to="/admin/manage-appointments">
           <h2><FaCalendarCheckIcon />Gerir Consultas</h2>
           <p>{isFullAdmin ? 'Criar, visualizar, editar e eliminar horários de consulta.' : 'Criar, visualizar, editar e eliminar as tuas consultas.'}</p>
+        </AdminNavLinkCard>
+        <AdminNavLinkCard to="/admin/availability-slots">
+          <h2><FaClock />Disponibilidade (marcações)</h2>
+          <p>Definir, por dia, os blocos de 30 minutos em que aceitas pedidos de consulta no agendamento público.</p>
         </AdminNavLinkCard>
         <AdminNavLinkCard to="/admin/manage-payments">
           <h2><FaCreditCard />Gerir Pagamentos</h2>

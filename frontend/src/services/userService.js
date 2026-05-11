@@ -1,5 +1,6 @@
 // src/services/userService.js
 import { logger } from '../utils/logger';
+import { sortUsersForSelect } from '../utils/sortUsersAlphabetically';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -56,7 +57,7 @@ export const adminGetAllUsers = async (token, params = {}) => {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao buscar todos os utilizadores.');
-    return data;
+    return sortUsersForSelect(Array.isArray(data) ? data : []);
   } catch (error) { logger.error("Erro em adminGetAllUsers:", error); throw error; }
 };
 

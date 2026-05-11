@@ -667,13 +667,7 @@ const AdminManageUsersPage = () => {
       try {
         const params = approvalFilter === 'pending' ? { approved: 'false' } : {};
         const data = await adminGetAllUsers(authState.token, params);
-        // Ordenar por nome (firstName) alfabeticamente
-        const sortedData = [...data].sort((a, b) => {
-          const nameA = (a.firstName || '').toLowerCase();
-          const nameB = (b.firstName || '').toLowerCase();
-          return nameA.localeCompare(nameB, 'pt');
-        });
-        setUsers(sortedData);
+        setUsers(Array.isArray(data) ? data : []);
       } catch (err) {
         setError(err.message || 'Não foi possível carregar os utilizadores.');
       } finally {

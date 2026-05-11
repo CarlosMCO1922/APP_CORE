@@ -525,7 +525,19 @@ const getAppointmentById = async (req, res) => {
 
 const adminUpdateAppointment = async (req, res) => {
     const { id } = req.params;
-    const { date, time, staffId, userId, notes, status, durationMinutes, totalCost } = req.body;
+    const {
+      date,
+      time,
+      staffId,
+      userId,
+      notes,
+      status,
+      durationMinutes,
+      totalCost,
+      guestName,
+      guestEmail,
+      guestPhone,
+    } = req.body;
     try {
         const appointment = await db.Appointment.findByPk(id, {
             include: [{ model: db.Staff, as: 'professional' }]
@@ -539,66 +551,147 @@ const adminUpdateAppointment = async (req, res) => {
 
         if (date) appointment.date = date;
         if (time) appointment.time = time;
-        if (durationMinutes !== undefined) appointment.durationMinutes = parseInt(durationMinutes);
+        if (durationMinutes !== undefined) appointment.durationMinutes = parseInt(durationMinutes, 10);
         if (notes !== undefined) appointment.notes = notes;
         if (status) {
             const allowedStatuses = db.Appointment.getAttributes().status.values;
             if (!allowedStatuses.includes(status)) { return res.status(400).json({ message: `Status inválido.` });}
             appointment.status = status;
         }
-         if (totalCost !== undefined) { 
-            appointment.totalCost = (userId || appointment.userId) && parseFloat(totalCost) > 0 ? parseFloat(totalCost) : null;
-        }
 
         if (staffId) {
-            const professional = await db.Staff.findByPk(parseInt(staffId));
+            const professional = await db.Staff.findByPk(parseInt(staffId, 10));
             if (!professional) return res.status(404).json({ message: 'Profissional não encontrado.' });
-            appointment.staffId = parseInt(staffId);
+            appointment.staffId = parseInt(staffId, 10);
             appointment.professional = professional;
         }
 
-        const wantsToSetUserId = userId !== undefined && userId !== null && userId !== '';
-        const wantsToClearUserId = userId === null || userId === '';
+        const wantsExistingClient = userId !== undefined && userId !== null && userId !== '';
+        const parsedUserId = wantsExistingClient ? parseInt(userId, 10) : null;
 
-        if (wantsToClearUserId) {
+        const gn = guestName != null ? String(guestName).trim() : '';
+        const ge = guestEmail != null ? String(guestEmail).trim().toLowerCase() : '';
+        const gp = guestPhone != null ? String(guestPhone).trim() : '';
+        const hasGuestPayload = !!(gn || ge || gp);
+        const isGuestBooking = !wantsExistingClient && hasGuestPayload;
+
+        if (isGuestBooking) {
+            if (!gn || (!ge && !gp)) {
+                return res.status(400).json({ message: 'Para visitante (sem conta), nome e pelo menos um contacto (email ou telemóvel) são obrigatórios.' });
+            }
+            if (totalCost === undefined || parseFloat(totalCost) <= 0) {
+                return res.status(400).json({ message: 'Custo total da consulta (positivo) é obrigatório ao atribuir visitante.' });
+            }
+            const clientUser = await createOrGetExternalClientForGuest({
+                guestName: gn,
+                guestEmail: ge || null,
+                guestPhone: gp || null,
+            });
+            appointment.userId = clientUser.id;
+            appointment.guestName = gn;
+            appointment.guestEmail = ge || null;
+            appointment.guestPhone = gp || null;
+            appointment.totalCost = parseFloat(totalCost);
+            appointment.signalPaid = false;
+            if (appointment.status === 'disponível') appointment.status = 'agendada';
+        } else if (wantsExistingClient) {
+            const clientUser = await db.User.findByPk(parsedUserId);
+            if (!clientUser) return res.status(404).json({ message: 'Cliente não encontrado.' });
+            appointment.userId = parsedUserId;
+            appointment.guestName = null;
+            appointment.guestEmail = null;
+            appointment.guestPhone = null;
+            if (appointment.status === 'disponível') appointment.status = 'agendada';
+            if (totalCost !== undefined && parseFloat(totalCost) > 0) {
+                appointment.totalCost = parseFloat(totalCost);
+            } else if (
+                (parsedUserId !== originalUserId || appointment.totalCost === null || appointment.totalCost <= 0)
+            ) {
+                return res.status(400).json({ message: 'Custo total (positivo) é obrigatório ao atribuir ou alterar o cliente na consulta.' });
+            }
+        } else {
             appointment.userId = null;
+            appointment.guestName = null;
+            appointment.guestEmail = null;
+            appointment.guestPhone = null;
             appointment.totalCost = null;
             appointment.signalPaid = false;
-          
             if (['agendada', 'confirmada'].includes(appointment.status)) {
                 appointment.status = 'disponível';
             }
-        } else if (wantsToSetUserId) {
-            const clientUser = await db.User.findByPk(parseInt(userId));
-            if (!clientUser) return res.status(404).json({ message: 'Cliente não encontrado.' });
-            appointment.userId = parseInt(userId);
-            
-            if (appointment.status === 'disponível') appointment.status = 'agendada';
-            
-            if (appointment.totalCost === null && totalCost === undefined) {
-                 return res.status(400).json({ message: 'Custo total é obrigatório ao atribuir/manter um cliente na consulta.' });
-            }
         }
 
-        await appointment.save(); 
+        const timeForConflict = String(appointment.time).substring(0, 5);
+        const conflict = await checkForStaffAppointmentConflict(
+            appointment.staffId,
+            appointment.date,
+            timeForConflict,
+            appointment.durationMinutes,
+            appointment.id
+        );
+        if (conflict) {
+            return res.status(409).json({ message: `Conflito de horário. Já existe uma consulta (${conflict.status}) nesse período.` });
+        }
 
-        
-        const needsSignalCreation = appointment.userId &&
-                                  appointment.totalCost > 0 &&
-                                  !appointment.signalPaid &&
-                                  (appointment.status === 'agendada' || (originalStatus !== 'agendada' && appointment.status === 'agendada') || (userId && userId !== originalUserId));
+        await appointment.save();
 
+        const userChanged = (originalUserId || null) !== (appointment.userId || null);
+        const needsSignalCreation =
+            appointment.userId &&
+            appointment.totalCost > 0 &&
+            !appointment.signalPaid &&
+            appointment.status === 'agendada' &&
+            (userChanged || originalStatus === 'disponível');
+
+        let signalPaymentCreated = null;
         if (needsSignalCreation) {
-            
             if (!appointment.professional || appointment.professional.id !== appointment.staffId) {
                 appointment.professional = await db.Staff.findByPk(appointment.staffId);
             }
-             await internalCreateSignalPayment(appointment, req.staff.id);
+            signalPaymentCreated = await internalCreateSignalPayment(appointment, req.staff.id);
         }
 
         const updatedAppointment = await db.Appointment.findByPk(id, { include: [{ model: db.User, as: 'client' }, { model: db.Staff, as: 'professional' }] });
 
-        // Email ao visitante se data ou hora foram alteradas
+        if (!originalUserId && appointment.userId && appointment.status === 'agendada' && sendAppointmentCreatedByAdmin) {
+            const clientPlain = updatedAppointment?.client?.get ? updatedAppointment.client.get({ plain: true }) : updatedAppointment?.client;
+            const prof = appointment.professional || updatedAppointment?.professional;
+            const to = clientPlain?.email || appointment.guestEmail;
+            if (to) {
+                const clientName = clientPlain
+                    ? `${(clientPlain.firstName || '').trim()} ${(clientPlain.lastName || '').trim()}`.trim() || 'Cliente'
+                    : (appointment.guestName || 'Cliente');
+                const professionalName = prof
+                    ? `${(prof.firstName || '').trim()} ${(prof.lastName || '').trim()}`.trim()
+                    : 'Profissional';
+                const timeStr = String(appointment.time).substring(0, 5);
+                const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+                const totalCostValue = appointment.totalCost != null ? parseFloat(appointment.totalCost) : null;
+                const signalAmount = totalCostValue != null ? parseFloat((totalCostValue * 0.25).toFixed(2)) : null;
+                const paymentUrl = signalPaymentCreated
+                    ? (() => {
+                        if (appointment.guestEmail || appointment.guestPhone) {
+                            const token = createPublicPaymentToken({ paymentId: signalPaymentCreated.id, email: to });
+                            return `${frontendUrl}/pagar?token=${token}`;
+                        }
+                        return `${frontendUrl}/meus-pagamentos?pay=${signalPaymentCreated.id}`;
+                    })()
+                    : undefined;
+                setImmediate(() => {
+                    sendAppointmentCreatedByAdmin({
+                        to,
+                        clientName,
+                        professionalName,
+                        date: appointment.date,
+                        time: timeStr,
+                        totalCost: totalCostValue || undefined,
+                        signalAmount: signalAmount || undefined,
+                        paymentUrl: paymentUrl || undefined,
+                    }).catch((err) => console.error('Email consulta atualizada (novo cliente):', err));
+                });
+            }
+        }
+
         if (appointment.guestEmail && sendGuestAppointmentTimeChanged &&
             (appointment.date !== originalDate || String(appointment.time).substring(0, 5) !== String(originalTime).substring(0, 5))) {
           const professionalName = appointment.professional ? `${appointment.professional.firstName} ${appointment.professional.lastName}` : 'o profissional';
