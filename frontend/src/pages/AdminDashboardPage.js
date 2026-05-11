@@ -97,9 +97,9 @@ const AdminNavLinkCard = styled(Link)`
   transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  text-align: center;
+  text-align: left;
   min-height: 110px;
 
   h2 {
@@ -108,10 +108,12 @@ const AdminNavLinkCard = styled(Link)`
     font-size: 1.5rem;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 8px;
+    width: 100%;
     svg {
         font-size: 1.3em;
+        flex-shrink: 0;
     }
     @media (max-width: 480px) {
         font-size: 1.3rem;
@@ -139,12 +141,19 @@ const StatCard = styled.div`
   box-shadow: ${({ theme }) => theme.boxShadow};
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
   border-left: 5px solid ${({ theme, color }) => color || theme.colors.primary};
   cursor: ${props => props.$clickable ? 'pointer' : 'default'};
   transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
-  
+
+  & > p {
+    text-align: left;
+    align-self: stretch;
+    margin-inline: 0;
+  }
+
   &:hover {
     ${props => props.$clickable && `
       transform: translateY(-2px);

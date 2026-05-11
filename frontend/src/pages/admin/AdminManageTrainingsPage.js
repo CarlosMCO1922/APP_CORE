@@ -20,7 +20,7 @@ import { adminGetAllStaff } from '../../services/staffService';
 import { adminGetAllUsers } from '../../services/userService';
 import {
     FaDumbbell, FaPlus, FaEdit, FaTrashAlt, FaListAlt,
-    FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaUserMinus, FaLevelUpAlt, FaRedoAlt
+    FaTimes, FaUsers, FaSearch, FaFilter, FaUserPlus, FaLevelUpAlt, FaRedoAlt
 } from 'react-icons/fa';
 import moment from 'moment';
 import BackArrow from '../../components/BackArrow';
@@ -343,6 +343,16 @@ const ActionButton = styled.button`
     color: ${({ theme }) => theme.colors.disabledText};
     cursor: not-allowed;
   }
+
+  ${(p) => p.$iconOnly && css`
+    padding: 8px;
+    min-width: 2.35rem;
+    min-height: 2.35rem;
+    justify-content: center;
+    flex-shrink: 0;
+    gap: 0;
+    font-size: 1rem;
+  `}
 `;
 
 const MessageBaseStyles = css`
@@ -494,9 +504,15 @@ const ParticipantItem = styled.li`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.9rem;
+
+  > div:first-of-type {
+    min-width: 0;
+    flex: 1;
+  }
 
   &:last-child {
     border-bottom: none;
@@ -1418,11 +1434,15 @@ const AdminManageTrainingsPage = () => {
                                 <span className="email">{participant.email}</span>
                             </div>
                             <ActionButton
+                                type="button"
+                                $iconOnly
                                 danger
+                                aria-label={`Remover inscrição de ${participant.firstName} ${participant.lastName}`}
+                                title="Remover inscrição"
                                 onClick={() => handleAdminCancelClientBooking(selectedTrainingForSignups.id, participant.id, `${participant.firstName} ${participant.lastName}`)}
                                 disabled={bookingLoading}
                             >
-                                <FaUserMinus/> Remover
+                                <FaTrashAlt aria-hidden />
                             </ActionButton>
                         </ParticipantItem>
                     ))}
