@@ -202,6 +202,26 @@ const ErrorText = styled.p`
 
 const ROLES_FULL_ADMIN = ['admin'];
 
+/** Comparação tolerante a maiúsculas / acentos (ex.: Vítor → vitor). */
+const normalizeFirstNameKey = (name) =>
+  String(name || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+/**
+ * Cartão "Eventos hoje": fisios de consultas vêem marcações; admin e Gonçalo vêem treinos em grupo.
+ */
+const getTodayEventsCardPath = (user) => {
+  const role = user?.role;
+  const key = normalizeFirstNameKey(user?.firstName);
+  if (role === 'admin') return '/admin/manage-trainings';
+  if (key === 'goncalo') return '/admin/manage-trainings';
+  if (['ines', 'elsa', 'vitor'].includes(key)) return '/admin/manage-appointments';
+  return '/admin/manage-appointments';
+};
+
 const AdminDashboardPage = () => {
   const theme = useTheme();
   const { authState } = useAuth();
@@ -271,6 +291,9 @@ const AdminDashboardPage = () => {
     ? todayEventsCount.trainings + todayEventsCount.appointments
     : null;
 
+  const todayEventsTargetPath = getTodayEventsCardPath(authState.user);
+  const goTodayEventsTarget = () => navigate(todayEventsTargetPath);
+
   return (
     <PageContainer>
       <TogglerContainer>
@@ -314,10 +337,18 @@ const AdminDashboardPage = () => {
           </StatCard>
         )}
 
-        <StatCard 
-          color="#FFC107" 
+        <StatCard
+          color="#FFC107"
           $clickable={true}
-          onClick={() => navigate('/admin/manage-trainings')}
+          role="button"
+          tabIndex={0}
+          onClick={goTodayEventsTarget}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              goTodayEventsTarget();
+            }
+          }}
         >
           <StatIcon color="#FFC107"><FaCalendarDay /></StatIcon>
           {loadingStats && totalTodayEvents === null && <LoadingText>A carregar...</LoadingText>}
