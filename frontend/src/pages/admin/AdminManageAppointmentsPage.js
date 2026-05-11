@@ -509,22 +509,23 @@ const AdminManageAppointmentsPage = () => {
           adminGetAllStaff(authState.token),
           adminGetAllUsers(authState.token)
         ]);
-        // Ordenar por mais recente (data+hora desc)
+        // Ordenar por calendário: data asc, depois hora asc (alinhado com GET /appointments)
         const sortedAppointments = [...(appointmentsData || [])].sort((a, b) => {
-          const aKey = `${a.date || ''} ${a.time || '00:00:00'}`;
-          const bKey = `${b.date || ''} ${b.time || '00:00:00'}`;
-          return bKey.localeCompare(aKey);
+          const aKey = `${a.date || ''} ${String(a.time || '00:00:00').substring(0, 8)}`;
+          const bKey = `${b.date || ''} ${String(b.time || '00:00:00').substring(0, 8)}`;
+          return aKey.localeCompare(bKey);
         });
         setAppointments(sortedAppointments);
         setStaffList(staffData.filter(s => ['physiotherapist', 'trainer', 'admin'].includes(s.role)));
         setUserList(usersData);
 
-        // Default: dia mais recente com dados (<= hoje)
+        // Default filtro de data: o dia mais recente com consultas, não posterior a hoje
         const todayIso = new Date().toISOString().split('T')[0];
-        const latestDateWithData = sortedAppointments
-          .map(a => a.date)
-          .filter(Boolean)
-          .find(d => d <= todayIso);
+        const datesOnOrBeforeToday = (appointmentsData || [])
+          .map((a) => a.date)
+          .filter((d) => d && d <= todayIso);
+        const latestDateWithData =
+          datesOnOrBeforeToday.length > 0 ? datesOnOrBeforeToday.reduce((max, d) => (d > max ? d : max)) : null;
         if (latestDateWithData) {
           setFilters(prev => ({ ...prev, date: prev.date || latestDateWithData }));
         }

@@ -547,6 +547,8 @@ const adminUpdateAppointment = async (req, res) => {
         const originalStatus = appointment.status;
         const originalDate = appointment.date;
         const originalTime = appointment.time;
+        const originalStaffId = appointment.staffId;
+        const originalDurationMinutes = appointment.durationMinutes;
 
         if (date) appointment.date = date;
         if (time) appointment.time = time;
@@ -621,16 +623,25 @@ const adminUpdateAppointment = async (req, res) => {
             }
         }
 
-        const timeForConflict = String(appointment.time).substring(0, 5);
-        const conflict = await checkForStaffAppointmentConflict(
-            appointment.staffId,
-            appointment.date,
-            timeForConflict,
-            appointment.durationMinutes,
-            appointment.id
-        );
-        if (conflict) {
-            return res.status(409).json({ message: `Conflito de horário. Já existe uma consulta (${conflict.status}) nesse período.` });
+        const normTime = (t) => String(t || '').substring(0, 5);
+        const scheduleUnchanged =
+            String(appointment.date) === String(originalDate) &&
+            normTime(appointment.time) === normTime(originalTime) &&
+            Number(appointment.staffId) === Number(originalStaffId) &&
+            Number(appointment.durationMinutes) === Number(originalDurationMinutes);
+
+        if (!scheduleUnchanged) {
+            const timeForConflict = normTime(appointment.time);
+            const conflict = await checkForStaffAppointmentConflict(
+                appointment.staffId,
+                appointment.date,
+                timeForConflict,
+                appointment.durationMinutes,
+                appointment.id
+            );
+            if (conflict) {
+                return res.status(409).json({ message: `Conflito de horário. Já existe uma consulta (${conflict.status}) nesse período.` });
+            }
         }
 
         await appointment.save();
