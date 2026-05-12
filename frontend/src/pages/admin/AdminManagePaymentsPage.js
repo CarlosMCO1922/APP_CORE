@@ -591,7 +591,7 @@ const AdminManagePaymentsPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState(() => {
     const [year, month] = currentMonthStr.split('-');
-    return { userId: '', status: '', category: '', year, month };
+    return { userId: '', status: '', category: '', categoryScope: '', year, month };
   });
 
   const [showModal, setShowModal] = useState(false);
@@ -620,6 +620,11 @@ const AdminManagePaymentsPage = () => {
             apiFilters.referenceMonth = `${new Date().getFullYear()}-${currentFilters.month.padStart(2, '0')}`;
         }
         delete apiFilters.year; delete apiFilters.month;
+        if (apiFilters.categoryScope) {
+          delete apiFilters.category;
+        } else {
+          delete apiFilters.categoryScope;
+        }
 
         const [paymentsData, usersData, totalPaidData] = await Promise.all([
           adminGetAllPayments(apiFilters, authState.token),
@@ -639,7 +644,7 @@ const AdminManagePaymentsPage = () => {
         const refMonth = currentFilters.year && currentFilters.month
           ? `${currentFilters.year}-${String(currentFilters.month).padStart(2, '0')}`
           : currentMonthStr;
-        const isPureMonthFilter = !currentFilters.userId && !currentFilters.status && !currentFilters.category;
+        const isPureMonthFilter = !currentFilters.userId && !currentFilters.status && !currentFilters.category && !currentFilters.categoryScope;
         if (isPureMonthFilter && refMonth === currentMonthStr && sortedPayments.length === 0 && !autoMonthFallbackRef.current) {
           autoMonthFallbackRef.current = true;
           const [y, m] = currentMonthStr.split('-').map(Number);
@@ -665,7 +670,12 @@ const AdminManagePaymentsPage = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    setFilters((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'category' && value) next.categoryScope = '';
+      if (name === 'categoryScope' && value) next.category = '';
+      return next;
+    });
   };
   
   const handleMonthYearFilterChange = (e) => {
@@ -686,7 +696,7 @@ const AdminManagePaymentsPage = () => {
   const clearFilters = () => {
     autoMonthFallbackRef.current = false;
     const [year, month] = currentMonthStr.split('-');
-    setFilters({ userId: '', status: '', category: '', year, month });
+    setFilters({ userId: '', status: '', category: '', categoryScope: '', year, month });
     setShowFilters(false);
   };
 
@@ -980,8 +990,16 @@ const AdminManagePaymentsPage = () => {
             </ModalSelect>
           </FilterGroup>
           <FilterGroup>
-            <ModalLabel htmlFor="filterCategoryPay">Categoria:</ModalLabel>
-            <ModalSelect name="category" id="filterCategoryPay" value={filters.category} onChange={handleFilterChange}>
+            <ModalLabel htmlFor="filterCategoryScopePay">Tipo:</ModalLabel>
+            <ModalSelect name="categoryScope" id="filterCategoryScopePay" value={filters.categoryScope || ''} onChange={handleFilterChange}>
+              <option value="">Consultas e treinos</option>
+              <option value="consultas">Apenas consultas</option>
+              <option value="treinos">Apenas treinos</option>
+            </ModalSelect>
+          </FilterGroup>
+          <FilterGroup>
+            <ModalLabel htmlFor="filterCategoryPay">Categoria (detalhe):</ModalLabel>
+            <ModalSelect name="category" id="filterCategoryPay" value={filters.category} onChange={handleFilterChange} disabled={!!filters.categoryScope}>
                 <option value="">Todas</option>
                 {paymentCategories.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1).replace(/_/g, ' ')}</option>)}
             </ModalSelect>

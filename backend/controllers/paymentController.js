@@ -135,12 +135,18 @@ const adminCreatePayment = async (req, res) => {
 };
 
 const adminGetAllPayments = async (req, res) => {
-  const { userId, status, category, month, year, relatedResourceId, relatedResourceType } = req.query;
+  const { userId, status, category, categoryScope, month, year, relatedResourceId, relatedResourceType } = req.query;
   const whereClause = {};
 
   if (userId) whereClause.userId = userId;
   if (status) whereClause.status = status;
-  if (category) whereClause.category = category;
+  if (categoryScope === 'consultas') {
+    whereClause.category = { [Op.in]: ['consulta_fisioterapia', 'sinal_consulta'] };
+  } else if (categoryScope === 'treinos') {
+    whereClause.category = { [Op.in]: ['treino_aula_avulso', 'mensalidade_treino'] };
+  } else if (category) {
+    whereClause.category = category;
+  }
   if (month && year) {
     whereClause.referenceMonth = `${year}-${month.padStart(2, '0')}`;
   } else if (year) {
@@ -258,6 +264,16 @@ const adminUpdatePaymentStatus = async (req, res) => {
                     relatedResourceType: 'appointment',
                     link: `/calendario` 
                 });
+            }
+
+            try {
+              const staffForRemaining = payment.staffId || appointment.staffId || (req.staff && req.staff.id) || null;
+              const remainingPayment = await ensureRemainingAppointmentPayment(appointment, staffForRemaining);
+              if (remainingPayment) {
+                console.log(`[adminUpdatePaymentStatus] Restante da consulta: pagamento ID=${remainingPayment.id}, amount=${remainingPayment.amount}`);
+              }
+            } catch (e) {
+              console.error('[adminUpdatePaymentStatus] Falha ao criar pagamento do restante da consulta:', e);
             }
 
           } else {

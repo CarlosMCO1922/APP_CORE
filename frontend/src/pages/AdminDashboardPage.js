@@ -148,12 +148,6 @@ const StatCard = styled.div`
   cursor: ${props => props.$clickable ? 'pointer' : 'default'};
   transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
 
-  & > p {
-    text-align: left;
-    align-self: stretch;
-    margin-inline: 0;
-  }
-
   &:hover {
     ${props => props.$clickable && `
       transform: translateY(-2px);
@@ -162,9 +156,26 @@ const StatCard = styled.div`
   }
 `;
 
+const StatTopRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+`;
+
+const StatValueArea = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+`;
+
 const StatIcon = styled.div`
-  font-size: 2.5rem;
-  margin-bottom: 15px;
+  font-size: 2.25rem;
+  line-height: 1;
+  flex-shrink: 0;
   color: ${({ theme, color }) => color || theme.colors.primary};
 `;
 
@@ -172,14 +183,34 @@ const StatValue = styled.p`
   font-size: 2rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textMain};
-  margin: 0 0 5px 0;
+  margin: 0;
+  line-height: 1.15;
+`;
+
+const StatInlineHint = styled.span`
+  font-size: 0.95rem;
+  color: ${({ theme, $error, $muted }) => {
+    if ($error) return theme.colors.error;
+    if ($muted) return theme.colors.textMuted;
+    return theme.colors.primary;
+  }};
+  font-style: italic;
 `;
 
 const StatLabel = styled.p`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.colors.textMuted};
-  margin: 0;
+  margin: 10px 0 0 0;
   text-transform: uppercase;
+  width: 100%;
+`;
+
+const StatSubLabel = styled.p`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textMuted};
+  margin: 6px 0 0 0;
+  width: 100%;
+  line-height: 1.35;
 `;
 
 const MessageBaseStyles = css`
@@ -192,14 +223,6 @@ const MessageBaseStyles = css`
   max-width: 100%;
   font-size: 0.9rem;
   font-weight: 500;
-`;
-
-const LoadingText = styled.p`
-    ${MessageBaseStyles}
-    color: ${({ theme }) => theme.colors.primary};
-    border-color: transparent;
-    background: transparent;
-    font-style: italic;
 `;
 
 const ErrorText = styled.p`
@@ -328,20 +351,30 @@ const AdminDashboardPage = () => {
               }
             }}
           >
-            <StatIcon color={theme.colors.success || '#4CAF50'}><FaDollarSign /></StatIcon>
-            {loadingStats && totalPaidThisMonth === null && <LoadingText>A carregar...</LoadingText>}
-            {!loadingStats && statsError && totalPaidThisMonth === null && <ErrorText>Erro</ErrorText>}
-            {totalPaidThisMonth !== null && !loadingStats && <StatValue>{Number(totalPaidThisMonth).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</StatValue>}
+            <StatTopRow>
+              <StatIcon color={theme.colors.success || '#4CAF50'}><FaDollarSign /></StatIcon>
+              <StatValueArea>
+                {loadingStats && totalPaidThisMonth === null && <StatInlineHint>A carregar…</StatInlineHint>}
+                {!loadingStats && statsError && totalPaidThisMonth === null && <StatInlineHint $error>Erro</StatInlineHint>}
+                {totalPaidThisMonth !== null && !loadingStats && (
+                  <StatValue>{Number(totalPaidThisMonth).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</StatValue>
+                )}
+              </StatValueArea>
+            </StatTopRow>
             <StatLabel>Receita Este Mês</StatLabel>
           </StatCard>
         )}
 
         {isFullAdmin && (
-          <StatCard color="#00A9FF">
-            <StatIcon color="#00A9FF"><FaUserPlus /></StatIcon>
-            {loadingStats && weeklySignups === null && <LoadingText>A carregar...</LoadingText>}
-            {!loadingStats && statsError && weeklySignups === null && <ErrorText>Erro</ErrorText>}
-            {weeklySignups !== null && !loadingStats && <StatValue>{weeklySignups}</StatValue>}
+          <StatCard color="#00A9FF"          >
+            <StatTopRow>
+              <StatIcon color="#00A9FF"><FaUserPlus /></StatIcon>
+              <StatValueArea>
+                {loadingStats && weeklySignups === null && <StatInlineHint>A carregar…</StatInlineHint>}
+                {!loadingStats && statsError && weeklySignups === null && <StatInlineHint $error>Erro</StatInlineHint>}
+                {weeklySignups !== null && !loadingStats && <StatValue>{weeklySignups}</StatValue>}
+              </StatValueArea>
+            </StatTopRow>
             <StatLabel>Inscrições Esta Semana</StatLabel>
           </StatCard>
         )}
@@ -359,17 +392,21 @@ const AdminDashboardPage = () => {
             }
           }}
         >
-          <StatIcon color="#FFC107"><FaCalendarDay /></StatIcon>
-          {loadingStats && totalTodayEvents === null && <LoadingText>A carregar...</LoadingText>}
-          {!loadingStats && statsError && totalTodayEvents === null && <ErrorText>Erro</ErrorText>}
-          {totalTodayEvents !== null && !loadingStats && <StatValue>{totalTodayEvents}</StatValue>}
+          <StatTopRow>
+            <StatIcon color="#FFC107"><FaCalendarDay /></StatIcon>
+            <StatValueArea>
+              {loadingStats && totalTodayEvents === null && <StatInlineHint>A carregar…</StatInlineHint>}
+              {!loadingStats && statsError && totalTodayEvents === null && <StatInlineHint $error>Erro</StatInlineHint>}
+              {totalTodayEvents !== null && !loadingStats && <StatValue>{totalTodayEvents}</StatValue>}
+            </StatValueArea>
+          </StatTopRow>
           <StatLabel>{isFullAdmin ? 'Eventos Hoje (Total)' : 'Consultas Hoje'}</StatLabel>
           {totalTodayEvents !== null && !loadingStats && (
-            <p style={{fontSize: '0.75rem', color: theme.colors.textMuted, margin: '5px 0 0 0'}}>
+            <StatSubLabel>
               {isFullAdmin
-                ? `(Treinos: ${todayEventsCount.trainings ?? '?'}, Consultas: ${todayEventsCount.appointments ?? '?'}, Inscritos: ${todayEventsCount.enrollments ?? '?'})`
+                ? `Treinos: ${todayEventsCount.trainings ?? '?'} · Consultas: ${todayEventsCount.appointments ?? '?'} · Inscritos: ${todayEventsCount.enrollments ?? '?'}`
                 : `Consultas: ${todayEventsCount.appointments ?? '?'}`}
-            </p>
+            </StatSubLabel>
           )}
         </StatCard>
       </StatsOverviewContainer>

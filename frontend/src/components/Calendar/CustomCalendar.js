@@ -680,7 +680,13 @@ const TimeSlot = styled.div`
 const WeekDayColumn = styled.div`
   border-right: 1px solid ${({ theme }) => theme.colors.cardBorder};
   position: relative;
-  
+  min-height: 60px;
+  overflow: visible;
+
+  @media (max-width: 768px) {
+    min-height: 50px;
+  }
+
   &:last-child {
     border-right: none;
   }
@@ -896,8 +902,20 @@ const CustomCalendar = ({
   step = 60,
   messages = {}
 }) => {
-  // Garantir que events é sempre um array
-  const safeEvents = Array.isArray(events) ? events : [];
+  // Garantir que events é sempre um array e sem IDs duplicados (evita chips / slots repetidos)
+  const safeEvents = useMemo(() => {
+    const raw = Array.isArray(events) ? events : [];
+    const seen = new Set();
+    return raw.filter((ev) => {
+      if (!ev) return false;
+      const id = ev.id != null ? String(ev.id) : null;
+      if (id) {
+        if (seen.has(id)) return false;
+        seen.add(id);
+      }
+      return true;
+    });
+  }, [events]);
   
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [currentView, setCurrentView] = useState(initialView);
@@ -1003,31 +1021,6 @@ const CustomCalendar = ({
     });
   }, [safeEvents, showTrainings, showAppointments]);
 
-  const getEventsForWeekDay = (day, hour) => {
-    if (!filteredEvents || !Array.isArray(filteredEvents)) return [];
-    
-    return filteredEvents.filter(event => {
-      if (!event || !event.start) return false;
-      
-      try {
-        const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-        
-        // Verifica se o evento começa neste dia específico
-        if (!isSameDay(eventStart, day)) {
-          return false;
-        }
-        
-        // Verifica se o evento começa neste slot de hora específico
-        const eventHour = getHours(eventStart);
-        return eventHour === hour;
-      } catch (error) {
-        console.error('Error processing event:', error, event);
-        return false;
-      }
-    });
-  };
-
-  // Função para calcular posicionamento lado a lado quando há sobreposição
   const calculateEventPositions = (events) => {
     if (!events || events.length === 0) return [];
     
@@ -1091,7 +1084,7 @@ const CustomCalendar = ({
         positionedEvents.push({
           event,
           column: columnIndex,
-          totalColumns: columns.length,
+          totalColumns: 1,
           startMinutes,
           endMinutes
         });
@@ -1099,8 +1092,9 @@ const CustomCalendar = ({
         console.error('Error calculating event position:', error, event);
       }
     });
-    
-    return positionedEvents;
+
+    const maxColumns = Math.max(columns.length, 1);
+    return positionedEvents.map((pe) => ({ ...pe, totalColumns: maxColumns }));
   };
 
   // Agenda View Logic
@@ -1251,7 +1245,7 @@ const CustomCalendar = ({
                 <EventList>
                   {dayEvents.slice(0, 3).map((event, eventIdx) => (
                     <EventChip
-                      key={eventIdx}
+                      key={event.id || `${format(day, 'yyyy-MM-dd')}-${eventIdx}`}
                       $eventType={event.resource?.type}
                       onClick={(e) => handleEventClick(event, e)}
                       title={event.title}
@@ -1302,44 +1296,39 @@ const CustomCalendar = ({
                   {format(slot, 'HH:mm')}
                 </TimeSlot>
                 {weekDays.map((day, dayIdx) => {
-                  // Obter todos os eventos do dia para calcular sobreposições
-                  const allDayEvents = filteredEvents.filter(event => {
+                  const slotMinutes = hour * 60;
+                  const cellEvents = filteredEvents.filter((event) => {
                     if (!event || !event.start) return false;
                     try {
                       const eventStart = event.start instanceof Date ? event.start : parseISO(event.start);
-                      return isSameDay(eventStart, day);
+                      if (!isSameDay(eventStart, day)) return false;
+                      return getHours(eventStart) === hour;
                     } catch {
                       return false;
                     }
                   });
-                  
-                  const positionedEvents = calculateEventPositions(allDayEvents);
-                  const slotMinutes = hour * 60;
-                  
+
+                  const positionedEvents = calculateEventPositions(cellEvents);
+
                   return (
                     <WeekDayColumn
                       key={dayIdx}
                       onClick={() => handleSlotClick(day, hour)}
                     >
-                      {positionedEvents.map(({ event, column, totalColumns, startMinutes, endMinutes }, eventIdx) => {
+                      {positionedEvents.map(({ event, column, totalColumns, startMinutes, endMinutes }) => {
                         const top = ((startMinutes - slotMinutes) / 60) * 100;
                         const height = ((endMinutes - startMinutes) / 60) * 100;
                         const width = `${100 / totalColumns}%`;
                         const left = `${(column / totalColumns) * 100}%`;
-                        
-                        // Só renderizar se o evento está visível neste slot
-                        if (endMinutes <= slotMinutes || startMinutes >= slotMinutes + 60) {
-                          return null;
-                        }
-                        
+
                         return (
                           <WeekEvent
-                            key={`${event.id || eventIdx}-${dayIdx}-${slotIdx}`}
+                            key={`${event.id || 'ev'}-${dayIdx}-${hour}`}
                             $eventType={event.resource?.type}
                             onClick={(e) => handleEventClick(event, e)}
                             style={{
                               top: `${Math.max(0, top)}%`,
-                              height: `${Math.max(20, height)}%`,
+                              height: `${Math.max(18, height)}%`,
                               left: left,
                               width: width,
                               marginLeft: column > 0 ? '2px' : '4px',
