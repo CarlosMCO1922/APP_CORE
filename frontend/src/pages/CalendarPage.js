@@ -45,7 +45,8 @@ const initialAdminTrainingFormState = { name: '', description: '', date: '', tim
 const initialAdminAppointmentFormState = { date: '', time: '', staffId: '', clientMode: 'existing', userId: '', guestName: '', guestEmail: '', guestPhone: '', durationMinutes: 60, totalCost: ''};
 const appointmentStatuses = [ 'disponível', 'agendada', 'confirmada', 'concluída', 'cancelada_pelo_cliente', 'cancelada_pelo_staff', 'não_compareceu', 'pendente_aprovacao_staff', 'rejeitada_pelo_staff' ];
 
-// --- Styled Components ---
+/** Consultas com estes estados não entram na vista do calendário geral (continuam em «Gerir Consultas»). */
+const HIDDEN_CALENDAR_APPOINTMENT_STATUSES = ['rejeitada_pelo_staff'];
 const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.textMain};
@@ -546,9 +547,10 @@ const CalendarPage = () => {
         return true;
       });
 
-      // Remover consultas duplicadas baseado no ID
+      // Remover consultas duplicadas e as que não devem aparecer no calendário geral
       const seenAppointmentIds = new Set();
-      const uniqueAppointments = appointmentsData.filter(appointment => {
+      const uniqueAppointments = appointmentsData.filter((appointment) => {
+        if (HIDDEN_CALENDAR_APPOINTMENT_STATUSES.includes(appointment.status)) return false;
         if (seenAppointmentIds.has(appointment.id)) return false;
         seenAppointmentIds.add(appointment.id);
         return true;
